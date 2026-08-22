@@ -32,7 +32,7 @@ class VoiceCog(commands.Cog):
         if getattr(getattr(bot, "settings", None), "enable_background_tasks", True):
             self.reconcile.start()
 
-    def cog_unload(self) -> None:
+    async def cog_unload(self) -> None:
         self.reconcile.cancel()
 
     @commands.Cog.listener()
