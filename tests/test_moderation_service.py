@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -24,7 +24,7 @@ class FakeModerationRepository:
             target_id=target_id,
             moderator_id=moderator_id,
             reason=reason,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         self.cases.append(case)
         return case

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import asyncio
+import asyncio  # noqa: I001
 from pathlib import Path
 
 from alembic import command
