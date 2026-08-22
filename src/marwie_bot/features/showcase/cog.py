@@ -31,7 +31,7 @@ class ShowcaseCog(commands.Cog):
         if getattr(getattr(bot, "settings", None), "enable_background_tasks", True):
             self.weekly_loop.start()
 
-    def cog_unload(self) -> None:
+    async def cog_unload(self) -> None:
         self.weekly_loop.cancel()
 
     async def _resources(
