@@ -4,6 +4,7 @@ Revision ID: 20260822_0001
 Revises:
 Create Date: 2026-08-22
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -92,9 +93,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["guild_id"], ["guilds.guild_id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        "ix_moderation_cases_guild_id", "moderation_cases", ["guild_id"], unique=False
-    )
+    op.create_index("ix_moderation_cases_guild_id", "moderation_cases", ["guild_id"], unique=False)
     op.create_index(
         "ix_moderation_cases_target_id", "moderation_cases", ["target_id"], unique=False
     )

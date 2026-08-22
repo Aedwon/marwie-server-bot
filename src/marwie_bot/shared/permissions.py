@@ -28,9 +28,7 @@ def validate_moderation_target(context: ModerationHierarchy) -> None:
     if not caller_is_owner and (
         context.target_top_role_position >= context.caller_top_role_position
     ):
-        raise ModerationTargetError(
-            "You cannot target a member with an equal or higher top role."
-        )
+        raise ModerationTargetError("You cannot target a member with an equal or higher top role.")
 
     if context.target_top_role_position >= context.bot_top_role_position:
         raise ModerationTargetError(

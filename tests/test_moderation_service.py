@@ -37,9 +37,7 @@ class FakeModerationRepository:
     ) -> list[ModerationCaseRecord]:
         self.last_limit = limit
         matches = [
-            case
-            for case in self.cases
-            if case.guild_id == guild_id and case.target_id == target_id
+            case for case in self.cases if case.guild_id == guild_id and case.target_id == target_id
         ]
         return list(reversed(matches))[:limit]
 

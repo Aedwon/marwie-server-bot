@@ -3,8 +3,7 @@ from marwie_bot.db.session import normalize_database_url
 
 def test_normalizes_plain_sqlite_url() -> None:
     assert (
-        normalize_database_url("sqlite:///./data/test.db")
-        == "sqlite+aiosqlite:///./data/test.db"
+        normalize_database_url("sqlite:///./data/test.db") == "sqlite+aiosqlite:///./data/test.db"
     )
 
 
