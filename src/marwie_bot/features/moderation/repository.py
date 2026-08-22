@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from datetime import datetime
+from typing import Any
+
 from sqlalchemy import select
 
 from marwie_bot.db.models import Guild, ModerationCase
@@ -22,26 +25,30 @@ class SQLAlchemyModerationRepository:
             reason=model.reason,
             created_at=model.created_at,
             expires_at=model.expires_at,
+            metadata=dict(model.metadata_json or {}),
         )
 
-    async def create_warning(
+    async def create_case(
         self,
         guild_id: int,
+        action: str,
         target_id: int,
         moderator_id: int,
         reason: str,
+        expires_at: datetime | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> ModerationCaseRecord:
         async with self.database.session() as session:
-            guild = await session.get(Guild, guild_id)
-            if guild is None:
+            if await session.get(Guild, guild_id) is None:
                 session.add(Guild(guild_id=guild_id))
-
             model = ModerationCase(
                 guild_id=guild_id,
-                action="warn",
+                action=action,
                 target_id=target_id,
                 moderator_id=moderator_id,
                 reason=reason,
+                expires_at=expires_at,
+                metadata_json=dict(metadata or {}),
             )
             session.add(model)
             await session.commit()
