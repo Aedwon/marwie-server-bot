@@ -48,7 +48,7 @@ class QuizzesCog(commands.Cog):
         if getattr(getattr(bot, "settings", None), "enable_background_tasks", True):
             self.scheduler.start()
 
-    def cog_unload(self) -> None:
+    async def cog_unload(self) -> None:
         self.scheduler.cancel()
 
     @quiz_group.command(name="add", description="Add a quiz question.")
