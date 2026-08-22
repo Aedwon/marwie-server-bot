@@ -44,6 +44,7 @@ Expected: every command exits 0. CI runs the migration gate against a temporary 
 
 | Path | Action | Purpose |
 | --- | --- | --- |
+| `main.py` | create | bot-hosting.net root entry point |
 | `pyproject.toml` | create | Python metadata and tool configuration |
 | `requirements.txt` | create | bot-hosting.net runtime dependencies |
 | `requirements-dev.txt` | create | test and quality dependencies |
@@ -55,7 +56,7 @@ Expected: every command exits 0. CI runs the migration gate against a temporary 
 | `migrations/script.py.mako` | create | migration template |
 | `migrations/versions/20260822_0001_foundation.py` | create | foundation schema |
 | `src/marwie_bot/__init__.py` | create | package marker |
-| `src/marwie_bot/__main__.py` | create | hosting entry point |
+| `src/marwie_bot/__main__.py` | create | package runtime entry point |
 | `src/marwie_bot/bot.py` | create | bot lifecycle and extension loading |
 | `src/marwie_bot/config/__init__.py` | create | config package marker |
 | `src/marwie_bot/config/settings.py` | create | typed environment settings |
@@ -169,7 +170,7 @@ Run moderation-focused tests and all current gates.
 
 ### Behavior
 
-Create the bot class, extension loading, command sync, global error handling, `/ping`, `/setup`, `/warn`, and `/history`. Startup applies migrations before connecting. Shutdown closes the engine.
+Create the bot class, extension loading, command sync, global error handling, `/ping`, `/setup`, `/warn`, and `/history`. Startup applies migrations before connecting. Shutdown closes the engine. The root `main.py` delegates to the package runtime so bot-hosting.net can use a simple entry file.
 
 ### Test first
 
