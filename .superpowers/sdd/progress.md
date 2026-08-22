@@ -13,18 +13,20 @@ Branch: `milestone-1-foundation`
 - [x] Task 4: moderation cases and hierarchy rules
 - [x] Task 5: Discord commands and lifecycle
 - [x] Task 6: deployment docs and CI
-- [ ] Final verification
+- [x] Final verification
 
 Local verification available in the execution environment:
 
-- `pytest -q`: 14 passed
+- `pytest -q`: 14 passed before the settings coverage test was added
 - `python -m compileall -q src tests migrations main.py`: exit 0
 - deliberate test-first check for `tests/test_database_url.py`: failed with `ModuleNotFoundError` when the implementation module was removed, as expected
 
-Pending clean-environment verification in GitHub Actions:
+Clean-environment verification in GitHub Actions run `32549828916` on Python 3.12:
 
-- dependency installation
-- Ruff lint
-- Ruff formatting check
-- mypy
-- Alembic clean SQLite upgrade
+- dependency installation: success
+- `pytest`: 16 passed
+- `ruff check .`: success
+- `ruff format --check .`: success
+- `mypy src tests`: success
+- `python -m compileall -q src tests`: success
+- `alembic upgrade head`: success against a clean SQLite database
