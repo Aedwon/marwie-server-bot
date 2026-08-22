@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import func, select
+from sqlalchemy.sql.elements import ColumnElement
 
 from marwie_bot.db.models import (
     AnonymousQuestion,
@@ -37,7 +38,7 @@ class AnalyticsService:
         since = current - timedelta(days=7)
         async with self.database.session() as session:
 
-            async def count(model: type, *conditions: object) -> int:
+            async def count(model: type, *conditions: ColumnElement[bool]) -> int:
                 statement = select(func.count()).select_from(model).where(*conditions)
                 return int((await session.execute(statement)).scalar_one())
 
