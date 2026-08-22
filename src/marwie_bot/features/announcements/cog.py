@@ -44,12 +44,16 @@ def _embed(draft: AnnouncementDraft) -> discord.Embed:
 
 
 class AnnouncementModal(discord.ui.Modal, title="Compose announcement"):
-    announcement_title = discord.ui.TextInput(label="Title", max_length=256, required=False)
-    body = discord.ui.TextInput(
+    announcement_title = discord.ui.TextInput(  # type: ignore[var-annotated]
+        label="Title", max_length=256, required=False
+    )
+    body = discord.ui.TextInput(  # type: ignore[var-annotated]
         label="Body", style=discord.TextStyle.paragraph, max_length=4000, required=True
     )
-    footer = discord.ui.TextInput(label="Footer", max_length=2048, required=False)
-    color = discord.ui.TextInput(
+    footer = discord.ui.TextInput(  # type: ignore[var-annotated]
+        label="Footer", max_length=2048, required=False
+    )
+    color = discord.ui.TextInput(  # type: ignore[var-annotated]
         label="Hex color", placeholder="5865F2", max_length=7, required=False
     )
 
