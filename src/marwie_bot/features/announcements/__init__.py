@@ -1,0 +1,1 @@
+"""Discord-native announcement composer."""
