@@ -1,199 +1,182 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light" data-preference="system">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#f4f1e8">
-<meta name="description" content="A plain-language guide to Rob-bot for the AI App Builders team.">
-<title>Rob-bot guide</title>
-<style>
-:root{
-  --paper:#f4f1e8;--ink:#181817;--muted:#6d6a63;--line:#d8d2c5;
-  --green:#1f6b4f;--green-soft:#e3eee8;--blue:#275d8c;--blue-soft:#e6edf4;
-  --amber:#8a5a18;--amber-soft:#f4ead7;--white:#fffdf8;--max:1120px;
-}
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.65 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-a{color:inherit}button,input{font:inherit}.wrap{width:min(var(--max),calc(100% - 40px));margin:auto}
-.top{position:sticky;top:0;z-index:20;background:rgba(244,241,232,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
-.top .wrap{min-height:64px;display:flex;align-items:center;justify-content:space-between;gap:20px}.brand{font-weight:800;text-decoration:none;letter-spacing:-.02em}.brand span{display:inline-grid;place-items:center;width:29px;height:29px;background:var(--ink);color:var(--paper);border-radius:50%;margin-right:9px;font-size:13px}
-nav{display:flex;gap:18px;flex-wrap:wrap}nav a{text-decoration:none;color:var(--muted);font-size:14px}nav a:hover{color:var(--ink)}
-.hero{padding:88px 0 64px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:1.35fr .65fr;gap:56px;align-items:end}.kicker{font-size:13px;text-transform:uppercase;letter-spacing:.1em;color:var(--green);font-weight:800}
-h1{font-family:Georgia,"Times New Roman",serif;font-weight:500;font-size:clamp(3.5rem,8vw,7.3rem);line-height:.9;letter-spacing:-.055em;margin:14px 0 24px;max-width:800px}.hero p{font-size:20px;line-height:1.5;max-width:720px;margin:0;color:#46433e}
-.hero-note{border-left:2px solid var(--ink);padding-left:18px;color:var(--muted);font-size:14px}.hero-note strong{color:var(--ink);display:block;margin-bottom:5px}
-section{padding:72px 0;border-bottom:1px solid var(--line);scroll-margin-top:76px}.section-head{display:grid;grid-template-columns:260px 1fr;gap:40px;margin-bottom:32px}.section-head h2{font-size:14px;text-transform:uppercase;letter-spacing:.08em;margin:6px 0;color:var(--muted)}.section-head .intro{font-family:Georgia,"Times New Roman",serif;font-size:clamp(2rem,4vw,3.4rem);line-height:1.07;letter-spacing:-.035em;max-width:780px;margin:0}
-.audiences{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}.audience{background:var(--white);padding:26px}.audience .label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:800}.audience h3{font-size:22px;margin:8px 0 7px}.audience p{margin:0;color:var(--muted)}.audience a{display:inline-block;margin-top:18px;color:var(--green);font-weight:700;text-decoration:none}
-.plain-list{border-top:1px solid var(--line)}.plain-row{display:grid;grid-template-columns:230px 1fr;gap:40px;padding:24px 0;border-bottom:1px solid var(--line)}.plain-row h3{margin:0;font-size:18px}.plain-row p{margin:0;color:#514e48;max-width:760px}.plain-row small{display:block;color:var(--muted);margin-top:8px}
-.tag{display:inline-block;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:800;margin-top:9px}.automatic{background:var(--green-soft);color:var(--green)}.staff{background:var(--amber-soft);color:var(--amber)}.everyone{background:var(--blue-soft);color:var(--blue)}
-.task-grid{display:grid;grid-template-columns:1fr 1fr;gap:28px}.task-group{background:var(--white);border:1px solid var(--line);padding:25px}.task-group h3{margin:0 0 6px;font-size:21px}.task-group>p{color:var(--muted);margin:0 0 20px}.task{padding:16px 0;border-top:1px solid var(--line)}.task:first-of-type{border-top:0}.cmd{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px;background:#efebe1;padding:3px 6px;border-radius:4px}.task strong{display:block;margin-bottom:5px}.task p{margin:0;color:#57534d;font-size:14px}
-.setup-layout{display:grid;grid-template-columns:260px 1fr;gap:40px}.setup-side{position:sticky;top:92px;align-self:start}.setup-side p{font-size:14px;color:var(--muted)}.progress-track{height:4px;background:#ddd7ca;margin:15px 0 8px}.progress-bar{height:100%;width:0;background:var(--green);transition:width .2s}.progress-text{font-size:13px;color:var(--muted)}.reset{border:0;background:none;padding:8px 0;color:var(--muted);text-decoration:underline;cursor:pointer}
-.steps{counter-reset:step}.step{counter-increment:step;padding:0 0 30px 58px;position:relative;border-left:1px solid var(--line);margin-left:17px}.step:last-child{border-left-color:transparent}.step:before{content:counter(step);position:absolute;left:-18px;top:0;width:35px;height:35px;display:grid;place-items:center;border:1px solid var(--line);border-radius:50%;background:var(--paper);font-weight:800;font-size:13px}.step h3{margin:0 0 6px;font-size:20px}.step p{margin:0 0 12px;color:#514e48}.check{display:inline-flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;cursor:pointer}.check input{width:17px;height:17px;accent-color:var(--green)}
-.callout{padding:18px;border:1px solid var(--line);background:var(--white);margin:16px 0}.callout strong{display:block;margin-bottom:5px}.callout p{margin:0;color:var(--muted)}
-table{width:100%;border-collapse:collapse;background:var(--white);border:1px solid var(--line)}th,td{text-align:left;padding:14px 16px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:800;background:#eee9dd}td{font-size:14px}tr:last-child td{border-bottom:0}.table-wrap{overflow:auto}
-details{border-top:1px solid var(--line)}details:last-child{border-bottom:1px solid var(--line)}summary{cursor:pointer;padding:18px 0;font-weight:750;list-style:none;display:flex;justify-content:space-between;gap:20px}summary::-webkit-details-marker{display:none}summary:after{content:"+";font-weight:400;color:var(--muted)}details[open] summary:after{content:"–"}details p{margin:-4px 0 20px;color:#514e48;max-width:800px}
-.technical{background:#1c1d1b;color:#f5f1e7;border-bottom:0}.technical .section-head h2,.technical .muted{color:#a9a59b}.technical .section-head .intro{color:#f5f1e7}.technical details{border-color:#3b3b37}.technical details:last-child{border-color:#3b3b37}.technical details p{color:#c8c3b8}.technical .cmd{background:#30312e;color:#f5f1e7}
-footer{padding:34px 0 50px;color:var(--muted);font-size:13px}.foot{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
-@media(max-width:900px){.hero,.section-head,.setup-layout{grid-template-columns:1fr}.hero{gap:30px}.hero-note{max-width:600px}.section-head{gap:10px}.audiences{grid-template-columns:1fr}.task-grid{grid-template-columns:1fr}.setup-side{position:static}.plain-row{grid-template-columns:1fr;gap:8px}}
-@media(max-width:620px){.wrap{width:min(100% - 28px,var(--max))}nav{display:none}.hero{padding:58px 0 46px}section{padding:54px 0}.task-group,.audience{padding:20px}h1{font-size:clamp(3.2rem,18vw,5rem)}}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="description" content="Plain-language documentation for Rob-bot: features, commands, roles, setup, hosting, and troubleshooting.">
+  <meta name="theme-color" content="#f5f5f7" id="themeColor">
+  <title>Rob-bot Documentation</title>
+  <link rel="icon" type="image/svg+xml" href="/rob.svg?v=12">
+  <link rel="apple-touch-icon" href="/rob.svg?v=12">
+  <script>
+    (() => {
+      const pref = localStorage.getItem('rob-doc-theme') || 'system';
+      const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.dataset.preference = pref;
+      document.documentElement.dataset.theme = pref === 'system' ? (dark ? 'dark' : 'light') : pref;
+    })();
+  </script>
+  <link rel="stylesheet" href="/styles.css?v=14">
 </head>
 <body>
-<header class="top"><div class="wrap"><a class="brand" href="#top"><span>R</span>Rob-bot guide</a><nav><a href="#start">Start here</a><a href="#automatic">Automatic</a><a href="#commands">Commands</a><a href="#setup">Setup</a><a href="#help">Help</a></nav></div></header>
-
-<main>
-<div class="wrap hero" id="top">
-  <div>
-    <div class="kicker">AI App Builders team handbook</div>
-    <h1>Rob-bot, in plain English.</h1>
-    <p>This page explains what the bot does, what happens automatically, which commands people can use, and how an admin sets everything up.</p>
-  </div>
-  <aside class="hero-note"><strong>You do not need to know how the bot is coded.</strong> If a technical setting matters, this guide explains what it changes and who needs to care about it.</aside>
+<a class="skip" href="#content">Skip to documentation</a>
+<div class="mobilebar">
+  <div class="mobilebrand"><img src="/rob.svg?v=12" alt="">Rob-bot Documentation</div>
+  <button class="menubtn" id="menuBtn" type="button" aria-controls="sidebar" aria-expanded="false">Sections</button>
 </div>
+<div class="layout">
+  <aside class="sidebar" id="sidebar" aria-label="Documentation navigation">
+    <a class="brand" href="#overview"><img src="/rob.svg?v=12" alt=""><span class="brand-copy">Rob-bot Documentation<small>AI App Builders</small></span></a>
 
-<section id="start"><div class="wrap">
-  <div class="section-head"><h2>Start here</h2><p class="intro">Find the part of Rob-bot that matters to you.</p></div>
-  <div class="audiences">
-    <article class="audience"><div class="label">Community members</div><h3>Use the bot when you need it</h3><p>Check reputation, ask an anonymous question, start a focus timer, find collaborators, or take part in quizzes.</p><a href="#commands">See member commands →</a></article>
-    <article class="audience"><div class="label">Moderators</div><h3>Handle support and moderation</h3><p>Manage tickets, warn or timeout members, review history, post announcements, and see staff-only reports.</p><a href="#commands">See moderator tools →</a></article>
-    <article class="audience"><div class="label">Server admins</div><h3>Set the bot up once</h3><p>Tell Rob-bot which channels and roles to use, add ticket types and quiz questions, and choose which automatic features are turned on.</p><a href="#setup">Go to the setup guide →</a></article>
-  </div>
-</div></section>
+    <div class="nav-section"><div class="nav-label"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg><span>About</span></div><nav class="nav">
+      <a href="#overview" aria-current="true">Overview</a>
+      <a href="#automatic">Automatic behavior</a>
+    </nav></div>
 
-<section id="automatic"><div class="wrap">
-  <div class="section-head"><h2>What happens by itself</h2><p class="intro">These features run in the background after an admin sets them up.</p></div>
-  <div class="plain-list">
-    <div class="plain-row"><div><h3>Message logs</h3><span class="tag automatic">Automatic</span></div><div><p>If a message is edited or deleted, Rob-bot can record that change in the staff log channel. Private channels can be excluded.</p><small>Full message text is available only when Message Content is enabled for the bot.</small></div></div>
-    <div class="plain-row"><div><h3>Reputation</h3><span class="tag automatic">Automatic</span></div><div><p>Rob-bot can give a member +1 reputation for participating, with a limit of once every 10 minutes per person. As people reach the chosen totals, the bot can give them Builder, Contributor, or Mentor roles.</p></div></div>
-    <div class="plain-row"><div><h3>Temporary voice rooms</h3><span class="tag automatic">Automatic</span></div><div><p>When someone joins the “Create Workspace” voice channel, Rob-bot creates a temporary room for them and moves them into it. The room is removed when it becomes empty.</p></div></div>
-    <div class="plain-row"><div><h3>Scheduled quizzes</h3><span class="tag automatic">Automatic</span></div><div><p>If staff set a quiz schedule, Rob-bot posts a question at the chosen interval. It waits until the quiz closes before showing the correct answer and explanation.</p></div></div>
-    <div class="plain-row"><div><h3>AI update feed</h3><span class="tag automatic">Automatic</span></div><div><p>Every 30 minutes, Rob-bot checks the RSS or Atom feeds that staff added. New items are posted to the AI updates channel, and repeat posts are skipped.</p></div></div>
-    <div class="plain-row"><div><h3>Focus timer reminders</h3><span class="tag automatic">Automatic</span></div><div><p>If a member starts a Pomodoro timer, Rob-bot keeps track of it and posts when the focus session is finished, even if the bot restarted while the timer was running.</p></div></div>
-    <div class="plain-row"><div><h3>Weekly reports and unanswered help</h3><span class="tag automatic">Automatic</span></div><div><p>Rob-bot can post staff activity summaries and point out build-help threads that have been sitting for more than 24 hours without much activity.</p></div></div>
-    <div class="plain-row"><div><h3>App of the Week</h3><span class="tag automatic">Automatic</span></div><div><p>Rob-bot can periodically choose an active showcase post that has not been featured before and highlight it in the App of the Week channel. Staff can also choose one manually.</p></div></div>
-    <div class="plain-row"><div><h3>Restart recovery</h3><span class="tag automatic">Automatic</span></div><div><p>If the host restarts, Rob-bot restores its ticket and quiz buttons, checks temporary voice rooms, resumes timers, and continues scheduled jobs from saved data.</p></div></div>
-  </div>
-</div></section>
+    <div class="nav-section"><div class="nav-label"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9h4M7 13h7M7 17h3"/></svg><span>Using the bot</span></div><nav class="nav">
+      <a href="#members">Member commands</a>
+      <a href="#staff">Staff tools</a>
+      <a href="#roles">Roles and hierarchy</a>
+    </nav></div>
 
-<section id="commands"><div class="wrap">
-  <div class="section-head"><h2>Things people can ask Rob-bot to do</h2><p class="intro">The command names look technical. The actions themselves are simple.</p></div>
-  <div class="task-grid">
-    <article class="task-group"><h3>For everyone</h3><p>Useful community features available to regular members.</p>
-      <div class="task"><strong><span class="cmd">/rank</span> or <span class="cmd">/profile</span></strong><p>See a reputation profile and progress.</p></div>
-      <div class="task"><strong><span class="cmd">/leaderboard</span></strong><p>See who has the most reputation in the server.</p></div>
-      <div class="task"><strong><span class="cmd">/anonask</span></strong><p>Post a question without showing your name publicly. Authorized moderators can still check who sent it if they need to investigate abuse.</p></div>
-      <div class="task"><strong><span class="cmd">/pomodoro</span></strong><p>Start, check, or stop a focus timer between 5 and 180 minutes.</p></div>
-      <div class="task"><strong><span class="cmd">/lfg</span></strong><p>Post what you are building and what kind of collaborator or help you are looking for.</p></div>
-      <div class="task"><strong><span class="cmd">/solve</span></strong><p>In build-help, the thread author can mark a helpful reply as the solution. The helper receives +10 reputation.</p></div>
-    </article>
-    <article class="task-group"><h3>For moderators and staff</h3><p>Tools that need moderation or server-management permissions.</p>
-      <div class="task"><strong><span class="cmd">/warn</span>, <span class="cmd">/timeout</span>, <span class="cmd">/kick</span>, <span class="cmd">/ban</span>, <span class="cmd">/unban</span></strong><p>Take moderation action and save a case record.</p></div>
-      <div class="task"><strong><span class="cmd">/history</span></strong><p>Review the moderation history saved for a member.</p></div>
-      <div class="task"><strong><span class="cmd">/announce</span></strong><p>Write an announcement in a form, preview it privately, then send it when it looks right.</p></div>
-      <div class="task"><strong><span class="cmd">/analytics</span></strong><p>See a simple summary of the previous seven days, including moderation, tickets, solved help, quizzes, anonymous questions, and reputation activity.</p></div>
-      <div class="task"><strong><span class="cmd">/app-of-week</span></strong><p>Choose a showcase thread to feature manually.</p></div>
-      <div class="task"><strong><span class="cmd">/anonwho</span></strong><p>For authorized moderators only: check the sender of an anonymous question when there is a legitimate moderation reason.</p></div>
-    </article>
-    <article class="task-group"><h3>For ticket and content setup</h3><p>Normally used only when configuring or maintaining the server.</p>
-      <div class="task"><strong><span class="cmd">/ticket-type add</span></strong><p>Create a ticket option such as “Support”, “Partnership”, or “Report a problem”.</p></div>
-      <div class="task"><strong><span class="cmd">/ticket-panel post</span></strong><p>Post the button members use to open a ticket.</p></div>
-      <div class="task"><strong><span class="cmd">/quiz add</span>, <span class="cmd">/quiz start</span>, <span class="cmd">/quiz schedule</span></strong><p>Add quiz questions, post one immediately, or set the automatic schedule.</p></div>
-      <div class="task"><strong><span class="cmd">/ai-source add</span></strong><p>Add an official RSS or Atom feed that Rob-bot should watch for new AI updates.</p></div>
-      <div class="task"><strong><span class="cmd">/reputation thresholds</span></strong><p>Change how much reputation someone needs before they receive Builder, Contributor, or Mentor.</p></div>
-    </article>
-    <article class="task-group"><h3>For server configuration</h3><p>These commands tell Rob-bot where things are in Discord.</p>
-      <div class="task"><strong><span class="cmd">/setup text-channel</span></strong><p>Choose a text channel for something such as logs, announcements, analytics, or AI updates.</p></div>
-      <div class="task"><strong><span class="cmd">/setup voice-channel</span></strong><p>Choose the Create Workspace or Coworking Lounge voice channel.</p></div>
-      <div class="task"><strong><span class="cmd">/setup forum</span>, <span class="cmd">/setup category</span>, <span class="cmd">/setup role</span></strong><p>Tell Rob-bot which forum, category, and reputation roles to use.</p></div>
-      <div class="task"><strong><span class="cmd">/setup feature</span></strong><p>Turn a Rob-bot feature on or off for this server.</p></div>
-      <div class="task"><strong><span class="cmd">/setup status</span></strong><p>Check what has been configured and what is still missing.</p></div>
-    </article>
-  </div>
-</div></section>
+    <div class="nav-section"><div class="nav-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M6 14v6"/></svg><span>Administration</span></div><nav class="nav">
+      <a href="#setup">Setup checklist</a>
+      <a href="#resources">Channel and role map</a>
+      <a href="#hosting">Hosting settings</a>
+      <a href="#troubleshooting">Troubleshooting</a>
+    </nav></div>
 
-<section id="setup"><div class="wrap">
-  <div class="section-head"><h2>Admin setup guide</h2><p class="intro">Set it up once, then let the team use it.</p></div>
-  <div class="setup-layout">
-    <aside class="setup-side">
-      <strong>Setup progress</strong>
-      <p>Tick each item after you have tested it. This checklist is saved only in your browser.</p>
-      <div class="progress-track"><div class="progress-bar" id="bar"></div></div>
-      <div class="progress-text" id="progress">0 of 10 complete</div>
-      <button class="reset" id="reset">Reset checklist</button>
-    </aside>
-    <div class="steps">
-      <div class="step"><h3>Install Rob-bot in the Discord server</h3><p>In the Discord Developer Portal, install the app with the <strong>bot</strong> and <strong>applications.commands</strong> scopes. Give it only the permissions it needs. Administrator is not required.</p><label class="check"><input type="checkbox"> Done and tested</label></div>
-      <div class="step"><h3>Turn on Message Content if you want full logging</h3><p>Leave Presence Intent and Server Members Intent off. Turn Message Content Intent on if you want deleted/edited message text, richer ticket transcripts, solution excerpts, and message-based reputation context.</p><label class="check"><input type="checkbox"> Done and tested</label></div>
-      <div class="step"><h3>Add the hosting settings</h3><p>On the bot host, add your Discord token as a secret, set the environment to production, and add your Discord server ID as <span class="cmd">COMMAND_GUILD_ID</span>. You can leave the database setting empty to use the built-in SQLite database.</p><div class="callout"><strong>Do not share the token.</strong><p>The bot token is effectively the bot’s password. Keep it in the hosting provider’s secret/environment-variable area.</p></div><label class="check"><input type="checkbox"> Done and tested</label></div>
-      <div class="step"><h3>Create the Discord channels, forums, categories, and roles</h3><p>Create the places Rob-bot will use: logs, tickets, announcements, AI updates, build help, showcase, voice rooms, and the Builder / Contributor / Mentor roles.</p><label class="check"><input type="checkbox"> Done and tested</label></div>
-      <div class="step"><h3>Tell Rob-bot where those things are</h3><p>Use the <span class="cmd">/setup</span> commands to connect each Discord channel, role, forum, category, and the Solved tag. Finish with <span class="cmd">/setup status</span> to see anything still missing.</p><label class="check"><input type="checkbox"> Done and tested</label></div>
-      <div class="step"><h3>Set up tickets</h3><p>Add the ticket types your team wants, post the ticket panel, then open a test ticket. Make sure staff can see it, regular members cannot see other people’s tickets, and a closed ticket produces a transcript.</p><label class="check"><input type="checkbox"> Done and tested</label></div>
-      <div class="step"><h3>Set up reputation and build-help</h3><p>Connect the Builder, Contributor, and Mentor roles. The default milestones are 50, 150, and 500 reputation. Then test marking a build-help reply as solved.</p><label class="check"><input type="checkbox"> Done and tested</label></div>
-      <div class="step"><h3>Add at least one quiz</h3><p>Add a quiz question, start it manually, and check that answers are recorded. If you want regular quizzes, set a schedule after the manual test works.</p><label class="check"><input type="checkbox"> Done and tested</label></div>
-      <div class="step"><h3>Add AI sources and test the community tools</h3><p>Add only RSS/Atom feeds your team trusts. Test a feed poll, an anonymous question, a Pomodoro timer, an LFG post, and the temporary voice-room flow.</p><label class="check"><input type="checkbox"> Done and tested</label></div>
-      <div class="step"><h3>Review privacy and switch off anything you do not want</h3><p>Exclude private staff channels from message logging, use <span class="cmd">/setup feature</span> to disable unused systems, then run <span class="cmd">/ping</span> and <span class="cmd">/setup status</span> as a final check.</p><label class="check"><input type="checkbox"> Done and tested</label></div>
+    <div class="appearance">
+      <span class="appearance-label">Appearance</span>
+      <div class="theme-switcher" role="group" aria-label="Appearance">
+        <button type="button" data-theme-choice="system" aria-label="Use system appearance" title="System" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></button>
+        <button type="button" data-theme-choice="light" aria-label="Use light appearance" title="Light" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"/></svg></button>
+        <button type="button" data-theme-choice="dark" aria-label="Use dark appearance" title="Dark" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z"/></svg></button>
+      </div>
     </div>
-  </div>
-</div></section>
+  </aside>
 
-<section id="map"><div class="wrap">
-  <div class="section-head"><h2>Where Rob-bot expects things</h2><p class="intro">This is the suggested server layout, not a list of hardcoded names.</p></div>
-  <div class="table-wrap"><table>
-    <thead><tr><th>What Rob-bot needs</th><th>Suggested Discord place</th><th>What it is used for</th></tr></thead>
-    <tbody>
-      <tr><td>Moderation log</td><td>#moderation-log</td><td>Saved moderation case notices</td></tr>
-      <tr><td>Message log</td><td>#bot-logs or a separate log channel</td><td>Edited and deleted message records</td></tr>
-      <tr><td>Ticket panel</td><td>#ticket</td><td>Where members open tickets</td></tr>
-      <tr><td>Ticket category</td><td>A private ticket category</td><td>Where new ticket channels are created</td></tr>
-      <tr><td>Ticket logs</td><td>#ticket-logs</td><td>Ticket events and transcripts</td></tr>
-      <tr><td>Create Workspace</td><td>Create Workspace voice channel</td><td>Trigger for temporary voice rooms</td></tr>
-      <tr><td>Temporary voice category</td><td>A voice category</td><td>Where temporary rooms are created</td></tr>
-      <tr><td>Coworking Lounge</td><td>Coworking Lounge voice channel</td><td>Permanent shared coworking room</td></tr>
-      <tr><td>Announcements</td><td>#announcements</td><td>Official announcements</td></tr>
-      <tr><td>AI updates</td><td>#ai-updates</td><td>New items from approved feeds</td></tr>
-      <tr><td>Build help</td><td>#build-help forum</td><td>Questions, answers, and solved threads</td></tr>
-      <tr><td>Solved tag</td><td>“Solved” tag inside #build-help</td><td>Marks questions that were answered</td></tr>
-      <tr><td>Quiz channel</td><td>Your learning/quiz channel</td><td>Quiz questions and results</td></tr>
-      <tr><td>Anonymous questions</td><td>A channel chosen by the team</td><td>Public posts created by /anonask</td></tr>
-      <tr><td>Analytics</td><td>A staff-only channel</td><td>Reports and unanswered-help reminders</td></tr>
-      <tr><td>Showcase</td><td>#showcase forum</td><td>Projects that can be featured</td></tr>
-      <tr><td>App of the Week</td><td>#app-of-the-week</td><td>Featured showcase posts</td></tr>
-      <tr><td>Collaboration</td><td>#collab-lfg</td><td>LFG / collaborator posts</td></tr>
-      <tr><td>Reputation roles</td><td>Builder, Contributor, Mentor</td><td>Roles awarded at reputation milestones</td></tr>
-    </tbody>
-  </table></div>
-  <div class="callout"><strong>Important for ticket privacy</strong><p>On the ticket category, deny <strong>@everyone → View Channel</strong>, then allow the staff roles that should handle tickets. Rob-bot adds access for the person who opened each ticket.</p></div>
-</div></section>
+  <main id="content">
+    <article class="doc">
+      <header class="doc-header" id="overview">
+        <div class="breadcrumbs">Team handbook / Rob-bot</div>
+        <h1>Rob-bot documentation</h1>
+        <p class="lede">A practical reference for what Rob-bot does, who can use each feature, and how the Discord server should be configured.</p>
+        <div class="release">Production V1 · semantic <code>/ask-community</code> is planned for a later release</div>
+      </header>
 
-<section id="help"><div class="wrap">
-  <div class="section-head"><h2>If something is not working</h2><p class="intro">Check the simple things first.</p></div>
-  <details><summary>The slash commands do not appear.</summary><p>Make sure the app was installed with <strong>applications.commands</strong>, the correct server ID is in <span class="cmd">COMMAND_GUILD_ID</span>, and command syncing is enabled. Restart the bot after changing those settings.</p></details>
-  <details><summary>A moderation command says Rob-bot cannot act on someone.</summary><p>Discord role order matters. Move the Rob-bot role above the member or role it needs to moderate, and make sure the matching moderation permission is enabled.</p></details>
-  <details><summary>Reputation roles are not being assigned.</summary><p>Check that Builder, Contributor, and Mentor were connected with <span class="cmd">/setup role</span>. Rob-bot also needs Manage Roles, and its own role must sit above the roles it gives out.</p></details>
-  <details><summary>Edited or deleted messages show no text.</summary><p>Turn on Message Content Intent in the Discord Developer Portal and set <span class="cmd">ENABLE_MESSAGE_CONTENT=true</span> on the host. Without that, the bot can still run, but Discord may not provide the full message text.</p></details>
-  <details><summary>Everyone can see a ticket.</summary><p>Fix the permissions on the ticket category: deny @everyone View Channel, then allow only the staff roles that should handle tickets.</p></details>
-  <details><summary>AI updates are not appearing.</summary><p>Check that the AI updates channel is connected, background tasks are enabled, and the feed is active. Staff can run <span class="cmd">/ai-source poll</span> to test it immediately.</p></details>
-  <details><summary>What happens if the bot host restarts?</summary><p>Most state is saved. Rob-bot re-runs database migrations, restores persistent ticket and quiz controls, checks temporary voice rooms, and resumes scheduled work from saved timestamps and sessions.</p></details>
-</div></section>
+      <section class="section" aria-labelledby="start-title">
+        <h2 id="start-title">Start here</h2>
+        <p class="intro">Use the section that matches what you need to do.</p>
+        <div class="plain-list">
+          <div class="plain-item"><h3>Community members</h3><p>Open support tickets, check reputation, ask anonymous questions, use a focus timer, find collaborators, answer quizzes, and mark helpful build-help replies as solved.</p></div>
+          <div class="plain-item"><h3>Moderators</h3><p>Handle tickets, warnings, timeouts, kicks, bans, moderation history, anonymous-question audits, and build-help moderation.</p></div>
+          <div class="plain-item"><h3>Admins and leads</h3><p>Connect channels and roles, configure tickets and reputation, add quizzes and AI feeds, publish announcements, and review analytics.</p></div>
+        </div>
+      </section>
 
-<section class="technical" id="technical"><div class="wrap">
-  <div class="section-head"><h2>Admin-only technical reference</h2><p class="intro">You can ignore this section unless you manage the Discord app or hosting.</p></div>
-  <details><summary>Discord intents</summary><p><strong>Presence Intent:</strong> off. <strong>Server Members Intent:</strong> off. <strong>Message Content Intent:</strong> on if you want full message text, richer ticket transcripts, solution excerpts, and message-based reputation context.</p></details>
-  <details><summary>Recommended bot permissions</summary><p>View Channels, Send Messages, Send Messages in Threads, Embed Links, Attach Files, Read Message History, Manage Channels, Manage Threads, Manage Roles, Move Members, Moderate Members, Kick Members, and Ban Members. Administrator is not required.</p></details>
-  <details><summary>Hosting environment variables</summary><p><span class="cmd">DISCORD_TOKEN</span> is required and should be stored as a secret. Recommended values: <span class="cmd">ENVIRONMENT=production</span>, <span class="cmd">COMMAND_GUILD_ID=&lt;your server ID&gt;</span>, <span class="cmd">ENABLE_MESSAGE_CONTENT=true</span> when the Discord intent is enabled, <span class="cmd">ENABLE_BACKGROUND_TASKS=true</span>, and <span class="cmd">SYNC_COMMANDS=true</span>. Leave <span class="cmd">DATABASE_URL</span> unset to use SQLite at <span class="cmd">data/marwie.db</span>.</p></details>
-  <details><summary>Database and backups</summary><p>SQLite is enough to start. The bot creates and migrates the database automatically. Keep host backups enabled. PostgreSQL can be added later by setting <span class="cmd">DATABASE_URL</span>.</p></details>
-</div></section>
-</main>
+      <section class="section" id="automatic">
+        <h2>Automatic behavior</h2>
+        <p class="intro">These features keep running after an admin sets them up.</p>
+        <div class="plain-list" id="automaticList"></div>
+      </section>
 
-<footer><div class="wrap foot"><span>Rob-bot guide for AI App Builders</span><span><a href="https://github.com/Aedwon/marwie-server-bot" target="_blank" rel="noreferrer">Bot source on GitHub</a></span></div></footer>
+      <section class="section" id="members">
+        <h2>Member commands</h2>
+        <p class="intro">Commands and interactions available to community members.</p>
+        <div class="command-list" id="memberCommands"></div>
+      </section>
 
-<script>
-const key="rob-bot-plain-guide-v1";
-const boxes=[...document.querySelectorAll(".check input")];
-let saved={};
-try{saved=JSON.parse(localStorage.getItem(key)||"{}")}catch{}
-boxes.forEach((box,i)=>{box.checked=!!saved[i];box.addEventListener("change",()=>{saved[i]=box.checked;localStorage.setItem(key,JSON.stringify(saved));update()})});
-function update(){const done=boxes.filter(x=>x.checked).length;document.querySelector("#bar").style.width=`${done/boxes.length*100}%`;document.querySelector("#progress").textContent=`${done} of ${boxes.length} complete`}
-document.querySelector("#reset").addEventListener("click",()=>{saved={};localStorage.removeItem(key);boxes.forEach(x=>x.checked=false);update()});
-update();
-</script>
+      <section class="section" id="staff">
+        <h2>Staff tools</h2>
+        <p class="intro">Discord permissions decide who can use these. The role name itself does not matter.</p>
+        <div class="command-list" id="staffCommands"></div>
+      </section>
+
+      <section class="section" id="roles">
+        <h2>Roles and hierarchy</h2>
+        <p class="intro">Role order determines who Discord allows staff and Rob-bot to manage.</p>
+        <ol class="role-order">
+          <li><span class="n">1</span><b>Server Owner</b><span>Always highest. Rob-bot can never moderate the server owner.</span></li>
+          <li><span class="n">2</span><b>Admin / Leadership</b><span>Optional protected layer for trusted leads who should sit outside bot moderation.</span></li>
+          <li class="bot-row"><span class="n">3</span><b>Rob-bot</b><span>Must sit above members it may moderate and above Builder, Contributor, and Mentor.</span></li>
+          <li><span class="n">4</span><b>Moderator / Support</b><span>Recommended day-to-day staff role. The exact name is up to you.</span></li>
+          <li><span class="n">5</span><b>Mentor</b><span>Reputation role. Default milestone: 500.</span></li>
+          <li><span class="n">6</span><b>Contributor</b><span>Reputation role. Default milestone: 150.</span></li>
+          <li><span class="n">7</span><b>Builder</b><span>Reputation role. Default milestone: 50.</span></li>
+          <li><span class="n">8</span><b>Member roles</b><span>Normal community and interest roles.</span></li>
+          <li><span class="n">9</span><b>@everyone</b><span>Discord's base role.</span></li>
+        </ol>
+
+        <h3>Rob-bot permissions</h3>
+        <p>Give the bot only the permissions it needs:</p>
+        <ul class="bullets">
+          <li>View Channels, Send Messages, Send Messages in Threads</li>
+          <li>Embed Links, Attach Files, Read Message History</li>
+          <li>Manage Channels, Manage Threads, Manage Roles</li>
+          <li>Move Members</li>
+          <li>Moderate Members, Kick Members, Ban Members</li>
+        </ul>
+
+        <h3>Moderator / Support permissions</h3>
+        <div class="plain-list">
+          <div class="plain-item"><h3>Moderate Members</h3><p>Needed for <code>/warn</code>, <code>/timeout</code>, <code>/history</code>, and <code>/anonwho</code>.</p></div>
+          <div class="plain-item"><h3>Kick Members</h3><p>Needed for <code>/kick</code>.</p></div>
+          <div class="plain-item"><h3>Ban Members</h3><p>Needed for <code>/ban</code> and <code>/unban</code>.</p></div>
+          <div class="plain-item"><h3>Manage Threads</h3><p>Lets staff mark a solution in someone else's build-help thread.</p></div>
+        </div>
+        <p class="meta">Also give this role access to private tickets and staff log channels.</p>
+
+        <h3>Moderation hierarchy rule</h3>
+        <p>A moderator cannot target someone whose highest role is equal to or higher than their own. Rob-bot also refuses a target whose highest role is equal to or higher than the Rob-bot role.</p>
+      </section>
+
+      <section class="section" id="setup">
+        <h2>Setup checklist</h2>
+        <p class="intro">Complete these once, in order. The checkboxes only remember progress in this browser; they do not change Discord settings.</p>
+        <div class="progress-line"><div class="track" aria-hidden="true"><div class="bar" id="progressBar"></div></div><div class="progress-text" id="progressText" aria-live="polite">0 of 10 complete</div><button class="reset" id="resetChecklist" type="button">Reset</button></div>
+        <div class="steps" id="setupSteps"></div>
+      </section>
+
+      <section class="section" id="resources">
+        <h2>Channel and role map</h2>
+        <p class="intro">These names are suggestions. Rob-bot stores the Discord IDs you connect, so your server can use different names.</p>
+        <div class="resource-list" id="resourceList"></div>
+        <div class="note"><strong>Ticket privacy</strong><p>On the ticket category, deny <code>@everyone → View Channel</code>, then explicitly allow only the staff roles that should handle tickets. Rob-bot adds access for the member who opened each ticket.</p></div>
+      </section>
+
+      <section class="section" id="hosting">
+        <h2>Hosting settings</h2>
+        <p class="intro">For whoever maintains the deployment.</p>
+        <h3>Discord Developer Portal</h3>
+        <div class="settings">
+          <div class="setting"><b>Presence Intent</b><p>Off.</p></div>
+          <div class="setting"><b>Server Members Intent</b><p>Off.</p></div>
+          <div class="setting"><b>Message Content Intent</b><p>Recommended on for full logging, richer transcripts, solution excerpts, and message-based reputation context.</p></div>
+          <div class="setting"><b>OAuth scopes</b><p><code>bot</code> and <code>applications.commands</code>.</p></div>
+        </div>
+
+        <h3>Environment variables</h3>
+        <div class="settings">
+          <div class="setting"><b><code>DISCORD_TOKEN</code></b><p>Required secret. Never commit it or place it in documentation.</p></div>
+          <div class="setting"><b><code>ENVIRONMENT</code></b><p>Use <code>production</code> on the live host.</p></div>
+          <div class="setting"><b><code>COMMAND_GUILD_ID</code></b><p>Your Discord server ID. It gives immediate guild-scoped command syncing during setup.</p></div>
+          <div class="setting"><b><code>ENABLE_MESSAGE_CONTENT</code></b><p>Use <code>true</code> when Message Content is enabled in the Discord Developer Portal.</p></div>
+          <div class="setting"><b><code>ENABLE_BACKGROUND_TASKS</code></b><p>Use <code>true</code> for quizzes, feeds, reports, App of the Week, voice cleanup, and Pomodoro completion.</p></div>
+          <div class="setting"><b><code>DATABASE_URL</code></b><p>Optional. Leave unset to use SQLite at <code>data/marwie.db</code>. PostgreSQL can be added later.</p></div>
+        </div>
+      </section>
+
+      <section class="section" id="troubleshooting">
+        <h2>Troubleshooting</h2>
+        <p class="intro">Check permissions, role order, and connected resources first.</p>
+        <div class="faq" id="faq"></div>
+      </section>
+
+      <footer>Rob-bot Documentation · AI App Builders · <a href="https://github.com/Aedwon/marwie-server-bot" target="_blank" rel="noreferrer">Source on GitHub</a></footer>
+    </article>
+  </main>
+</div>
+<script src="/app.js?v=14" defer></script>
 </body>
 </html>
