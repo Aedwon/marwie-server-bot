@@ -41,7 +41,9 @@ class ConfigurationCog(commands.Cog):
     ) -> None:
         guild = interaction.guild
         if guild is None:
-            await interaction.response.send_message("This command only works in a server.", ephemeral=True)
+            await interaction.response.send_message(
+                "This command only works in a server.", ephemeral=True
+            )
             return
         try:
             record = await self.resources.set_resource(
@@ -62,7 +64,9 @@ class ConfigurationCog(commands.Cog):
         key: ResourceKey,
         channel: discord.TextChannel,
     ) -> None:
-        await self._set_resource(interaction, key, ResourceType.CHANNEL, channel.id, channel.mention)
+        await self._set_resource(
+            interaction, key, ResourceType.CHANNEL, channel.id, channel.mention
+        )
 
     @setup_group.command(name="voice-channel", description="Set a voice-channel resource.")
     @app_commands.checks.has_permissions(administrator=True)
@@ -72,7 +76,9 @@ class ConfigurationCog(commands.Cog):
         key: ResourceKey,
         channel: discord.VoiceChannel,
     ) -> None:
-        await self._set_resource(interaction, key, ResourceType.CHANNEL, channel.id, channel.mention)
+        await self._set_resource(
+            interaction, key, ResourceType.CHANNEL, channel.id, channel.mention
+        )
 
     @setup_group.command(name="forum", description="Set a forum-channel resource.")
     @app_commands.checks.has_permissions(administrator=True)
@@ -106,7 +112,9 @@ class ConfigurationCog(commands.Cog):
     ) -> None:
         await self._set_resource(interaction, key, ResourceType.ROLE, role.id, role.mention)
 
-    @setup_group.command(name="solved-tag", description="Set the Solved tag from the build-help forum.")
+    @setup_group.command(
+        name="solved-tag", description="Set the Solved tag from the build-help forum."
+    )
     @app_commands.checks.has_permissions(administrator=True)
     async def set_solved_tag(
         self,
@@ -128,7 +136,9 @@ class ConfigurationCog(commands.Cog):
             f"`{tag.name}`",
         )
 
-    @setup_group.command(name="feature", description="Enable or disable a bot feature for this server.")
+    @setup_group.command(
+        name="feature", description="Enable or disable a bot feature for this server."
+    )
     @app_commands.checks.has_permissions(administrator=True)
     async def set_feature(
         self,
@@ -137,7 +147,9 @@ class ConfigurationCog(commands.Cog):
         enabled: bool,
     ) -> None:
         if interaction.guild_id is None:
-            await interaction.response.send_message("This command only works in a server.", ephemeral=True)
+            await interaction.response.send_message(
+                "This command only works in a server.", ephemeral=True
+            )
             return
         record = await self.features.set_enabled(interaction.guild_id, feature, enabled)
         state = "enabled" if record.enabled else "disabled"
@@ -145,7 +157,9 @@ class ConfigurationCog(commands.Cog):
             f"`{record.feature.value}` is now {state}.", ephemeral=True
         )
 
-    @setup_group.command(name="log-ignore", description="Include or ignore a channel in message logs.")
+    @setup_group.command(
+        name="log-ignore", description="Include or ignore a channel in message logs."
+    )
     @app_commands.checks.has_permissions(administrator=True)
     async def set_log_ignore(
         self,
@@ -154,7 +168,9 @@ class ConfigurationCog(commands.Cog):
         ignored: bool = True,
     ) -> None:
         if interaction.guild_id is None:
-            await interaction.response.send_message("This command only works in a server.", ephemeral=True)
+            await interaction.response.send_message(
+                "This command only works in a server.", ephemeral=True
+            )
             return
         current = await self.features.get(interaction.guild_id, FeatureName.MESSAGE_LOGS)
         ignored_ids = {int(value) for value in current.config.get("ignored_channel_ids", [])}
@@ -172,12 +188,16 @@ class ConfigurationCog(commands.Cog):
             f"{channel.mention} is now {state} by message logging.", ephemeral=True
         )
 
-    @setup_group.command(name="status", description="Show configured resources and feature overrides.")
+    @setup_group.command(
+        name="status", description="Show configured resources and feature overrides."
+    )
     @app_commands.checks.has_permissions(administrator=True)
     async def status(self, interaction: discord.Interaction) -> None:
         guild = interaction.guild
         if guild is None:
-            await interaction.response.send_message("This command only works in a server.", ephemeral=True)
+            await interaction.response.send_message(
+                "This command only works in a server.", ephemeral=True
+            )
             return
         records = await self.resources.list_for_guild(guild.id)
         lines: list[str] = []

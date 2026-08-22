@@ -9,9 +9,7 @@ from marwie_bot.features.quizzes.service import (
 
 class FakeQuiz:
     def __init__(self) -> None:
-        self.question = QuizQuestionRecord(
-            1, 1, "python", "Q?", ("A", "B", "C", "D"), 2, None
-        )
+        self.question = QuizQuestionRecord(1, 1, "python", "Q?", ("A", "B", "C", "D"), 2, None)
         self.session = QuizSessionRecord(
             1,
             1,
@@ -23,9 +21,7 @@ class FakeQuiz:
         )
         self.answered = False
 
-    async def add_question(
-        self, guild_id, category, prompt, options, correct_index, explanation
-    ):
+    async def add_question(self, guild_id, category, prompt, options, correct_index, explanation):
         return self.question
 
     async def random_question(self, guild_id):
@@ -43,9 +39,7 @@ class FakeQuiz:
     async def get_question(self, question_id):
         return self.question
 
-    async def answer(
-        self, session_id, guild_id, user_id, answer_index, correct
-    ):
+    async def answer(self, session_id, guild_id, user_id, answer_index, correct):
         if self.answered:
             return False
         self.answered = True

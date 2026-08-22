@@ -40,10 +40,14 @@ class AnonymousQuestionsCog(commands.Cog):
     ) -> None:
         guild = interaction.guild
         if guild is None:
-            await interaction.response.send_message("This command only works in a server.", ephemeral=True)
+            await interaction.response.send_message(
+                "This command only works in a server.", ephemeral=True
+            )
             return
         if not await self.features.is_enabled(guild.id, FeatureName.ANONYMOUS_QUESTIONS):
-            await interaction.response.send_message("Anonymous questions are disabled here.", ephemeral=True)
+            await interaction.response.send_message(
+                "Anonymous questions are disabled here.", ephemeral=True
+            )
             return
         resource = await self.resources.get(guild.id, ResourceKey.ANON_QUESTIONS)
         channel = guild.get_channel(resource.discord_id) if resource else None
@@ -72,14 +76,18 @@ class AnonymousQuestionsCog(commands.Cog):
             description=record.question,
             color=discord.Color.blurple(),
         )
-        embed.set_footer(text="For educational and technical questions. Identity is visible to authorized staff for abuse review.")
+        embed.set_footer(
+            text="For educational and technical questions. Identity is visible to authorized staff for abuse review."
+        )
         message = await channel.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
         await self.repository.attach_message(record.id, message.id)
         await interaction.response.send_message(
             f"Question #{record.id} posted anonymously in {channel.mention}.", ephemeral=True
         )
 
-    @app_commands.command(name="anonwho", description="Reveal an anonymous question author for staff audit.")
+    @app_commands.command(
+        name="anonwho", description="Reveal an anonymous question author for staff audit."
+    )
     @app_commands.default_permissions(moderate_members=True)
     @app_commands.checks.has_permissions(moderate_members=True)
     @app_commands.guild_only()
@@ -87,7 +95,9 @@ class AnonymousQuestionsCog(commands.Cog):
         self, interaction: discord.Interaction, question_id: app_commands.Range[int, 1]
     ) -> None:
         if interaction.guild_id is None:
-            await interaction.response.send_message("This command only works in a server.", ephemeral=True)
+            await interaction.response.send_message(
+                "This command only works in a server.", ephemeral=True
+            )
             return
         record = await self.service.get(interaction.guild_id, int(question_id))
         if record is None:

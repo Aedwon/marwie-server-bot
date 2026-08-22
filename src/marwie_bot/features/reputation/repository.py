@@ -34,9 +34,7 @@ class SQLAlchemyReputationRepository:
             )
             total = await session.get(ReputationTotal, (guild_id, user_id))
             if total is None:
-                total = ReputationTotal(
-                    guild_id=guild_id, user_id=user_id, total_points=points
-                )
+                total = ReputationTotal(guild_id=guild_id, user_id=user_id, total_points=points)
                 session.add(total)
             else:
                 total.total_points += points
@@ -53,9 +51,7 @@ class SQLAlchemyReputationRepository:
             statement = (
                 select(ReputationTotal.user_id, ReputationTotal.total_points)
                 .where(ReputationTotal.guild_id == guild_id)
-                .order_by(
-                    ReputationTotal.total_points.desc(), ReputationTotal.user_id
-                )
+                .order_by(ReputationTotal.total_points.desc(), ReputationTotal.user_id)
                 .limit(limit)
             )
             rows = (await session.execute(statement)).all()
@@ -64,9 +60,13 @@ class SQLAlchemyReputationRepository:
     async def rank(self, guild_id: int, user_id: int) -> int:
         points = await self.total(guild_id, user_id)
         async with self.database.session() as session:
-            statement = select(func.count()).select_from(ReputationTotal).where(
-                ReputationTotal.guild_id == guild_id,
-                ReputationTotal.total_points > points,
+            statement = (
+                select(func.count())
+                .select_from(ReputationTotal)
+                .where(
+                    ReputationTotal.guild_id == guild_id,
+                    ReputationTotal.total_points > points,
+                )
             )
             ahead = int((await session.execute(statement)).scalar_one())
             return ahead + 1

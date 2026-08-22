@@ -34,9 +34,7 @@ class SQLAlchemyAnonymousQuestionRepository:
             )
             return int((await session.execute(statement)).scalar_one())
 
-    async def latest_for_user(
-        self, guild_id: int, user_id: int
-    ) -> AnonymousQuestionRecord | None:
+    async def latest_for_user(self, guild_id: int, user_id: int) -> AnonymousQuestionRecord | None:
         async with self.database.session() as session:
             statement = (
                 select(AnonymousQuestion)
@@ -65,9 +63,7 @@ class SQLAlchemyAnonymousQuestionRepository:
             await session.refresh(model)
             return self._record(model)
 
-    async def attach_message(
-        self, question_id: int, message_id: int
-    ) -> AnonymousQuestionRecord:
+    async def attach_message(self, question_id: int, message_id: int) -> AnonymousQuestionRecord:
         async with self.database.session() as session:
             model = await session.get(AnonymousQuestion, question_id)
             if model is None:

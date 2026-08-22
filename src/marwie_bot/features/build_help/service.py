@@ -19,9 +19,7 @@ class SolutionRecord:
 
 
 class SolutionRepository(Protocol):
-    async def get_for_thread(
-        self, guild_id: int, thread_id: int
-    ) -> SolutionRecord | None: ...
+    async def get_for_thread(self, guild_id: int, thread_id: int) -> SolutionRecord | None: ...
 
     async def create(
         self,

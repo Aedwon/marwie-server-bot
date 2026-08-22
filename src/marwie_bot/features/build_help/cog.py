@@ -56,9 +56,7 @@ class BuildHelpCog(commands.Cog):
             )
             return
         user = interaction.user
-        can_moderate = (
-            isinstance(user, discord.Member) and user.guild_permissions.manage_threads
-        )
+        can_moderate = isinstance(user, discord.Member) and user.guild_permissions.manage_threads
         if thread.owner_id != user.id and not can_moderate:
             await interaction.response.send_message(
                 "Only the thread author or a moderator can mark the solution.", ephemeral=True
@@ -100,11 +98,7 @@ class BuildHelpCog(commands.Cog):
         parent = thread.parent
         if tag_resource is not None and isinstance(parent, discord.ForumChannel):
             tag = next(
-                (
-                    item
-                    for item in parent.available_tags
-                    if item.id == tag_resource.discord_id
-                ),
+                (item for item in parent.available_tags if item.id == tag_resource.discord_id),
                 None,
             )
             if tag is not None and tag not in thread.applied_tags:
@@ -120,8 +114,7 @@ class BuildHelpCog(commands.Cog):
             source_ref=f"thread:{thread.id}:message:{answer.id}",
         )
         await interaction.response.send_message(
-            f"Solved. {answer.author.mention} received helper reputation. "
-            f"Solution `#{record.id}`."
+            f"Solved. {answer.author.mention} received helper reputation. Solution `#{record.id}`."
         )
 
 

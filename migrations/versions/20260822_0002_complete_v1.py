@@ -42,7 +42,12 @@ def upgrade() -> None:
         sa.Column("claimed_by", sa.BigInteger(), nullable=True),
         sa.Column("closed_by", sa.BigInteger(), nullable=True),
         sa.Column("close_reason", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
+        ),
         sa.Column("closed_at", sa.DateTime(timezone=True), nullable=True),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("channel_id"),
@@ -58,7 +63,12 @@ def upgrade() -> None:
         sa.Column("actor_id", sa.BigInteger(), nullable=True),
         sa.Column("event", sa.String(length=32), nullable=False),
         sa.Column("detail", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
+        ),
         sa.ForeignKeyConstraint(["ticket_id"], ["tickets.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -69,10 +79,20 @@ def upgrade() -> None:
         sa.Column("channel_id", sa.BigInteger(), nullable=False),
         sa.Column("guild_id", sa.BigInteger(), nullable=False),
         sa.Column("owner_id", sa.BigInteger(), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
+        ),
         sa.PrimaryKeyConstraint("channel_id"),
     )
-    op.create_index("ix_temporary_voice_channels_guild_id", "temporary_voice_channels", ["guild_id"], unique=False)
+    op.create_index(
+        "ix_temporary_voice_channels_guild_id",
+        "temporary_voice_channels",
+        ["guild_id"],
+        unique=False,
+    )
     op.create_table(
         "reputation_events",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
@@ -83,18 +103,32 @@ def upgrade() -> None:
         sa.Column("actor_id", sa.BigInteger(), nullable=True),
         sa.Column("source_ref", sa.String(length=200), nullable=True),
         sa.Column("metadata_json", sa.JSON(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index("ix_reputation_events_guild_id", "reputation_events", ["guild_id"], unique=False)
+    op.create_index(
+        "ix_reputation_events_guild_id", "reputation_events", ["guild_id"], unique=False
+    )
     op.create_index("ix_reputation_events_user_id", "reputation_events", ["user_id"], unique=False)
-    op.create_index("ix_reputation_events_created_at", "reputation_events", ["created_at"], unique=False)
+    op.create_index(
+        "ix_reputation_events_created_at", "reputation_events", ["created_at"], unique=False
+    )
     op.create_table(
         "reputation_totals",
         sa.Column("guild_id", sa.BigInteger(), nullable=False),
         sa.Column("user_id", sa.BigInteger(), nullable=False),
         sa.Column("total_points", sa.Integer(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
+        ),
         sa.PrimaryKeyConstraint("guild_id", "user_id"),
     )
     op.create_table(
@@ -107,7 +141,12 @@ def upgrade() -> None:
         sa.Column("solved_by", sa.BigInteger(), nullable=False),
         sa.Column("question_title", sa.String(length=200), nullable=False),
         sa.Column("answer_excerpt", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
+        ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("guild_id", "thread_id", name="uq_solution_guild_thread"),
     )
@@ -155,7 +194,12 @@ def upgrade() -> None:
         sa.Column("user_id", sa.BigInteger(), nullable=False),
         sa.Column("answer_index", sa.Integer(), nullable=False),
         sa.Column("is_correct", sa.Boolean(), nullable=False),
-        sa.Column("answered_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
+        sa.Column(
+            "answered_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
+        ),
         sa.ForeignKeyConstraint(["session_id"], ["quiz_sessions.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("session_id", "user_id", name="uq_quiz_answer_user"),
@@ -171,12 +215,23 @@ def upgrade() -> None:
         sa.Column("channel_id", sa.BigInteger(), nullable=False),
         sa.Column("message_id", sa.BigInteger(), nullable=True),
         sa.Column("question", sa.Text(), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index("ix_anonymous_questions_guild_id", "anonymous_questions", ["guild_id"], unique=False)
-    op.create_index("ix_anonymous_questions_user_id", "anonymous_questions", ["user_id"], unique=False)
-    op.create_index("ix_anonymous_questions_created_at", "anonymous_questions", ["created_at"], unique=False)
+    op.create_index(
+        "ix_anonymous_questions_guild_id", "anonymous_questions", ["guild_id"], unique=False
+    )
+    op.create_index(
+        "ix_anonymous_questions_user_id", "anonymous_questions", ["user_id"], unique=False
+    )
+    op.create_index(
+        "ix_anonymous_questions_created_at", "anonymous_questions", ["created_at"], unique=False
+    )
     op.create_table(
         "pomodoro_sessions",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
@@ -185,10 +240,17 @@ def upgrade() -> None:
         sa.Column("channel_id", sa.BigInteger(), nullable=False),
         sa.Column("ends_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("status", sa.String(length=24), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index("ix_pomodoro_sessions_guild_id", "pomodoro_sessions", ["guild_id"], unique=False)
+    op.create_index(
+        "ix_pomodoro_sessions_guild_id", "pomodoro_sessions", ["guild_id"], unique=False
+    )
     op.create_index("ix_pomodoro_sessions_user_id", "pomodoro_sessions", ["user_id"], unique=False)
     op.create_index("ix_pomodoro_sessions_status", "pomodoro_sessions", ["status"], unique=False)
     op.create_table(
@@ -203,7 +265,9 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("guild_id", "url", name="uq_ai_source_guild_url"),
     )
-    op.create_index("ix_ai_update_sources_guild_id", "ai_update_sources", ["guild_id"], unique=False)
+    op.create_index(
+        "ix_ai_update_sources_guild_id", "ai_update_sources", ["guild_id"], unique=False
+    )
     op.create_table(
         "ai_update_items",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
@@ -214,7 +278,12 @@ def upgrade() -> None:
         sa.Column("url", sa.String(length=1500), nullable=False),
         sa.Column("published_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("posted_message_id", sa.BigInteger(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
+        ),
         sa.ForeignKeyConstraint(["source_id"], ["ai_update_sources.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("guild_id", "dedupe_key", name="uq_ai_item_guild_key"),
@@ -228,11 +297,20 @@ def upgrade() -> None:
         sa.Column("thread_id", sa.BigInteger(), nullable=False),
         sa.Column("posted_message_id", sa.BigInteger(), nullable=True),
         sa.Column("selected_by", sa.BigInteger(), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index("ix_showcase_spotlights_guild_id", "showcase_spotlights", ["guild_id"], unique=False)
-    op.create_index("ix_showcase_spotlights_thread_id", "showcase_spotlights", ["thread_id"], unique=False)
+    op.create_index(
+        "ix_showcase_spotlights_guild_id", "showcase_spotlights", ["guild_id"], unique=False
+    )
+    op.create_index(
+        "ix_showcase_spotlights_thread_id", "showcase_spotlights", ["thread_id"], unique=False
+    )
 
 
 def downgrade() -> None:

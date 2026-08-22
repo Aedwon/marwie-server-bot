@@ -61,7 +61,11 @@ class VoiceCog(commands.Cog):
     ) -> None:
         guild = member.guild
         category_resource = await self.resources.get(guild.id, ResourceKey.TEMP_VOICE_CATEGORY)
-        category = guild.get_channel(category_resource.discord_id) if category_resource else creator.category
+        category = (
+            guild.get_channel(category_resource.discord_id)
+            if category_resource
+            else creator.category
+        )
         if category is not None and not isinstance(category, discord.CategoryChannel):
             category = creator.category
         name = f"{member.display_name}'s workspace"[:100]
@@ -101,7 +105,10 @@ class VoiceCog(commands.Cog):
             channel = guild.get_channel(record.channel_id)
             if channel is None:
                 await self.repository.remove(record.channel_id)
-            elif isinstance(channel, (discord.VoiceChannel, discord.StageChannel)) and not channel.members:
+            elif (
+                isinstance(channel, (discord.VoiceChannel, discord.StageChannel))
+                and not channel.members
+            ):
                 await self._delete_temp(channel)
 
     @reconcile.before_loop

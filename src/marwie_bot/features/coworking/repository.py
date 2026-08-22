@@ -68,11 +68,15 @@ class SQLAlchemyPomodoroRepository:
     async def due(self, now: datetime) -> list[PomodoroRecord]:
         async with self.database.session() as session:
             models = (
-                await session.execute(
-                    select(PomodoroSession).where(
-                        PomodoroSession.status == "active",
-                        PomodoroSession.ends_at <= now,
+                (
+                    await session.execute(
+                        select(PomodoroSession).where(
+                            PomodoroSession.status == "active",
+                            PomodoroSession.ends_at <= now,
+                        )
                     )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
             return [self._record(model) for model in models]

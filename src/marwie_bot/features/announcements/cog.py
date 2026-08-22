@@ -121,9 +121,7 @@ class AnnouncementPreviewView(discord.ui.View):
             embed=_embed(self.draft),
             allowed_mentions=discord.AllowedMentions.none(),
         )
-        await interaction.response.edit_message(
-            content="Announcement sent.", embed=None, view=None
-        )
+        await interaction.response.edit_message(content="Announcement sent.", embed=None, view=None)
 
     @discord.ui.button(label="Edit", style=discord.ButtonStyle.secondary)
     async def edit(
@@ -158,16 +156,12 @@ class AnnouncementsCog(commands.Cog):
                 "This command only works in a server.", ephemeral=True
             )
             return
-        if not await self.features.is_enabled(
-            interaction.guild_id, FeatureName.ANNOUNCEMENTS
-        ):
+        if not await self.features.is_enabled(interaction.guild_id, FeatureName.ANNOUNCEMENTS):
             await interaction.response.send_message(
                 "Announcements are disabled here.", ephemeral=True
             )
             return
-        await interaction.response.send_modal(
-            AnnouncementModal(channel, interaction.user.id)
-        )
+        await interaction.response.send_modal(AnnouncementModal(channel, interaction.user.id))
 
 
 async def setup(bot: commands.Bot) -> None:

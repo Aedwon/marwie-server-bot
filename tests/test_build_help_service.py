@@ -9,9 +9,7 @@ class FakeSolutions:
     def __init__(self) -> None:
         self.record: SolutionRecord | None = None
 
-    async def get_for_thread(
-        self, guild_id: int, thread_id: int
-    ) -> SolutionRecord | None:
+    async def get_for_thread(self, guild_id: int, thread_id: int) -> SolutionRecord | None:
         return self.record
 
     async def create(

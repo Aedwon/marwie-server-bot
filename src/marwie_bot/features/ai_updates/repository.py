@@ -47,9 +47,7 @@ class SQLAlchemyAIUpdatesRepository:
             model.last_checked_at,
         )
 
-    async def add_source(
-        self, guild_id: int, name: str, url: str, category: str
-    ) -> AISourceRecord:
+    async def add_source(self, guild_id: int, name: str, url: str, category: str) -> AISourceRecord:
         async with self.database.session() as session:
             existing = (
                 await session.execute(
@@ -107,9 +105,7 @@ class SQLAlchemyAIUpdatesRepository:
                 model.last_checked_at = datetime.now(UTC)
                 await session.commit()
 
-    async def store_item(
-        self, source: AISourceRecord, item: FeedItem
-    ) -> AIItemRecord | None:
+    async def store_item(self, source: AISourceRecord, item: FeedItem) -> AIItemRecord | None:
         async with self.database.session() as session:
             existing = (
                 await session.execute(

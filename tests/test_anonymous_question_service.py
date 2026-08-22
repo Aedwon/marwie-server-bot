@@ -16,9 +16,7 @@ class FakeAnonymousQuestions:
     async def count_since(self, guild_id: int, user_id: int, since: datetime) -> int:
         return self.count
 
-    async def latest_for_user(
-        self, guild_id: int, user_id: int
-    ) -> AnonymousQuestionRecord | None:
+    async def latest_for_user(self, guild_id: int, user_id: int) -> AnonymousQuestionRecord | None:
         return self.latest
 
     async def create(
@@ -29,15 +27,11 @@ class FakeAnonymousQuestions:
         )
         return self.latest
 
-    async def attach_message(
-        self, question_id: int, message_id: int
-    ) -> AnonymousQuestionRecord:
+    async def attach_message(self, question_id: int, message_id: int) -> AnonymousQuestionRecord:
         assert self.latest is not None
         return self.latest
 
-    async def get(
-        self, guild_id: int, question_id: int
-    ) -> AnonymousQuestionRecord | None:
+    async def get(self, guild_id: int, question_id: int) -> AnonymousQuestionRecord | None:
         return self.latest
 
 

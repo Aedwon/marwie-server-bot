@@ -47,10 +47,7 @@ class ReputationCog(commands.Cog):
     async def _thresholds(self, guild_id: int) -> dict[str, int]:
         config = await self.features.get(guild_id, FeatureName.REPUTATION)
         values = config.config.get("thresholds", {})
-        return {
-            key: int(values.get(key, default))
-            for key, default in _DEFAULT_THRESHOLDS.items()
-        }
+        return {key: int(values.get(key, default)) for key, default in _DEFAULT_THRESHOLDS.items()}
 
     async def _sync_roles(self, member: discord.Member, points: int) -> None:
         thresholds = await self._thresholds(member.guild.id)
@@ -64,9 +61,7 @@ class ReputationCog(commands.Cog):
                 if should_have and role not in member.roles:
                     await member.add_roles(role, reason="Reputation threshold reached")
                 elif not should_have and role in member.roles:
-                    await member.remove_roles(
-                        role, reason="Reputation threshold no longer met"
-                    )
+                    await member.remove_roles(role, reason="Reputation threshold no longer met")
             except discord.HTTPException as error:
                 logger.warning(
                     "Could not sync reputation role %s for %s: %s",
@@ -83,9 +78,7 @@ class ReputationCog(commands.Cog):
             or not isinstance(message.author, discord.Member)
         ):
             return
-        if not await self.features.is_enabled(
-            message.guild.id, FeatureName.REPUTATION
-        ):
+        if not await self.features.is_enabled(message.guild.id, FeatureName.REPUTATION):
             return
         points = await self.service.award_message(
             message.guild.id, message.author.id, f"message:{message.id}"
@@ -107,10 +100,7 @@ class ReputationCog(commands.Cog):
             if profile.points >= thresholds[name]:
                 tier = name.title()
         counts = (
-            "\n".join(
-                f"`{kind}`: {count}"
-                for kind, count in sorted(profile.event_counts.items())
-            )
+            "\n".join(f"`{kind}`: {count}" for kind, count in sorted(profile.event_counts.items()))
             or "No reputation events yet."
         )
         embed = discord.Embed(title=title, color=discord.Color.blurple())
@@ -138,9 +128,7 @@ class ReputationCog(commands.Cog):
             )
             return
         profile = await self.service.profile(interaction.guild.id, target.id)
-        await self._send_profile(
-            interaction, target, profile, title="Reputation rank"
-        )
+        await self._send_profile(interaction, target, profile, title="Reputation rank")
 
     @app_commands.command(name="profile", description="Show a member's community profile.")
     @app_commands.guild_only()
@@ -159,13 +147,9 @@ class ReputationCog(commands.Cog):
             )
             return
         profile = await self.service.profile(interaction.guild.id, target.id)
-        await self._send_profile(
-            interaction, target, profile, title="Community profile"
-        )
+        await self._send_profile(interaction, target, profile, title="Community profile")
 
-    @app_commands.command(
-        name="leaderboard", description="Show the reputation leaderboard."
-    )
+    @app_commands.command(name="leaderboard", description="Show the reputation leaderboard.")
     @app_commands.guild_only()
     async def leaderboard(self, interaction: discord.Interaction) -> None:
         if interaction.guild_id is None:
@@ -178,13 +162,9 @@ class ReputationCog(commands.Cog):
             f"**{index}.** <@{user_id}> — {points} points"
             for index, (user_id, points) in enumerate(rows, 1)
         ]
-        await interaction.response.send_message(
-            "\n".join(lines) or "No reputation data yet."
-        )
+        await interaction.response.send_message("\n".join(lines) or "No reputation data yet.")
 
-    @reputation_group.command(
-        name="award", description="Award or deduct reputation points."
-    )
+    @reputation_group.command(name="award", description="Award or deduct reputation points.")
     @app_commands.checks.has_permissions(manage_guild=True)
     async def award(
         self,
@@ -249,9 +229,7 @@ class ReputationCog(commands.Cog):
                 }
             },
         )
-        await interaction.response.send_message(
-            "Reputation thresholds updated.", ephemeral=True
-        )
+        await interaction.response.send_message("Reputation thresholds updated.", ephemeral=True)
 
 
 async def setup(bot: commands.Bot) -> None:

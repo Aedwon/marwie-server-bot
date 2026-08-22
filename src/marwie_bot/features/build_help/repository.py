@@ -25,9 +25,7 @@ class SQLAlchemySolutionRepository:
             model.created_at,
         )
 
-    async def get_for_thread(
-        self, guild_id: int, thread_id: int
-    ) -> SolutionRecord | None:
+    async def get_for_thread(self, guild_id: int, thread_id: int) -> SolutionRecord | None:
         async with self.database.session() as session:
             statement = select(ForumSolution).where(
                 ForumSolution.guild_id == guild_id,
@@ -64,10 +62,12 @@ class SQLAlchemySolutionRepository:
     async def solved_thread_ids(self, guild_id: int) -> set[int]:
         async with self.database.session() as session:
             rows = (
-                await session.execute(
-                    select(ForumSolution.thread_id).where(
-                        ForumSolution.guild_id == guild_id
+                (
+                    await session.execute(
+                        select(ForumSolution.thread_id).where(ForumSolution.guild_id == guild_id)
                     )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
             return {int(value) for value in rows}

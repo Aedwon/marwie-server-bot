@@ -44,13 +44,9 @@ class QuizRepository(Protocol):
         self, guild_id: int, channel_id: int, question_id: int, closes_at: datetime
     ) -> QuizSessionRecord: ...
 
-    async def attach_message(
-        self, session_id: int, message_id: int
-    ) -> QuizSessionRecord: ...
+    async def attach_message(self, session_id: int, message_id: int) -> QuizSessionRecord: ...
 
-    async def get_session_by_message(
-        self, message_id: int
-    ) -> QuizSessionRecord | None: ...
+    async def get_session_by_message(self, message_id: int) -> QuizSessionRecord | None: ...
 
     async def get_question(self, question_id: int) -> QuizQuestionRecord | None: ...
 
@@ -107,12 +103,8 @@ class QuizService:
         question = await self.repository.random_question(guild_id)
         if question is None:
             return None
-        closes_at = datetime.now(UTC) + timedelta(
-            minutes=max(5, min(duration_minutes, 1440))
-        )
-        session = await self.repository.create_session(
-            guild_id, channel_id, question.id, closes_at
-        )
+        closes_at = datetime.now(UTC) + timedelta(minutes=max(5, min(duration_minutes, 1440)))
+        session = await self.repository.create_session(guild_id, channel_id, question.id, closes_at)
         return session, question
 
     async def record_answer(
@@ -127,7 +119,5 @@ class QuizService:
         if question is None:
             return None
         correct = answer_index == question.correct_index
-        stored = await self.repository.answer(
-            session.id, guild_id, user_id, answer_index, correct
-        )
+        stored = await self.repository.answer(session.id, guild_id, user_id, answer_index, correct)
         return stored, correct

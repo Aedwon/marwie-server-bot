@@ -24,12 +24,16 @@ class SQLAlchemyShowcaseRepository:
     async def spotlighted_thread_ids(self, guild_id: int) -> set[int]:
         async with self.database.session() as session:
             rows = (
-                await session.execute(
-                    select(ShowcaseSpotlight.thread_id).where(
-                        ShowcaseSpotlight.guild_id == guild_id
+                (
+                    await session.execute(
+                        select(ShowcaseSpotlight.thread_id).where(
+                            ShowcaseSpotlight.guild_id == guild_id
+                        )
                     )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
             return {int(value) for value in rows}
 
     async def create(

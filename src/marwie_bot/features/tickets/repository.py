@@ -15,7 +15,9 @@ class SQLAlchemyTicketRepository:
 
     @staticmethod
     def _type_record(model: TicketType) -> TicketTypeRecord:
-        return TicketTypeRecord(model.guild_id, model.key, model.label, model.description, model.enabled)
+        return TicketTypeRecord(
+            model.guild_id, model.key, model.label, model.description, model.enabled
+        )
 
     @staticmethod
     def _record(model: Ticket) -> TicketRecord:

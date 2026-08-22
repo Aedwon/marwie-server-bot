@@ -57,7 +57,9 @@ class TicketsCog(commands.Cog):
         description: app_commands.Range[str, 1, 200],
     ) -> None:
         if interaction.guild_id is None:
-            await interaction.response.send_message("This command only works in a server.", ephemeral=True)
+            await interaction.response.send_message(
+                "This command only works in a server.", ephemeral=True
+            )
             return
         try:
             record = await self.tickets.upsert_type(
@@ -66,7 +68,9 @@ class TicketsCog(commands.Cog):
         except ValueError as error:
             await interaction.response.send_message(str(error), ephemeral=True)
             return
-        await interaction.response.send_message(f"Ticket type `{record.key}` is ready.", ephemeral=True)
+        await interaction.response.send_message(
+            f"Ticket type `{record.key}` is ready.", ephemeral=True
+        )
 
     @ticket_type_group.command(name="disable", description="Disable a ticket type.")
     @app_commands.checks.has_permissions(administrator=True)
@@ -74,7 +78,9 @@ class TicketsCog(commands.Cog):
         self, interaction: discord.Interaction, key: app_commands.Range[str, 1, 32]
     ) -> None:
         if interaction.guild_id is None:
-            await interaction.response.send_message("This command only works in a server.", ephemeral=True)
+            await interaction.response.send_message(
+                "This command only works in a server.", ephemeral=True
+            )
             return
         changed = await self.tickets.disable_type(interaction.guild_id, str(key))
         message = f"Disabled `{key}`." if changed else f"No ticket type `{key}` was found."
@@ -84,20 +90,26 @@ class TicketsCog(commands.Cog):
     @app_commands.checks.has_permissions(administrator=True)
     async def ticket_type_list(self, interaction: discord.Interaction) -> None:
         if interaction.guild_id is None:
-            await interaction.response.send_message("This command only works in a server.", ephemeral=True)
+            await interaction.response.send_message(
+                "This command only works in a server.", ephemeral=True
+            )
             return
         items = await self.tickets.list_types(interaction.guild_id)
-        text = "\n".join(
-            f"`{item.key}` · **{item.label}** — {item.description}" for item in items
+        text = "\n".join(f"`{item.key}` · **{item.label}** — {item.description}" for item in items)
+        await interaction.response.send_message(
+            text or "No ticket types configured.", ephemeral=True
         )
-        await interaction.response.send_message(text or "No ticket types configured.", ephemeral=True)
 
-    @ticket_panel_group.command(name="post", description="Post or refresh the configured ticket panel.")
+    @ticket_panel_group.command(
+        name="post", description="Post or refresh the configured ticket panel."
+    )
     @app_commands.checks.has_permissions(administrator=True)
     async def post_panel(self, interaction: discord.Interaction) -> None:
         guild = interaction.guild
         if guild is None:
-            await interaction.response.send_message("This command only works in a server.", ephemeral=True)
+            await interaction.response.send_message(
+                "This command only works in a server.", ephemeral=True
+            )
             return
         resource = await self.resources.get(guild.id, ResourceKey.TICKET_PANEL)
         channel = guild.get_channel(resource.discord_id) if resource else None
@@ -118,12 +130,16 @@ class TicketsCog(commands.Cog):
             color=discord.Color.blurple(),
         )
         await channel.send(embed=embed, view=TicketPanelView())
-        await interaction.response.send_message(f"Ticket panel posted in {channel.mention}.", ephemeral=True)
+        await interaction.response.send_message(
+            f"Ticket panel posted in {channel.mention}.", ephemeral=True
+        )
 
     async def show_ticket_types(self, interaction: discord.Interaction) -> None:
         guild = interaction.guild
         if guild is None:
-            await interaction.response.send_message("Tickets only work in a server.", ephemeral=True)
+            await interaction.response.send_message(
+                "Tickets only work in a server.", ephemeral=True
+            )
             return
         if not await self.features.is_enabled(guild.id, FeatureName.TICKETS):
             await interaction.response.send_message("Tickets are disabled here.", ephemeral=True)
@@ -139,7 +155,9 @@ class TicketsCog(commands.Cog):
             await self.tickets.mark_deleted(active.channel_id)
         types = await self.tickets.list_types(guild.id)
         if not types:
-            await interaction.response.send_message("No ticket types are available.", ephemeral=True)
+            await interaction.response.send_message(
+                "No ticket types are available.", ephemeral=True
+            )
             return
         await interaction.response.send_message(
             "Choose a ticket type:", view=TicketTypeView(types), ephemeral=True
@@ -148,7 +166,9 @@ class TicketsCog(commands.Cog):
     async def create_ticket(self, interaction: discord.Interaction, type_key: str) -> None:
         guild = interaction.guild
         if guild is None or not isinstance(interaction.user, discord.Member):
-            await interaction.response.send_message("Tickets only work in a server.", ephemeral=True)
+            await interaction.response.send_message(
+                "Tickets only work in a server.", ephemeral=True
+            )
             return
         active = await self.tickets.active_for_user(guild.id, interaction.user.id)
         if active is not None:
@@ -162,7 +182,9 @@ class TicketsCog(commands.Cog):
         types = {item.key: item for item in await self.tickets.list_types(guild.id)}
         ticket_type = types.get(type_key)
         if ticket_type is None:
-            await interaction.response.send_message("That ticket type is no longer available.", ephemeral=True)
+            await interaction.response.send_message(
+                "That ticket type is no longer available.", ephemeral=True
+            )
             return
         category_resource = await self.resources.get(guild.id, ResourceKey.TICKET_CATEGORY)
         category = guild.get_channel(category_resource.discord_id) if category_resource else None
@@ -173,7 +195,9 @@ class TicketsCog(commands.Cog):
             return
         await interaction.response.defer(ephemeral=True)
         safe_name = f"ticket-{interaction.user.name}".lower().replace(" ", "-")[:90]
-        channel = await guild.create_text_channel(safe_name, category=category, reason="Ticket opened")
+        channel = await guild.create_text_channel(
+            safe_name, category=category, reason="Ticket opened"
+        )
         await channel.set_permissions(
             interaction.user,
             view_channel=True,
@@ -276,9 +300,7 @@ class TicketsCog(commands.Cog):
         if not isinstance(channel, discord.TextChannel):
             return
         file = discord.File(io.BytesIO(transcript), filename=f"ticket-{ticket.id}.txt")
-        embed = discord.Embed(
-            title=f"Ticket #{ticket.id} closed", color=discord.Color.dark_grey()
-        )
+        embed = discord.Embed(title=f"Ticket #{ticket.id} closed", color=discord.Color.dark_grey())
         embed.add_field(name="Opener", value=f"<@{ticket.opener_id}>")
         embed.add_field(name="Type", value=ticket.type_key)
         embed.add_field(name="Closed by", value=f"<@{ticket.closed_by}>")

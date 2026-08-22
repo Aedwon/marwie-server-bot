@@ -44,9 +44,7 @@ class TicketRepository(Protocol):
 
     async def disable_type(self, guild_id: int, key: str) -> bool: ...
 
-    async def find_active_for_user(
-        self, guild_id: int, opener_id: int
-    ) -> TicketRecord | None: ...
+    async def find_active_for_user(self, guild_id: int, opener_id: int) -> TicketRecord | None: ...
 
     async def create(
         self, guild_id: int, channel_id: int, opener_id: int, type_key: str

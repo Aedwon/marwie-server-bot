@@ -45,9 +45,7 @@ class QuizzesCog(commands.Cog):
         self.reputation = reputation
         self.resources = resources
         self.features = features
-        if getattr(
-            getattr(bot, "settings", None), "enable_background_tasks", True
-        ):
+        if getattr(getattr(bot, "settings", None), "enable_background_tasks", True):
             self.scheduler.start()
 
     def cog_unload(self) -> None:
@@ -85,9 +83,7 @@ class QuizzesCog(commands.Cog):
             f"Quiz question `#{record.id}` added.", ephemeral=True
         )
 
-    @quiz_group.command(
-        name="start", description="Start a quiz in the configured channel."
-    )
+    @quiz_group.command(name="start", description="Start a quiz in the configured channel.")
     @app_commands.default_permissions(manage_guild=True)
     @app_commands.checks.has_permissions(manage_guild=True)
     async def start(self, interaction: discord.Interaction) -> None:
@@ -111,9 +107,7 @@ class QuizzesCog(commands.Cog):
             ephemeral=True,
         )
 
-    @quiz_group.command(
-        name="schedule", description="Set automatic quiz interval in hours."
-    )
+    @quiz_group.command(name="schedule", description="Set automatic quiz interval in hours.")
     @app_commands.default_permissions(manage_guild=True)
     @app_commands.checks.has_permissions(manage_guild=True)
     async def schedule(
@@ -136,9 +130,7 @@ class QuizzesCog(commands.Cog):
             ephemeral=True,
         )
 
-    async def _quiz_channel(
-        self, guild: discord.Guild
-    ) -> discord.TextChannel | None:
+    async def _quiz_channel(self, guild: discord.Guild) -> discord.TextChannel | None:
         resource = await self.resources.get(guild.id, ResourceKey.QUIZ_CHANNEL)
         channel = guild.get_channel(resource.discord_id) if resource else None
         return channel if isinstance(channel, discord.TextChannel) else None
@@ -156,13 +148,10 @@ class QuizzesCog(commands.Cog):
         return message
 
     @staticmethod
-    def _question_embed(
-        question: QuizQuestionRecord, closes_at: datetime
-    ) -> discord.Embed:
+    def _question_embed(question: QuizQuestionRecord, closes_at: datetime) -> discord.Embed:
         labels = "ABCD"
         options = "\n".join(
-            f"**{labels[index]}.** {value}"
-            for index, value in enumerate(question.options)
+            f"**{labels[index]}.** {value}" for index, value in enumerate(question.options)
         )
         embed = discord.Embed(
             title=f"{question.category} quiz",
@@ -172,13 +161,9 @@ class QuizzesCog(commands.Cog):
         embed.set_footer(text=f"Answers close at {closes_at.isoformat()}")
         return embed
 
-    async def answer_quiz(
-        self, interaction: discord.Interaction, answer_index: int
-    ) -> None:
+    async def answer_quiz(self, interaction: discord.Interaction, answer_index: int) -> None:
         if interaction.guild_id is None or interaction.message is None:
-            await interaction.response.send_message(
-                "This quiz is unavailable.", ephemeral=True
-            )
+            await interaction.response.send_message("This quiz is unavailable.", ephemeral=True)
             return
         result = await self.service.record_answer(
             interaction.message.id,
@@ -216,9 +201,7 @@ class QuizzesCog(commands.Cog):
             channel = guild.get_channel(session.channel_id) if guild else None
             question = await self.repository.get_question(session.question_id)
             if isinstance(channel, discord.TextChannel) and question is not None:
-                explanation = (
-                    f"\n{question.explanation}" if question.explanation else ""
-                )
+                explanation = f"\n{question.explanation}" if question.explanation else ""
                 await channel.send(
                     f"Quiz closed. {correct}/{total} correct. "
                     f"Answer: **{'ABCD'[question.correct_index]}**.{explanation}"
@@ -260,6 +243,4 @@ async def setup(bot: commands.Bot) -> None:
     resources = ResourceService(SQLAlchemyResourceRepository(database))
     features = FeatureConfigService(SQLAlchemyFeatureConfigRepository(database))
     bot.add_view(QuizAnswerView())
-    await bot.add_cog(
-        QuizzesCog(bot, service, repository, reputation, resources, features)
-    )
+    await bot.add_cog(QuizzesCog(bot, service, repository, reputation, resources, features))

@@ -21,7 +21,9 @@ logger = logging.getLogger(__name__)
 
 
 class CoworkingCog(commands.Cog):
-    pomodoro_group = app_commands.Group(name="pomodoro", description="Run a focused coworking timer.", guild_only=True)
+    pomodoro_group = app_commands.Group(
+        name="pomodoro", description="Run a focused coworking timer.", guild_only=True
+    )
 
     def __init__(
         self,
@@ -49,10 +51,14 @@ class CoworkingCog(commands.Cog):
         minutes: app_commands.Range[int, 5, 180] = 25,
     ) -> None:
         if interaction.guild_id is None or interaction.channel_id is None:
-            await interaction.response.send_message("This command only works in a server channel.", ephemeral=True)
+            await interaction.response.send_message(
+                "This command only works in a server channel.", ephemeral=True
+            )
             return
         if not await self.features.is_enabled(interaction.guild_id, FeatureName.COWORKING):
-            await interaction.response.send_message("Coworking utilities are disabled here.", ephemeral=True)
+            await interaction.response.send_message(
+                "Coworking utilities are disabled here.", ephemeral=True
+            )
             return
         try:
             record = await self.service.start(
@@ -68,11 +74,15 @@ class CoworkingCog(commands.Cog):
     @pomodoro_group.command(name="status", description="Show your active focus timer.")
     async def pomodoro_status(self, interaction: discord.Interaction) -> None:
         if interaction.guild_id is None:
-            await interaction.response.send_message("This command only works in a server.", ephemeral=True)
+            await interaction.response.send_message(
+                "This command only works in a server.", ephemeral=True
+            )
             return
         record = await self.service.active(interaction.guild_id, interaction.user.id)
         if record is None:
-            await interaction.response.send_message("You do not have an active Pomodoro session.", ephemeral=True)
+            await interaction.response.send_message(
+                "You do not have an active Pomodoro session.", ephemeral=True
+            )
             return
         await interaction.response.send_message(
             f"Your focus session ends <t:{int(record.ends_at.timestamp())}:R>.", ephemeral=True
@@ -81,7 +91,9 @@ class CoworkingCog(commands.Cog):
     @pomodoro_group.command(name="stop", description="Stop your active focus timer.")
     async def pomodoro_stop(self, interaction: discord.Interaction) -> None:
         if interaction.guild_id is None:
-            await interaction.response.send_message("This command only works in a server.", ephemeral=True)
+            await interaction.response.send_message(
+                "This command only works in a server.", ephemeral=True
+            )
             return
         record = await self.service.stop(interaction.guild_id, interaction.user.id)
         await interaction.response.send_message(
@@ -100,12 +112,16 @@ class CoworkingCog(commands.Cog):
     ) -> None:
         guild = interaction.guild
         if guild is None:
-            await interaction.response.send_message("This command only works in a server.", ephemeral=True)
+            await interaction.response.send_message(
+                "This command only works in a server.", ephemeral=True
+            )
             return
         resource = await self.resources.get(guild.id, ResourceKey.COLLAB_LFG)
         channel = guild.get_channel(resource.discord_id) if resource else None
         if not isinstance(channel, discord.TextChannel):
-            await interaction.response.send_message("The collaboration channel is not configured.", ephemeral=True)
+            await interaction.response.send_message(
+                "The collaboration channel is not configured.", ephemeral=True
+            )
             return
         embed = discord.Embed(title=str(project), color=discord.Color.blurple())
         embed.add_field(name="Builder", value=interaction.user.mention, inline=True)
@@ -113,7 +129,9 @@ class CoworkingCog(commands.Cog):
         if link:
             embed.add_field(name="Project link", value=str(link), inline=False)
         message = await channel.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
-        await interaction.response.send_message(f"Collaboration post created: {message.jump_url}", ephemeral=True)
+        await interaction.response.send_message(
+            f"Collaboration post created: {message.jump_url}", ephemeral=True
+        )
 
     @tasks.loop(minutes=1)
     async def timer_loop(self) -> None:

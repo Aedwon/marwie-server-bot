@@ -15,9 +15,7 @@ class QuizAnswerView(discord.ui.View):
             else None
         )
         if cog is None or not hasattr(cog, "answer_quiz"):
-            await interaction.response.send_message(
-                "Quiz service is unavailable.", ephemeral=True
-            )
+            await interaction.response.send_message("Quiz service is unavailable.", ephemeral=True)
             return
         await cog.answer_quiz(interaction, index)
 

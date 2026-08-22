@@ -40,8 +40,12 @@ class ShowcaseCog(commands.Cog):
         forum_resource = await self.resources.get(guild.id, ResourceKey.SHOWCASE_FORUM)
         destination_resource = await self.resources.get(guild.id, ResourceKey.APP_OF_WEEK)
         forum = guild.get_channel(forum_resource.discord_id) if forum_resource else None
-        destination = guild.get_channel(destination_resource.discord_id) if destination_resource else None
-        if not isinstance(forum, discord.ForumChannel) or not isinstance(destination, discord.TextChannel):
+        destination = (
+            guild.get_channel(destination_resource.discord_id) if destination_resource else None
+        )
+        if not isinstance(forum, discord.ForumChannel) or not isinstance(
+            destination, discord.TextChannel
+        ):
             return None
         return forum, destination
 
@@ -70,16 +74,18 @@ class ShowcaseCog(commands.Cog):
         await self.repository.create(guild.id, thread.id, selected_by, message.id)
         return message
 
-    @app_commands.command(name="app-of-week", description="Spotlight a showcase thread as App of the Week.")
+    @app_commands.command(
+        name="app-of-week", description="Spotlight a showcase thread as App of the Week."
+    )
     @app_commands.default_permissions(manage_guild=True)
     @app_commands.checks.has_permissions(manage_guild=True)
     @app_commands.guild_only()
-    async def app_of_week(
-        self, interaction: discord.Interaction, thread: discord.Thread
-    ) -> None:
+    async def app_of_week(self, interaction: discord.Interaction, thread: discord.Thread) -> None:
         guild = interaction.guild
         if guild is None:
-            await interaction.response.send_message("This command only works in a server.", ephemeral=True)
+            await interaction.response.send_message(
+                "This command only works in a server.", ephemeral=True
+            )
             return
         message = await self._post_spotlight(guild, thread, interaction.user.id)
         if message is None:
@@ -91,7 +97,9 @@ class ShowcaseCog(commands.Cog):
         await self.features.update_config(
             guild.id, FeatureName.SHOWCASE, {"last_posted_at": datetime.now(UTC).isoformat()}
         )
-        await interaction.response.send_message(f"App of the Week posted: {message.jump_url}", ephemeral=True)
+        await interaction.response.send_message(
+            f"App of the Week posted: {message.jump_url}", ephemeral=True
+        )
 
     @tasks.loop(hours=12)
     async def weekly_loop(self) -> None:
@@ -113,7 +121,9 @@ class ShowcaseCog(commands.Cog):
             if not candidates:
                 continue
             candidate = max(candidates, key=lambda thread: thread.message_count or 0)
-            message = await self._post_spotlight(guild, candidate, self.bot.user.id if self.bot.user else 0)
+            message = await self._post_spotlight(
+                guild, candidate, self.bot.user.id if self.bot.user else 0
+            )
             if message is not None:
                 await self.features.update_config(
                     guild.id, FeatureName.SHOWCASE, {"last_posted_at": now.isoformat()}

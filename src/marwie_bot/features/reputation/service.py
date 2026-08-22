@@ -53,9 +53,7 @@ class ReputationService:
         source_ref: str | None = None,
     ) -> int:
         if points == 0 or points < -1000 or points > 1000:
-            raise ValueError(
-                "Reputation points must be between -1000 and 1000 and cannot be zero."
-            )
+            raise ValueError("Reputation points must be between -1000 and 1000 and cannot be zero.")
         normalized_kind = kind.strip().lower().replace(" ", "_")[:50]
         if not normalized_kind:
             raise ValueError("A reputation event kind is required.")
@@ -63,13 +61,9 @@ class ReputationService:
             guild_id, user_id, normalized_kind, points, actor_id, source_ref
         )
 
-    async def award_message(
-        self, guild_id: int, user_id: int, source_ref: str
-    ) -> int | None:
+    async def award_message(self, guild_id: int, user_id: int, source_ref: str) -> int | None:
         since = datetime.now(UTC) - timedelta(minutes=10)
-        if await self.repository.has_recent_event(
-            guild_id, user_id, "community_message", since
-        ):
+        if await self.repository.has_recent_event(guild_id, user_id, "community_message", since):
             return None
         return await self.award(
             guild_id,
@@ -88,7 +82,5 @@ class ReputationService:
             event_counts=await self.repository.event_counts(guild_id, user_id),
         )
 
-    async def leaderboard(
-        self, guild_id: int, limit: int = 10
-    ) -> list[tuple[int, int]]:
+    async def leaderboard(self, guild_id: int, limit: int = 10) -> list[tuple[int, int]]:
         return await self.repository.leaderboard(guild_id, max(1, min(limit, 25)))

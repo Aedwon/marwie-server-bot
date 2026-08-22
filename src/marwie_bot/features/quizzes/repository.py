@@ -95,23 +95,17 @@ class SQLAlchemyQuizRepository:
             await session.refresh(model)
             return self._session(model)
 
-    async def attach_message(
-        self, session_id: int, message_id: int
-    ) -> QuizSessionRecord:
+    async def attach_message(self, session_id: int, message_id: int) -> QuizSessionRecord:
         async with self.database.session() as session:
             model = await session.get(QuizSession, session_id)
             if model is None:
-                raise RuntimeError(
-                    "Quiz session disappeared before message attachment"
-                )
+                raise RuntimeError("Quiz session disappeared before message attachment")
             model.message_id = message_id
             await session.commit()
             await session.refresh(model)
             return self._session(model)
 
-    async def get_session_by_message(
-        self, message_id: int
-    ) -> QuizSessionRecord | None:
+    async def get_session_by_message(self, message_id: int) -> QuizSessionRecord | None:
         async with self.database.session() as session:
             model = (
                 await session.execute(
@@ -159,12 +153,16 @@ class SQLAlchemyQuizRepository:
     async def due_sessions(self, now: datetime) -> list[QuizSessionRecord]:
         async with self.database.session() as session:
             models = (
-                await session.execute(
-                    select(QuizSession).where(
-                        QuizSession.status == "open", QuizSession.closes_at <= now
+                (
+                    await session.execute(
+                        select(QuizSession).where(
+                            QuizSession.status == "open", QuizSession.closes_at <= now
+                        )
                     )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
             return [self._session(model) for model in models]
 
     async def close_session(self, session_id: int) -> tuple[int, int]:
@@ -177,9 +175,7 @@ class SQLAlchemyQuizRepository:
             total = int(
                 (
                     await session.execute(
-                        select(func.count(QuizAnswer.id)).where(
-                            QuizAnswer.session_id == session_id
-                        )
+                        select(func.count(QuizAnswer.id)).where(QuizAnswer.session_id == session_id)
                     )
                 ).scalar_one()
             )

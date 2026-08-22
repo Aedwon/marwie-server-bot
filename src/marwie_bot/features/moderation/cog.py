@@ -47,10 +47,14 @@ class ModerationCog(commands.Cog):
         guild = interaction.guild
         moderator = interaction.user
         if guild is None or not isinstance(moderator, discord.Member):
-            await interaction.response.send_message("This command only works in a server.", ephemeral=True)
+            await interaction.response.send_message(
+                "This command only works in a server.", ephemeral=True
+            )
             return None
         if not await self.features.is_enabled(guild.id, FeatureName.MODERATION):
-            await interaction.response.send_message("Moderation commands are disabled here.", ephemeral=True)
+            await interaction.response.send_message(
+                "Moderation commands are disabled here.", ephemeral=True
+            )
             return None
         bot_member = guild.me
         if bot_member is None:
@@ -124,7 +128,9 @@ class ModerationCog(commands.Cog):
         case = await self._record_and_log(guild, "warn", member.id, moderator.id, str(reason))
         dm_sent = await self._notify_member(member, guild.name, case)
         suffix = "DM sent." if dm_sent else "DM unavailable."
-        await interaction.followup.send(f"Warning recorded as case `#{case.id}`. {suffix}", ephemeral=True)
+        await interaction.followup.send(
+            f"Warning recorded as case `#{case.id}`. {suffix}", ephemeral=True
+        )
 
     @app_commands.command(name="timeout", description="Temporarily timeout a member.")
     @app_commands.default_permissions(moderate_members=True)
@@ -193,7 +199,9 @@ class ModerationCog(commands.Cog):
             0, guild.id, "ban", member.id, moderator.id, str(reason), datetime.now(UTC)
         )
         await self._notify_member(member, guild.name, pending)
-        await guild.ban(member, reason=str(reason), delete_message_seconds=int(delete_message_seconds))
+        await guild.ban(
+            member, reason=str(reason), delete_message_seconds=int(delete_message_seconds)
+        )
         case = await self._record_and_log(guild, "ban", member.id, moderator.id, str(reason))
         await interaction.followup.send(f"Member banned. Case `#{case.id}`.", ephemeral=True)
 
@@ -209,11 +217,15 @@ class ModerationCog(commands.Cog):
     ) -> None:
         guild = interaction.guild
         if guild is None:
-            await interaction.response.send_message("This command only works in a server.", ephemeral=True)
+            await interaction.response.send_message(
+                "This command only works in a server.", ephemeral=True
+            )
             return
         bot_member = guild.me
         if bot_member is None or not bot_member.guild_permissions.ban_members:
-            await interaction.response.send_message("I am missing the `ban_members` permission.", ephemeral=True)
+            await interaction.response.send_message(
+                "I am missing the `ban_members` permission.", ephemeral=True
+            )
             return
         try:
             target_id = int(user_id)
@@ -225,7 +237,9 @@ class ModerationCog(commands.Cog):
         await interaction.response.defer(ephemeral=True)
         user = await self.bot.fetch_user(target_id)
         await guild.unban(user, reason=str(reason))
-        case = await self._record_and_log(guild, "unban", target_id, interaction.user.id, str(reason))
+        case = await self._record_and_log(
+            guild, "unban", target_id, interaction.user.id, str(reason)
+        )
         await interaction.followup.send(f"User unbanned. Case `#{case.id}`.", ephemeral=True)
 
     @app_commands.command(name="history", description="View a member's moderation history.")
@@ -235,7 +249,9 @@ class ModerationCog(commands.Cog):
     async def history(self, interaction: discord.Interaction, member: discord.Member) -> None:
         guild = interaction.guild
         if guild is None:
-            await interaction.response.send_message("This command only works in a server.", ephemeral=True)
+            await interaction.response.send_message(
+                "This command only works in a server.", ephemeral=True
+            )
             return
         cases = await self.moderation.history(guild.id, member.id, limit=10)
         if not cases:
@@ -249,7 +265,9 @@ class ModerationCog(commands.Cog):
         for case in cases:
             reason = case.reason if len(case.reason) <= 700 else f"{case.reason[:697]}..."
             expiry = (
-                f"\n**Expires:** <t:{int(case.expires_at.timestamp())}:R>" if case.expires_at else ""
+                f"\n**Expires:** <t:{int(case.expires_at.timestamp())}:R>"
+                if case.expires_at
+                else ""
             )
             embed.add_field(
                 name=f"Case #{case.id} · {case.action}",

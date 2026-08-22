@@ -58,13 +58,17 @@ class AnalyticsCog(commands.Cog):
         channel = guild.get_channel(resource.discord_id) if resource else None
         return channel if isinstance(channel, discord.TextChannel) else None
 
-    @app_commands.command(name="analytics", description="Show the previous 7 days of aggregate bot activity.")
+    @app_commands.command(
+        name="analytics", description="Show the previous 7 days of aggregate bot activity."
+    )
     @app_commands.default_permissions(manage_guild=True)
     @app_commands.checks.has_permissions(manage_guild=True)
     @app_commands.guild_only()
     async def analytics_command(self, interaction: discord.Interaction) -> None:
         if interaction.guild_id is None:
-            await interaction.response.send_message("This command only works in a server.", ephemeral=True)
+            await interaction.response.send_message(
+                "This command only works in a server.", ephemeral=True
+            )
             return
         report = await self.analytics.weekly(interaction.guild_id)
         await interaction.response.send_message(embed=self._embed(report), ephemeral=True)

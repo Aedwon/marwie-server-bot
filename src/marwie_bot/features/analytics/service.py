@@ -36,6 +36,7 @@ class AnalyticsService:
         current = now or datetime.now(UTC)
         since = current - timedelta(days=7)
         async with self.database.session() as session:
+
             async def count(model: type, *conditions: object) -> int:
                 statement = select(func.count()).select_from(model).where(*conditions)
                 return int((await session.execute(statement)).scalar_one())
@@ -45,9 +46,7 @@ class AnalyticsService:
                 ModerationCase.guild_id == guild_id,
                 ModerationCase.created_at >= since,
             )
-            opened = await count(
-                Ticket, Ticket.guild_id == guild_id, Ticket.created_at >= since
-            )
+            opened = await count(Ticket, Ticket.guild_id == guild_id, Ticket.created_at >= since)
             closed = await count(
                 Ticket,
                 Ticket.guild_id == guild_id,

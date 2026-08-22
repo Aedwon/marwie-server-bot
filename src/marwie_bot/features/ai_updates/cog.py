@@ -63,11 +63,15 @@ class AIUpdatesCog(commands.Cog):
         category: app_commands.Range[str, 1, 50],
     ) -> None:
         if interaction.guild_id is None:
-            await interaction.response.send_message("This command only works in a server.", ephemeral=True)
+            await interaction.response.send_message(
+                "This command only works in a server.", ephemeral=True
+            )
             return
         parsed = urlparse(str(url))
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-            await interaction.response.send_message("Source URL must be HTTP or HTTPS.", ephemeral=True)
+            await interaction.response.send_message(
+                "Source URL must be HTTP or HTTPS.", ephemeral=True
+            )
             return
         source = await self.repository.add_source(
             interaction.guild_id, str(name).strip(), str(url).strip(), str(category).strip()
@@ -80,14 +84,18 @@ class AIUpdatesCog(commands.Cog):
     @app_commands.checks.has_permissions(manage_guild=True)
     async def list_sources(self, interaction: discord.Interaction) -> None:
         if interaction.guild_id is None:
-            await interaction.response.send_message("This command only works in a server.", ephemeral=True)
+            await interaction.response.send_message(
+                "This command only works in a server.", ephemeral=True
+            )
             return
         sources = await self.repository.list_sources(interaction.guild_id)
         lines = [
             f"`#{item.id}` **{item.name}** · `{item.category}` · {'on' if item.enabled else 'off'}\n{item.url}"
             for item in sources
         ]
-        await interaction.response.send_message("\n".join(lines) or "No AI update sources configured.", ephemeral=True)
+        await interaction.response.send_message(
+            "\n".join(lines) or "No AI update sources configured.", ephemeral=True
+        )
 
     @ai_source_group.command(name="disable", description="Disable an AI update source by ID.")
     @app_commands.checks.has_permissions(manage_guild=True)
@@ -95,7 +103,9 @@ class AIUpdatesCog(commands.Cog):
         self, interaction: discord.Interaction, source_id: app_commands.Range[int, 1]
     ) -> None:
         if interaction.guild_id is None:
-            await interaction.response.send_message("This command only works in a server.", ephemeral=True)
+            await interaction.response.send_message(
+                "This command only works in a server.", ephemeral=True
+            )
             return
         changed = await self.repository.disable_source(interaction.guild_id, int(source_id))
         await interaction.response.send_message(
@@ -107,20 +117,26 @@ class AIUpdatesCog(commands.Cog):
     async def poll_now(self, interaction: discord.Interaction) -> None:
         guild = interaction.guild
         if guild is None:
-            await interaction.response.send_message("This command only works in a server.", ephemeral=True)
+            await interaction.response.send_message(
+                "This command only works in a server.", ephemeral=True
+            )
             return
         await interaction.response.defer(ephemeral=True)
         posted = 0
         for source in await self.repository.list_sources(guild.id, enabled_only=True):
             posted += await self._poll_source(source)
-        await interaction.followup.send(f"AI source poll complete. Posted {posted} new item(s).", ephemeral=True)
+        await interaction.followup.send(
+            f"AI source poll complete. Posted {posted} new item(s).", ephemeral=True
+        )
 
     async def _poll_source(self, source: AISourceRecord) -> int:
         guild = self.bot.get_guild(source.guild_id)
         if guild is None or not await self.features.is_enabled(guild.id, FeatureName.AI_UPDATES):
             return 0
         destination_resource = await self.resources.get(guild.id, ResourceKey.AI_UPDATES)
-        destination = guild.get_channel(destination_resource.discord_id) if destination_resource else None
+        destination = (
+            guild.get_channel(destination_resource.discord_id) if destination_resource else None
+        )
         if not isinstance(destination, discord.TextChannel) or self.http is None:
             return 0
         try:

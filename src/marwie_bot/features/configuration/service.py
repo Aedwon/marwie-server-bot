@@ -86,9 +86,7 @@ class ResourceService:
         channel_id: int,
         updated_by: int,
     ) -> GuildResourceRecord:
-        return await self.set_resource(
-            guild_id, key, ResourceType.CHANNEL, channel_id, updated_by
-        )
+        return await self.set_resource(guild_id, key, ResourceType.CHANNEL, channel_id, updated_by)
 
 
 class FeatureConfigService:
