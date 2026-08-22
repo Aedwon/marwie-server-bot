@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     command_guild_id: int | None = None
     sync_commands: bool = True
+    enable_message_content: bool = False
+    enable_background_tasks: bool = True
 
     @field_validator("log_level")
     @classmethod

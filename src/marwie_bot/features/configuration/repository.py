@@ -1,11 +1,19 @@
 from __future__ import annotations
 
+from typing import Any
+
 from sqlalchemy import select
 
-from marwie_bot.config.resources import ResourceKey, ResourceType
-from marwie_bot.db.models import Guild, GuildResource
+from marwie_bot.config.resources import FeatureName, ResourceKey, ResourceType
+from marwie_bot.db.models import FeatureFlag, Guild, GuildResource
 from marwie_bot.db.session import Database
-from marwie_bot.features.configuration.service import GuildResourceRecord
+from marwie_bot.features.configuration.service import FeatureConfigRecord, GuildResourceRecord
+
+
+async def _ensure_guild(session: Any, guild_id: int) -> None:
+    if await session.get(Guild, guild_id) is None:
+        session.add(Guild(guild_id=guild_id))
+        await session.flush()
 
 
 class SQLAlchemyResourceRepository:
@@ -50,10 +58,7 @@ class SQLAlchemyResourceRepository:
         updated_by: int,
     ) -> GuildResourceRecord:
         async with self.database.session() as session:
-            guild = await session.get(Guild, guild_id)
-            if guild is None:
-                session.add(Guild(guild_id=guild_id))
-
+            await _ensure_guild(session, guild_id)
             statement = select(GuildResource).where(
                 GuildResource.guild_id == guild_id,
                 GuildResource.key == key.value,
@@ -72,7 +77,58 @@ class SQLAlchemyResourceRepository:
                 model.resource_type = resource_type.value
                 model.discord_id = discord_id
                 model.updated_by = updated_by
+            await session.commit()
+            await session.refresh(model)
+            return self._record(model)
 
+
+class SQLAlchemyFeatureConfigRepository:
+    def __init__(self, database: Database) -> None:
+        self.database = database
+
+    @staticmethod
+    def _record(model: FeatureFlag) -> FeatureConfigRecord:
+        return FeatureConfigRecord(
+            guild_id=model.guild_id,
+            feature=FeatureName(model.feature),
+            enabled=model.enabled,
+            config=dict(model.config_json or {}),
+        )
+
+    async def get(self, guild_id: int, feature: FeatureName) -> FeatureConfigRecord | None:
+        async with self.database.session() as session:
+            statement = select(FeatureFlag).where(
+                FeatureFlag.guild_id == guild_id,
+                FeatureFlag.feature == feature.value,
+            )
+            model = (await session.execute(statement)).scalar_one_or_none()
+            return self._record(model) if model is not None else None
+
+    async def set(
+        self,
+        guild_id: int,
+        feature: FeatureName,
+        enabled: bool,
+        config: dict[str, Any],
+    ) -> FeatureConfigRecord:
+        async with self.database.session() as session:
+            await _ensure_guild(session, guild_id)
+            statement = select(FeatureFlag).where(
+                FeatureFlag.guild_id == guild_id,
+                FeatureFlag.feature == feature.value,
+            )
+            model = (await session.execute(statement)).scalar_one_or_none()
+            if model is None:
+                model = FeatureFlag(
+                    guild_id=guild_id,
+                    feature=feature.value,
+                    enabled=enabled,
+                    config_json=dict(config),
+                )
+                session.add(model)
+            else:
+                model.enabled = enabled
+                model.config_json = dict(config)
             await session.commit()
             await session.refresh(model)
             return self._record(model)
