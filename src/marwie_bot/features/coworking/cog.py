@@ -41,7 +41,7 @@ class CoworkingCog(commands.Cog):
         if getattr(getattr(bot, "settings", None), "enable_background_tasks", True):
             self.timer_loop.start()
 
-    def cog_unload(self) -> None:
+    async def cog_unload(self) -> None:
         self.timer_loop.cancel()
 
     @pomodoro_group.command(name="start", description="Start a focused work timer.")
