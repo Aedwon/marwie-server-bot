@@ -64,7 +64,9 @@ class TicketPanelView(discord.ui.View):
 
 
 class TicketCloseModal(discord.ui.Modal, title="Close ticket"):
-    reason = discord.ui.TextInput(label="Reason", max_length=1000, required=False)
+    reason = discord.ui.TextInput(  # type: ignore[var-annotated]
+        label="Reason", max_length=1000, required=False
+    )
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
         cog = (
