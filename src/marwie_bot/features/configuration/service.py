@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Protocol
 
-from marwie_bot.config.resources import FeatureName, RESOURCE_TYPES, ResourceKey, ResourceType
+from marwie_bot.config.resources import RESOURCE_TYPES, FeatureName, ResourceKey, ResourceType
 
 
 @dataclass(frozen=True, slots=True)
