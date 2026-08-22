@@ -34,8 +34,21 @@ jobs:
       - name: Lint
         run: ruff check .
 
-      - name: Check formatting
-        run: ruff format --check .
+      - name: Format working tree
+        run: ruff format .
+
+      - name: Upload formatted source
+        uses: actions/upload-artifact@v4
+        with:
+          name: ruff-formatted-source
+          path: |
+            migrations
+            src
+            tests
+          retention-days: 1
+
+      - name: Require committed formatting
+        run: git diff --exit-code
 
       - name: Type check
         run: mypy src tests
