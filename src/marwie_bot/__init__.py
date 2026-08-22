@@ -1,0 +1,1 @@
+"""Marwie Discord bot package."""
