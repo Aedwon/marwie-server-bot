@@ -57,12 +57,19 @@ class ModerationCog(commands.Cog):
             )
             return
 
+        guild_owner_id = guild.owner_id
+        if guild_owner_id is None:
+            await interaction.response.send_message(
+                "I could not resolve the server owner. Try again shortly.", ephemeral=True
+            )
+            return
+
         try:
             validate_moderation_target(
                 ModerationHierarchy(
                     caller_id=moderator.id,
                     target_id=member.id,
-                    guild_owner_id=guild.owner_id,
+                    guild_owner_id=guild_owner_id,
                     caller_top_role_position=moderator.top_role.position,
                     target_top_role_position=member.top_role.position,
                     bot_top_role_position=bot_member.top_role.position,
