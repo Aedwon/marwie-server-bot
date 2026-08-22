@@ -1,32 +1,19 @@
-# Milestone 1 progress
+# Complete bot V1 progress
 
-Plan: `docs/superpowers/plans/2026-08-22-foundation-moderation.md`
-Branch: `milestone-1-foundation`
+Active plan: `docs/superpowers/plans/2026-08-22-complete-bot-v1.md`
+Active spec: `docs/superpowers/specs/2026-08-22-complete-bot-v1.md`
+Branch: `complete-bot`
 
-- [x] Design review of reference repositories
-- [x] Foundation and moderation spec
-- [x] Foundation architecture decisions
-- [x] Implementation plan
-- [x] Task 1: Python toolchain and configuration
-- [x] Task 2: migrations and database lifecycle
-- [x] Task 3: guild resource configuration
-- [x] Task 4: moderation cases and hierarchy rules
-- [x] Task 5: Discord commands and lifecycle
-- [x] Task 6: deployment docs and CI
-- [x] Final verification
+Milestone 1 foundation is complete and verified.
 
-Local verification available in the execution environment:
-
-- `pytest -q`: 14 passed before the settings coverage test was added
-- `python -m compileall -q src tests migrations main.py`: exit 0
-- deliberate test-first check for `tests/test_database_url.py`: failed with `ModuleNotFoundError` when the implementation module was removed, as expected
-
-Clean-environment verification in GitHub Actions run `32549828916` on Python 3.12:
-
-- dependency installation: success
-- `pytest`: 16 passed
-- `ruff check .`: success
-- `ruff format --check .`: success
-- `mypy src tests`: success
-- `python -m compileall -q src tests`: success
-- `alembic upgrade head`: success against a clean SQLite database
+- [x] Complete V1 scope/spec
+- [x] Complete V1 implementation plan
+- [ ] Configuration and schema expansion
+- [ ] Moderation and message logs
+- [ ] Tickets and voice workspaces
+- [ ] Announcements and reputation
+- [ ] Solved build-help and quizzes
+- [ ] Anonymous questions, Pomodoro and LFG
+- [ ] AI updates, analytics, unanswered-help and App of the Week
+- [ ] Deployment documentation
+- [ ] Final clean-environment verification
