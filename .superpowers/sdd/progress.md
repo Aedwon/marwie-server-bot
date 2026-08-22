@@ -8,12 +8,12 @@ Milestone 1 foundation is complete and verified.
 
 - [x] Complete V1 scope/spec
 - [x] Complete V1 implementation plan
-- [ ] Configuration and schema expansion
-- [ ] Moderation and message logs
-- [ ] Tickets and voice workspaces
-- [ ] Announcements and reputation
-- [ ] Solved build-help and quizzes
-- [ ] Anonymous questions, Pomodoro and LFG
-- [ ] AI updates, analytics, unanswered-help and App of the Week
-- [ ] Deployment documentation
+- [x] Configuration and schema expansion
+- [x] Moderation and message logs
+- [x] Tickets and voice workspaces
+- [x] Announcements and reputation
+- [x] Solved build-help and quizzes
+- [x] Anonymous questions, Pomodoro and LFG
+- [x] AI updates, analytics, unanswered-help and App of the Week
+- [x] Deployment documentation
 - [ ] Final clean-environment verification
