@@ -21,34 +21,51 @@ class FakeQuiz:
         )
         self.answered = False
 
-    async def add_question(self, guild_id, category, prompt, options, correct_index, explanation):
+    async def add_question(
+        self,
+        guild_id: int,
+        category: str,
+        prompt: str,
+        options: tuple[str, str, str, str],
+        correct_index: int,
+        explanation: str | None,
+    ) -> QuizQuestionRecord:
         return self.question
 
-    async def random_question(self, guild_id):
+    async def random_question(self, guild_id: int) -> QuizQuestionRecord | None:
         return self.question
 
-    async def create_session(self, guild_id, channel_id, question_id, closes_at):
+    async def create_session(
+        self, guild_id: int, channel_id: int, question_id: int, closes_at: datetime
+    ) -> QuizSessionRecord:
         return self.session
 
-    async def attach_message(self, session_id, message_id):
+    async def attach_message(self, session_id: int, message_id: int) -> QuizSessionRecord:
         return self.session
 
-    async def get_session_by_message(self, message_id):
+    async def get_session_by_message(self, message_id: int) -> QuizSessionRecord | None:
         return self.session
 
-    async def get_question(self, question_id):
+    async def get_question(self, question_id: int) -> QuizQuestionRecord | None:
         return self.question
 
-    async def answer(self, session_id, guild_id, user_id, answer_index, correct):
+    async def answer(
+        self,
+        session_id: int,
+        guild_id: int,
+        user_id: int,
+        answer_index: int,
+        correct: bool,
+    ) -> bool:
         if self.answered:
             return False
         self.answered = True
         return True
 
-    async def due_sessions(self, now):
+    async def due_sessions(self, now: datetime) -> list[QuizSessionRecord]:
         return []
 
-    async def close_session(self, session_id):
+    async def close_session(self, session_id: int) -> tuple[int, int]:
         return (0, 0)
 
 
