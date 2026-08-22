@@ -35,7 +35,7 @@ class AnalyticsCog(commands.Cog):
         if getattr(getattr(bot, "settings", None), "enable_background_tasks", True):
             self.automation_loop.start()
 
-    def cog_unload(self) -> None:
+    async def cog_unload(self) -> None:
         self.automation_loop.cancel()
 
     @staticmethod
@@ -109,6 +109,7 @@ class AnalyticsCog(commands.Cog):
             thread
             for thread in forum.threads
             if thread.id not in solved
+            and thread.created_at is not None
             and thread.created_at <= cutoff
             and (thread.message_count or 0) <= 2
         ]
