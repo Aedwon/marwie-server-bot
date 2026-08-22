@@ -80,6 +80,7 @@ Expected: every command exits 0. CI runs the migration gate against a temporary 
 | `src/marwie_bot/shared/logging.py` | create | logging setup |
 | `src/marwie_bot/shared/permissions.py` | create | pure hierarchy validation |
 | `tests/test_database_url.py` | create | database URL tests |
+| `tests/test_settings.py` | create | runtime token settings tests |
 | `tests/test_permissions.py` | create | hierarchy tests |
 | `tests/test_resource_service.py` | create | resource service tests |
 | `tests/test_moderation_service.py` | create | moderation service tests |
@@ -96,9 +97,9 @@ Create the package metadata, runtime/development dependency lists, environment s
 
 ### Test first
 
-Write `tests/test_database_url.py` for SQLite, plain PostgreSQL, and already-normalized PostgreSQL URLs.
+Write `tests/test_database_url.py` for SQLite, plain PostgreSQL, and already-normalized PostgreSQL URLs. Add `tests/test_settings.py` to prove settings can be constructed without a token and that starting the runtime rejects a missing token.
 
-Expected first failure: the database helper does not exist.
+Expected first failure for the database helper: the database helper does not exist. The settings test is an explicit verification added after the first clean CI pass because the spec required proof of the runtime-token behavior and the original file table missed it.
 
 ### Implement
 
@@ -106,7 +107,7 @@ Add package metadata and typed settings. Keep the Discord token required only wh
 
 ### Verify
 
-Run the focused test and compile the new modules.
+Run the focused tests and compile the new modules.
 
 ## Task 2: Add migrations and database lifecycle
 
