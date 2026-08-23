@@ -125,7 +125,7 @@ Suggested resource mapping for the community layout:
 | `anon_questions` | channel that receives `/anonask` posts |
 | `analytics` | staff analytics/mod channel |
 | `showcase_forum` | `#showcase` forum |
-| `app_of_week` | `#app-of-the-week` |
+| `app_of_the_week` | `#app-of-the-week` |
 | `collab_lfg` | `#collab-lfg` |
 | `builder_role` | Builder role |
 | `contributor_role` | Contributor role |
