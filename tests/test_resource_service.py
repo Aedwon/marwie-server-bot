@@ -1,4 +1,4 @@
-from marwie_bot.config.resources import ResourceKey, ResourceType
+from marwie_bot.config.resources import RESOURCE_TYPES, ResourceKey, ResourceType
 from marwie_bot.features.configuration.service import GuildResourceRecord, ResourceService
 
 
@@ -50,3 +50,8 @@ async def test_resource_service_sets_and_reads_channel() -> None:
 async def test_resource_service_returns_none_for_missing_resource() -> None:
     service = ResourceService(FakeResourceRepository())
     assert await service.get(100, ResourceKey.MODERATION_LOG) is None
+
+
+def test_live_announcement_resource_types() -> None:
+    assert RESOURCE_TYPES[ResourceKey.LIVE_ANNOUNCEMENTS] is ResourceType.CHANNEL
+    assert RESOURCE_TYPES[ResourceKey.LIVE_PING_ROLE] is ResourceType.ROLE
