@@ -71,7 +71,7 @@
         <div class="plain-list">
           <div class="plain-item"><h3>Community members</h3><p>Open support tickets, check reputation, ask anonymous questions, use a focus timer, find collaborators, answer quizzes, and mark helpful build-help replies as solved.</p></div>
           <div class="plain-item"><h3>Moderators</h3><p>Handle tickets, warnings, timeouts, kicks, bans, moderation history, anonymous-question audits, and build-help moderation.</p></div>
-          <div class="plain-item"><h3>Admins and leads</h3><p>Connect channels and roles, configure tickets and reputation, add quizzes and AI feeds, publish announcements, and review analytics.</p></div>
+          <div class="plain-item"><h3>Admins and leads</h3><p>Connect channels and roles, configure tickets and reputation, add quizzes and AI feeds, publish announcements, configure Mar Wie’s TikTok Live notifications, and review analytics.</p></div>
         </div>
       </section>
 
@@ -89,7 +89,7 @@
 
       <section class="section" id="staff">
         <h2>Staff tools</h2>
-        <p class="intro">Discord permissions decide who can use these. The role name itself does not matter.</p>
+        <p class="intro">Discord permissions decide who can see most staff commands. Some commands add stricter runtime authorization; <code>/live</code>, for example, only publishes for Mar Wie’s configured Discord account.</p>
         <div class="command-list" id="staffCommands"></div>
       </section>
 
@@ -142,6 +142,7 @@
         <h2>Channel and role map</h2>
         <p class="intro">These names are suggestions. Rob-bot stores the Discord IDs you connect, so your server can use different names.</p>
         <div class="resource-list" id="resourceList"></div>
+        <div class="note"><strong>Live notifications</strong><p><code>live_announcements</code> is the preferred destination for <code>/live</code>. If it is not configured, Rob-bot falls back to the normal <code>announcements</code> resource. <code>live_ping_role</code> is optional, and Rob-bot never uses <code>@everyone</code> or <code>@here</code> for this feature.</p></div>
         <div class="note"><strong>Ticket privacy</strong><p>On the ticket category, deny <code>@everyone → View Channel</code>, then explicitly allow only the staff roles that should handle tickets. Rob-bot adds access for the member who opened each ticket.</p></div>
       </section>
 
@@ -163,6 +164,8 @@
           <div class="setting"><b><code>COMMAND_GUILD_ID</code></b><p>Your Discord server ID. It gives immediate guild-scoped command syncing during setup.</p></div>
           <div class="setting"><b><code>ENABLE_MESSAGE_CONTENT</code></b><p>Use <code>true</code> when Message Content is enabled in the Discord Developer Portal.</p></div>
           <div class="setting"><b><code>ENABLE_BACKGROUND_TASKS</code></b><p>Use <code>true</code> for quizzes, feeds, reports, App of the Week, voice cleanup, and Pomodoro completion.</p></div>
+          <div class="setting"><b><code>MAR_WIE_USER_ID</code></b><p>Authorizes <code>/live</code>. The current default is <code>703986808962285621</code>, so the host does not need this variable unless Mar Wie’s Discord account changes.</p></div>
+          <div class="setting"><b><code>MAR_WIE_TIKTOK_URL</code></b><p>Optional HTTPS <code>tiktok.com</code> URL. When set, <code>/live</code> includes a <strong>Watch on TikTok</strong> button. When unset, the announcement still posts without the button.</p></div>
           <div class="setting"><b><code>DATABASE_URL</code></b><p>Optional. Leave unset to use SQLite at <code>data/marwie.db</code>. PostgreSQL can be added later.</p></div>
         </div>
       </section>
@@ -177,6 +180,6 @@
     </article>
   </main>
 </div>
-<script src="/app.js?v=14" defer></script>
+<script src="/app.js?v=15" defer></script>
 </body>
 </html>
