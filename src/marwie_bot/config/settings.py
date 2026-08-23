@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from typing import Literal
+from urllib.parse import urlparse
 
 from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -23,11 +24,29 @@ class Settings(BaseSettings):
     sync_commands: bool = True
     enable_message_content: bool = False
     enable_background_tasks: bool = True
+    mar_wie_user_id: int = 703986808962285621
+    mar_wie_tiktok_url: str | None = None
 
     @field_validator("log_level")
     @classmethod
     def normalize_log_level(cls, value: str) -> str:
         return value.strip().upper()
+
+    @field_validator("mar_wie_tiktok_url")
+    @classmethod
+    def normalize_tiktok_url(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            return None
+        parsed = urlparse(normalized)
+        hostname = (parsed.hostname or "").lower()
+        if parsed.scheme != "https" or not (
+            hostname == "tiktok.com" or hostname.endswith(".tiktok.com")
+        ):
+            raise ValueError("MAR_WIE_TIKTOK_URL must be an https://tiktok.com URL")
+        return normalized
 
     def require_discord_token(self) -> str:
         if self.discord_token is None:

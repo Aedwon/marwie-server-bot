@@ -13,6 +13,8 @@ class ResourceKey(StrEnum):
     TEMP_VOICE_CATEGORY = "temp_voice_category"
     COWORKING_LOUNGE = "coworking_lounge"
     ANNOUNCEMENTS = "announcements"
+    LIVE_ANNOUNCEMENTS = "live_announcements"
+    LIVE_PING_ROLE = "live_ping_role"
     AI_UPDATES = "ai_updates"
     BUILD_HELP_FORUM = "build_help_forum"
     SOLVED_TAG = "solved_tag"
@@ -41,6 +43,7 @@ class FeatureName(StrEnum):
     TICKETS = "tickets"
     VOICE = "voice"
     ANNOUNCEMENTS = "announcements"
+    LIVE_ANNOUNCEMENTS = "live_announcements"
     REPUTATION = "reputation"
     BUILD_HELP = "build_help"
     QUIZZES = "quizzes"
@@ -61,6 +64,8 @@ RESOURCE_TYPES: dict[ResourceKey, ResourceType] = {
     ResourceKey.TEMP_VOICE_CATEGORY: ResourceType.CATEGORY,
     ResourceKey.COWORKING_LOUNGE: ResourceType.CHANNEL,
     ResourceKey.ANNOUNCEMENTS: ResourceType.CHANNEL,
+    ResourceKey.LIVE_ANNOUNCEMENTS: ResourceType.CHANNEL,
+    ResourceKey.LIVE_PING_ROLE: ResourceType.ROLE,
     ResourceKey.AI_UPDATES: ResourceType.CHANNEL,
     ResourceKey.BUILD_HELP_FORUM: ResourceType.CHANNEL,
     ResourceKey.SOLVED_TAG: ResourceType.FORUM_TAG,
