@@ -27,6 +27,7 @@ const staffCommands = [
   ['/anonwho','Authorized moderators can identify the sender of an anonymous question for moderation purposes.'],
   ['/ticket-type · /ticket-panel','Create ticket options and publish the panel. Ticket controls support claim, close, reopen, and transcripts.'],
   ['/announce','Write an announcement, preview it privately, then send or edit it.'],
+  ['/live [topic]','Post Mar Wie’s TikTok Live notification. Discord can hide this command from non-admins, and Rob-bot still checks Mar Wie’s exact Discord account before sending anything. The topic is optional.'],
   ['/reputation award · /reputation thresholds','Adjust reputation manually or change Builder, Contributor, and Mentor milestones.'],
   ['/quiz','Add questions, start a quiz manually, or choose the schedule.'],
   ['/ai-source','Add, list, disable, or manually test trusted RSS/Atom sources.'],
@@ -37,14 +38,14 @@ const staffCommands = [
 const steps = [
   ['Install Rob-bot','Install with the bot and applications.commands scopes, using the permissions listed in Roles and hierarchy.'],
   ['Choose Message Content','Leave Presence and Server Members off. Turn Message Content on if you want full logs, richer transcripts, solution excerpts, and message-based reputation context.'],
-  ['Add hosting settings','Set DISCORD_TOKEN, ENVIRONMENT=production, COMMAND_GUILD_ID, and ENABLE_MESSAGE_CONTENT=true when that intent is enabled. Leave DATABASE_URL unset to start with SQLite.'],
-  ['Create Discord resources','Create the channels, forums, categories, and roles below. Put protected admins above Rob-bot and roles Rob-bot manages below it.'],
-  ['Connect everything with /setup','Map text channels, voice channels, forums, categories, roles, and the Solved tag. Use /setup status to check for anything missing.'],
+  ['Add hosting settings','Set DISCORD_TOKEN, ENVIRONMENT=production, COMMAND_GUILD_ID, and ENABLE_MESSAGE_CONTENT=true when that intent is enabled. MAR_WIE_USER_ID already defaults to Mar Wie’s account. Add MAR_WIE_TIKTOK_URL if the live post should include a Watch on TikTok button.'],
+  ['Create Discord resources','Create the channels, forums, categories, and roles below. Include a live-announcements channel if you want TikTok Live posts separate from normal announcements, plus an optional opt-in Live Ping role.'],
+  ['Connect everything with /setup','Map text channels, voice channels, forums, categories, roles, and the Solved tag. Connect live_announcements with /setup text-channel and live_ping_role with /setup role if you use them. Use /setup status to check for anything missing.'],
   ['Set up tickets','Add ticket types, post the panel, then test create, claim, close, transcript, and reopen.'],
   ['Set up reputation and build-help','Connect Builder, Contributor, Mentor, build-help, and the Solved tag. Test marking a reply as solved.'],
   ['Add a quiz','Add one question and start it manually. If that works, set the schedule you want.'],
   ['Add AI feeds and community tools','Add only trusted feeds. Test a feed poll, anonymous question, Pomodoro timer, LFG post, and temporary voice room.'],
-  ['Review privacy and run a final check','Exclude private channels from message logging, turn off unused features, then smoke-test a ticket, a temporary voice room, a quiz, and one background feature.']
+  ['Review privacy and run a final check','Exclude private channels from message logging, turn off unused features, then smoke-test a ticket, a temporary voice room, a quiz, and Mar Wie’s /live command if live announcements are configured.']
 ];
 const resources = [
   ['Moderation log','#moderation-log — saved moderation cases'],
@@ -55,7 +56,9 @@ const resources = [
   ['Create Workspace','Create Workspace voice channel — temporary-room trigger'],
   ['Temporary voice','A voice category for generated rooms'],
   ['Coworking','Coworking Lounge — permanent voice room'],
-  ['Announcements','#announcements'],
+  ['Announcements','#announcements — normal server announcements and fallback destination for /live'],
+  ['Live announcements','#live-announcements — preferred destination for Mar Wie’s TikTok Live posts'],
+  ['Live Ping role','Optional opt-in role mentioned by /live. Rob-bot never uses @everyone or @here for this feature.'],
   ['AI updates','#ai-updates'],
   ['Build help','#build-help forum + Solved tag'],
   ['Quiz channel','A learning or quiz channel'],
@@ -72,6 +75,9 @@ const faq = [
   ['Edited or deleted messages show no text.','Enable Message Content in the Developer Portal and set ENABLE_MESSAGE_CONTENT=true on the host.'],
   ['Everyone can see a ticket.','Deny @everyone View Channel on the ticket category, then explicitly allow only the staff roles that should handle tickets.'],
   ['AI updates are not appearing.','Check the AI updates channel, background tasks, and source status. Staff can run /ai-source poll to test it.'],
+  ['Where does /live post?','Rob-bot uses the live_announcements text-channel resource first. If that is not configured or is stale, it falls back to the normal announcements resource. If neither is usable, Mar Wie gets an ephemeral setup error and nothing is posted.'],
+  ['Why can another admin see /live but not use it?','The command is administrator-visible by default, but only Mar Wie’s configured Discord user ID is authorized to publish a live notification. That second check is intentional.'],
+  ['Why is there no Watch on TikTok button?','Set MAR_WIE_TIKTOK_URL on the host to an HTTPS tiktok.com URL, then restart Rob-bot. The /live announcement still works without this variable; it simply omits the button.'],
   ['What happens if the host restarts?','Most state is saved. Rob-bot restores ticket and quiz controls, checks temporary voice rooms, resumes timers, and continues scheduled work.']
 ];
 
