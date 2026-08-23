@@ -2,7 +2,6 @@ import pytest
 
 from marwie_bot.config.settings import Settings
 
-
 MAR_WIE_USER_ID = 703986808962285621
 
 
