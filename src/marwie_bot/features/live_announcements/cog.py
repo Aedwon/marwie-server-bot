@@ -60,6 +60,14 @@ class LiveAnnouncementsCog(commands.Cog):
                 guild.id,
                 record.discord_id,
             )
+            return None
+        if role.is_default():
+            logger.warning(
+                "Live ping role cannot be @everyone guild_id=%s role_id=%s",
+                guild.id,
+                role.id,
+            )
+            return None
         return role
 
     @app_commands.command(name="live", description="Announce that Mar Wie is live on TikTok.")
@@ -83,9 +91,7 @@ class LiveAnnouncementsCog(commands.Cog):
                 guild.id,
                 interaction.user.id,
             )
-            await interaction.response.send_message(
-                "Only Mar Wie can use `/live`.", ephemeral=True
-            )
+            await interaction.response.send_message("Only Mar Wie can use `/live`.", ephemeral=True)
             return
 
         if not await self.features.is_enabled(guild.id, FeatureName.LIVE_ANNOUNCEMENTS):
@@ -125,9 +131,9 @@ class LiveAnnouncementsCog(commands.Cog):
         if role is not None:
             can_mention_role = role.mentionable
             if bot_member is not None:
-                can_mention_role = can_mention_role or channel.permissions_for(
-                    bot_member
-                ).mention_everyone
+                can_mention_role = (
+                    can_mention_role or channel.permissions_for(bot_member).mention_everyone
+                )
             if can_mention_role:
                 ping_content = role.mention
                 allowed_mentions = discord.AllowedMentions(
