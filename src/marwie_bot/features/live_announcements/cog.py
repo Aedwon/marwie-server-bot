@@ -145,13 +145,22 @@ class LiveAnnouncementsCog(commands.Cog):
             else:
                 ping_skipped = True
 
+        embed = build_live_embed(draft)
+        view = build_live_view(draft)
         try:
-            await channel.send(
-                content=ping_content,
-                embed=build_live_embed(draft),
-                view=build_live_view(draft),
-                allowed_mentions=allowed_mentions,
-            )
+            if view is None:
+                await channel.send(
+                    content=ping_content,
+                    embed=embed,
+                    allowed_mentions=allowed_mentions,
+                )
+            else:
+                await channel.send(
+                    content=ping_content,
+                    embed=embed,
+                    view=view,
+                    allowed_mentions=allowed_mentions,
+                )
         except (discord.Forbidden, discord.NotFound) as error:
             logger.error(
                 "Failed to send live announcement guild_id=%s channel_id=%s user_id=%s",
