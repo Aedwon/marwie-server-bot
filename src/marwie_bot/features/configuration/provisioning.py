@@ -54,7 +54,9 @@ class ProvisionResult:
 AUTO_SETUP_RESOURCES: tuple[ResourceBlueprint, ...] = (
     ResourceBlueprint(ResourceKey.TICKET_CATEGORY, ProvisionKind.CATEGORY, "TICKETS", private=True),
     ResourceBlueprint(ResourceKey.TEMP_VOICE_CATEGORY, ProvisionKind.CATEGORY, "WORKSPACES"),
-    ResourceBlueprint(ResourceKey.MODERATION_LOG, ProvisionKind.TEXT, "moderation-log", private=True),
+    ResourceBlueprint(
+        ResourceKey.MODERATION_LOG, ProvisionKind.TEXT, "moderation-log", private=True
+    ),
     ResourceBlueprint(ResourceKey.MESSAGE_LOG, ProvisionKind.TEXT, "bot-logs", private=True),
     ResourceBlueprint(ResourceKey.BOT_LOG, ProvisionKind.TEXT, "bot-logs", private=True),
     ResourceBlueprint(ResourceKey.TICKET_PANEL, ProvisionKind.TEXT, "ticket"),
@@ -238,7 +240,12 @@ class AutoSetupService:
         channel = guild.get_channel(discord_id)
         if isinstance(
             channel,
-            (discord.TextChannel, discord.VoiceChannel, discord.ForumChannel, discord.CategoryChannel),
+            (
+                discord.TextChannel,
+                discord.VoiceChannel,
+                discord.ForumChannel,
+                discord.CategoryChannel,
+            ),
         ) and self._matches_kind(channel, kind):
             return channel
         return None
