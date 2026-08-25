@@ -13,9 +13,8 @@ from marwie_bot.db.session import Database
 from marwie_bot.features.configuration.provisioning import (
     AutoSetupPlan,
     AutoSetupService,
-    DiscoveryAction,
     DiscordResource,
-    ProvisionKind,
+    DiscoveryAction,
     ProvisionResult,
 )
 from marwie_bot.features.configuration.repository import (
@@ -28,11 +27,7 @@ from marwie_bot.features.configuration.role_panel import (
 )
 from marwie_bot.features.configuration.service import FeatureConfigService, ResourceService
 from marwie_bot.shared.confirmations import confirmation_detail
-from marwie_bot.shared.errors import (
-    UserFacingCommandError,
-    build_failure_message,
-    describe_discord_failure,
-)
+from marwie_bot.shared.errors import build_failure_message
 
 logger = logging.getLogger(__name__)
 
