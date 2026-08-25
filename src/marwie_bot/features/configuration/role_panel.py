@@ -50,7 +50,7 @@ class LiveNotificationRoleView(discord.ui.View):
             bot_member is None
             or not bot_member.guild_permissions.manage_roles
             or role.managed
-            or not bot_member.top_role > role
+            or bot_member.top_role <= role
         ):
             await interaction.response.send_message(
                 "I cannot manage the Live Notifications role. Move my bot role above it and "
