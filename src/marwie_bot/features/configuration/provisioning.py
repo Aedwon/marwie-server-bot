@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -7,6 +8,9 @@ import discord
 
 from marwie_bot.config.resources import RESOURCE_TYPES, ResourceKey, ResourceType
 from marwie_bot.features.configuration.service import ResourceService
+from marwie_bot.shared.errors import UserFacingCommandError, describe_discord_failure
+
+logger = logging.getLogger(__name__)
 
 
 class ProvisionKind(StrEnum):
@@ -95,14 +99,43 @@ class AutoSetupService:
         results: list[ProvisionResult] = []
 
         for blueprint in AUTO_SETUP_RESOURCES:
-            resource, action = await self._ensure_resource(guild, blueprint, ensured)
-            ensured[blueprint.key] = resource
-            await self.resources.set_resource(
+            logger.info(
+                "Auto setup ensuring resource guild_id=%s key=%s kind=%s",
                 guild.id,
-                blueprint.key,
-                RESOURCE_TYPES[blueprint.key],
+                blueprint.key.value,
+                blueprint.kind.value,
+            )
+            try:
+                resource, action = await self._ensure_resource(guild, blueprint, ensured)
+                ensured[blueprint.key] = resource
+                await self.resources.set_resource(
+                    guild.id,
+                    blueprint.key,
+                    RESOURCE_TYPES[blueprint.key],
+                    resource.id,
+                    actor_id,
+                )
+            except discord.HTTPException as error:
+                logger.exception(
+                    "Auto setup Discord failure guild_id=%s key=%s",
+                    guild.id,
+                    blueprint.key.value,
+                )
+                message = describe_discord_failure(
+                    f"Could not configure `{blueprint.key.value}`",
+                    error,
+                )
+                raise UserFacingCommandError(
+                    f"{message} Setup stopped; resources configured earlier in this run are safe "
+                    "to reuse when you run `/setup auto` again."
+                ) from error
+
+            logger.info(
+                "Auto setup resolved resource guild_id=%s key=%s action=%s discord_id=%s",
+                guild.id,
+                blueprint.key.value,
+                action.value,
                 resource.id,
-                actor_id,
             )
             results.append(
                 ProvisionResult(
@@ -113,7 +146,29 @@ class AutoSetupService:
                 )
             )
 
-        solved = await self._ensure_solved_tag(guild, actor_id, ensured)
+        logger.info("Auto setup ensuring resource guild_id=%s key=solved_tag", guild.id)
+        try:
+            solved = await self._ensure_solved_tag(guild, actor_id, ensured)
+        except discord.HTTPException as error:
+            logger.exception("Auto setup Discord failure guild_id=%s key=solved_tag", guild.id)
+            message = describe_discord_failure("Could not configure `solved_tag`", error)
+            raise UserFacingCommandError(
+                f"{message} Setup stopped; resources configured earlier in this run are safe "
+                "to reuse when you run `/setup auto` again."
+            ) from error
+        except RuntimeError as error:
+            logger.exception("Auto setup internal failure guild_id=%s key=solved_tag", guild.id)
+            raise UserFacingCommandError(
+                "Could not finish configuring `solved_tag`. Earlier setup changes are safe to "
+                "reuse when you run `/setup auto` again."
+            ) from error
+
+        logger.info(
+            "Auto setup resolved resource guild_id=%s key=solved_tag action=%s discord_id=%s",
+            guild.id,
+            solved.action.value,
+            solved.discord_id,
+        )
         results.append(solved)
         return results
 
