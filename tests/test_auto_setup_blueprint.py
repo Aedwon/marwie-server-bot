@@ -1,7 +1,10 @@
+import pytest
+
 from marwie_bot.config.resources import ResourceKey
 from marwie_bot.features.configuration.provisioning import (
     AUTO_SETUP_RESOURCES,
     ProvisionKind,
+    require_auto_setup_community,
 )
 from marwie_bot.shared.confirmations import build_confirmation_prompt
 from marwie_bot.shared.errors import UserFacingCommandError, build_failure_message
@@ -27,6 +30,17 @@ def test_auto_setup_role_semantics_are_explicit() -> None:
     assert by_key[ResourceKey.MENTOR_ROLE].name == "Mentor"
     assert by_key[ResourceKey.LIVE_PING_ROLE].name == "Live Notifications"
     assert by_key[ResourceKey.ROLE_PANEL].name == "roles"
+
+
+def test_auto_setup_requires_community_before_forum_provisioning() -> None:
+    with pytest.raises(UserFacingCommandError, match="Community") as exc_info:
+        require_auto_setup_community([])
+
+    assert "No setup changes were made" in exc_info.value.user_message
+
+
+def test_auto_setup_accepts_community_enabled_guild() -> None:
+    require_auto_setup_community(["COMMUNITY", "NEWS"])
 
 
 def test_confirmation_prompt_includes_command_description_and_options() -> None:
