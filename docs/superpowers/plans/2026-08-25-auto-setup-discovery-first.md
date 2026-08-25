@@ -1,7 +1,7 @@
 # Discovery-first automatic setup implementation plan
 
 Date: 2026-08-25
-Status: In progress
+Status: Implementation complete; executable verification pending
 Spec: `docs/superpowers/specs/2026-08-25-auto-setup-discovery-first.md`
 
 ## Goal
@@ -14,7 +14,7 @@ Make `/setup auto` bind the existing server layout before it proposes any Discor
 | --- | --- |
 | `src/marwie_bot/features/configuration/provisioning.py` | Add name normalization, aliases, discovery plans, safe binding application, and mutation application. |
 | `src/marwie_bot/features/configuration/cog.py` | Replace direct ensure flow with discovery report plus a second mutation confirmation view. |
-| `tests/test_auto_setup_blueprint.py` | Cover normalization, aliases, oldest-match selection, manual-override preservation, and mutation-plan summaries. |
+| `tests/test_auto_setup_blueprint.py` | Cover normalization, aliases, server naming patterns, and mutation safety assumptions. |
 | `README.md` | Document discovery-first behavior and the second confirmation. |
 | `docs/superpowers/decisions/2026-08-25-auto-setup-discovery-first.md` | Record matching and safety decisions. |
 
@@ -29,9 +29,21 @@ Make `/setup auto` bind the existing server layout before it proposes any Discor
 7. Apply approved mutations and produce a final private report.
 8. Update tests/docs and review the branch diff.
 
+## Implemented behavior
+
+- Decorative emoji, case, spaces, underscores and hyphens are normalized for automatic matching.
+- Explicit aliases cover the current server terminology visible in the founder-provided screenshots, including `live`, `tickets`, `Create VC`, `Coworking`, `anonymous`, `general-questions` and `CO-WORKING SPACE`.
+- Existing matches are selected by expected Discord object type and oldest snowflake.
+- Unconfigured or stale mappings can be connected after the first approval without changing Discord objects.
+- Valid custom manual mappings outside the automatic alias set remain authoritative.
+- Creates, remaps, Solved-tag changes and role-panel refreshes are listed in a second invoker-only confirmation.
+- Declining the second prompt keeps safe discovery bindings but performs no listed Discord mutation.
+- `/setup auto` never automatically deletes, renames, moves or merges duplicate resources.
+- Community is required only when an approved mutation plan actually creates a Forum Channel.
+
 ## Verification
 
-Use the repository CI gates after merge:
+Use the repository CI gates after the user authorizes merge:
 
 ```bash
 pytest
@@ -42,4 +54,6 @@ python -m compileall -q src tests migrations main.py
 alembic upgrade head
 ```
 
-Do not restart Bot-Hosting until CI passes.
+The current execution container cannot resolve `github.com`, so it cannot clone the repository or install missing dependencies for local verification. Do not claim these gates passed locally.
+
+Do not restart Bot-Hosting until the merged `main` CI run passes.
