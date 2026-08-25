@@ -1,6 +1,6 @@
 # Operator-focused documentation homepage plan
 
-Status: in progress
+Status: complete
 Date: 2026-08-25
 Spec: `docs/superpowers/specs/2026-08-25-docs-site-operator-home.md`
 Decision: `docs/superpowers/decisions/2026-08-25-docs-site-operator-home.md`
@@ -31,16 +31,18 @@ Decision: `docs/superpowers/decisions/2026-08-25-docs-site-operator-home.md`
 
 ## Verification
 
-No bot runtime CI or Bot-Hosting restart is required.
+No bot runtime CI or Bot-Hosting restart was used.
 
-Static verification:
+Completed static verification:
 
-- homepage contains links to `/commands` and all new operator sections;
-- setup copy no longer tells admins to pre-create all channels before `/setup auto`;
-- `/setup auto` copy reflects discovery-first plus second mutation confirmation;
-- all DOM IDs referenced by `app.js` exist in `index.html`;
-- sidebar hash links resolve to existing section IDs;
-- JavaScript remains self-contained and uses no network requests;
-- compare against `rob-bot-docs-site` shows only planned docs-site/design-record files plus the already-in-scope command-manual website work.
+- the homepage links to `/commands` and exposes Start, Quick health check, First-time setup, On-duty playbooks, Permissions and hierarchy, Member-facing behavior, Automatic behavior, Channel and role map, Troubleshooting, and Hosting sections;
+- the old instruction to pre-create Discord resources before setup is gone;
+- onboarding now describes discovery-first `/setup auto`, clear-match binding, and the second mutation confirmation;
+- every DOM ID queried by `app.js` exists in `index.html`;
+- sidebar hash links resolve to existing static section IDs, and playbook deep links target IDs generated synchronously when `app.js` renders the playbook list;
+- `app.js` contains no `fetch()` or other network request;
+- theme persistence, mobile sidebar behavior, section tracking, and setup-checklist local persistence remain implemented;
+- comparison against `rob-bot-docs-site` is ahead-only and contains the operator-home files plus the already-in-scope command-manual website files and their design records;
+- no bot runtime files, database files, Bot-Hosting configuration, or GitHub Actions workflows changed.
 
-A production visual smoke test remains appropriate after `rob-bot-docs-site` is updated.
+Executable browser rendering was not run in this chat environment. A production visual smoke test remains appropriate after `rob-bot-docs-site` is updated.
