@@ -16,6 +16,8 @@ Every slash command requires one explicit confirmation before it runs.
 
 Only the member who invoked the command can approve or decline it. This applies to all slash commands, including read-only commands such as `/rank`, `/profile`, `/leaderboard` and `/setup status`.
 
+`/setup auto` has one additional safety layer. The first approval authorizes discovery and safe connection to existing Discord resources. If Rob-bot still needs to create something, remap an existing binding, add the `Solved` tag or refresh the self-role panel, it shows a second private confirmation listing the exact proposed changes before applying them.
+
 If an approved command fails unexpectedly, the private failure message includes a short error reference. Known safe operational failures, including automatic-setup Discord errors, also explain the failing resource or stage without exposing raw tracebacks or secrets.
 
 ## Commands
@@ -23,7 +25,7 @@ If an approved command fails unexpectedly, the private failure message includes 
 Core and setup:
 
 - `/ping`
-- `/setup auto` — recommended first-run setup; discovers, adopts or creates the standard Discord resources
+- `/setup auto` — recommended first-run setup; discovers and connects existing resources before proposing missing ones
 - `/setup role-panel` — post or refresh the member self-role panel
 - `/setup text-channel`, `/setup voice-channel`, `/setup forum`, `/setup category`, `/setup role`, `/setup solved-tag` — manual resource overrides
 - `/setup feature`, `/setup log-ignore`, `/setup status`
@@ -117,54 +119,66 @@ Administrator also covers these permissions and is the simplest configuration fo
 
 ## Recommended one-time server setup
 
-The standard automatic setup uses Discord Forum Channels for `build-help` and `showcase`, so **Discord Community must be enabled first**. In Discord, open **Server Settings → Enable Community** and complete Discord's Community setup before running `/setup auto`.
+`/setup auto` is discovery-first. It treats the existing Discord server layout as the source of truth before it proposes new infrastructure.
 
 The normal first-run path is:
 
-1. Enable Discord Community for the server.
-2. Start the bot and make sure its slash commands are synced.
-3. As a server Administrator, run `/setup auto`.
-4. Review the contextual confirmation, including the operations Rob-bot will perform, and press **Approve**.
-5. Review the private setup report. It states which resources were kept, adopted or created.
-6. Run `/setup status` any time you want to inspect the stored mappings.
+1. Start the bot and make sure its slash commands are synced.
+2. As a server Administrator, run `/setup auto`.
+3. Review the first contextual confirmation and press **Approve**. This authorizes Rob-bot to scan the existing server and safely save clear existing-resource bindings.
+4. Rob-bot searches existing text channels, voice channels, Forum Channels, categories and roles by normalized logical name.
+5. If every required resource can already be connected safely, setup completes without another prompt.
+6. If anything must be created or an existing valid automatic-style mapping must be changed, Rob-bot shows a second private confirmation listing every proposed mutation.
+7. Press **Approve changes** to apply only those listed mutations, or **Decline changes** to keep the safe existing-resource bindings without creating or modifying Discord resources.
+8. Run `/setup status` any time you want to inspect the stored mappings.
 
-`/setup auto` checks for Community before provisioning anything. If Community is disabled, it stops without making setup changes and tells the administrator what to enable.
+Automatic name matching is case-insensitive and ignores decorative emoji and separators. Spaces, underscores and hyphens are treated as equivalent separators. This means existing names such as `🚨-announcements`, `🤖-ai-updates`, `🤝-collab-lfg`, `📱-app-of-the-week` and `🤓-roles` match their logical resources without needing to be renamed.
 
-`/setup auto` is safe to run again. For each resource it first keeps a valid configured object, then looks for an existing object with the standard name, and only creates a new one when neither exists. It does not delete unrelated roles, channels, categories or forum tags, and it does not rename or move an existing resource simply to force the suggested layout.
+A small explicit alias list also recognizes the server's established terminology where the logical meaning is unambiguous. Examples include `🔴-live` for live announcements, `🎫-tickets` for the ticket panel, `Create VC` for the workspace creator, `Coworking` for the coworking lounge, `🎭-anonymous` for anonymous questions, `general-questions` for the build-help forum and `CO-WORKING SPACE` for the workspace category.
+
+Matching always requires the expected Discord object type. For example, a category named `SHOWCASE` cannot satisfy the `showcase_forum` resource because that resource requires a Forum Channel.
+
+When multiple existing resources match, Rob-bot prefers the oldest Discord object. This lets an older founder-created channel win over a newer duplicate created by an earlier auto-setup run. If Rob-bot is already bound to the newer automatic-style duplicate, changing that binding is shown as a remap in the second confirmation instead of happening silently.
+
+A valid manual mapping with a custom name outside the automatic alias set remains authoritative. `/setup auto` does not replace it just because another resource happens to resemble the standard layout.
+
+A Discord resource is created only when no suitable existing resource or intentional manual mapping can satisfy the requirement and the administrator explicitly approves the second mutation prompt. Discord Community is required only when that approved plan needs Rob-bot to **create** a Forum Channel. Existing Forum Channels can be discovered and connected even when Community is not enabled.
+
+`/setup auto` never deletes, renames, moves or merges existing channels, roles, categories, Forum Channels or voice channels. Duplicate resources left by an older setup run are not removed automatically.
 
 ### What `/setup auto` configures
 
-| Resource key | Standard Discord resource | Behavior |
+| Resource key | Standard Discord resource | Existing names also recognized |
 | --- | --- | --- |
-| `moderation_log` | `#moderation-log` | staff/private text channel |
-| `message_log` | `#bot-logs` | staff/private text channel |
+| `moderation_log` | `#moderation-log` | decorative-prefix variants |
+| `message_log` | `#bot-logs` | decorative-prefix variants |
 | `bot_log` | `#bot-logs` | intentionally shares the same channel as `message_log` |
-| `ticket_panel` | `#ticket` | public ticket-panel destination |
-| `ticket_category` | `TICKETS` category | private base category for created tickets |
-| `ticket_logs` | `#ticket-logs` | staff/private text channel |
-| `create_workspace_voice` | `Create Workspace` | voice channel under `WORKSPACES` |
-| `temp_voice_category` | `WORKSPACES` category | home for temporary workspace voice channels |
-| `coworking_lounge` | `Coworking Lounge` | permanent voice channel under `WORKSPACES` |
-| `announcements` | `#announcements` | general announcements |
-| `live_announcements` | `#live-announcements` | TikTok Live announcements |
-| `live_ping_role` | `Live Notifications` | member opt-in notification role |
-| `role_panel` | `#roles` | self-role button destination |
-| `ai_updates` | `#ai-updates` | AI feed posts |
-| `build_help_forum` | `#build-help` forum | build-help posts |
-| `solved_tag` | `Solved` tag | created/adopted inside `#build-help` |
-| `quiz_channel` | `#quizzes` | quiz delivery |
-| `anon_questions` | `#anonymous-questions` | `/anonask` destination |
-| `analytics` | `#analytics` | staff/private analytics channel |
-| `showcase_forum` | `#showcase` forum | community showcase |
-| `app_of_the_week` | `#app-of-the-week` | weekly spotlight |
-| `collab_lfg` | `#collab-lfg` | collaboration/LFG posts |
-| `builder_role` | `Builder` | reputation-earned role |
-| `contributor_role` | `Contributor` | reputation-earned role |
-| `mentor_role` | `Mentor` | reputation-earned role |
+| `ticket_panel` | `#ticket` | `tickets`, including `🎫-tickets` |
+| `ticket_category` | `TICKETS` category | decorative-prefix variants |
+| `ticket_logs` | `#ticket-logs` | decorative-prefix variants |
+| `create_workspace_voice` | `Create Workspace` | `Create VC` |
+| `temp_voice_category` | `WORKSPACES` category | `CO-WORKING SPACE`, `Coworking Space` |
+| `coworking_lounge` | `Coworking Lounge` | `Coworking` |
+| `announcements` | `#announcements` | decorative-prefix variants such as `🚨-announcements` |
+| `live_announcements` | `#live-announcements` | `live`, including `🔴-live` |
+| `live_ping_role` | `Live Notifications` | `live-notifications`, `live-ping` |
+| `role_panel` | `#roles` | decorative-prefix variants such as `🤓-roles` |
+| `ai_updates` | `#ai-updates` | decorative-prefix variants such as `🤖-ai-updates` |
+| `build_help_forum` | `#build-help` forum | `general-questions` Forum Channel |
+| `solved_tag` | `Solved` tag | existing `Solved` tag in the selected build-help forum |
+| `quiz_channel` | `#quizzes` | `quiz` |
+| `anon_questions` | `#anonymous-questions` | `anonymous`, including `🎭-anonymous` |
+| `analytics` | `#analytics` | decorative-prefix variants |
+| `showcase_forum` | `#showcase` forum | matching Forum Channel only; a `SHOWCASE` category does not count |
+| `app_of_the_week` | `#app-of-the-week` | decorative-prefix variants such as `📱-app-of-the-week` |
+| `collab_lfg` | `#collab-lfg` | decorative-prefix variants such as `🤝-collab-lfg` |
+| `builder_role` | `Builder` | case/separator-normalized match |
+| `contributor_role` | `Contributor` | case/separator-normalized match |
+| `mentor_role` | `Mentor` | case/separator-normalized match |
 
 New staff/private resources deny `@everyone` View Channel. Server Administrators can still access them. Add explicit channel/category overwrites for non-administrator staff roles if your moderation team uses narrower permissions.
 
-After provisioning resources, `/setup auto` also posts or refreshes the self-role panel in `#roles`.
+The Live Notifications self-role panel is posted or refreshed only as an explicitly listed mutation when setup changes the selected role-panel channel or Live Notifications role.
 
 ### Role behavior
 
@@ -175,7 +189,7 @@ The bot uses four standard community roles with different ownership rules:
 | `Builder` | automatic reputation threshold | granted at 50 points and removed if the member falls below the threshold |
 | `Contributor` | automatic reputation threshold | granted at 150 points and removed if the member falls below the threshold |
 | `Mentor` | automatic reputation threshold | granted at 500 points and removed if the member falls below the threshold |
-| `Live Notifications` | self-service button in `#roles` | member can add or remove it at any time; `/live` uses it for opt-in pings |
+| `Live Notifications` | self-service button in the configured roles channel | member can add or remove it at any time; `/live` uses it for opt-in pings |
 
 Builder, Contributor and Mentor are achievement roles and are **not** exposed on the self-role panel. Change their point requirements with `/reputation thresholds`.
 
@@ -183,7 +197,7 @@ Staff, moderator and administrator roles remain owned by the Discord server. Rob
 
 ### Manual setup and overrides
 
-The individual `/setup` commands still exist for custom server layouts. Use them after `/setup auto` when you want a feature to use a differently named or pre-existing object:
+The individual `/setup` commands still exist for custom server layouts. Use them when you want a feature to use a differently named or pre-existing object:
 
 - `/setup text-channel` for text destinations such as `announcements`, `role_panel` or `bot_log`
 - `/setup voice-channel` for `create_workspace_voice` or `coworking_lounge`
@@ -194,7 +208,7 @@ The individual `/setup` commands still exist for custom server layouts. Use them
 - `/setup role-panel` to repost or refresh the Live Notifications button panel after a manual role/channel override
 - `/setup status` to inspect all current mappings and identify stale Discord IDs
 
-These commands replace the stored mapping. They do not require the resource to use the standard auto-setup name.
+These commands replace the stored mapping. They do not require the resource to use the standard auto-setup name. `/setup auto` preserves a valid custom manual mapping whose name is outside its automatic name and alias set.
 
 ### Feature content that still needs an administrator choice
 
@@ -207,7 +221,7 @@ These commands replace the stored mapping. They do not require the resource to u
 5. Use `/setup log-ignore` for staff/private channels that should not be mirrored into message logs.
 6. Disable any system you do not want with `/setup feature`.
 
-For TikTok Live notifications, `/setup auto` configures both `#live-announcements` and the opt-in `Live Notifications` role. `/live` falls back to the general `announcements` resource if the dedicated live channel is later removed from configuration. Rob-bot never uses `@everyone` or `@here` for `/live`. Runtime authorization still permits only the configured Mar Wie account to publish a live announcement.
+For TikTok Live notifications, `/setup auto` configures both the live-announcement destination and the opt-in Live Notifications role. `/live` falls back to the general `announcements` resource if the dedicated live channel is later removed from configuration. Rob-bot never uses `@everyone` or `@here` for `/live`. Runtime authorization still permits only the configured Mar Wie account to publish a live announcement.
 
 ## bot-hosting.net
 
@@ -225,8 +239,7 @@ Once the intended branch is deployed, startup should require no code changes:
 10. Set `ENABLE_MESSAGE_CONTENT=true` only if the matching privileged intent is enabled in Discord.
 11. Leave `DATABASE_URL` unset to use persistent SQLite storage at `data/marwie.db`, or set a PostgreSQL URL.
 12. Start the application and confirm migrations, extension loading and command sync complete in the console.
-13. Enable Discord Community for the target server if it is not already enabled.
-14. Run `/setup auto` in Discord and approve the contextual setup plan.
+13. Run `/setup auto` in Discord and approve the discovery pass. Enable Discord Community only if the second setup plan says a Forum Channel must be created.
 
 Keep host backups enabled for the SQLite database. The application normalizes ordinary `postgres://` and `postgresql://` URLs to the async PostgreSQL driver automatically.
 
@@ -240,7 +253,7 @@ Keep host backups enabled for the SQLite database. The application normalizes or
 - Anonymous question identities are not shown publicly. `/anonwho` is limited to staff with Moderate Members.
 - Reputation is an append-only event ledger with a transactional total cache.
 - `/live` is manual by design. It does not scrape TikTok or require an external LIVE-detection service.
-- `/setup auto` is additive and idempotent. It repairs mappings and creates missing standard resources without deleting unrelated server structure.
+- `/setup auto` is discovery-first and idempotent. It binds clear existing resources before proposing missing infrastructure, and it never deletes or silently restructures unrelated server resources.
 
 ## Project workflow
 
