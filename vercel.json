@@ -4,11 +4,11 @@
   "rewrites": [
     {
       "source": "/",
-      "destination": "/docs-site/index.html"
+      "destination": "/docs-site/index"
     },
     {
       "source": "/commands",
-      "destination": "/docs-site/commands.html"
+      "destination": "/docs-site/commands"
     },
     {
       "source": "/(.*)",
