@@ -4,7 +4,9 @@ from marwie_bot.config.resources import ResourceKey
 from marwie_bot.features.configuration.provisioning import (
     AUTO_SETUP_RESOURCES,
     ProvisionKind,
+    normalize_resource_name,
     require_auto_setup_community,
+    resource_name_matches,
 )
 from marwie_bot.shared.confirmations import build_confirmation_prompt
 from marwie_bot.shared.errors import UserFacingCommandError, build_failure_message
@@ -32,11 +34,42 @@ def test_auto_setup_role_semantics_are_explicit() -> None:
     assert by_key[ResourceKey.ROLE_PANEL].name == "roles"
 
 
-def test_auto_setup_requires_community_before_forum_provisioning() -> None:
+def test_auto_setup_normalizes_decorative_discord_names() -> None:
+    assert normalize_resource_name("🚨-announcements") == "announcements"
+    assert normalize_resource_name("📱-app-of-the-week") == "app-of-the-week"
+    assert normalize_resource_name("AI_UPDATES") == "ai-updates"
+    assert normalize_resource_name("CO-WORKING SPACE") == "co-working-space"
+
+
+def test_auto_setup_matches_existing_server_aliases() -> None:
+    by_key = {item.key: item for item in AUTO_SETUP_RESOURCES}
+
+    assert resource_name_matches("🔴-live", by_key[ResourceKey.LIVE_ANNOUNCEMENTS])
+    assert resource_name_matches("🎫-tickets", by_key[ResourceKey.TICKET_PANEL])
+    assert resource_name_matches("Create VC", by_key[ResourceKey.CREATE_WORKSPACE_VOICE])
+    assert resource_name_matches("Coworking", by_key[ResourceKey.COWORKING_LOUNGE])
+    assert resource_name_matches("🎭-anonymous", by_key[ResourceKey.ANON_QUESTIONS])
+    assert resource_name_matches("general-questions", by_key[ResourceKey.BUILD_HELP_FORUM])
+    assert resource_name_matches("🤖-ai-updates", by_key[ResourceKey.AI_UPDATES])
+    assert resource_name_matches("🤝-collab-lfg", by_key[ResourceKey.COLLAB_LFG])
+    assert resource_name_matches("📱-app-of-the-week", by_key[ResourceKey.APP_OF_WEEK])
+    assert resource_name_matches("🤓-roles", by_key[ResourceKey.ROLE_PANEL])
+
+
+def test_auto_setup_does_not_semantically_guess_unlisted_names() -> None:
+    by_key = {item.key: item for item in AUTO_SETUP_RESOURCES}
+
+    assert not resource_name_matches("support", by_key[ResourceKey.BUILD_HELP_FORUM])
+    assert not resource_name_matches("updates", by_key[ResourceKey.ANNOUNCEMENTS])
+    assert not resource_name_matches("stream-ping", by_key[ResourceKey.LIVE_PING_ROLE])
+
+
+def test_auto_setup_requires_community_only_for_forum_creation() -> None:
     with pytest.raises(UserFacingCommandError, match="Community") as exc_info:
         require_auto_setup_community([])
 
-    assert "No setup changes were made" in exc_info.value.user_message
+    assert "mutation plan" in exc_info.value.user_message
+    assert "were created" in exc_info.value.user_message
 
 
 def test_auto_setup_accepts_community_enabled_guild() -> None:
