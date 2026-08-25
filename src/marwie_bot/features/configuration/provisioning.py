@@ -130,12 +130,33 @@ class AutoSetupService:
             if current is not None:
                 return current, ProvisionAction.KEPT
 
+        same_run = next(
+            (
+                resource
+                for resource in ensured.values()
+                if self._matches_kind(resource, blueprint.kind)
+                and resource.name.casefold() == blueprint.name.casefold()
+            ),
+            None,
+        )
+        if same_run is not None:
+            return same_run, ProvisionAction.ADOPTED
+
         matching = self._find_by_name(guild, blueprint.kind, blueprint.name)
         if matching is not None:
             return matching, ProvisionAction.ADOPTED
 
         created = await self._create(guild, blueprint, ensured)
         return created, ProvisionAction.CREATED
+
+    def _matches_kind(self, resource: DiscordResource, kind: ProvisionKind) -> bool:
+        return (
+            (kind == ProvisionKind.TEXT and isinstance(resource, discord.TextChannel))
+            or (kind == ProvisionKind.VOICE and isinstance(resource, discord.VoiceChannel))
+            or (kind == ProvisionKind.FORUM and isinstance(resource, discord.ForumChannel))
+            or (kind == ProvisionKind.CATEGORY and isinstance(resource, discord.CategoryChannel))
+            or (kind == ProvisionKind.ROLE and isinstance(resource, discord.Role))
+        )
 
     def _get_by_id(
         self, guild: discord.Guild, kind: ProvisionKind, discord_id: int
@@ -147,13 +168,10 @@ class AutoSetupService:
             return None
 
         channel = guild.get_channel(discord_id)
-        if kind == ProvisionKind.TEXT and isinstance(channel, discord.TextChannel):
-            return channel
-        if kind == ProvisionKind.VOICE and isinstance(channel, discord.VoiceChannel):
-            return channel
-        if kind == ProvisionKind.FORUM and isinstance(channel, discord.ForumChannel):
-            return channel
-        if kind == ProvisionKind.CATEGORY and isinstance(channel, discord.CategoryChannel):
+        if isinstance(
+            channel,
+            (discord.TextChannel, discord.VoiceChannel, discord.ForumChannel, discord.CategoryChannel),
+        ) and self._matches_kind(channel, kind):
             return channel
         return None
 
@@ -172,15 +190,17 @@ class AutoSetupService:
             )
 
         for channel in guild.channels:
-            if channel.name.casefold() != wanted:
+            if not isinstance(
+                channel,
+                (
+                    discord.TextChannel,
+                    discord.VoiceChannel,
+                    discord.ForumChannel,
+                    discord.CategoryChannel,
+                ),
+            ):
                 continue
-            if kind == ProvisionKind.TEXT and isinstance(channel, discord.TextChannel):
-                return channel
-            if kind == ProvisionKind.VOICE and isinstance(channel, discord.VoiceChannel):
-                return channel
-            if kind == ProvisionKind.FORUM and isinstance(channel, discord.ForumChannel):
-                return channel
-            if kind == ProvisionKind.CATEGORY and isinstance(channel, discord.CategoryChannel):
+            if channel.name.casefold() == wanted and self._matches_kind(channel, kind):
                 return channel
         return None
 
@@ -267,6 +287,13 @@ class AutoSetupService:
                 None,
             )
             if current is not None:
+                await self.resources.set_resource(
+                    guild.id,
+                    ResourceKey.SOLVED_TAG,
+                    ResourceType.FORUM_TAG,
+                    current.id,
+                    actor_id,
+                )
                 return ProvisionResult(
                     ResourceKey.SOLVED_TAG,
                     ProvisionAction.KEPT,
