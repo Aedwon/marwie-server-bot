@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Collection
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -105,7 +106,12 @@ class AutoSetupPlan:
 
 
 AUTO_SETUP_RESOURCES: tuple[ResourceBlueprint, ...] = (
-    ResourceBlueprint(ResourceKey.TICKET_CATEGORY, ProvisionKind.CATEGORY, "TICKETS"),
+    ResourceBlueprint(
+        ResourceKey.TICKET_CATEGORY,
+        ProvisionKind.CATEGORY,
+        "TICKETS",
+        private=True,
+    ),
     ResourceBlueprint(
         ResourceKey.TEMP_VOICE_CATEGORY,
         ProvisionKind.CATEGORY,
@@ -113,7 +119,10 @@ AUTO_SETUP_RESOURCES: tuple[ResourceBlueprint, ...] = (
         aliases=("co-working-space", "coworking-space"),
     ),
     ResourceBlueprint(
-        ResourceKey.MODERATION_LOG, ProvisionKind.TEXT, "moderation-log", private=True
+        ResourceKey.MODERATION_LOG,
+        ProvisionKind.TEXT,
+        "moderation-log",
+        private=True,
     ),
     ResourceBlueprint(ResourceKey.MESSAGE_LOG, ProvisionKind.TEXT, "bot-logs", private=True),
     ResourceBlueprint(ResourceKey.BOT_LOG, ProvisionKind.TEXT, "bot-logs", private=True),
@@ -153,7 +162,12 @@ AUTO_SETUP_RESOURCES: tuple[ResourceBlueprint, ...] = (
         "build-help",
         aliases=("general-questions",),
     ),
-    ResourceBlueprint(ResourceKey.QUIZ_CHANNEL, ProvisionKind.TEXT, "quizzes", aliases=("quiz",)),
+    ResourceBlueprint(
+        ResourceKey.QUIZ_CHANNEL,
+        ProvisionKind.TEXT,
+        "quizzes",
+        aliases=("quiz",),
+    ),
     ResourceBlueprint(
         ResourceKey.ANON_QUESTIONS,
         ProvisionKind.TEXT,
@@ -192,7 +206,7 @@ def resource_name_matches(name: str, blueprint: ResourceBlueprint) -> bool:
     return normalize_resource_name(name) in blueprint_names(blueprint)
 
 
-def require_auto_setup_community(features: list[str] | tuple[str, ...]) -> None:
+def require_auto_setup_community(features: Collection[str]) -> None:
     if "COMMUNITY" not in features:
         raise UserFacingCommandError(_COMMUNITY_REQUIRED_MESSAGE)
 
@@ -305,7 +319,7 @@ class AutoSetupService:
             and item.blueprint.kind == ProvisionKind.FORUM
             for item in plan.resources
         ):
-            require_auto_setup_community(list(guild.features))
+            require_auto_setup_community(guild.features)
 
         ensured: dict[ResourceKey, DiscordResource] = {}
         results: list[ProvisionResult] = []
