@@ -15,6 +15,7 @@ class ResourceKey(StrEnum):
     ANNOUNCEMENTS = "announcements"
     LIVE_ANNOUNCEMENTS = "live_announcements"
     LIVE_PING_ROLE = "live_ping_role"
+    ROLE_PANEL = "role_panel"
     AI_UPDATES = "ai_updates"
     BUILD_HELP_FORUM = "build_help_forum"
     SOLVED_TAG = "solved_tag"
@@ -66,6 +67,7 @@ RESOURCE_TYPES: dict[ResourceKey, ResourceType] = {
     ResourceKey.ANNOUNCEMENTS: ResourceType.CHANNEL,
     ResourceKey.LIVE_ANNOUNCEMENTS: ResourceType.CHANNEL,
     ResourceKey.LIVE_PING_ROLE: ResourceType.ROLE,
+    ResourceKey.ROLE_PANEL: ResourceType.CHANNEL,
     ResourceKey.AI_UPDATES: ResourceType.CHANNEL,
     ResourceKey.BUILD_HELP_FORUM: ResourceType.CHANNEL,
     ResourceKey.SOLVED_TAG: ResourceType.FORUM_TAG,
