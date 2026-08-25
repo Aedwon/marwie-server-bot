@@ -13,7 +13,8 @@ Improve the existing central confirmation layer so every approval prompt explain
 
 | File | Change |
 | --- | --- |
-| `src/marwie_bot/shared/confirmations.py` | Add contextual prompt formatting, custom detail annotations, safe error references, and safe user-facing command errors. |
+| `src/marwie_bot/shared/confirmations.py` | Add contextual prompt formatting, command-specific detail annotations, and error references. |
+| `src/marwie_bot/shared/errors.py` | Add the shared safe user-facing error contract and Discord API error translation. |
 | `src/marwie_bot/features/configuration/cog.py` | Annotate `/setup auto` with detailed confirmation text and wrap role-panel finalization failures. |
 | `src/marwie_bot/features/configuration/provisioning.py` | Wrap Discord provisioning failures with resource-stage context; retain pending type-alias lint fix. |
 | `tests/test_auto_setup_blueprint.py` | Replace generic prompt assertion with contextual prompt and safe error-formatting coverage. |
@@ -27,7 +28,7 @@ Improve the existing central confirmation layer so every approval prompt explain
 2. Add a callback annotation helper for command-specific confirmation details.
 3. Build confirmation text from exact command name, command description, custom detail, and parsed option values.
 4. Keep the existing central Approve/Decline flow and use the richer prompt when sending the initial response.
-5. Add a safe `UserFacingCommandError` contract plus short error reference IDs for unexpected exceptions.
+5. Add a shared safe `UserFacingCommandError` contract plus short error reference IDs for unexpected exceptions.
 6. Wrap Discord HTTP failures in auto provisioning with the resource key and a safe message.
 7. Wrap role-panel finalization failures with a setup-specific safe message.
 8. Confirm the existing Python 3.12 type-alias lint fix remains present.
@@ -53,6 +54,10 @@ Before merge, perform static verification through the repository connector:
 - confirm `/setup auto` confirmation explicitly describes additive/adopt/create behavior and non-destructive limits;
 - confirm option values are bounded in length;
 - confirm the pending `TypeAlias` import is removed and the Python 3.12 `type` alias syntax remains.
+
+## Environment limitation
+
+The local execution container does not currently have `discord.py`, and package installation is blocked by DNS resolution. Do not claim local pytest, Ruff, mypy, compile, or migration verification. The next GitHub CI run remains the executable verification environment.
 
 ## Deployment
 
