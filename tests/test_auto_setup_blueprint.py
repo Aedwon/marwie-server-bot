@@ -84,7 +84,9 @@ def test_confirmation_prompt_truncates_long_option_values() -> None:
 
 
 def test_user_facing_command_error_preserves_safe_message_and_reference() -> None:
-    error = UserFacingCommandError("Could not configure `moderation_log`: Discord denied the action.")
+    error = UserFacingCommandError(
+        "Could not configure `moderation_log`: Discord denied the action."
+    )
 
     message = build_failure_message(error, "AB12CD34")
 
