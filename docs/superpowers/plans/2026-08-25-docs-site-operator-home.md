@@ -11,7 +11,7 @@ Decision: `docs/superpowers/decisions/2026-08-25-docs-site-operator-home.md`
 | --- | --- |
 | `docs-site/index.html` | Reorder and relabel homepage sections around operator tasks. |
 | `docs-site/app.js` | Replace feature-type datasets with health-check, onboarding, playbook, support, automation, resource, and troubleshooting data. |
-| `docs-site/styles.css` | Add restrained task-card, workflow, health-check, and reference styles while preserving the existing visual system. |
+| `docs-site/home.css` | Add restrained homepage-only task-card, workflow, health-check, and reference styles on top of the existing shared stylesheet. |
 | spec/decision/plan | Record the operator-first information architecture. |
 
 ## Implementation
