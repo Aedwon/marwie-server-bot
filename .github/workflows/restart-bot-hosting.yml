@@ -1,0 +1,53 @@
+name: Restart Rob-bot
+
+on:
+  push:
+    branches:
+      - ops/bot-hosting-restart
+    paths:
+      - .ops/bot-hosting-restart
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  restart:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    env:
+      BOT_HOSTING_API_KEY: ${{ secrets.BOT_HOSTING_API_KEY }}
+      BOT_HOSTING_DEPLOYMENT_ID: ${{ secrets.BOT_HOSTING_DEPLOYMENT_ID }}
+
+    steps:
+      - name: Validate restart configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${BOT_HOSTING_API_KEY}" ]]; then
+            echo "::error::Missing repository secret BOT_HOSTING_API_KEY"
+            exit 1
+          fi
+
+          if [[ -z "${BOT_HOSTING_DEPLOYMENT_ID}" ]]; then
+            echo "::error::Missing repository secret BOT_HOSTING_DEPLOYMENT_ID"
+            exit 1
+          fi
+
+      - name: Restart Bot-Hosting deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          response="$(
+            curl --fail-with-body --silent --show-error \
+              --request POST \
+              --header "Authorization: Bearer ${BOT_HOSTING_API_KEY}" \
+              --header "Content-Type: application/json" \
+              --data '{"action":"restart"}' \
+              "https://bot-hosting.net/api/v1/deployments/${BOT_HOSTING_DEPLOYMENT_ID}/power"
+          )"
+
+          printf '%s\n' "${response}"
+          echo "Restart request accepted. Bot-Hosting Auto Pull should re-pull the linked branch during restart."
