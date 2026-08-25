@@ -4,6 +4,7 @@ from marwie_bot.features.configuration.provisioning import (
     ProvisionKind,
 )
 from marwie_bot.shared.confirmations import build_confirmation_prompt
+from marwie_bot.shared.errors import UserFacingCommandError, build_failure_message
 
 
 def test_auto_setup_blueprint_covers_every_non_tag_resource() -> None:
@@ -28,5 +29,59 @@ def test_auto_setup_role_semantics_are_explicit() -> None:
     assert by_key[ResourceKey.ROLE_PANEL].name == "roles"
 
 
-def test_confirmation_prompt_names_the_exact_command() -> None:
-    assert build_confirmation_prompt("setup auto") == "Run `/setup auto`?"
+def test_confirmation_prompt_includes_command_description_and_options() -> None:
+    prompt = build_confirmation_prompt(
+        "setup feature",
+        "Enable or disable a bot feature for this server.",
+        {"feature": "ai_updates", "enabled": False},
+    )
+
+    assert "**Confirm `/setup feature`**" in prompt
+    assert "Enable or disable a bot feature for this server." in prompt
+    assert "`feature`: `ai_updates`" in prompt
+    assert "`enabled`: `false`" in prompt
+
+
+def test_confirmation_prompt_includes_custom_side_effect_detail() -> None:
+    prompt = build_confirmation_prompt(
+        "setup auto",
+        "Discover or create the standard resources needed by the bot.",
+        {},
+        detail=(
+            "Keep valid bindings, adopt matching existing resources, create missing resources, "
+            "and never delete unrelated server resources."
+        ),
+    )
+
+    assert "Keep valid bindings" in prompt
+    assert "create missing resources" in prompt
+    assert "never delete unrelated server resources" in prompt
+
+
+def test_confirmation_prompt_truncates_long_option_values() -> None:
+    prompt = build_confirmation_prompt(
+        "announce",
+        "Post an announcement.",
+        {"message": "x" * 1_000},
+    )
+
+    assert "x" * 200 not in prompt
+    assert "…" in prompt
+
+
+def test_user_facing_command_error_preserves_safe_message_and_reference() -> None:
+    error = UserFacingCommandError("Could not configure `moderation_log`: Discord denied the action.")
+
+    message = build_failure_message(error, "AB12CD34")
+
+    assert "Could not configure `moderation_log`: Discord denied the action." in message
+    assert "`AB12CD34`" in message
+
+
+def test_generic_failure_does_not_expose_exception_text() -> None:
+    error = RuntimeError("postgresql://secret-user:secret-password@example.invalid/database")
+
+    message = build_failure_message(error, "EF56AB78")
+
+    assert "secret-password" not in message
+    assert "`EF56AB78`" in message
