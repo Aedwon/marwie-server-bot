@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="description" content="Plain-language documentation for Rob-bot: features, commands, roles, setup, hosting, and troubleshooting.">
+  <meta name="description" content="Operator handbook for Rob-bot administrators and moderators: setup, health checks, playbooks, permissions, troubleshooting, and command reference.">
   <meta name="theme-color" content="#f5f5f7" id="themeColor">
-  <title>Rob-bot Documentation</title>
+  <title>Rob-bot Operator Handbook</title>
   <link rel="icon" type="image/svg+xml" href="/rob.svg?v=12">
   <link rel="apple-touch-icon" href="/rob.svg?v=12">
   <script>
@@ -17,34 +17,36 @@
     })();
   </script>
   <link rel="stylesheet" href="/styles.css?v=14">
+  <link rel="stylesheet" href="/home.css?v=1">
 </head>
-<body>
-<a class="skip" href="#content">Skip to documentation</a>
+<body class="operator-home">
+<a class="skip" href="#content">Skip to operator handbook</a>
 <div class="mobilebar">
-  <div class="mobilebrand"><img src="/rob.svg?v=12" alt="">Rob-bot Documentation</div>
+  <div class="mobilebrand"><img src="/rob.svg?v=12" alt="">Rob-bot Handbook</div>
   <button class="menubtn" id="menuBtn" type="button" aria-controls="sidebar" aria-expanded="false">Sections</button>
 </div>
 <div class="layout">
-  <aside class="sidebar" id="sidebar" aria-label="Documentation navigation">
-    <a class="brand" href="#overview"><img src="/rob.svg?v=12" alt=""><span class="brand-copy">Rob-bot Documentation<small>AI App Builders</small></span></a>
+  <aside class="sidebar" id="sidebar" aria-label="Operator handbook navigation">
+    <a class="brand" href="#overview"><img src="/rob.svg?v=12" alt=""><span class="brand-copy">Rob-bot Handbook<small>Admins & moderators</small></span></a>
 
-    <div class="nav-section"><div class="nav-label"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg><span>About</span></div><nav class="nav">
-      <a href="#overview" aria-current="true">Overview</a>
+    <div class="nav-section"><div class="nav-label"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg><span>Start</span></div><nav class="nav">
+      <a href="#overview" aria-current="true">Operator home</a>
+      <a href="#health">Quick health check</a>
+      <a href="#setup">First-time setup</a>
+    </nav></div>
+
+    <div class="nav-section"><div class="nav-label"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9h4M7 13h7M7 17h3"/></svg><span>Operate</span></div><nav class="nav">
+      <a href="#playbooks">On-duty playbooks</a>
+      <a href="#roles">Permissions & hierarchy</a>
+      <a href="#support">Member-facing behavior</a>
       <a href="#automatic">Automatic behavior</a>
     </nav></div>
 
-    <div class="nav-section"><div class="nav-label"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9h4M7 13h7M7 17h3"/></svg><span>Using the bot</span></div><nav class="nav">
+    <div class="nav-section"><div class="nav-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M6 14v6"/></svg><span>Reference</span></div><nav class="nav">
       <a href="/commands">Command manual</a>
-      <a href="#members">Member commands</a>
-      <a href="#staff">Staff tools</a>
-      <a href="#roles">Roles and hierarchy</a>
-    </nav></div>
-
-    <div class="nav-section"><div class="nav-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M6 14v6"/></svg><span>Administration</span></div><nav class="nav">
-      <a href="#setup">Setup checklist</a>
-      <a href="#resources">Channel and role map</a>
-      <a href="#hosting">Hosting settings</a>
+      <a href="#resources">Channel & role map</a>
       <a href="#troubleshooting">Troubleshooting</a>
+      <a href="#hosting">Hosting settings</a>
     </nav></div>
 
     <div class="appearance">
@@ -58,130 +60,151 @@
   </aside>
 
   <main id="content">
-    <article class="doc">
+    <article class="doc operator-doc">
       <header class="doc-header" id="overview">
         <div class="breadcrumbs">Team handbook / Rob-bot</div>
-        <h1>Rob-bot documentation</h1>
-        <p class="lede">A practical reference for what Rob-bot does, who can use each feature, and how the Discord server should be configured.</p>
-        <div class="release">Production V1 · semantic <code>/ask-community</code> is planned for a later release</div>
+        <h1>Run Rob-bot without memorizing it</h1>
+        <p class="lede">An operating reference for admins and moderators. Start from the job you need to do, follow the normal sequence, then open the command manual only when you need exact syntax or option limits.</p>
+        <div class="release">Production V1 · 45 slash commands · every slash command shows a confirmation before it runs</div>
       </header>
 
-      <section class="section" aria-labelledby="start-title">
-        <h2 id="start-title">Start here</h2>
-        <p class="intro">Use the section that matches what you need to do.</p>
-        <div class="note"><strong>Looking for a specific slash command?</strong><p>Open the <a href="/commands">complete command manual</a> for exact syntax, permissions, accepted inputs, side effects, prerequisites, and examples for all 45 commands.</p></div>
-        <div class="plain-list">
-          <div class="plain-item"><h3>Community members</h3><p>Open support tickets, check reputation, ask anonymous questions, use a focus timer, find collaborators, answer quizzes, and mark helpful build-help replies as solved.</p></div>
-          <div class="plain-item"><h3>Moderators</h3><p>Handle tickets, warnings, timeouts, kicks, bans, moderation history, anonymous-question audits, and build-help moderation.</p></div>
-          <div class="plain-item"><h3>Admins and leads</h3><p>Connect channels and roles, configure tickets and reputation, add quizzes and AI feeds, publish announcements, configure Mar Wie’s TikTok Live notifications, and review analytics.</p></div>
+      <section class="section start-section" aria-labelledby="start-title">
+        <div class="section-heading">
+          <div class="section-kicker">Choose your task</div>
+          <h2 id="start-title">Start here</h2>
+          <p class="intro">Pick the situation that brought you to the handbook. These routes take you to the shortest useful path.</p>
         </div>
+        <div class="task-grid" id="startRoutes"></div>
+        <div class="operator-note"><strong>Need exact command syntax?</strong><p>Use the separate <a href="/commands">Command manual</a> for every parameter, permission, side effect, prerequisite, failure condition, and example.</p></div>
       </section>
 
-      <section class="section" id="automatic">
-        <h2>Automatic behavior</h2>
-        <p class="intro">These features keep running after an admin sets them up.</p>
-        <div class="plain-list" id="automaticList"></div>
+      <section class="section" id="health">
+        <div class="section-heading">
+          <div class="section-kicker">Before changing configuration</div>
+          <h2>Quick health check</h2>
+          <p class="intro">Use this sequence when something feels wrong. It separates a bot/configuration problem from a workflow-specific permission problem.</p>
+        </div>
+        <div class="health-list" id="healthChecks"></div>
+        <div class="operator-note"><strong>Confirmation is expected.</strong><p>Even read-only commands such as <code>/ping</code> and <code>/setup status</code> show the normal private Approve / Decline confirmation before they run.</p></div>
       </section>
 
-      <section class="section" id="members">
-        <h2>Member commands</h2>
-        <p class="intro">Commands and interactions available to community members.</p>
-        <div class="command-list" id="memberCommands"></div>
+      <section class="section" id="setup">
+        <div class="section-heading">
+          <div class="section-kicker">Administrator onboarding</div>
+          <h2>First-time setup</h2>
+          <p class="intro">Rob-bot now discovers the server you already have. Do not build a duplicate standard channel structure first.</p>
+        </div>
+        <div class="setup-principle"><strong>Preferred setup path</strong><p>Run <code>/setup auto</code> against the existing server. It binds clear matches first. Only missing resources, remaps, the Solved tag, or role-panel changes appear in the second mutation confirmation.</p></div>
+        <div class="progress-line"><div class="track" aria-hidden="true"><div class="bar" id="progressBar"></div></div><div class="progress-text" id="progressText" aria-live="polite">0 of 7 complete</div><button class="reset" id="resetChecklist" type="button">Reset</button></div>
+        <div class="steps" id="setupSteps"></div>
+        <div class="operator-note"><strong>What auto-setup does not decide for you</strong><p>Ticket types, quiz content, AI feed sources, reputation thresholds, logging exclusions, and feature policy remain administrator choices. Configure only the systems the community will actually use.</p></div>
       </section>
 
-      <section class="section" id="staff">
-        <h2>Staff tools</h2>
-        <p class="intro">Discord permissions decide who can see most staff commands. Some commands add stricter runtime authorization; <code>/live</code>, for example, only publishes for Mar Wie’s configured Discord account.</p>
-        <div class="command-list" id="staffCommands"></div>
+      <section class="section" id="playbooks">
+        <div class="section-heading">
+          <div class="section-kicker">Day-to-day reference</div>
+          <h2>On-duty playbooks</h2>
+          <p class="intro">Short sequences for the work moderators and admins actually do. Open the linked command reference when you need parameter-level detail.</p>
+        </div>
+        <div class="playbook-list" id="playbookList"></div>
       </section>
 
       <section class="section" id="roles">
-        <h2>Roles and hierarchy</h2>
-        <p class="intro">Role order determines who Discord allows staff and Rob-bot to manage.</p>
+        <div class="section-heading">
+          <div class="section-kicker">Common failure point</div>
+          <h2>Permissions and hierarchy</h2>
+          <p class="intro">When moderation or managed roles fail, check role order before changing bot configuration.</p>
+        </div>
         <ol class="role-order">
-          <li><span class="n">1</span><b>Server Owner</b><span>Always highest. Rob-bot can never moderate the server owner.</span></li>
-          <li><span class="n">2</span><b>Admin / Leadership</b><span>Optional protected layer for trusted leads who should sit outside bot moderation.</span></li>
-          <li class="bot-row"><span class="n">3</span><b>Rob-bot</b><span>Must sit above members it may moderate and above Builder, Contributor, and Mentor.</span></li>
-          <li><span class="n">4</span><b>Moderator / Support</b><span>Recommended day-to-day staff role. The exact name is up to you.</span></li>
-          <li><span class="n">5</span><b>Mentor</b><span>Reputation role. Default milestone: 500.</span></li>
-          <li><span class="n">6</span><b>Contributor</b><span>Reputation role. Default milestone: 150.</span></li>
-          <li><span class="n">7</span><b>Builder</b><span>Reputation role. Default milestone: 50.</span></li>
+          <li><span class="n">1</span><b>Server Owner</b><span>Always highest. Rob-bot cannot moderate the server owner.</span></li>
+          <li><span class="n">2</span><b>Admin / Leadership</b><span>Optional protected layer for trusted leads who should sit outside day-to-day bot moderation.</span></li>
+          <li class="bot-row"><span class="n">3</span><b>Rob-bot</b><span>Must be above members it needs to moderate and above roles it needs to grant or remove.</span></li>
+          <li><span class="n">4</span><b>Moderator / Support</b><span>Recommended day-to-day staff layer. Its exact role name is server-owned.</span></li>
+          <li><span class="n">5</span><b>Mentor</b><span>Reputation role. Default threshold: 500.</span></li>
+          <li><span class="n">6</span><b>Contributor</b><span>Reputation role. Default threshold: 150.</span></li>
+          <li><span class="n">7</span><b>Builder</b><span>Reputation role. Default threshold: 50.</span></li>
           <li><span class="n">8</span><b>Member roles</b><span>Normal community and interest roles.</span></li>
           <li><span class="n">9</span><b>@everyone</b><span>Discord's base role.</span></li>
         </ol>
 
-        <h3>Rob-bot permissions</h3>
-        <p>Give the bot only the permissions it needs:</p>
-        <ul class="bullets">
-          <li>View Channels, Send Messages, Send Messages in Threads</li>
-          <li>Embed Links, Attach Files, Read Message History</li>
-          <li>Manage Channels, Manage Threads, Manage Roles</li>
-          <li>Move Members</li>
-          <li>Moderate Members, Kick Members, Ban Members</li>
-        </ul>
-
-        <h3>Moderator / Support permissions</h3>
-        <div class="plain-list">
-          <div class="plain-item"><h3>Moderate Members</h3><p>Needed for <code>/warn</code>, <code>/timeout</code>, <code>/history</code>, and <code>/anonwho</code>.</p></div>
-          <div class="plain-item"><h3>Kick Members</h3><p>Needed for <code>/kick</code>.</p></div>
-          <div class="plain-item"><h3>Ban Members</h3><p>Needed for <code>/ban</code> and <code>/unban</code>.</p></div>
-          <div class="plain-item"><h3>Manage Threads</h3><p>Lets staff mark a solution in someone else's build-help thread.</p></div>
+        <div class="permission-grid">
+          <div class="permission-block"><h3>Rob-bot needs</h3><ul class="bullets"><li>View Channels, Send Messages, Embed Links, Attach Files, Read Message History</li><li>Manage Channels, Manage Threads, Manage Roles, Move Members</li><li>Moderate Members, Kick Members, Ban Members</li></ul></div>
+          <div class="permission-block"><h3>Moderator / Support typically needs</h3><ul class="bullets"><li><strong>Moderate Members</strong> for <code>/warn</code>, <code>/timeout</code>, <code>/history</code>, and <code>/anonwho</code></li><li><strong>Kick Members</strong> for <code>/kick</code></li><li><strong>Ban Members</strong> for <code>/ban</code> and <code>/unban</code></li><li><strong>Manage Threads</strong> when marking someone else's build-help solution</li></ul></div>
         </div>
-        <p class="meta">Also give this role access to private tickets and staff log channels.</p>
-
-        <h3>Moderation hierarchy rule</h3>
-        <p>A moderator cannot target someone whose highest role is equal to or higher than their own. Rob-bot also refuses a target whose highest role is equal to or higher than the Rob-bot role.</p>
+        <div class="operator-note"><strong>Moderation hierarchy rule</strong><p>A moderator cannot target someone whose highest role is equal to or above their own. Rob-bot also refuses targets whose highest role is equal to or above Rob-bot's highest role.</p></div>
       </section>
 
-      <section class="section" id="setup">
-        <h2>Setup checklist</h2>
-        <p class="intro">Complete these once, in order. The checkboxes only remember progress in this browser; they do not change Discord settings.</p>
-        <div class="progress-line"><div class="track" aria-hidden="true"><div class="bar" id="progressBar"></div></div><div class="progress-text" id="progressText" aria-live="polite">0 of 10 complete</div><button class="reset" id="resetChecklist" type="button">Reset</button></div>
-        <div class="steps" id="setupSteps"></div>
+      <section class="section" id="support">
+        <div class="section-heading">
+          <div class="section-kicker">What members may ask you about</div>
+          <h2>Member-facing behavior staff may need to support</h2>
+          <p class="intro">These are not your primary staff tools, but knowing the expected member workflow helps when someone reports that a feature is broken.</p>
+        </div>
+        <div class="plain-list" id="supportList"></div>
+      </section>
+
+      <section class="section" id="automatic">
+        <div class="section-heading">
+          <div class="section-kicker">No manual action expected</div>
+          <h2>What runs automatically</h2>
+          <p class="intro">Once configured, these behaviors should continue without a staff command. This is useful when deciding whether an incident is expected behavior or a real failure.</p>
+        </div>
+        <div class="plain-list" id="automaticList"></div>
       </section>
 
       <section class="section" id="resources">
-        <h2>Channel and role map</h2>
-        <p class="intro">These names are suggestions. Rob-bot stores the Discord IDs you connect, so your server can use different names.</p>
+        <div class="section-heading">
+          <div class="section-kicker">Configuration reference</div>
+          <h2>Channel and role map</h2>
+          <p class="intro">These are logical resources Rob-bot needs. The displayed names are examples, not requirements. <code>/setup auto</code> discovers existing resources by normalized names and known aliases before proposing creation.</p>
+        </div>
         <div class="resource-list" id="resourceList"></div>
-        <div class="note"><strong>Live notifications</strong><p><code>live_announcements</code> is the preferred destination for <code>/live</code>. If it is not configured, Rob-bot falls back to the normal <code>announcements</code> resource. <code>live_ping_role</code> is optional, and Rob-bot never uses <code>@everyone</code> or <code>@here</code> for this feature.</p></div>
-        <div class="note"><strong>Ticket privacy</strong><p>On the ticket category, deny <code>@everyone → View Channel</code>, then explicitly allow only the staff roles that should handle tickets. Rob-bot adds access for the member who opened each ticket.</p></div>
+        <div class="operator-note"><strong>Do not rename the server to fit this table.</strong><p>Use discovery-first <code>/setup auto</code>. Use the individual <code>/setup …</code> commands only for custom/manual overrides. Auto-setup never deletes, renames, moves, or merges existing server resources.</p></div>
+        <div class="note"><strong>Ticket privacy</strong><p>Keep the ticket category private from <code>@everyone</code>, then explicitly allow the staff roles that should handle tickets. Rob-bot grants access to the member who opens each ticket.</p></div>
+      </section>
+
+      <section class="section" id="troubleshooting">
+        <div class="section-heading">
+          <div class="section-kicker">Diagnose before changing things</div>
+          <h2>Troubleshooting</h2>
+          <p class="intro">Start from the symptom. Each entry tells you what to inspect first and where to go next.</p>
+        </div>
+        <div class="faq" id="faq"></div>
       </section>
 
       <section class="section" id="hosting">
-        <h2>Hosting settings</h2>
-        <p class="intro">For whoever maintains the deployment.</p>
+        <div class="section-heading">
+          <div class="section-kicker">Deployment owner reference</div>
+          <h2>Hosting settings</h2>
+          <p class="intro">Most moderators do not need this section. Use it when command sync, intents, background jobs, persistence, or deployment configuration is the suspected cause.</p>
+        </div>
         <h3>Discord Developer Portal</h3>
         <div class="settings">
           <div class="setting"><b>Presence Intent</b><p>Off.</p></div>
           <div class="setting"><b>Server Members Intent</b><p>Off.</p></div>
-          <div class="setting"><b>Message Content Intent</b><p>Recommended on for full logging, richer transcripts, solution excerpts, and message-based reputation context.</p></div>
+          <div class="setting"><b>Message Content Intent</b><p>Optional. Turn it on only if you want full message logs, richer ticket transcripts, solution excerpts, and message-based reputation context.</p></div>
           <div class="setting"><b>OAuth scopes</b><p><code>bot</code> and <code>applications.commands</code>.</p></div>
         </div>
 
         <h3>Environment variables</h3>
         <div class="settings">
-          <div class="setting"><b><code>DISCORD_TOKEN</code></b><p>Required secret. Never commit it or place it in documentation.</p></div>
+          <div class="setting"><b><code>DISCORD_TOKEN</code></b><p>Required secret. Never commit or publish it.</p></div>
           <div class="setting"><b><code>ENVIRONMENT</code></b><p>Use <code>production</code> on the live host.</p></div>
-          <div class="setting"><b><code>COMMAND_GUILD_ID</code></b><p>Your Discord server ID. It gives immediate guild-scoped command syncing during setup.</p></div>
-          <div class="setting"><b><code>ENABLE_MESSAGE_CONTENT</code></b><p>Use <code>true</code> when Message Content is enabled in the Discord Developer Portal.</p></div>
-          <div class="setting"><b><code>ENABLE_BACKGROUND_TASKS</code></b><p>Use <code>true</code> for quizzes, feeds, reports, App of the Week, voice cleanup, and Pomodoro completion.</p></div>
-          <div class="setting"><b><code>MAR_WIE_USER_ID</code></b><p>Authorizes <code>/live</code>. The current default is <code>703986808962285621</code>, so the host does not need this variable unless Mar Wie’s Discord account changes.</p></div>
-          <div class="setting"><b><code>MAR_WIE_TIKTOK_URL</code></b><p>Optional HTTPS <code>tiktok.com</code> URL. When set, <code>/live</code> includes a <strong>Watch on TikTok</strong> button. When unset, the announcement still posts without the button.</p></div>
-          <div class="setting"><b><code>DATABASE_URL</code></b><p>Optional. Leave unset to use SQLite at <code>data/marwie.db</code>. PostgreSQL can be added later.</p></div>
+          <div class="setting"><b><code>COMMAND_GUILD_ID</code></b><p>Recommended during setup for immediate guild-scoped command syncing.</p></div>
+          <div class="setting"><b><code>SYNC_COMMANDS</code></b><p>Defaults to <code>true</code>. Disable only when you deliberately do not want startup command syncing.</p></div>
+          <div class="setting"><b><code>ENABLE_MESSAGE_CONTENT</code></b><p>Set <code>true</code> only when Message Content is enabled in Discord.</p></div>
+          <div class="setting"><b><code>ENABLE_BACKGROUND_TASKS</code></b><p>Keep <code>true</code> for scheduled quizzes, feeds, reports, App of the Week, voice reconciliation, and Pomodoro completion.</p></div>
+          <div class="setting"><b><code>MAR_WIE_USER_ID</code></b><p>Authorizes <code>/live</code>. The current default already identifies Mar Wie's configured account.</p></div>
+          <div class="setting"><b><code>MAR_WIE_TIKTOK_URL</code></b><p>Optional HTTPS TikTok URL for the Watch on TikTok button.</p></div>
+          <div class="setting"><b><code>DATABASE_URL</code></b><p>Optional. Leave unset for persistent SQLite at <code>data/marwie.db</code>, or use the supported PostgreSQL configuration.</p></div>
         </div>
+        <div class="operator-note"><strong>Restart expectations</strong><p>Hosting or environment-variable changes require a bot restart. Normal Discord-side setup commands do not.</p></div>
       </section>
 
-      <section class="section" id="troubleshooting">
-        <h2>Troubleshooting</h2>
-        <p class="intro">Check permissions, role order, and connected resources first.</p>
-        <div class="faq" id="faq"></div>
-      </section>
-
-      <footer>Rob-bot Documentation · AI App Builders · <a href="https://github.com/Aedwon/marwie-server-bot" target="_blank" rel="noreferrer">Source on GitHub</a></footer>
+      <footer>Rob-bot Operator Handbook · AI App Builders · <a href="/commands">Command manual</a> · <a href="https://github.com/Aedwon/marwie-server-bot" target="_blank" rel="noreferrer">Source on GitHub</a></footer>
     </article>
   </main>
 </div>
-<script src="/app.js?v=15" defer></script>
+<script src="/app.js?v=16" defer></script>
 </body>
 </html>
