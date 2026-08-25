@@ -1,12 +1,23 @@
 from __future__ import annotations
 
+import logging
+import secrets
+from collections.abc import Awaitable, Callable
+
 import discord
 from discord import app_commands
 from discord.ext import commands
 
 from marwie_bot.config.resources import FeatureName, ResourceKey, ResourceType
 from marwie_bot.db.session import Database
-from marwie_bot.features.configuration.provisioning import AutoSetupService
+from marwie_bot.features.configuration.provisioning import (
+    AutoSetupPlan,
+    AutoSetupService,
+    DiscoveryAction,
+    DiscordResource,
+    ProvisionKind,
+    ProvisionResult,
+)
 from marwie_bot.features.configuration.repository import (
     SQLAlchemyFeatureConfigRepository,
     SQLAlchemyResourceRepository,
@@ -17,16 +28,261 @@ from marwie_bot.features.configuration.role_panel import (
 )
 from marwie_bot.features.configuration.service import FeatureConfigService, ResourceService
 from marwie_bot.shared.confirmations import confirmation_detail
-from marwie_bot.shared.errors import UserFacingCommandError, describe_discord_failure
+from marwie_bot.shared.errors import (
+    UserFacingCommandError,
+    build_failure_message,
+    describe_discord_failure,
+)
+
+logger = logging.getLogger(__name__)
 
 _AUTO_SETUP_CONFIRMATION_DETAIL = (
-    "Rob-bot will inspect the server's existing setup bindings, keep valid bindings, adopt "
-    "matching standard resources, create any missing standard channels, forums, categories, "
-    "voice channels, roles, and the Solved tag, save the selected resource IDs, and post or "
-    "refresh the Live Notifications self-role panel. It will not delete, rename, or move "
-    "unrelated server resources. Discord Community must be enabled because `build-help` and "
-    "`showcase` are Forum Channels."
+    "Rob-bot will scan existing channels, forums, categories, voice channels, and roles first. "
+    "Decorative emoji and separators are ignored when matching names, and known server aliases "
+    "such as `live`, `Create VC`, and `Coworking` are recognized. Clear existing matches can be "
+    "connected without changing the Discord objects. If anything needs to be created, remapped, "
+    "tagged, or refreshed, Rob-bot will show a second confirmation listing those exact changes "
+    "before applying them. It will never delete, rename, move, or merge existing resources."
 )
+
+
+def _display_resource(resource: DiscordResource | None) -> str:
+    if resource is None:
+        return "not configured"
+    if isinstance(
+        resource,
+        (discord.TextChannel, discord.VoiceChannel, discord.ForumChannel, discord.Role),
+    ):
+        return resource.mention
+    return f"`{resource.name}`"
+
+
+def _role_panel_should_refresh(plan: AutoSetupPlan) -> bool:
+    watched = {ResourceKey.ROLE_PANEL, ResourceKey.LIVE_PING_ROLE}
+    return any(
+        item.blueprint.key in watched and item.action != DiscoveryAction.KEEP
+        for item in plan.resources
+    )
+
+
+def _mutation_lines(plan: AutoSetupPlan) -> list[str]:
+    lines: list[str] = []
+    for item in plan.resource_mutations:
+        if item.action == DiscoveryAction.REMAP:
+            lines.append(
+                f"- Remap `{item.blueprint.key.value}` from "
+                f"{_display_resource(item.current)} to {_display_resource(item.target)}."
+            )
+        elif item.action == DiscoveryAction.CREATE:
+            lines.append(
+                f"- Create {item.blueprint.kind.value} resource `{item.blueprint.name}` for "
+                f"`{item.blueprint.key.value}`."
+            )
+
+    solved = plan.solved_tag
+    if solved.action == DiscoveryAction.REMAP:
+        forum = solved.forum.mention if solved.forum is not None else "the selected build-help forum"
+        tag_name = solved.tag.name if solved.tag is not None else "Solved"
+        lines.append(f"- Connect `solved_tag` to existing `{tag_name}` in {forum}.")
+    elif solved.action == DiscoveryAction.CREATE:
+        forum = solved.forum.mention if solved.forum is not None else "the selected build-help forum"
+        lines.append(f"- Add a `Solved` tag to {forum}.")
+
+    if _role_panel_should_refresh(plan):
+        lines.append("- Post or refresh the Live Notifications self-role panel in the selected roles channel.")
+    return lines
+
+
+def _connected_lines(plan: AutoSetupPlan) -> list[str]:
+    lines: list[str] = []
+    for item in plan.resources:
+        if item.action == DiscoveryAction.BIND:
+            lines.append(
+                f"- `{item.blueprint.key.value}` → {_display_resource(item.target)}"
+            )
+    if plan.solved_tag.action == DiscoveryAction.BIND and plan.solved_tag.tag is not None:
+        forum = (
+            plan.solved_tag.forum.mention
+            if plan.solved_tag.forum is not None
+            else "build-help forum"
+        )
+        lines.append(f"- `solved_tag` → `{plan.solved_tag.tag.name}` in {forum}")
+    return lines
+
+
+def _build_discovery_embed(plan: AutoSetupPlan) -> discord.Embed:
+    connected = _connected_lines(plan)
+    mutations = _mutation_lines(plan)
+    parts = ["Rob-bot searched the existing server before proposing any Discord changes."]
+    if connected:
+        parts.extend(["", "**Existing resources connected**", *connected])
+    else:
+        parts.extend(["", "**Existing resources connected**", "No new safe bindings were needed."])
+    if mutations:
+        parts.extend(["", "**Proposed changes — requires another approval**", *mutations])
+        parts.extend(
+            [
+                "",
+                "Approve to apply only the changes above. Decline to keep the existing-resource "
+                "connections without creating or modifying Discord resources.",
+            ]
+        )
+    embed = discord.Embed(
+        title="Automatic setup discovery",
+        description="\n".join(parts)[:4096],
+        color=discord.Color.blurple(),
+    )
+    embed.set_footer(text="No existing channels, roles, categories, forums, or voice channels are deleted.")
+    return embed
+
+
+def _build_completion_embed(
+    connected: list[ProvisionResult],
+    mutations: list[ProvisionResult],
+    role_channel: discord.TextChannel | None = None,
+) -> discord.Embed:
+    lines = [
+        f"`{result.key.value}`: {result.action.value} `{result.name}`"
+        for result in [*connected, *mutations]
+    ]
+    if role_channel is not None:
+        lines.append(f"`role_panel_message`: refreshed in {role_channel.mention}")
+    if not lines:
+        lines.append("No setup changes were needed; existing mappings remain valid.")
+    embed = discord.Embed(
+        title="Automatic setup complete",
+        description="\n".join(lines)[:4096],
+        color=discord.Color.blurple(),
+    )
+    embed.set_footer(
+        text="Discovery prefers existing server resources. Unrelated and duplicate resources are never deleted automatically."
+    )
+    return embed
+
+
+type RolePanelCallback = Callable[[discord.Guild], Awaitable[discord.TextChannel]]
+
+
+class AutoSetupMutationView(discord.ui.View):
+    def __init__(
+        self,
+        *,
+        invoker_id: int,
+        guild_id: int,
+        provisioner: AutoSetupService,
+        plan: AutoSetupPlan,
+        connected_results: list[ProvisionResult],
+        role_panel_callback: RolePanelCallback,
+    ) -> None:
+        super().__init__(timeout=60)
+        self.invoker_id = invoker_id
+        self.guild_id = guild_id
+        self.provisioner = provisioner
+        self.plan = plan
+        self.connected_results = connected_results
+        self.role_panel_callback = role_panel_callback
+        self.message: discord.WebhookMessage | None = None
+        self.completed = False
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id == self.invoker_id:
+            return True
+        await interaction.response.send_message(
+            "Only the person who ran `/setup auto` can approve or decline these setup changes.",
+            ephemeral=True,
+        )
+        return False
+
+    @discord.ui.button(label="Approve changes", style=discord.ButtonStyle.success)
+    async def approve(
+        self,
+        interaction: discord.Interaction,
+        _button: discord.ui.Button[AutoSetupMutationView],
+    ) -> None:
+        if self.completed:
+            await interaction.response.send_message(
+                "This setup plan has already been decided.", ephemeral=True
+            )
+            return
+        guild = interaction.guild
+        if guild is None or guild.id != self.guild_id:
+            await interaction.response.send_message(
+                "The original server is no longer available for this setup plan.", ephemeral=True
+            )
+            return
+
+        self.completed = True
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        completion = "Approved `/setup auto` changes."
+        try:
+            mutation_results = await self.provisioner.apply_mutations(
+                guild, interaction.user.id, self.plan
+            )
+            role_channel = None
+            if _role_panel_should_refresh(self.plan):
+                role_channel = await self.role_panel_callback(guild)
+            await interaction.followup.send(
+                embed=_build_completion_embed(
+                    self.connected_results, mutation_results, role_channel
+                ),
+                ephemeral=True,
+            )
+        except Exception as error:
+            error_reference = secrets.token_hex(4).upper()
+            logger.exception(
+                "Approved auto-setup mutation plan failed guild_id=%s user_id=%s error_reference=%s",
+                guild.id,
+                interaction.user.id,
+                error_reference,
+            )
+            completion = f"Approved `/setup auto` changes, but execution failed (`{error_reference}`)."
+            await interaction.followup.send(
+                build_failure_message(error, error_reference), ephemeral=True
+            )
+        finally:
+            self.stop()
+            if self.message is not None:
+                try:
+                    await self.message.edit(content=completion, embed=None, view=None)
+                except discord.HTTPException:
+                    logger.debug("Could not update the auto-setup mutation prompt")
+
+    @discord.ui.button(label="Decline changes", style=discord.ButtonStyle.secondary)
+    async def decline(
+        self,
+        interaction: discord.Interaction,
+        _button: discord.ui.Button[AutoSetupMutationView],
+    ) -> None:
+        if self.completed:
+            await interaction.response.send_message(
+                "This setup plan has already been decided.", ephemeral=True
+            )
+            return
+        self.completed = True
+        self.stop()
+        await interaction.response.edit_message(
+            content=(
+                "Declined the proposed `/setup auto` changes. Existing resources discovered and "
+                "safely connected remain bound; no proposed Discord resources were created or modified."
+            ),
+            embed=None,
+            view=None,
+        )
+
+    async def on_timeout(self) -> None:
+        if self.completed or self.message is None:
+            return
+        try:
+            await self.message.edit(
+                content=(
+                    "The `/setup auto` change confirmation expired. Existing resources discovered "
+                    "and safely connected remain bound; no proposed changes were applied."
+                ),
+                embed=None,
+                view=None,
+            )
+        except discord.HTTPException:
+            logger.debug("Could not expire the auto-setup mutation prompt")
 
 
 class ConfigurationCog(commands.Cog):
@@ -102,7 +358,7 @@ class ConfigurationCog(commands.Cog):
 
     @setup_group.command(
         name="auto",
-        description="Discover or create the standard resources needed by the bot.",
+        description="Discover and connect existing resources before proposing missing ones.",
     )
     @app_commands.checks.has_permissions(administrator=True)
     @app_commands.checks.bot_has_permissions(
@@ -123,36 +379,33 @@ class ConfigurationCog(commands.Cog):
             return
 
         await interaction.response.defer(ephemeral=True, thinking=True)
-        results = await self.provisioner.ensure(guild, interaction.user.id)
-        try:
-            role_channel = await self._post_role_panel(guild)
-        except discord.HTTPException as error:
-            raise UserFacingCommandError(
-                describe_discord_failure(
-                    "Resources were configured, but the Live Notifications role panel could not "
-                    "be refreshed",
-                    error,
-                )
-            ) from error
-        except ValueError as error:
-            raise UserFacingCommandError(
-                "Resources were configured, but the Live Notifications role panel could not be "
-                "refreshed. Run `/setup status` to inspect the saved role and channel mappings."
-            ) from error
+        plan = await self.provisioner.discover(guild)
+        connected_results = await self.provisioner.connect_existing(
+            guild, interaction.user.id, plan
+        )
+        mutation_lines = _mutation_lines(plan)
+        if mutation_lines:
+            view = AutoSetupMutationView(
+                invoker_id=interaction.user.id,
+                guild_id=guild.id,
+                provisioner=self.provisioner,
+                plan=plan,
+                connected_results=connected_results,
+                role_panel_callback=self._post_role_panel,
+            )
+            message = await interaction.followup.send(
+                embed=_build_discovery_embed(plan),
+                view=view,
+                ephemeral=True,
+                wait=True,
+            )
+            if isinstance(message, discord.WebhookMessage):
+                view.message = message
+            return
 
-        lines = [
-            f"`{result.key.value}`: {result.action.value} `{result.name}`" for result in results
-        ]
-        lines.append(f"`role_panel_message`: refreshed in {role_channel.mention}")
-        embed = discord.Embed(
-            title="Automatic setup complete",
-            description="\n".join(lines),
-            color=discord.Color.blurple(),
+        await interaction.followup.send(
+            embed=_build_completion_embed(connected_results, []), ephemeral=True
         )
-        embed.set_footer(
-            text="Existing resources were kept or adopted. Unrelated server resources were not deleted."
-        )
-        await interaction.followup.send(embed=embed, ephemeral=True)
 
     @setup_group.command(
         name="role-panel",
