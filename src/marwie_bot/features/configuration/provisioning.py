@@ -292,7 +292,10 @@ class AutoSetupService:
             if isinstance(possible_category, discord.CategoryChannel):
                 category = possible_category
 
-        overwrites = self._private_overwrites(guild) if blueprint.private else None
+        overwrites: dict[
+            discord.Role | discord.Member | discord.Object,
+            discord.PermissionOverwrite,
+        ] = self._private_overwrites(guild) if blueprint.private else {}
 
         if blueprint.kind == ProvisionKind.CATEGORY:
             return await guild.create_category(
@@ -330,10 +333,14 @@ class AutoSetupService:
 
     def _private_overwrites(
         self, guild: discord.Guild
-    ) -> dict[discord.Role | discord.Member, discord.PermissionOverwrite]:
-        overwrites: dict[discord.Role | discord.Member, discord.PermissionOverwrite] = {
-            guild.default_role: discord.PermissionOverwrite(view_channel=False)
-        }
+    ) -> dict[
+        discord.Role | discord.Member | discord.Object,
+        discord.PermissionOverwrite,
+    ]:
+        overwrites: dict[
+            discord.Role | discord.Member | discord.Object,
+            discord.PermissionOverwrite,
+        ] = {guild.default_role: discord.PermissionOverwrite(view_channel=False)}
         bot_member = guild.me
         if bot_member is not None:
             overwrites[bot_member] = discord.PermissionOverwrite(
