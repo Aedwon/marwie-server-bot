@@ -1,6 +1,6 @@
 # Exhaustive command manual implementation plan
 
-Status: in progress
+Status: implementation complete
 Date: 2026-08-25
 Spec: `docs/superpowers/specs/2026-08-25-command-manual.md`
 Decision: `docs/superpowers/decisions/2026-08-25-command-manual.md`
@@ -34,11 +34,13 @@ Documentation only. No slash-command implementation, database schema, permission
 
 Because this task changes documentation and agent instructions only, it does not require a bot restart and does not need Python runtime gates before handoff.
 
-Static verification:
+Completed static verification:
 
-- confirm `docs/commands.md` contains exactly 45 slash-command entries from the current source inventory;
-- confirm each entry has syntax, permissions, parameter documentation, behavior, and example usage;
-- confirm no documented constraint contradicts source validation;
-- compare the branch to `main` and confirm only planned documentation files changed.
+- `docs/commands.md` contains the full 45-command source inventory and 45 per-command syntax entries;
+- each command entry includes permissions, behavior, parameters or an explicit no-parameter statement, and realistic example usage;
+- validation edge cases were cross-checked against command and service code, including moderation hierarchy, ban message-deletion range, ticket-type normalization, reputation zero-point rejection, quiz duration/ranges, anonymous-question limits, AI-source URL validation, and setup resource typing;
+- the README links to the canonical manual;
+- `AGENTS.md` requires future command changes to update the manual in the same change;
+- no runtime code, migration, dependency, or deployment file is intentionally changed by this task.
 
 If the branch is later merged into `main`, the repository's normal main CI may run automatically, but no deployment restart is needed for this documentation-only task.
