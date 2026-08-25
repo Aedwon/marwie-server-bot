@@ -26,7 +26,9 @@ def build_failure_message(error: Exception, error_reference: str) -> str:
 
 def describe_discord_failure(context: str, error: discord.HTTPException) -> str:
     if isinstance(error, discord.Forbidden):
-        return f"{context}: Discord denied the action. Check the bot's permissions and role hierarchy."
+        return (
+            f"{context}: Discord denied the action. Check the bot's permissions and role hierarchy."
+        )
     if isinstance(error, discord.NotFound):
         return f"{context}: the Discord resource no longer exists."
 
