@@ -16,6 +16,16 @@ from marwie_bot.features.configuration.role_panel import (
     upsert_role_panel,
 )
 from marwie_bot.features.configuration.service import FeatureConfigService, ResourceService
+from marwie_bot.shared.confirmations import confirmation_detail
+from marwie_bot.shared.errors import UserFacingCommandError, describe_discord_failure
+
+_AUTO_SETUP_CONFIRMATION_DETAIL = (
+    "Rob-bot will inspect the server's existing setup bindings, keep valid bindings, adopt "
+    "matching standard resources, create any missing standard channels, forums, categories, "
+    "voice channels, roles, and the Solved tag, save the selected resource IDs, and post or "
+    "refresh the Live Notifications self-role panel. It will not delete, rename, or move "
+    "unrelated server resources."
+)
 
 
 class ConfigurationCog(commands.Cog):
@@ -100,6 +110,7 @@ class ConfigurationCog(commands.Cog):
         manage_channels=True,
         manage_roles=True,
     )
+    @confirmation_detail(_AUTO_SETUP_CONFIRMATION_DETAIL)
     async def auto_setup(self, interaction: discord.Interaction) -> None:
         guild = interaction.guild
         if guild is None:
@@ -110,7 +121,21 @@ class ConfigurationCog(commands.Cog):
 
         await interaction.response.defer(ephemeral=True, thinking=True)
         results = await self.provisioner.ensure(guild, interaction.user.id)
-        role_channel = await self._post_role_panel(guild)
+        try:
+            role_channel = await self._post_role_panel(guild)
+        except discord.HTTPException as error:
+            raise UserFacingCommandError(
+                describe_discord_failure(
+                    "Resources were configured, but the Live Notifications role panel could not "
+                    "be refreshed",
+                    error,
+                )
+            ) from error
+        except ValueError as error:
+            raise UserFacingCommandError(
+                "Resources were configured, but the Live Notifications role panel could not be "
+                "refreshed. Run `/setup status` to inspect the saved role and channel mappings."
+            ) from error
 
         lines = [
             f"`{result.key.value}`: {result.action.value} `{result.name}`"
