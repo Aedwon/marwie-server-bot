@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import TypeAlias
 
 import discord
 
@@ -78,7 +77,7 @@ AUTO_SETUP_RESOURCES: tuple[ResourceBlueprint, ...] = (
     ResourceBlueprint(ResourceKey.LIVE_PING_ROLE, ProvisionKind.ROLE, "Live Notifications"),
 )
 
-DiscordResource: TypeAlias = (
+type DiscordResource = (
     discord.TextChannel
     | discord.VoiceChannel
     | discord.ForumChannel
