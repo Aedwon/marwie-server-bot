@@ -9,6 +9,7 @@ from discord.ext import commands
 from marwie_bot.config.settings import Settings
 from marwie_bot.db.migrations import upgrade_database
 from marwie_bot.db.session import Database
+from marwie_bot.shared.confirmations import install_command_confirmations
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +100,9 @@ class MarwieBot(commands.Bot):
         for extension in EXTENSIONS:
             await self.load_extension(extension)
             logger.info("Loaded extension %s", extension)
+
+        wrapped = install_command_confirmations(self.tree)
+        logger.info("Installed confirmation flow for %s application commands", wrapped)
 
         if not self.settings.sync_commands:
             logger.info("Command sync disabled")
