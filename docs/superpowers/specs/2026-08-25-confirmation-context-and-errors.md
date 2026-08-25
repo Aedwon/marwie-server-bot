@@ -34,7 +34,15 @@ Long option values must be truncated so the confirmation remains within Discord 
 - post or refresh the Live Notifications self-role panel;
 - not delete, rename, or move unrelated server resources.
 
+The confirmation must also explain that the standard setup requires Discord Community to be enabled because `build-help` and `showcase` are Forum Channels.
+
 This confirmation is a behavior summary. It does not claim which individual resources will be created because discovery happens only after approval.
+
+## `/setup auto` preflight
+
+Before provisioning any Discord resources, the command must verify that the guild has Discord's `COMMUNITY` feature enabled.
+
+If Community is disabled, the command must stop before creating or rebinding anything and return an actionable safe message explaining that Community is required for the standard Forum Channels. The administrator can enable Community in Discord Server Settings and rerun `/setup auto` afterward.
 
 ## Failure reporting
 
@@ -67,6 +75,7 @@ Add focused tests for:
 - `/setup auto` custom confirmation details;
 - option-value truncation;
 - safe user-facing error formatting;
+- Community requirement behavior that can be tested without a live Discord server;
 - preservation of the existing auto-setup blueprint tests.
 
 Full verification remains:
