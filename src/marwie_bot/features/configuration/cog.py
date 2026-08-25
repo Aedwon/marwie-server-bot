@@ -6,9 +6,14 @@ from discord.ext import commands
 
 from marwie_bot.config.resources import FeatureName, ResourceKey, ResourceType
 from marwie_bot.db.session import Database
+from marwie_bot.features.configuration.provisioning import AutoSetupService
 from marwie_bot.features.configuration.repository import (
     SQLAlchemyFeatureConfigRepository,
     SQLAlchemyResourceRepository,
+)
+from marwie_bot.features.configuration.role_panel import (
+    LiveNotificationRoleView,
+    upsert_role_panel,
 )
 from marwie_bot.features.configuration.service import FeatureConfigService, ResourceService
 
@@ -26,10 +31,14 @@ class ConfigurationCog(commands.Cog):
         bot: commands.Bot,
         resources: ResourceService,
         features: FeatureConfigService,
+        provisioner: AutoSetupService,
+        role_view: LiveNotificationRoleView,
     ) -> None:
         self.bot = bot
         self.resources = resources
         self.features = features
+        self.provisioner = provisioner
+        self.role_view = role_view
 
     async def _set_resource(
         self,
@@ -54,6 +63,81 @@ class ConfigurationCog(commands.Cog):
             return
         await interaction.response.send_message(
             f"Set `{record.key.value}` to {display}.", ephemeral=True
+        )
+
+    async def _post_role_panel(self, guild: discord.Guild) -> discord.TextChannel:
+        channel_record = await self.resources.get(guild.id, ResourceKey.ROLE_PANEL)
+        role_record = await self.resources.get(guild.id, ResourceKey.LIVE_PING_ROLE)
+        channel = guild.get_channel(channel_record.discord_id) if channel_record is not None else None
+        role = guild.get_role(role_record.discord_id) if role_record is not None else None
+
+        if not isinstance(channel, discord.TextChannel):
+            raise ValueError(
+                "The `role_panel` channel is not configured. Run `/setup auto` or set it with "
+                "`/setup text-channel`."
+            )
+        if role is None:
+            raise ValueError(
+                "The `live_ping_role` role is not configured. Run `/setup auto` or set it with "
+                "`/setup role`."
+            )
+        if self.bot.user is None:
+            raise RuntimeError("Bot user is unavailable while posting the role panel")
+
+        await upsert_role_panel(channel, role, self.role_view, self.bot.user.id)
+        return channel
+
+    @setup_group.command(
+        name="auto",
+        description="Discover or create the standard resources needed by the bot.",
+    )
+    @app_commands.checks.has_permissions(administrator=True)
+    async def auto_setup(self, interaction: discord.Interaction) -> None:
+        guild = interaction.guild
+        if guild is None:
+            await interaction.response.send_message(
+                "This command only works in a server.", ephemeral=True
+            )
+            return
+
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        results = await self.provisioner.ensure(guild, interaction.user.id)
+        role_channel = await self._post_role_panel(guild)
+
+        lines = [
+            f"`{result.key.value}`: {result.action.value} `{result.name}`"
+            for result in results
+        ]
+        lines.append(f"`role_panel_message`: refreshed in {role_channel.mention}")
+        embed = discord.Embed(
+            title="Automatic setup complete",
+            description="\n".join(lines),
+            color=discord.Color.blurple(),
+        )
+        embed.set_footer(
+            text="Existing resources were kept or adopted. Unrelated server resources were not deleted."
+        )
+        await interaction.followup.send(embed=embed, ephemeral=True)
+
+    @setup_group.command(
+        name="role-panel",
+        description="Post or refresh the member self-role panel.",
+    )
+    @app_commands.checks.has_permissions(administrator=True)
+    async def role_panel(self, interaction: discord.Interaction) -> None:
+        guild = interaction.guild
+        if guild is None:
+            await interaction.response.send_message(
+                "This command only works in a server.", ephemeral=True
+            )
+            return
+        try:
+            channel = await self._post_role_panel(guild)
+        except ValueError as error:
+            await interaction.response.send_message(str(error), ephemeral=True)
+            return
+        await interaction.response.send_message(
+            f"Role panel is ready in {channel.mention}.", ephemeral=True
         )
 
     @setup_group.command(name="text-channel", description="Set a text-channel resource.")
@@ -227,4 +311,7 @@ async def setup(bot: commands.Bot) -> None:
         raise RuntimeError("Database is not initialized before loading ConfigurationCog")
     resources = ResourceService(SQLAlchemyResourceRepository(database))
     features = FeatureConfigService(SQLAlchemyFeatureConfigRepository(database))
-    await bot.add_cog(ConfigurationCog(bot, resources, features))
+    provisioner = AutoSetupService(resources)
+    role_view = LiveNotificationRoleView(resources)
+    bot.add_view(role_view)
+    await bot.add_cog(ConfigurationCog(bot, resources, features, provisioner, role_view))
