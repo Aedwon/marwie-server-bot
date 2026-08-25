@@ -29,6 +29,12 @@ Arbitrary exception strings are not shown to users because they can contain impl
 
 The provisioner remains fail-fast. A failed resource is not silently skipped and the command does not claim setup completed when only part of it succeeded.
 
+## Require Community before standard automatic setup
+
+The standard V1 layout depends on `build-help` and `showcase` Forum Channels. Discord requires Community to be enabled for forum-channel creation, so `/setup auto` now checks the guild's `COMMUNITY` feature before it makes any setup changes.
+
+If Community is disabled, setup stops before provisioning and tells the administrator to enable Community in Discord Server Settings. This is safer than creating several resources first and failing only when the first forum is reached.
+
 ## Fold the pending Ruff alias fix into this branch
 
 The previously prepared Python 3.12 type-alias modernization is included in this refinement branch so the next full CI run can exercise the confirmation changes on a lint-clean tree.
