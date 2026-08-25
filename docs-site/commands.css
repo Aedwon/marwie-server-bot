@@ -53,35 +53,12 @@
 .manual-content {
   padding-top: 8px;
 }
-.manual-content > h2,
-.manual-content > h3,
-.manual-content > h4,
-.manual-content > h5 {
+.manual-content h2,
+.manual-content h3,
+.manual-content h4,
+.manual-content h5,
+.workflow-section {
   scroll-margin-top: 24px;
-}
-.manual-content > h2 {
-  margin-top: 52px;
-  padding-top: 10px;
-  font-size: 30px;
-  border-top: 1px solid var(--border);
-}
-.manual-content > h2:first-child {
-  border-top: 0;
-}
-.manual-content > h3 {
-  position: relative;
-  margin-top: 34px;
-  padding-top: 4px;
-  font-size: 21px;
-}
-.manual-content > h4 {
-  margin-top: 25px;
-  font-size: 16px;
-  letter-spacing: -0.012em;
-}
-.manual-content > h5 {
-  margin-top: 20px;
-  font-size: 14px;
 }
 .manual-content p,
 .manual-content li {
@@ -170,10 +147,101 @@
 .manual-content td:last-child {
   border-right: 0;
 }
-.command-heading {
+.workflow-section {
+  padding: 48px 0 12px;
+  border-bottom: 1px solid var(--border);
+}
+.workflow-section:last-child {
+  border-bottom: 0;
+}
+.workflow-header {
+  margin-bottom: 26px;
+}
+.workflow-audience {
+  margin-bottom: 6px;
+  color: var(--quiet);
+  font-size: 11.5px;
+  font-weight: 650;
+  letter-spacing: .025em;
+  text-transform: uppercase;
+}
+.workflow-header h2 {
+  margin: 0 0 9px;
+  font-size: 30px;
+  line-height: 1.16;
+}
+.workflow-header > p {
+  max-width: 740px;
+  margin-bottom: 18px;
+  font-size: 16px;
+}
+.workflow-path {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-soft);
+}
+.workflow-path > strong {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 13px;
+}
+.workflow-path ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 22px;
+  margin: 0;
+  padding-left: 20px;
+}
+.workflow-path li {
+  margin: 0;
+  font-size: 13px;
+}
+.workflow-context {
+  margin-bottom: 28px;
+  padding: 2px 0 4px 16px;
+  border-left: 3px solid var(--accent);
+}
+.workflow-context > h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+.workflow-context > h4 {
+  margin: 18px 0 7px;
+  font-size: 15px;
+}
+.workflow-context > hr {
+  display: none;
+}
+.workflow-command-list {
+  border-top: 1px solid var(--border);
+}
+.command-entry {
+  padding: 28px 0 30px;
+  border-bottom: 1px solid var(--border);
+}
+.command-entry:last-child {
+  border-bottom: 0;
+}
+.command-entry > hr {
+  display: none;
+}
+.command-entry > h3 {
+  position: relative;
   display: flex;
   align-items: baseline;
   gap: 8px;
+  margin: 0 0 15px;
+  font-size: 22px;
+}
+.command-entry > h4 {
+  margin: 23px 0 8px;
+  font-size: 16px;
+  letter-spacing: -0.012em;
+}
+.command-entry > h5 {
+  margin: 19px 0 7px;
+  font-size: 14px;
 }
 .command-heading code {
   font-size: .78em;
@@ -187,16 +255,8 @@
   transition: opacity .12s ease;
 }
 .command-heading:hover .heading-link,
-.command-heading:focus-within .heading-link,
-.manual-category:hover .heading-link,
-.manual-category:focus-within .heading-link {
+.command-heading:focus-within .heading-link {
   opacity: 1;
-}
-.manual-category {
-  position: relative;
-}
-.manual-category .heading-link {
-  margin-left: 7px;
 }
 .manual-loading,
 .manual-error {
@@ -224,11 +284,19 @@
   .command-search-row button {
     width: 100%;
   }
-  .manual-content > h2 {
-    margin-top: 42px;
+  .workflow-section {
+    padding-top: 40px;
+  }
+  .workflow-header h2 {
     font-size: 27px;
   }
-  .manual-content > h3 {
+  .workflow-path ol {
+    display: block;
+  }
+  .workflow-path li + li {
+    margin-top: 5px;
+  }
+  .command-entry > h3 {
     font-size: 20px;
   }
   .heading-link {
