@@ -58,6 +58,16 @@ Moderation and administrative actions need explicit checks.
 - Log destructive actions with enough context to audit them later.
 - Do not expose anonymous identities publicly. Staff audit access must be deliberate and permission-gated.
 
+## Command documentation
+
+`docs/commands.md` is the canonical operator and member manual for slash commands.
+
+Any change that adds, removes, renames, changes parameters for, changes permissions for, or materially changes the behavior of a slash command must update `docs/commands.md` in the same change.
+
+Keep each command entry accurate to implementation. Document the exact syntax, who may invoke it, every parameter and accepted range or normalization rule, important prerequisites, side effects, failure conditions, and at least one realistic example. Do not invent behavior to make the documentation look complete.
+
+When a slash command is part of a button, modal, or other Discord interaction workflow, update the related-control section when that surrounding workflow materially changes too.
+
 ## Database changes
 
 A schema change and its migration belong to the same task.
