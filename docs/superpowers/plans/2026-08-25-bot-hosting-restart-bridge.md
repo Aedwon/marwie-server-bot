@@ -1,7 +1,7 @@
 # Bot-Hosting Restart Bridge Plan
 
 Date: 2026-08-25
-Status: Implementation complete; owner secret setup and runtime verification pending
+Status: Implementation complete; runtime verification pending first restart
 Spec: `docs/superpowers/specs/2026-08-25-bot-hosting-restart-bridge.md`
 Decision log: `docs/superpowers/decisions/2026-08-25-bot-hosting-restart-bridge.md`
 
@@ -14,8 +14,7 @@ Add a minimal GitHub Actions bridge that can restart Rob-bot on Bot-Hosting.net 
 | File | Change |
 | --- | --- |
 | `.github/workflows/restart-bot-hosting.yml` | Add minimal restart workflow. |
-| `.ops/bot-hosting-restart` | Add the dedicated restart marker. |
-| `docs/operations/bot-hosting-restart.md` | Document owner setup, secrets, Auto Pull, and restart behavior. |
+| `README.md` | Document owner setup, secrets, Auto Pull, and restart behavior. |
 | `docs/superpowers/specs/2026-08-25-bot-hosting-restart-bridge.md` | Record required behavior and constraints. |
 | `docs/superpowers/decisions/2026-08-25-bot-hosting-restart-bridge.md` | Record permission and trigger decisions. |
 | `docs/superpowers/plans/2026-08-25-bot-hosting-restart-bridge.md` | Track implementation and verification. |
@@ -30,32 +29,29 @@ Add a minimal GitHub Actions bridge that can restart Rob-bot on Bot-Hosting.net 
 6. Validate both values are non-empty.
 7. Call Bot-Hosting.net `POST /api/v1/deployments/{id}/power` with `{"action":"restart"}`.
 8. Use strict curl failure handling and a short job timeout.
-9. Document one-time owner setup in `docs/operations/bot-hosting-restart.md`.
+9. Document one-time owner setup in README.
 10. Do not modify `.github/workflows/ci.yml`.
 
 ## Verification
 
-Static checks:
+Static checks completed:
 
-- inspect the resulting workflow YAML;
-- confirm trigger branch and path are exact;
-- confirm no checkout or dependency install exists;
-- confirm only `contents: read` is granted;
-- confirm only the two repository secrets are referenced;
-- confirm the API endpoint and request body match current Bot-Hosting.net documentation;
-- compare branch to `main` and confirm no unrelated files changed.
+- inspected the resulting workflow YAML;
+- confirmed trigger branch and path are exact;
+- confirmed no checkout or dependency install exists;
+- confirmed only `contents: read` is granted;
+- confirmed only the two repository secrets are referenced;
+- confirmed the API endpoint and request body match current Bot-Hosting.net documentation;
+- compared branch to `main` and confirmed no unrelated files changed.
 
 Runtime checks:
 
-- do not trigger a workflow before the repository owner adds secrets;
-- after owner setup and merge, create `ops/bot-hosting-restart` from the merged `main` head;
-- update `.ops/bot-hosting-restart` on that branch to exercise the bridge;
+- owner has reported that both required repository secrets are configured;
+- merge the bridge to `main`;
+- create `ops/bot-hosting-restart` from the merged commit;
+- update the restart marker to exercise the bridge;
 - inspect the resulting workflow run and report the actual result.
 
 ## Actions-minute policy
 
 Do not open a PR for this implementation unless requested because the repository's PR CI would consume Actions minutes. Do not manually trigger existing CI. The restart workflow itself runs only when explicitly requested through its marker or GitHub UI.
-
-## Current state
-
-The workflow, marker, design records, and operations guide are implemented on `web/bot-hosting-restart-bridge`. No workflow has been triggered. Runtime verification is blocked only on the repository owner adding the Bot-Hosting.net API key and deployment ID as GitHub Actions repository secrets, followed by an authorized merge to `main` and initialization of the operations branch.
