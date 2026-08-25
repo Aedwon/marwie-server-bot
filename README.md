@@ -22,6 +22,8 @@ If an approved command fails unexpectedly, the private failure message includes 
 
 ## Commands
 
+For exact syntax, permissions, every accepted option and range, side effects, failure conditions, and realistic examples for all 45 slash commands, see the **[Rob-bot command manual](docs/commands.md)**.
+
 Core and setup:
 
 - `/ping`
