@@ -211,6 +211,7 @@
   margin-bottom: 5px;
   color: var(--text);
 }
+.command-page .nav a[aria-current="page"],
 .manual-nav a[aria-current="true"] {
   color: var(--accent-text);
   background: var(--accent-soft);
