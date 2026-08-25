@@ -1,6 +1,6 @@
 # Command manual website page implementation plan
 
-Status: in progress
+Status: complete
 Date: 2026-08-25
 Spec: `docs/superpowers/specs/2026-08-25-docs-site-command-manual-page.md`
 Decision: `docs/superpowers/decisions/2026-08-25-docs-site-command-manual-page.md`
@@ -29,12 +29,17 @@ Decision: `docs/superpowers/decisions/2026-08-25-docs-site-command-manual-page.m
 
 ## Verification
 
-This is static documentation-site work. Do not run the bot CI or restart Bot-Hosting for this change.
+This is static documentation-site work. The bot CI was not run and Bot-Hosting was not restarted.
 
-Static checks:
+Completed static checks:
 
-- `commands.md` uses the same blob SHA as `main:docs/commands.md` at implementation time.
-- Commands page has a no-JavaScript fallback link to the raw local Markdown file.
-- Commands page loads `styles.css`, `commands.css`, and local scripts only.
-- Homepage contains the `/commands` navigation link.
-- Branch is based only on `rob-bot-docs-site` and does not attempt to merge stale bot-runtime code into `main`.
+- `docs-site/commands.md` has blob SHA `2b76ad477712069b102920bb5cdabb91b243ab09`, exactly matching the canonical `main:docs/commands.md` blob used for this publication.
+- The copied manual states and documents 45 current slash commands.
+- `commands.html` has a no-JavaScript fallback link to the local `/commands.md` file.
+- The formatted page loads only local `styles.css`, `commands.css`, `commands.js`, the local Markdown payload, and existing local Rob-bot artwork. No third-party Markdown renderer is used.
+- The renderer provides category anchors, stable `command-*` anchors, command search, theme persistence, mobile navigation, and a 45-command runtime count check.
+- The homepage sidebar and Start here section both link to `/commands`.
+- Comparison against `rob-bot-docs-site` shows the branch is ahead only and changes only the planned five docs-site files plus the three design-record files.
+- No bot runtime files, database files, host configuration, or GitHub Actions workflows were changed.
+
+A production visual smoke test remains appropriate after the docs-site branch is updated because the feature branch itself is not the production Vercel branch.
