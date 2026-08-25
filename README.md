@@ -9,11 +9,14 @@ The V1 implementation covers moderation, message logs, tickets, temporary voice 
 Every slash command requires one explicit confirmation before it runs.
 
 1. Run the slash command and fill in its options as usual.
-2. Rob-bot shows an ephemeral **Approve** / **Decline** prompt.
-3. **Approve** runs the command. **Decline** makes no change and runs no command callback.
-4. The prompt expires after 60 seconds if neither option is selected.
+2. Rob-bot shows an ephemeral confirmation containing the exact command, what it does, any supplied option values and command-specific side effects when they matter.
+3. Review the context, then press **Approve** or **Decline**.
+4. **Approve** runs the command. **Decline** makes no change and runs no command callback.
+5. The prompt expires after 60 seconds if neither option is selected.
 
 Only the member who invoked the command can approve or decline it. This applies to all slash commands, including read-only commands such as `/rank`, `/profile`, `/leaderboard` and `/setup status`.
+
+If an approved command fails unexpectedly, the private failure message includes a short error reference. Known safe operational failures, including automatic-setup Discord errors, also explain the failing resource or stage without exposing raw tracebacks or secrets.
 
 ## Commands
 
@@ -114,13 +117,18 @@ Administrator also covers these permissions and is the simplest configuration fo
 
 ## Recommended one-time server setup
 
-The normal first-run path is now one command:
+The standard automatic setup uses Discord Forum Channels for `build-help` and `showcase`, so **Discord Community must be enabled first**. In Discord, open **Server Settings → Enable Community** and complete Discord's Community setup before running `/setup auto`.
 
-1. Start the bot and make sure its slash commands are synced.
-2. As a server Administrator, run `/setup auto`.
-3. Review the confirmation prompt and press **Approve**.
-4. Review the private setup report. It states which resources were kept, adopted or created.
-5. Run `/setup status` any time you want to inspect the stored mappings.
+The normal first-run path is:
+
+1. Enable Discord Community for the server.
+2. Start the bot and make sure its slash commands are synced.
+3. As a server Administrator, run `/setup auto`.
+4. Review the contextual confirmation, including the operations Rob-bot will perform, and press **Approve**.
+5. Review the private setup report. It states which resources were kept, adopted or created.
+6. Run `/setup status` any time you want to inspect the stored mappings.
+
+`/setup auto` checks for Community before provisioning anything. If Community is disabled, it stops without making setup changes and tells the administrator what to enable.
 
 `/setup auto` is safe to run again. For each resource it first keeps a valid configured object, then looks for an existing object with the standard name, and only creates a new one when neither exists. It does not delete unrelated roles, channels, categories or forum tags, and it does not rename or move an existing resource simply to force the suggested layout.
 
@@ -217,7 +225,8 @@ Once the intended branch is deployed, startup should require no code changes:
 10. Set `ENABLE_MESSAGE_CONTENT=true` only if the matching privileged intent is enabled in Discord.
 11. Leave `DATABASE_URL` unset to use persistent SQLite storage at `data/marwie.db`, or set a PostgreSQL URL.
 12. Start the application and confirm migrations, extension loading and command sync complete in the console.
-13. Run `/setup auto` in Discord and approve the setup plan.
+13. Enable Discord Community for the target server if it is not already enabled.
+14. Run `/setup auto` in Discord and approve the contextual setup plan.
 
 Keep host backups enabled for the SQLite database. The application normalizes ordinary `postgres://` and `postgresql://` URLs to the async PostgreSQL driver automatically.
 
