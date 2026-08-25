@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Collection
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -11,6 +12,12 @@ from marwie_bot.features.configuration.service import ResourceService
 from marwie_bot.shared.errors import UserFacingCommandError, describe_discord_failure
 
 logger = logging.getLogger(__name__)
+
+_COMMUNITY_REQUIRED_MESSAGE = (
+    "Automatic setup requires Discord Community to be enabled because Rob-bot uses the "
+    "`build-help` and `showcase` Forum Channels. Enable Community in Server Settings, then run "
+    "`/setup auto` again. No setup changes were made."
+)
 
 
 class ProvisionKind(StrEnum):
@@ -90,11 +97,18 @@ type DiscordResource = (
 )
 
 
+def require_auto_setup_community(features: Collection[str]) -> None:
+    if "COMMUNITY" not in features:
+        raise UserFacingCommandError(_COMMUNITY_REQUIRED_MESSAGE)
+
+
 class AutoSetupService:
     def __init__(self, resources: ResourceService) -> None:
         self.resources = resources
 
     async def ensure(self, guild: discord.Guild, actor_id: int) -> list[ProvisionResult]:
+        require_auto_setup_community(guild.features)
+
         ensured: dict[ResourceKey, DiscordResource] = {}
         results: list[ProvisionResult] = []
 
