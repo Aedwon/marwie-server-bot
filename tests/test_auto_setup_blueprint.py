@@ -34,6 +34,11 @@ def test_auto_setup_role_semantics_are_explicit() -> None:
     assert by_key[ResourceKey.ROLE_PANEL].name == "roles"
 
 
+def test_auto_setup_keeps_ticket_category_private() -> None:
+    by_key = {item.key: item for item in AUTO_SETUP_RESOURCES}
+    assert by_key[ResourceKey.TICKET_CATEGORY].private is True
+
+
 def test_auto_setup_normalizes_decorative_discord_names() -> None:
     assert normalize_resource_name("🚨-announcements") == "announcements"
     assert normalize_resource_name("📱-app-of-the-week") == "app-of-the-week"
