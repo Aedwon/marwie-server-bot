@@ -76,15 +76,21 @@ def _mutation_lines(plan: AutoSetupPlan) -> list[str]:
 
     solved = plan.solved_tag
     if solved.action == DiscoveryAction.REMAP:
-        forum = solved.forum.mention if solved.forum is not None else "the selected build-help forum"
+        forum = (
+            solved.forum.mention if solved.forum is not None else "the selected build-help forum"
+        )
         tag_name = solved.tag.name if solved.tag is not None else "Solved"
         lines.append(f"- Connect `solved_tag` to existing `{tag_name}` in {forum}.")
     elif solved.action == DiscoveryAction.CREATE:
-        forum = solved.forum.mention if solved.forum is not None else "the selected build-help forum"
+        forum = (
+            solved.forum.mention if solved.forum is not None else "the selected build-help forum"
+        )
         lines.append(f"- Add a `Solved` tag to {forum}.")
 
     if _role_panel_should_refresh(plan):
-        lines.append("- Post or refresh the Live Notifications self-role panel in the selected roles channel.")
+        lines.append(
+            "- Post or refresh the Live Notifications self-role panel in the selected roles channel."
+        )
     return lines
 
 
@@ -92,9 +98,7 @@ def _connected_lines(plan: AutoSetupPlan) -> list[str]:
     lines: list[str] = []
     for item in plan.resources:
         if item.action == DiscoveryAction.BIND:
-            lines.append(
-                f"- `{item.blueprint.key.value}` → {_display_resource(item.target)}"
-            )
+            lines.append(f"- `{item.blueprint.key.value}` → {_display_resource(item.target)}")
     if plan.solved_tag.action == DiscoveryAction.BIND and plan.solved_tag.tag is not None:
         forum = (
             plan.solved_tag.forum.mention
@@ -127,7 +131,9 @@ def _build_discovery_embed(plan: AutoSetupPlan) -> discord.Embed:
         description="\n".join(parts)[:4096],
         color=discord.Color.blurple(),
     )
-    embed.set_footer(text="No existing channels, roles, categories, forums, or voice channels are deleted.")
+    embed.set_footer(
+        text="No existing channels, roles, categories, forums, or voice channels are deleted."
+    )
     return embed
 
 
@@ -230,7 +236,9 @@ class AutoSetupMutationView(discord.ui.View):
                 interaction.user.id,
                 error_reference,
             )
-            completion = f"Approved `/setup auto` changes, but execution failed (`{error_reference}`)."
+            completion = (
+                f"Approved `/setup auto` changes, but execution failed (`{error_reference}`)."
+            )
             await interaction.followup.send(
                 build_failure_message(error, error_reference), ephemeral=True
             )

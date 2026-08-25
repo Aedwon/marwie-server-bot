@@ -197,9 +197,7 @@ def normalize_resource_name(name: str) -> str:
 
 
 def blueprint_names(blueprint: ResourceBlueprint) -> frozenset[str]:
-    return frozenset(
-        normalize_resource_name(name) for name in (blueprint.name, *blueprint.aliases)
-    )
+    return frozenset(normalize_resource_name(name) for name in (blueprint.name, *blueprint.aliases))
 
 
 def resource_name_matches(name: str, blueprint: ResourceBlueprint) -> bool:
@@ -246,9 +244,7 @@ class AutoSetupService:
                 continue
 
             if current is None:
-                discoveries.append(
-                    ResourceDiscovery(blueprint, DiscoveryAction.BIND, target, None)
-                )
+                discoveries.append(ResourceDiscovery(blueprint, DiscoveryAction.BIND, target, None))
             elif current.id == target.id:
                 discoveries.append(
                     ResourceDiscovery(blueprint, DiscoveryAction.KEEP, current, current)
@@ -287,10 +283,7 @@ class AutoSetupService:
                 )
             )
 
-        if (
-            plan.solved_tag.action == DiscoveryAction.BIND
-            and plan.solved_tag.tag is not None
-        ):
+        if plan.solved_tag.action == DiscoveryAction.BIND and plan.solved_tag.tag is not None:
             await self.resources.set_resource(
                 guild.id,
                 ResourceKey.SOLVED_TAG,
@@ -315,8 +308,7 @@ class AutoSetupService:
         plan: AutoSetupPlan,
     ) -> list[ProvisionResult]:
         if any(
-            item.action == DiscoveryAction.CREATE
-            and item.blueprint.kind == ProvisionKind.FORUM
+            item.action == DiscoveryAction.CREATE and item.blueprint.kind == ProvisionKind.FORUM
             for item in plan.resources
         ):
             require_auto_setup_community(guild.features)
@@ -378,15 +370,11 @@ class AutoSetupService:
                     blueprint.key.value,
                 )
                 raise UserFacingCommandError(
-                    describe_discord_failure(
-                        f"Could not configure `{blueprint.key.value}`", error
-                    )
+                    describe_discord_failure(f"Could not configure `{blueprint.key.value}`", error)
                 ) from error
 
             ensured[blueprint.key] = resource
-            results.append(
-                ProvisionResult(blueprint.key, action, resource.name, resource.id)
-            )
+            results.append(ProvisionResult(blueprint.key, action, resource.name, resource.id))
 
         if plan.solved_tag.action in {DiscoveryAction.REMAP, DiscoveryAction.CREATE}:
             results.append(await self._apply_solved_tag(guild, actor_id, plan, ensured))
@@ -478,11 +466,7 @@ class AutoSetupService:
                     describe_discord_failure("Could not add the `Solved` forum tag", error)
                 ) from error
             existing = next(
-                (
-                    tag
-                    for tag in updated_forum.available_tags
-                    if tag.name.casefold() == "solved"
-                ),
+                (tag for tag in updated_forum.available_tags if tag.name.casefold() == "solved"),
                 None,
             )
             action = ProvisionAction.CREATED
