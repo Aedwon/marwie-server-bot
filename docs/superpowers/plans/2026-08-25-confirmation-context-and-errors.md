@@ -1,7 +1,7 @@
 # Contextual confirmations and setup error reporting plan
 
 Date: 2026-08-25
-Status: In progress
+Status: Implementation complete; executable verification pending merge
 Spec: `docs/superpowers/specs/2026-08-25-confirmation-context-and-errors.md`
 Decision log: `docs/superpowers/decisions/2026-08-25-confirmation-context-and-errors.md`
 
@@ -23,18 +23,18 @@ Improve the existing central confirmation layer so every approval prompt explain
 | `docs/superpowers/decisions/2026-08-25-confirmation-context-and-errors.md` | Record design decisions. |
 | `docs/superpowers/plans/2026-08-25-confirmation-context-and-errors.md` | Track implementation and verification. |
 
-## Implementation order
+## Implementation completed
 
-1. Update tests first for the new pure confirmation helpers, Community preflight, and setup error formatting.
-2. Add a callback annotation helper for command-specific confirmation details.
-3. Build confirmation text from exact command name, command description, custom detail, and parsed option values.
-4. Keep the existing central Approve/Decline flow and use the richer prompt when sending the initial response.
-5. Add a shared safe `UserFacingCommandError` contract plus short error reference IDs for unexpected exceptions.
-6. Add a `/setup auto` preflight that stops before changes when Discord Community is disabled.
-7. Wrap Discord HTTP failures in auto provisioning with the resource key and a safe message.
-8. Wrap role-panel finalization failures with a setup-specific safe message.
-9. Confirm the existing Python 3.12 type-alias lint fix remains present.
-10. Update README setup guidance and review the branch diff for unrelated changes.
+1. Tests were updated first for the new pure confirmation helpers, Community preflight, and setup error formatting.
+2. Added a callback annotation helper for command-specific confirmation details.
+3. Confirmation text now includes the exact command, command description, custom side-effect detail, and parsed option values.
+4. The existing central Approve/Decline flow remains intact.
+5. Added a shared safe `UserFacingCommandError` contract and short random error reference IDs for unexpected exceptions.
+6. `/setup auto` now stops before provisioning when Discord Community is disabled.
+7. Discord HTTP failures during auto provisioning identify the failing resource and log the traceback.
+8. Role-panel finalization failures return a setup-specific safe message.
+9. The previously prepared Python 3.12 type-alias lint fix remains included.
+10. README setup guidance now documents contextual confirmations and the Community prerequisite.
 
 ## Verification
 
@@ -49,18 +49,19 @@ python -m compileall -q src tests migrations main.py
 alembic upgrade head
 ```
 
-Before merge, perform static verification through the repository connector:
+Static verification completed:
 
-- confirm only planned files changed;
-- confirm no raw exception body is sent for generic errors;
-- confirm `/setup auto` confirmation explicitly describes additive/adopt/create behavior, Community requirement, and non-destructive limits;
-- confirm Community-disabled setup stops before the provisioner is called;
-- confirm option values are bounded in length;
-- confirm the pending `TypeAlias` import is removed and the Python 3.12 `type` alias syntax remains.
+- branch is ahead of `main` with no divergence;
+- only planned files changed;
+- generic failures do not send arbitrary exception text to Discord;
+- `/setup auto` confirmation describes keep/adopt/create behavior, the Community requirement, and non-destructive limits;
+- Community-disabled setup raises before any resource provisioning loop starts;
+- option values are bounded to a short display length;
+- the pending `TypeAlias` import is removed and Python 3.12 `type` alias syntax is present.
 
 ## Environment limitation
 
-The local execution container does not currently have `discord.py`, and package installation is blocked by DNS resolution. Do not claim local pytest, Ruff, mypy, compile, or migration verification. The next GitHub CI run remains the executable verification environment.
+The local execution container does not currently have `discord.py`, and package installation is blocked by DNS resolution. Local pytest, Ruff, mypy, compile, and migration verification were therefore not run. The next GitHub CI run remains the executable verification environment.
 
 ## Deployment
 
