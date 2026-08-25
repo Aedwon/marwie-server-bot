@@ -1,19 +1,79 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Awaitable, Callable
+import secrets
+from collections.abc import Awaitable, Callable, Mapping
+from enum import Enum
 from typing import Any
 
 import discord
 from discord import app_commands
 
+from marwie_bot.shared.errors import build_failure_message
+
 logger = logging.getLogger(__name__)
 
 _CONFIRMATION_EXTRA_KEY = "marwie_confirmation_wrapped"
+_CONFIRMATION_DETAIL_ATTR = "__marwie_confirmation_detail__"
+_OPTION_VALUE_LIMIT = 120
+
+type CommandCallback = Callable[..., Awaitable[Any]]
 
 
-def build_confirmation_prompt(command_name: str) -> str:
-    return f"Run `/{command_name}`?"
+def confirmation_detail(text: str) -> Callable[[CommandCallback], CommandCallback]:
+    detail = text.strip()
+
+    def decorator(callback: CommandCallback) -> CommandCallback:
+        setattr(callback, _CONFIRMATION_DETAIL_ATTR, detail)
+        return callback
+
+    return decorator
+
+
+def _truncate_option_value(text: str) -> str:
+    clean = " ".join(text.split()).replace("`", "'")
+    if len(clean) <= _OPTION_VALUE_LIMIT:
+        return clean
+    return f"{clean[: _OPTION_VALUE_LIMIT - 1]}…"
+
+
+def _format_option_value(value: Any) -> str:
+    if value is None:
+        return "not set"
+    if isinstance(value, bool):
+        return str(value).lower()
+    if isinstance(value, Enum):
+        return _truncate_option_value(str(value.value))
+    if isinstance(value, discord.Attachment):
+        return _truncate_option_value(value.filename)
+    if isinstance(value, discord.abc.Snowflake):
+        name = getattr(value, "display_name", None) or getattr(value, "name", None)
+        if name is not None:
+            return _truncate_option_value(f"{name} ({value.id})")
+        return str(value.id)
+    return _truncate_option_value(str(value))
+
+
+def build_confirmation_prompt(
+    command_name: str,
+    description: str,
+    options: Mapping[str, Any],
+    *,
+    detail: str | None = None,
+) -> str:
+    parts = [f"**Confirm `/{command_name}`**", description.strip()]
+
+    if detail:
+        parts.extend(["", "**What will happen**", detail.strip()])
+
+    if options:
+        parts.extend(["", "**Options**"])
+        parts.extend(
+            f"- `{name}`: `{_format_option_value(value)}`" for name, value in options.items()
+        )
+
+    parts.extend(["", "Approve to continue. Decline to cancel."])
+    return "\n".join(parts)
 
 
 class CommandConfirmationView(discord.ui.View):
@@ -22,7 +82,7 @@ class CommandConfirmationView(discord.ui.View):
         *,
         invoker_id: int,
         command_name: str,
-        original_callback: Callable[..., Awaitable[Any]],
+        original_callback: CommandCallback,
         callback_args: tuple[Any, ...],
         callback_kwargs: dict[str, Any],
         interaction_index: int,
@@ -61,18 +121,25 @@ class CommandConfirmationView(discord.ui.View):
         self.completed = True
         args = list(self.callback_args)
         args[self.interaction_index] = interaction
+        completion_message = f"Approved `/{self.command_name}`."
 
         try:
             await self.original_callback(*args, **self.callback_kwargs)
         except Exception as error:
-            logger.error(
-                "Approved application command failed command=%s guild_id=%s user_id=%s",
+            error_reference = secrets.token_hex(4).upper()
+            logger.exception(
+                "Approved application command failed command=%s guild_id=%s user_id=%s "
+                "error_reference=%s",
                 self.command_name,
                 interaction.guild_id,
                 interaction.user.id,
-                exc_info=(type(error), error, error.__traceback__),
+                error_reference,
             )
-            message = "The command failed. The error has been logged for the bot operator."
+            message = build_failure_message(error, error_reference)
+            completion_message = (
+                f"Approved `/{self.command_name}`, but execution failed. "
+                f"Error reference: `{error_reference}`."
+            )
             if interaction.response.is_done():
                 await interaction.followup.send(message, ephemeral=True)
             else:
@@ -82,7 +149,7 @@ class CommandConfirmationView(discord.ui.View):
             if self.message is not None:
                 try:
                     await self.message.edit(
-                        content=f"Approved `/{self.command_name}`.",
+                        content=completion_message,
                         view=None,
                     )
                 except discord.HTTPException:
@@ -138,12 +205,16 @@ def install_command_confirmations(tree: app_commands.CommandTree[Any]) -> int:
         original_callback = command.callback
         interaction_index = 1 if command.binding is not None else 0
         command_name = command.qualified_name
+        command_description = command.description
+        custom_detail = getattr(original_callback, _CONFIRMATION_DETAIL_ATTR, None)
 
         async def confirmed_callback(
             *args: Any,
-            __original_callback: Callable[..., Awaitable[Any]] = original_callback,
+            __original_callback: CommandCallback = original_callback,
             __interaction_index: int = interaction_index,
             __command_name: str = command_name,
+            __command_description: str = command_description,
+            __custom_detail: str | None = custom_detail,
             **kwargs: Any,
         ) -> None:
             if len(args) <= __interaction_index or not isinstance(
@@ -161,7 +232,12 @@ def install_command_confirmations(tree: app_commands.CommandTree[Any]) -> int:
                 interaction_index=__interaction_index,
             )
             await slash_interaction.response.send_message(
-                build_confirmation_prompt(__command_name),
+                build_confirmation_prompt(
+                    __command_name,
+                    __command_description,
+                    kwargs,
+                    detail=__custom_detail,
+                ),
                 view=view,
                 ephemeral=True,
             )
