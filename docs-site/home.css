@@ -1,0 +1,287 @@
+.operator-home {
+  --content-width: 860px;
+}
+
+.operator-doc .section {
+  scroll-margin-top: 20px;
+}
+
+.section-heading {
+  margin-bottom: 24px;
+}
+
+.section-kicker {
+  margin-bottom: 5px;
+  color: var(--quiet);
+  font-size: 11.5px;
+  font-weight: 650;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+.task-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.task-card {
+  min-height: 188px;
+  display: flex;
+  flex-direction: column;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+}
+
+.task-card:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-soft);
+}
+
+.task-audience {
+  margin-bottom: 14px;
+  color: var(--quiet);
+  font-size: 11.5px;
+  font-weight: 650;
+}
+
+.task-card h3 {
+  margin: 0 0 7px;
+  font-size: 18px;
+}
+
+.task-card p {
+  margin: 0 0 18px;
+  font-size: 14px;
+}
+
+.task-action {
+  margin-top: auto;
+  color: var(--accent-text);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.operator-note,
+.setup-principle {
+  margin: 22px 0 0;
+  padding: 15px 17px;
+  border-left: 3px solid var(--accent);
+  background: var(--surface-soft);
+}
+
+.operator-note strong,
+.setup-principle strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.operator-note p,
+.setup-principle p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.health-list {
+  border-top: 1px solid var(--border);
+}
+
+.health-item {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 14px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.health-number {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  color: var(--quiet);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.health-item h3 {
+  margin: 1px 0 5px;
+  font-size: 16px;
+}
+
+.health-item p {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.health-item a {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.setup-principle {
+  margin: 0 0 22px;
+}
+
+.playbook-list {
+  display: grid;
+  gap: 18px;
+}
+
+.playbook {
+  padding: 21px 22px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface);
+  scroll-margin-top: 22px;
+}
+
+.playbook-head > span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--quiet);
+  font-size: 11.5px;
+  font-weight: 650;
+}
+
+.playbook-head h3 {
+  margin: 0 0 7px;
+  font-size: 21px;
+}
+
+.playbook-head p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.playbook-steps {
+  margin: 17px 0 19px;
+  padding: 0;
+  list-style: none;
+  counter-reset: playbook-step;
+  border-top: 1px solid var(--border);
+}
+
+.playbook-steps li {
+  counter-increment: playbook-step;
+  position: relative;
+  padding: 11px 0 11px 34px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.playbook-steps li::before {
+  content: counter(playbook-step);
+  position: absolute;
+  left: 0;
+  top: 12px;
+  color: var(--quiet);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.playbook-links {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px 10px;
+}
+
+.playbook-links strong {
+  width: 100%;
+  color: var(--quiet);
+  font-size: 11.5px;
+  font-weight: 650;
+}
+
+.playbook-links a {
+  text-decoration: none;
+}
+
+.playbook-links a:hover code {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.permission-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  margin-top: 26px;
+}
+
+.permission-block {
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.permission-block h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.permission-block .bullets {
+  margin-bottom: 0;
+  font-size: 14px;
+}
+
+#support .plain-item,
+#automatic .plain-item {
+  grid-template-columns: 210px 1fr;
+}
+
+#resources .resource {
+  grid-template-columns: 180px 1fr;
+}
+
+#resources .resource span code,
+#support .plain-item code,
+#automatic .plain-item code,
+.health-item code,
+.playbook code,
+.operator-note code,
+.setup-principle code {
+  font-size: 12px;
+}
+
+#hosting .setting {
+  grid-template-columns: 210px 1fr;
+}
+
+@media (max-width: 700px) {
+  .task-grid,
+  .permission-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .task-card {
+    min-height: 0;
+  }
+
+  #support .plain-item,
+  #automatic .plain-item,
+  #resources .resource,
+  #hosting .setting {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .playbook {
+    padding: 18px 16px;
+  }
+
+  .health-item {
+    grid-template-columns: 30px 1fr;
+    gap: 10px;
+  }
+}
