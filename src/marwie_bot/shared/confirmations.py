@@ -4,7 +4,7 @@ import logging
 import secrets
 from collections.abc import Awaitable, Callable, Mapping
 from enum import Enum
-from typing import Any
+from typing import Any, ParamSpec, TypeVar
 
 import discord
 from discord import app_commands
@@ -17,13 +17,16 @@ _CONFIRMATION_EXTRA_KEY = "marwie_confirmation_wrapped"
 _CONFIRMATION_DETAIL_ATTR = "__marwie_confirmation_detail__"
 _OPTION_VALUE_LIMIT = 120
 
+_P = ParamSpec("_P")
+_R = TypeVar("_R")
+
 type CommandCallback = Callable[..., Awaitable[Any]]
 
 
-def confirmation_detail(text: str) -> Callable[[CommandCallback], CommandCallback]:
+def confirmation_detail(text: str) -> Callable[[Callable[_P, _R]], Callable[_P, _R]]:
     detail = text.strip()
 
-    def decorator(callback: CommandCallback) -> CommandCallback:
+    def decorator(callback: Callable[_P, _R]) -> Callable[_P, _R]:
         setattr(callback, _CONFIRMATION_DETAIL_ATTR, detail)
         return callback
 
