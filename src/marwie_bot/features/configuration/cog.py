@@ -79,7 +79,9 @@ class ConfigurationCog(commands.Cog):
     async def _post_role_panel(self, guild: discord.Guild) -> discord.TextChannel:
         channel_record = await self.resources.get(guild.id, ResourceKey.ROLE_PANEL)
         role_record = await self.resources.get(guild.id, ResourceKey.LIVE_PING_ROLE)
-        channel = guild.get_channel(channel_record.discord_id) if channel_record is not None else None
+        channel = (
+            guild.get_channel(channel_record.discord_id) if channel_record is not None else None
+        )
         role = guild.get_role(role_record.discord_id) if role_record is not None else None
 
         if not isinstance(channel, discord.TextChannel):
@@ -139,8 +141,7 @@ class ConfigurationCog(commands.Cog):
             ) from error
 
         lines = [
-            f"`{result.key.value}`: {result.action.value} `{result.name}`"
-            for result in results
+            f"`{result.key.value}`: {result.action.value} `{result.name}`" for result in results
         ]
         lines.append(f"`role_panel_message`: refreshed in {role_channel.mention}")
         embed = discord.Embed(
