@@ -92,6 +92,14 @@ class ConfigurationCog(commands.Cog):
         description="Discover or create the standard resources needed by the bot.",
     )
     @app_commands.checks.has_permissions(administrator=True)
+    @app_commands.checks.bot_has_permissions(
+        view_channel=True,
+        send_messages=True,
+        embed_links=True,
+        read_message_history=True,
+        manage_channels=True,
+        manage_roles=True,
+    )
     async def auto_setup(self, interaction: discord.Interaction) -> None:
         guild = interaction.guild
         if guild is None:
@@ -124,6 +132,13 @@ class ConfigurationCog(commands.Cog):
         description="Post or refresh the member self-role panel.",
     )
     @app_commands.checks.has_permissions(administrator=True)
+    @app_commands.checks.bot_has_permissions(
+        view_channel=True,
+        send_messages=True,
+        embed_links=True,
+        read_message_history=True,
+        manage_roles=True,
+    )
     async def role_panel(self, interaction: discord.Interaction) -> None:
         guild = interaction.guild
         if guild is None:
