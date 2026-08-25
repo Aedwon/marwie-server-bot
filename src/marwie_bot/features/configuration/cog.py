@@ -24,7 +24,8 @@ _AUTO_SETUP_CONFIRMATION_DETAIL = (
     "matching standard resources, create any missing standard channels, forums, categories, "
     "voice channels, roles, and the Solved tag, save the selected resource IDs, and post or "
     "refresh the Live Notifications self-role panel. It will not delete, rename, or move "
-    "unrelated server resources."
+    "unrelated server resources. Discord Community must be enabled because `build-help` and "
+    "`showcase` are Forum Channels."
 )
 
 
