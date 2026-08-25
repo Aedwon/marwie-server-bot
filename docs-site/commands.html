@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en" data-theme="light" data-preference="system">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="description" content="Complete Rob-bot slash-command manual with syntax, permissions, accepted inputs, side effects, prerequisites, and examples.">
+  <meta name="theme-color" content="#f5f5f7" id="themeColor">
+  <title>Command Manual · Rob-bot Documentation</title>
+  <link rel="icon" type="image/svg+xml" href="/rob.svg?v=12">
+  <link rel="apple-touch-icon" href="/rob.svg?v=12">
+  <script>
+    (() => {
+      const pref = localStorage.getItem('rob-doc-theme') || 'system';
+      const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.dataset.preference = pref;
+      document.documentElement.dataset.theme = pref === 'system' ? (dark ? 'dark' : 'light') : pref;
+    })();
+  </script>
+  <link rel="stylesheet" href="/styles.css?v=14">
+  <link rel="stylesheet" href="/commands.css?v=1">
+</head>
+<body class="command-page">
+<a class="skip" href="#content">Skip to command manual</a>
+<div class="mobilebar">
+  <div class="mobilebrand"><img src="/rob.svg?v=12" alt="">Rob-bot Documentation</div>
+  <button class="menubtn" id="menuBtn" type="button" aria-controls="sidebar" aria-expanded="false">Sections</button>
+</div>
+<div class="layout">
+  <aside class="sidebar" id="sidebar" aria-label="Command manual navigation">
+    <a class="brand" href="/"><img src="/rob.svg?v=12" alt=""><span class="brand-copy">Rob-bot Documentation<small>AI App Builders</small></span></a>
+
+    <div class="nav-section"><div class="nav-label"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg><span>Documentation</span></div><nav class="nav">
+      <a href="/">Overview</a>
+      <a href="/commands" aria-current="page">Command manual</a>
+    </nav></div>
+
+    <div class="nav-section"><div class="nav-label"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9h4M7 13h7M7 17h3"/></svg><span>Manual sections</span></div><nav class="nav manual-nav">
+      <a href="#section-system-and-setup">System and setup</a>
+      <a href="#section-moderation">Moderation</a>
+      <a href="#section-tickets-and-announcements">Tickets and announcements</a>
+      <a href="#section-reputation-and-build-help">Reputation and build-help</a>
+      <a href="#section-quizzes-and-anonymous-questions">Quizzes and anonymous</a>
+      <a href="#section-coworking-and-collaboration">Coworking and collaboration</a>
+      <a href="#section-ai-updates-analytics-and-showcase">AI, analytics, showcase</a>
+    </nav></div>
+
+    <div class="appearance">
+      <span class="appearance-label">Appearance</span>
+      <div class="theme-switcher" role="group" aria-label="Appearance">
+        <button type="button" data-theme-choice="system" aria-label="Use system appearance" title="System" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></button>
+        <button type="button" data-theme-choice="light" aria-label="Use light appearance" title="Light" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"/></svg></button>
+        <button type="button" data-theme-choice="dark" aria-label="Use dark appearance" title="Dark" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z"/></svg></button>
+      </div>
+    </div>
+  </aside>
+
+  <main id="content">
+    <article class="doc command-doc">
+      <header class="doc-header">
+        <div class="breadcrumbs"><a href="/">Team handbook / Rob-bot</a> / Commands</div>
+        <h1>Command manual</h1>
+        <p class="lede">The complete operating reference for every Rob-bot slash command: exact syntax, who can use it, accepted inputs, what happens after approval, side effects, prerequisites, failure conditions, and examples.</p>
+        <div class="release">45 slash commands · source-aligned with <code>main/docs/commands.md</code></div>
+      </header>
+
+      <section class="manual-toolbar" aria-labelledby="find-command-label">
+        <label id="find-command-label" for="commandSearch">Find a command</label>
+        <div class="command-search-row">
+          <input id="commandSearch" list="commandOptions" type="search" autocomplete="off" spellcheck="false" placeholder="Try /ban or /setup auto">
+          <button id="commandSearchButton" type="button">Go</button>
+        </div>
+        <datalist id="commandOptions"></datalist>
+        <p class="meta">You can also use your browser's Find command. Every command heading has a stable direct-link anchor.</p>
+      </section>
+
+      <div id="manualContent" class="manual-content" aria-live="polite">
+        <p class="manual-loading">Loading the command manual…</p>
+      </div>
+      <noscript>
+        <div class="note"><strong>JavaScript is disabled</strong><p>The formatted manual needs the local renderer. You can still read the <a href="/commands.md">plain Markdown manual</a>.</p></div>
+      </noscript>
+
+      <footer>Rob-bot Documentation · AI App Builders · <a href="https://github.com/Aedwon/marwie-server-bot" target="_blank" rel="noreferrer">Source on GitHub</a></footer>
+    </article>
+  </main>
+</div>
+<script src="/commands.js?v=1" defer></script>
+</body>
+</html>
