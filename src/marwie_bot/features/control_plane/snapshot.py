@@ -174,7 +174,7 @@ class GuildSnapshotBuilder:
                 }
             )
 
-        ticket_types = await self.tickets.list_types(guild.id)
+        ticket_types = await self.tickets.list_types(guild.id, enabled_only=False)
         sources = await self.ai_sources.list_sources(guild.id)
         panel = await self.control.get_notification_panel(guild.id)
         setup = serialize_setup_plan(await self.provisioner.discover(guild))
