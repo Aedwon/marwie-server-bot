@@ -9,7 +9,7 @@
   "scripts": {
     "check:web": "find api docs-site -name '*.js' -print0 | xargs -0 -n1 node --check",
     "test:web": "node --test web-tests/*.test.js",
-    "build": "npm run check:web && npm run test:web"
+    "build": "npm run check:web && npm run test:web && mkdir -p public && cp -R docs-site public/docs-site"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.0"
