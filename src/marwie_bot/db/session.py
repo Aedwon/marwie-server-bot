@@ -10,10 +10,22 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 def normalize_database_url(database_url: str) -> str:
     value = database_url.strip()
-    if value.startswith("postgres://"):
-        return "postgresql+asyncpg://" + value.removeprefix("postgres://")
-    if value.startswith("postgresql://"):
-        return "postgresql+asyncpg://" + value.removeprefix("postgresql://")
+    if value.startswith(("postgres://", "postgresql://", "postgresql+asyncpg://")):
+        url = make_url(value)
+        if url.drivername in {"postgres", "postgresql"}:
+            url = url.set(drivername="postgresql+asyncpg")
+
+        # Neon exposes libpq-style connection strings. SQLAlchemy's asyncpg
+        # dialect forwards URL query parameters as asyncpg keyword arguments,
+        # where `ssl` is supported but `sslmode` / `channel_binding` are not.
+        query = dict(url.query)
+        sslmode = query.pop("sslmode", None)
+        query.pop("channel_binding", None)
+        if sslmode is not None and "ssl" not in query:
+            query["ssl"] = sslmode
+        url = url.set(query=query)
+        return url.render_as_string(hide_password=False)
+
     if value.startswith("sqlite:///"):
         return "sqlite+aiosqlite:///" + value.removeprefix("sqlite:///")
     return value
