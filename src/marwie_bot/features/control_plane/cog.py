@@ -103,12 +103,17 @@ class ControlPlaneCog(commands.Cog):
         return await self.executor.execute(action)
 
     async def _process_action(self, action: ControlActionRecord) -> None:
+        refresh_after_action = True
         try:
             result = await self._execute_action(action)
         except ActionRejected as error:
             await self.repository.reject(action.id, str(error))
+            if action.action_type is ControlActionType.REFRESH_SNAPSHOT:
+                refresh_after_action = False
         except ValueError as error:
             await self.repository.reject(action.id, str(error))
+            if action.action_type is ControlActionType.REFRESH_SNAPSHOT:
+                refresh_after_action = False
         except Exception:
             reference = secrets.token_hex(4).upper()
             logger.exception(
@@ -123,9 +128,13 @@ class ControlPlaneCog(commands.Cog):
                 "The action failed unexpectedly.",
                 reference,
             )
+            if action.action_type is ControlActionType.REFRESH_SNAPSHOT:
+                refresh_after_action = False
         else:
             await self.repository.complete(action.id, result)
 
+        if not refresh_after_action:
+            return
         try:
             await self._refresh_snapshot(action.guild_id)
         except Exception:
