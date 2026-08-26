@@ -39,11 +39,16 @@ function actionJson(row) {
 }
 
 async function respondWithWake(res, status, row, duplicate) {
-  const wakeDelivered = row.status === 'queued' ? await tryWakeControlWorker() : true;
+  if (row.status === 'queued' && !(await tryWakeControlWorker())) {
+    throw new HttpError(
+      503,
+      'The action is safely queued, but Rob-bot could not be woken. This request can be retried without duplicating the action.',
+    );
+  }
   json(res, status, {
     action: actionJson(row),
     duplicate,
-    wake_delivered: wakeDelivered,
+    wake_delivered: true,
   });
 }
 
