@@ -11,6 +11,7 @@ import {
   requireGuild,
   requireSession,
   snapshotIsFresh,
+  tryWakeControlWorker,
 } from './_lib/control.js';
 import {
   normalizeActionType,
@@ -35,6 +36,15 @@ function actionJson(row) {
     status: row.status,
     created_at: row.created_at,
   };
+}
+
+async function respondWithWake(res, status, row, duplicate) {
+  const wakeDelivered = row.status === 'queued' ? await tryWakeControlWorker() : true;
+  json(res, status, {
+    action: actionJson(row),
+    duplicate,
+    wake_delivered: wakeDelivered,
+  });
 }
 
 export default async function handler(req, res) {
@@ -92,7 +102,7 @@ export default async function handler(req, res) {
     `;
 
     if (inserted[0]) {
-      json(res, 202, { action: actionJson(inserted[0]), duplicate: false });
+      await respondWithWake(res, 202, inserted[0], false);
       return;
     }
 
@@ -108,7 +118,7 @@ export default async function handler(req, res) {
     if (existing[0].action_type !== actionType) {
       throw new HttpError(409, 'That idempotency key was already used for a different action.');
     }
-    json(res, 200, { action: actionJson(existing[0]), duplicate: true });
+    await respondWithWake(res, 200, existing[0], true);
   } catch (error) {
     handleError(res, error);
   }
