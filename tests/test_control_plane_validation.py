@@ -3,20 +3,23 @@ import pytest
 from marwie_bot.features.control_plane.domain import ControlActionType
 from marwie_bot.features.control_plane.validation import (
     ActionPermission,
-    validate_action_payload,
     required_permission,
+    validate_action_payload,
 )
 
 
-def test_setup_actions_require_administrator() -> None:
+def test_setup_and_ticket_admin_actions_require_administrator() -> None:
     assert required_permission(ControlActionType.SET_RESOURCE) is ActionPermission.ADMINISTRATOR
     assert required_permission(ControlActionType.APPLY_AUTO_SETUP) is ActionPermission.ADMINISTRATOR
     assert required_permission(ControlActionType.SAVE_NOTIFICATION_PANEL) is ActionPermission.ADMINISTRATOR
+    assert required_permission(ControlActionType.UPSERT_TICKET_TYPE) is ActionPermission.ADMINISTRATOR
+    assert required_permission(ControlActionType.REFRESH_TICKET_PANEL) is ActionPermission.ADMINISTRATOR
 
 
-def test_operational_configuration_uses_manage_guild() -> None:
-    assert required_permission(ControlActionType.UPSERT_TICKET_TYPE) is ActionPermission.MANAGE_GUILD
+def test_operational_configuration_preserves_manage_guild_permissions() -> None:
     assert required_permission(ControlActionType.SET_REPUTATION_THRESHOLDS) is ActionPermission.MANAGE_GUILD
+    assert required_permission(ControlActionType.ADD_QUIZ_QUESTION) is ActionPermission.MANAGE_GUILD
+    assert required_permission(ControlActionType.UPSERT_AI_SOURCE) is ActionPermission.MANAGE_GUILD
     assert required_permission(ControlActionType.SEND_ANNOUNCEMENT) is ActionPermission.MANAGE_GUILD
 
 
