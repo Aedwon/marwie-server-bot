@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="description" content="Workflow-based Rob-bot command manual for moderators and administrators, with syntax, permissions, inputs, side effects, prerequisites, and examples.">
+  <meta name="description" content="Rob-bot command reference for administrators and moderators: syntax, permissions, inputs, side effects, prerequisites, and examples.">
   <meta name="theme-color" content="#f5f5f7" id="themeColor">
-  <title>Command Manual · Rob-bot Documentation</title>
+  <title>Commands · Rob-bot Handbook</title>
   <link rel="icon" type="image/png" sizes="64x64" href="/favicon-robin-v2.png">
   <link rel="apple-touch-icon" href="/favicon-robin-v2.png">
   <script>
@@ -17,32 +17,32 @@
     })();
   </script>
   <link rel="stylesheet" href="/styles.css?v=14">
-  <link rel="stylesheet" href="/commands.css?v=2">
+  <link rel="stylesheet" href="/commands.css?v=3">
 </head>
 <body class="command-page">
-<a class="skip" href="#content">Skip to command manual</a>
+<a class="skip" href="#content">Skip to commands</a>
 <div class="mobilebar">
-  <div class="mobilebrand"><img src="/rob-robin.jpg?v=1" alt="">Rob-bot Documentation</div>
+  <div class="mobilebrand"><img src="/rob-robin.jpg?v=1" alt="">Rob-bot Handbook</div>
   <button class="menubtn" id="menuBtn" type="button" aria-controls="sidebar" aria-expanded="false">Workflows</button>
 </div>
 <div class="layout">
-  <aside class="sidebar" id="sidebar" aria-label="Command manual navigation">
-    <a class="brand" href="/"><img src="/rob-robin.jpg?v=1" alt=""><span class="brand-copy">Rob-bot Documentation<small>AI App Builders</small></span></a>
+  <aside class="sidebar" id="sidebar" aria-label="Command navigation">
+    <a class="brand" href="/"><img src="/rob-robin.jpg?v=1" alt=""><span class="brand-copy">Rob-bot Handbook<small>Admins & moderators</small></span></a>
 
-    <div class="nav-section"><div class="nav-label"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg><span>Documentation</span></div><nav class="nav">
-      <a href="/">Overview</a>
-      <a href="/commands" aria-current="page">Command manual</a>
+    <div class="nav-section"><div class="nav-label"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg><span>Reference</span></div><nav class="nav">
+      <a href="/">Handbook</a>
+      <a href="/commands" aria-current="page">Commands</a>
     </nav></div>
 
-    <div class="nav-section"><div class="nav-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h6v6H5zM13 13h6v6h-6zM14 5h5M5 16h5M11 8h3v5"/></svg><span>Staff workflows</span></div><nav class="nav manual-nav">
-      <a href="#workflow-setup">Set up and check health</a>
-      <a href="#workflow-moderation">Moderate and investigate</a>
-      <a href="#workflow-tickets">Run support tickets</a>
-      <a href="#workflow-publishing">Publish community updates</a>
-      <a href="#workflow-reputation">Reputation and build-help</a>
-      <a href="#workflow-learning">Quizzes and anonymous Q&amp;A</a>
-      <a href="#workflow-collaboration">Coworking and collaboration</a>
-      <a href="#workflow-operations">Feeds, analytics, showcase</a>
+    <div class="nav-section"><div class="nav-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h6v6H5zM13 13h6v6h-6zM14 5h5M5 16h5M11 8h3v5"/></svg><span>Workflows</span></div><nav class="nav manual-nav">
+      <a href="#workflow-setup">Setup & health</a>
+      <a href="#workflow-moderation">Moderation</a>
+      <a href="#workflow-tickets">Tickets</a>
+      <a href="#workflow-publishing">Publishing</a>
+      <a href="#workflow-reputation">Reputation & build-help</a>
+      <a href="#workflow-learning">Quizzes & anonymous Q&amp;A</a>
+      <a href="#workflow-collaboration">Coworking & collaboration</a>
+      <a href="#workflow-operations">Feeds & operations</a>
     </nav></div>
 
     <div class="appearance">
@@ -57,34 +57,33 @@
 
   <main id="content">
     <article class="doc command-doc">
-      <header class="doc-header">
-        <div class="breadcrumbs"><a href="/">Team handbook / Rob-bot</a> / Commands</div>
-        <h1>Command manual</h1>
-        <p class="lede">Start with what you are trying to accomplish. Commands are grouped into the workflows moderators and administrators actually perform, while every command still includes its exact syntax, permissions, accepted inputs, side effects, prerequisites, and examples.</p>
-        <div class="release">45 slash commands · workflow-first staff reference · source-aligned with <code>main/docs/commands.md</code></div>
+      <header class="doc-header command-header">
+        <div class="breadcrumbs"><a href="/">Rob-bot Handbook</a> / Commands</div>
+        <h1>Commands</h1>
+        <p class="lede">45 commands grouped by staff workflow. Scan the essentials; expand a command for full detail.</p>
       </header>
 
-      <section class="manual-toolbar" aria-labelledby="find-command-label">
-        <label id="find-command-label" for="commandSearch">Jump directly to a command</label>
-        <div class="command-search-row">
-          <input id="commandSearch" list="commandOptions" type="search" autocomplete="off" spellcheck="false" placeholder="Try /ban or /setup auto">
-          <button id="commandSearchButton" type="button">Go</button>
+      <section class="manual-toolbar" aria-label="Command search">
+        <div class="command-search-wrap">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg>
+          <input id="commandSearch" type="search" autocomplete="off" spellcheck="false" placeholder="Search commands, permissions, or tasks" aria-label="Search commands">
+          <kbd>/</kbd>
+          <button id="commandSearchClear" type="button" hidden>Clear</button>
         </div>
-        <datalist id="commandOptions"></datalist>
-        <p class="meta">If you do not know the command name, use the workflow navigation on the left. Every command also has a stable direct-link anchor.</p>
+        <div class="search-status"><span id="commandResultCount">45 commands</span><span>Esc clears</span></div>
       </section>
 
       <div id="manualContent" class="manual-content" aria-live="polite">
-        <p class="manual-loading">Loading the command manual…</p>
+        <p class="manual-loading">Loading commands…</p>
       </div>
       <noscript>
-        <div class="note"><strong>JavaScript is disabled</strong><p>The workflow view needs the local renderer. You can still read the <a href="/commands.md">plain Markdown manual</a>.</p></div>
+        <div class="note"><strong>JavaScript required</strong><p>Read the <a href="/commands.md">plain Markdown manual</a>.</p></div>
       </noscript>
 
-      <footer>Rob-bot Documentation · AI App Builders · <a href="https://github.com/Aedwon/marwie-server-bot" target="_blank" rel="noreferrer">Source on GitHub</a></footer>
+      <footer>Rob-bot Handbook · <a href="/">Home</a> · <a href="https://github.com/Aedwon/marwie-server-bot" target="_blank" rel="noreferrer">GitHub</a></footer>
     </article>
   </main>
 </div>
-<script src="/commands.js?v=2" defer></script>
+<script src="/commands.js?v=3" defer></script>
 </body>
 </html>
