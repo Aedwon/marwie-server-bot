@@ -112,7 +112,7 @@ class NotificationRoleButton(discord.ui.Button[discord.ui.View]):
                 ephemeral=True,
             )
             return
-        except discord.HTTPException as error:
+        except discord.HTTPException:
             logger.exception(
                 "Notification role toggle failed guild_id=%s user_id=%s role_id=%s",
                 guild.id,
