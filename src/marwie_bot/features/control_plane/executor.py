@@ -130,7 +130,9 @@ class ControlActionExecutor:
                 return await self._apply_auto_setup(guild, actor, payload)
             case ControlActionType.SET_FEATURE:
                 feature = FeatureName(str(payload["feature"]))
-                record = await self.features.set_enabled(guild.id, feature, bool(payload["enabled"]))
+                record = await self.features.set_enabled(
+                    guild.id, feature, bool(payload["enabled"])
+                )
                 return {"feature": feature.value, "enabled": record.enabled}
             case ControlActionType.SET_LOG_EXCLUSIONS:
                 config = await self.features.update_config(
@@ -194,7 +196,9 @@ class ControlActionExecutor:
                 )
                 return {"source_id": record.id, "enabled": record.enabled}
             case ControlActionType.DISABLE_AI_SOURCE:
-                changed = await self.ai_sources.disable_source(guild.id, int(payload["source_id"]))
+                changed = await self.ai_sources.disable_source(
+                    guild.id, int(payload["source_id"])
+                )
                 return {"source_id": int(payload["source_id"]), "disabled": changed}
             case ControlActionType.POLL_AI_SOURCES:
                 return await self._poll_ai_sources(guild)
@@ -217,7 +221,9 @@ class ControlActionExecutor:
         return member
 
     @staticmethod
-    def _require_actor_permission(member: discord.Member, action_type: ControlActionType) -> None:
+    def _require_actor_permission(
+        member: discord.Member, action_type: ControlActionType
+    ) -> None:
         required = required_permission(action_type)
         permissions = member.guild_permissions
         if permissions.administrator:
@@ -250,7 +256,9 @@ class ControlActionExecutor:
         current = await self.provisioner.discover(guild)
         current_serialized = serialize_setup_plan(current)
         if current_serialized["plan_hash"] != payload["plan_hash"]:
-            raise ActionRejected("Server resources changed after review. Review setup again before applying.")
+            raise ActionRejected(
+                "Server resources changed after review. Review setup again before applying."
+            )
         connected = await self.provisioner.connect_existing(guild, actor.id, current)
         changed = await self.provisioner.apply_mutations(guild, actor.id, current)
         return {
@@ -285,7 +293,11 @@ class ControlActionExecutor:
             channel=channel, panel=panel, repository=self.control
         )
         self.bot.add_view(view, message_id=message.id)
-        return {"channel_id": channel.id, "message_id": message.id, "buttons": len(panel.buttons)}
+        return {
+            "channel_id": channel.id,
+            "message_id": message.id,
+            "buttons": len(panel.buttons),
+        }
 
     async def _refresh_ticket_panel(self, guild: discord.Guild) -> dict[str, Any]:
         resource = await self.resources.get(guild.id, ResourceKey.TICKET_PANEL)
@@ -297,7 +309,9 @@ class ControlActionExecutor:
             raise ActionRejected("Add at least one ticket type before posting the ticket panel.")
         embed = discord.Embed(
             title="Support tickets",
-            description="Open a private ticket and choose the topic that best matches what you need.",
+            description=(
+                "Open a private ticket and choose the topic that best matches what you need."
+            ),
             color=discord.Color.blurple(),
         )
         message = await channel.send(embed=embed, view=TicketPanelView())
@@ -359,7 +373,9 @@ class ControlActionExecutor:
             if role is None:
                 raise ActionRejected("One of the selected mention roles no longer exists.")
             if not role.mentionable and not permissions.mention_everyone:
-                raise ActionRejected(f"Rob-bot cannot mention the `{role.name}` role in that channel.")
+                raise ActionRejected(
+                    f"Rob-bot cannot mention the `{role.name}` role in that channel."
+                )
             roles.append(role)
         wants_everyone = bool(mentions["everyone"] or mentions["here"])
         if wants_everyone and not permissions.mention_everyone:
@@ -402,9 +418,10 @@ class ControlActionExecutor:
         channel: discord.TextChannel | None = None
         if payload["channel_id"] is not None:
             candidate = guild.get_channel(int(payload["channel_id"]))
-            if isinstance(candidate, discord.TextChannel):
-                channel = candidate
-        if channel is None:
+            if not isinstance(candidate, discord.TextChannel):
+                raise ActionRejected("The selected Live destination is no longer a text channel.")
+            channel = candidate
+        else:
             for key in (ResourceKey.LIVE_ANNOUNCEMENTS, ResourceKey.ANNOUNCEMENTS):
                 resource = await self.resources.get(guild.id, key)
                 candidate = guild.get_channel(resource.discord_id) if resource is not None else None
@@ -421,16 +438,24 @@ class ControlActionExecutor:
         if not permissions.send_messages or not permissions.embed_links:
             raise ActionRejected("Rob-bot needs Send Messages and Embed Links in that channel.")
 
-        role_record = await self.resources.get(guild.id, ResourceKey.LIVE_PING_ROLE)
-        role = guild.get_role(role_record.discord_id) if role_record is not None else None
         content: str | None = None
         allowed = discord.AllowedMentions.none()
-        if role is not None and not role.is_default():
-            if role.mentionable or permissions.mention_everyone:
-                content = role.mention
-                allowed = discord.AllowedMentions(
-                    everyone=False, users=False, roles=[role], replied_user=False
+        ping_role_id = payload.get("ping_role_id")
+        if ping_role_id is not None:
+            role = guild.get_role(int(ping_role_id))
+            if role is None or role.is_default():
+                raise ActionRejected("The selected Live ping role no longer exists.")
+            if not role.mentionable and not permissions.mention_everyone:
+                raise ActionRejected(
+                    f"Rob-bot cannot mention the `{role.name}` role in that channel."
                 )
+            content = role.mention
+            allowed = discord.AllowedMentions(
+                everyone=False,
+                users=False,
+                roles=[role],
+                replied_user=False,
+            )
 
         view = build_live_view(draft)
         message = await channel.send(
@@ -439,4 +464,9 @@ class ControlActionExecutor:
             view=view,
             allowed_mentions=allowed,
         )
-        return {"channel_id": channel.id, "message_id": message.id, "pinged": content is not None}
+        return {
+            "channel_id": channel.id,
+            "message_id": message.id,
+            "pinged": content is not None,
+            "ping_role_id": int(ping_role_id) if ping_role_id is not None else None,
+        }
