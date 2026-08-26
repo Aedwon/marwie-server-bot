@@ -22,6 +22,16 @@
     #setup .resource-disclosure:not([open]) > summary::after {
       margin-left: 2px;
     }
+    .action-add > span:first-child {
+      width: auto;
+      height: auto;
+      display: inline;
+      border-radius: 0;
+      background: none;
+      color: inherit;
+      font-size: inherit;
+      line-height: inherit;
+    }
   `;
   document.head.appendChild(style);
 
