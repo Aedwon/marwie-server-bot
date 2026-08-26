@@ -35,6 +35,11 @@ def test_operational_configuration_preserves_manage_guild_permissions() -> None:
     assert required_permission(ControlActionType.SEND_ANNOUNCEMENT) is ActionPermission.MANAGE_GUILD
 
 
+def test_internal_snapshot_refresh_requires_manage_guild_and_has_no_payload() -> None:
+    assert required_permission(ControlActionType.REFRESH_SNAPSHOT) is ActionPermission.MANAGE_GUILD
+    assert validate_action_payload(ControlActionType.REFRESH_SNAPSHOT, {}) == {}
+
+
 def test_reputation_thresholds_must_strictly_increase() -> None:
     payload = validate_action_payload(
         ControlActionType.SET_REPUTATION_THRESHOLDS,
