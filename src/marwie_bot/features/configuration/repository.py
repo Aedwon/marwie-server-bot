@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy import delete, select
+from sqlalchemy.engine import CursorResult
 
 from marwie_bot.config.resources import FeatureName, ResourceKey, ResourceType
 from marwie_bot.db.models import FeatureFlag, Guild, GuildResource
@@ -90,7 +91,7 @@ class SQLAlchemyResourceRepository:
                 )
             )
             await session.commit()
-            return bool(result.rowcount)
+            return bool(cast(CursorResult[Any], result).rowcount)
 
 
 class SQLAlchemyFeatureConfigRepository:

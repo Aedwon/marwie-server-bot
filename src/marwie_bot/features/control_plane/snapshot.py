@@ -52,23 +52,23 @@ def _resource_value(guild: discord.Guild, key: ResourceKey, discord_id: int) -> 
             "kind": "role",
         }
     if key is ResourceKey.SOLVED_TAG:
-        for channel in guild.forums:
-            tag = next((item for item in channel.available_tags if item.id == discord_id), None)
+        for forum in guild.forums:
+            tag = next((item for item in forum.available_tags if item.id == discord_id), None)
             if tag is not None:
                 return {
                     "id": _id(discord_id),
                     "name": tag.name,
                     "exists": True,
                     "kind": "forum_tag",
-                    "forum_id": _id(channel.id),
+                    "forum_id": _id(forum.id),
                 }
         return {"id": _id(discord_id), "name": None, "exists": False, "kind": "forum_tag"}
-    channel = guild.get_channel(discord_id)
+    guild_channel = guild.get_channel(discord_id)
     return {
         "id": _id(discord_id),
-        "name": channel.name if channel is not None else None,
-        "exists": channel is not None,
-        "kind": _channel_kind(channel) if channel is not None else "channel",
+        "name": guild_channel.name if guild_channel is not None else None,
+        "exists": guild_channel is not None,
+        "kind": _channel_kind(guild_channel) if guild_channel is not None else "channel",
     }
 
 
@@ -150,17 +150,21 @@ class GuildSnapshotBuilder:
         resource_by_key = {record.key: record for record in resource_records}
         resources = []
         for key in ResourceKey:
-            record = resource_by_key.get(key)
+            resource_record = resource_by_key.get(key)
             resolved = (
-                _resource_value(guild, key, record.discord_id)
-                if record is not None
+                _resource_value(guild, key, resource_record.discord_id)
+                if resource_record is not None
                 else {"id": None, "name": None, "exists": False, "kind": None}
             )
             resources.append(
                 {
                     "key": key.value,
-                    "resource_type": record.resource_type.value if record is not None else None,
-                    "updated_by": _id(record.updated_by) if record is not None else None,
+                    "resource_type": (
+                        resource_record.resource_type.value if resource_record is not None else None
+                    ),
+                    "updated_by": (
+                        _id(resource_record.updated_by) if resource_record is not None else None
+                    ),
                     **resolved,
                 }
             )
@@ -168,13 +172,13 @@ class GuildSnapshotBuilder:
         feature_rows = []
         feature_records: dict[FeatureName, dict[str, Any]] = {}
         for feature in FeatureName:
-            record = await self.features.get(guild.id, feature)
-            feature_records[feature] = dict(record.config)
+            feature_record = await self.features.get(guild.id, feature)
+            feature_records[feature] = dict(feature_record.config)
             feature_rows.append(
                 {
                     "name": feature.value,
-                    "enabled": record.enabled,
-                    "config": dict(record.config),
+                    "enabled": feature_record.enabled,
+                    "config": dict(feature_record.config),
                 }
             )
 

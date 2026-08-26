@@ -130,10 +130,10 @@ class ControlActionExecutor:
                 return await self._apply_auto_setup(guild, actor, payload)
             case ControlActionType.SET_FEATURE:
                 feature = FeatureName(str(payload["feature"]))
-                record = await self.features.set_enabled(
+                feature_record = await self.features.set_enabled(
                     guild.id, feature, bool(payload["enabled"])
                 )
-                return {"feature": feature.value, "enabled": record.enabled}
+                return {"feature": feature.value, "enabled": feature_record.enabled}
             case ControlActionType.SET_LOG_EXCLUSIONS:
                 config = await self.features.update_config(
                     guild.id,
@@ -178,7 +178,7 @@ class ControlActionExecutor:
                 return {"interval_hours": interval}
             case ControlActionType.ADD_QUIZ_QUESTION:
                 options = cast(list[str], payload["options"])
-                record = await self.quizzes.add_question(
+                question_record = await self.quizzes.add_question(
                     guild.id,
                     str(payload["category"]),
                     str(payload["prompt"]),
@@ -186,27 +186,34 @@ class ControlActionExecutor:
                     int(payload["correct"]) - 1,
                     str(payload["explanation"]) or None,
                 )
-                return {"question_id": record.id}
+                return {"question_id": question_record.id}
             case ControlActionType.UPSERT_AI_SOURCE:
                 source_id = payload.get("source_id")
                 if source_id is None:
-                    record = await self.ai_sources.add_source(
+                    created_source = await self.ai_sources.add_source(
                         guild.id,
                         str(payload["name"]),
                         str(payload["url"]),
                         str(payload["category"]),
                     )
-                else:
-                    record = await self.ai_sources.update_source(
-                        guild.id,
-                        int(source_id),
-                        str(payload["name"]),
-                        str(payload["url"]),
-                        str(payload["category"]),
-                    )
-                    if record is None:
-                        raise ActionRejected("That AI source no longer exists in this server.")
-                return {"source_id": record.id, "enabled": record.enabled}
+                    return {
+                        "source_id": created_source.id,
+                        "enabled": created_source.enabled,
+                    }
+
+                updated_source = await self.ai_sources.update_source(
+                    guild.id,
+                    int(source_id),
+                    str(payload["name"]),
+                    str(payload["url"]),
+                    str(payload["category"]),
+                )
+                if updated_source is None:
+                    raise ActionRejected("That AI source no longer exists in this server.")
+                return {
+                    "source_id": updated_source.id,
+                    "enabled": updated_source.enabled,
+                }
             case ControlActionType.DISABLE_AI_SOURCE:
                 changed = await self.ai_sources.disable_source(guild.id, int(payload["source_id"]))
                 return {"source_id": int(payload["source_id"]), "disabled": changed}
@@ -466,12 +473,19 @@ class ControlActionExecutor:
             )
 
         view = build_live_view(draft)
-        message = await channel.send(
-            content=content,
-            embed=build_live_embed(draft),
-            view=view,
-            allowed_mentions=allowed,
-        )
+        if view is None:
+            message = await channel.send(
+                content=content,
+                embed=build_live_embed(draft),
+                allowed_mentions=allowed,
+            )
+        else:
+            message = await channel.send(
+                content=content,
+                embed=build_live_embed(draft),
+                view=view,
+                allowed_mentions=allowed,
+            )
         return {
             "channel_id": channel.id,
             "message_id": message.id,
