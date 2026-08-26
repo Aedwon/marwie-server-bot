@@ -390,8 +390,8 @@ async def _apply(
                 )
                 await connection.executemany(statement, list(snapshot.rows))
             await _reset_sequences(connection, snapshots)
+            report = await _verify(connection, snapshots, metadata)
 
-        report = await _verify(connection, snapshots, metadata)
         revision = await connection.fetchval("SELECT version_num FROM alembic_version LIMIT 1")
         return report, str(revision) if revision is not None else None
     finally:
