@@ -260,7 +260,10 @@ def _load_source_table(
         f"SELECT {select_columns} FROM {_quote(table)} ORDER BY {order_by}"
     ).fetchall()
     rows = [
-        tuple(_convert_value(value, column.data_type) for value, column in zip(row, columns, strict=True))
+        tuple(
+            _convert_value(value, column.data_type)
+            for value, column in zip(row, columns, strict=True)
+        )
         for row in raw_rows
     ]
     return TableSnapshot(
@@ -320,9 +323,7 @@ async def _verify(
     failures: list[str] = []
     for snapshot in snapshots:
         target_count = await _target_count(connection, snapshot.name)
-        target_digest = await _target_digest(
-            connection, snapshot, target_metadata[snapshot.name]
-        )
+        target_digest = await _target_digest(connection, snapshot, target_metadata[snapshot.name])
         count_ok = target_count == len(snapshot.rows)
         digest_ok = target_digest == snapshot.digest
         report[snapshot.name] = {
@@ -381,8 +382,12 @@ async def _apply(
                 if not snapshot.rows:
                     continue
                 columns = ", ".join(_quote(name) for name in snapshot.columns)
-                placeholders = ", ".join(f"${index}" for index in range(1, len(snapshot.columns) + 1))
-                statement = f"INSERT INTO {_quote(snapshot.name)} ({columns}) VALUES ({placeholders})"
+                placeholders = ", ".join(
+                    f"${index}" for index in range(1, len(snapshot.columns) + 1)
+                )
+                statement = (
+                    f"INSERT INTO {_quote(snapshot.name)} ({columns}) VALUES ({placeholders})"
+                )
                 await connection.executemany(statement, list(snapshot.rows))
             await _reset_sequences(connection, snapshots)
 
