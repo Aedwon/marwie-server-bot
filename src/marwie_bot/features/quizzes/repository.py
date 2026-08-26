@@ -165,6 +165,16 @@ class SQLAlchemyQuizRepository:
             )
             return [self._session(model) for model in models]
 
+    async def next_open_close(self) -> datetime | None:
+        async with self.database.session() as session:
+            statement = (
+                select(QuizSession.closes_at)
+                .where(QuizSession.status == "open")
+                .order_by(QuizSession.closes_at)
+                .limit(1)
+            )
+            return (await session.execute(statement)).scalar_one_or_none()
+
     async def close_session(self, session_id: int) -> tuple[int, int]:
         async with self.database.session() as session:
             model = await session.get(QuizSession, session_id)
