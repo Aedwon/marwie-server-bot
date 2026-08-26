@@ -11,6 +11,14 @@
       "destination": "/docs-site/commands"
     },
     {
+      "source": "/control.js",
+      "destination": "/docs-site/control-refine.js"
+    },
+    {
+      "source": "/control-core.js",
+      "destination": "/docs-site/control.js"
+    },
+    {
       "source": "/(.*)",
       "destination": "/docs-site/$1"
     }
