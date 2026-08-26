@@ -21,6 +21,8 @@ from marwie_bot.features.coworking.service import CoworkingService
 
 logger = logging.getLogger(__name__)
 
+_ERROR_RETRY_SECONDS = 15 * 60
+
 
 class CoworkingCog(commands.Cog):
     pomodoro_group = app_commands.Group(
@@ -168,7 +170,12 @@ class CoworkingCog(commands.Cog):
                 next_end = await self.repository.next_active_end()
             except Exception:
                 logger.exception("Pomodoro deadline worker failed")
-                await asyncio.sleep(30)
+                try:
+                    await asyncio.wait_for(
+                        self._timer_wake.wait(), timeout=_ERROR_RETRY_SECONDS
+                    )
+                except TimeoutError:
+                    pass
                 continue
 
             if self._timer_wake.is_set():
