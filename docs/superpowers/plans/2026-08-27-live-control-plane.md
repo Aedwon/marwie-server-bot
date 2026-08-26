@@ -65,7 +65,7 @@ The reviewed handbook/manual/control assets are ported onto the live branch and 
 
 ### Deployment docs
 
-`docs/operations/live-control-plane-cutover.md` contains the OAuth, Vercel, Neon, SQLite migration, Bot-Hosting cutover, smoke-test and rollback sequence.
+`docs/operations/live-control-cutover.md` contains the OAuth, Vercel, Neon, SQLite migration, Bot-Hosting cutover, smoke-test and rollback sequence.
 
 ## Implementation order
 
