@@ -153,7 +153,7 @@ export async function getSession(req, { touch = true } = {}) {
   return {
     sessionHash,
     csrfToken: rawCsrf,
-    userId: Number(row.user_id),
+    userId: String(row.user_id),
     username: row.username,
     avatarUrl: row.avatar_url,
     guilds,
@@ -198,7 +198,7 @@ export async function getSnapshot(guildId) {
   const rows = await sql`
     SELECT guild_id, snapshot_json, worker_version, updated_at
     FROM control_guild_snapshots
-    WHERE guild_id = ${Number(guildId)}
+    WHERE guild_id = ${String(guildId)}
     LIMIT 1
   `;
   return rows[0] || null;
