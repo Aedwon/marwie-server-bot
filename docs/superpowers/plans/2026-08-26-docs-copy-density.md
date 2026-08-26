@@ -1,6 +1,6 @@
 # Operator homepage copy-density plan
 
-Status: implementation pending
+Status: complete
 Date: 2026-08-26
 
 ## Scope
@@ -12,7 +12,9 @@ Date: 2026-08-26
 
 ## Verification
 
-- Preserve all existing homepage anchors and DOM IDs used by `app.js`.
-- Preserve all command-manual links.
-- Preserve safety-critical setup, permissions, privacy, hierarchy, and error-reference guidance.
+- Preserved homepage anchors and DOM IDs used by `app.js`.
+- Preserved command-manual links.
+- Preserved setup confirmation, permissions, privacy, hierarchy, Community/forum, and error-reference guidance.
+- Removed section kickers and redundant CTA language.
+- Shortened navigation, headings, cards, setup steps, playbooks, support copy, automation copy, resource labels, troubleshooting, and hosting notes.
 - No GitHub Actions or Bot-Hosting restart required.
