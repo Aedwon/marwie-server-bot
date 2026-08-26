@@ -32,6 +32,45 @@ export function requireEnv(name) {
   return value;
 }
 
+function validWakeWebhookUrl(value) {
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    const discordHost = host === 'discord.com' || host.endsWith('.discord.com') || host === 'discordapp.com' || host.endsWith('.discordapp.com');
+    return url.protocol === 'https:' && discordHost && /^\/api\/webhooks\/\d+\/[^/]+/.test(url.pathname);
+  } catch {
+    return false;
+  }
+}
+
+export async function tryWakeControlWorker() {
+  const webhookUrl = process.env.CONTROL_WAKE_WEBHOOK_URL?.trim();
+  if (!webhookUrl || !validWakeWebhookUrl(webhookUrl)) {
+    console.error('Control wake delivery skipped: webhook is missing or invalid.');
+    return false;
+  }
+
+  try {
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        content: 'rob-control-wake',
+        allowed_mentions: { parse: [] },
+      }),
+    });
+    if (!response.ok) {
+      console.error(`Control wake delivery failed with Discord status ${response.status}.`);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    const name = error instanceof Error ? error.name : 'unknown';
+    console.error(`Control wake delivery failed (${name}).`);
+    return false;
+  }
+}
+
 export function controlBaseUrl(req) {
   const configured = process.env.CONTROL_BASE_URL?.trim();
   if (configured) return configured.replace(/\/$/, '');
