@@ -65,6 +65,9 @@ class FakeQuiz:
     async def due_sessions(self, now: datetime) -> list[QuizSessionRecord]:
         return []
 
+    async def next_open_close(self) -> datetime | None:
+        return self.session.closes_at if self.session.status == "open" else None
+
     async def close_session(self, session_id: int) -> tuple[int, int]:
         return (0, 0)
 
