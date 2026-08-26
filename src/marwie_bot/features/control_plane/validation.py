@@ -20,6 +20,9 @@ _ADMIN_ACTIONS = {
     ControlActionType.SET_FEATURE,
     ControlActionType.SET_LOG_EXCLUSIONS,
     ControlActionType.SAVE_NOTIFICATION_PANEL,
+    ControlActionType.UPSERT_TICKET_TYPE,
+    ControlActionType.DISABLE_TICKET_TYPE,
+    ControlActionType.REFRESH_TICKET_PANEL,
 }
 
 
@@ -66,8 +69,12 @@ def _integer(value: Any, *, field: str, minimum: int, maximum: int) -> int:
 
 def _mentions(value: Any) -> dict[str, Any]:
     data = dict(value) if isinstance(value, dict) else {}
-    role_ids = list(dict.fromkeys(_snowflake(item, field="Mention role") for item in data.get("role_ids", [])))
-    user_ids = list(dict.fromkeys(_snowflake(item, field="Mention user") for item in data.get("user_ids", [])))
+    role_ids = list(
+        dict.fromkeys(_snowflake(item, field="Mention role") for item in data.get("role_ids", []))
+    )
+    user_ids = list(
+        dict.fromkeys(_snowflake(item, field="Mention user") for item in data.get("user_ids", []))
+    )
     if len(role_ids) > 20 or len(user_ids) > 20:
         raise ValueError("At most 20 roles and 20 users can be mentioned at once.")
     return {
@@ -86,7 +93,10 @@ def validate_action_payload(
 
     if action_type is ControlActionType.SET_RESOURCE:
         key = ResourceKey(_text(data.get("key"), field="Resource key", max_length=100))
-        return {"key": key.value, "discord_id": _snowflake(data.get("discord_id"), field="Resource")}
+        return {
+            "key": key.value,
+            "discord_id": _snowflake(data.get("discord_id"), field="Resource"),
+        }
 
     if action_type is ControlActionType.CLEAR_RESOURCE:
         key = ResourceKey(_text(data.get("key"), field="Resource key", max_length=100))
@@ -126,14 +136,18 @@ def validate_action_payload(
             if role_id in seen_roles:
                 raise ValueError("Notification role panel contains a duplicate role.")
             seen_roles.add(role_id)
-            style = _text(raw.get("style", "primary"), field="Button style", max_length=16).lower()
+            style = _text(
+                raw.get("style", "primary"), field="Button style", max_length=16
+            ).lower()
             if style not in {"primary", "secondary", "success", "danger"}:
                 raise ValueError("Notification button style is invalid.")
             buttons.append(
                 {
                     "role_id": role_id,
                     "label": _text(raw.get("label"), field="Button label", max_length=80),
-                    "emoji": _text(raw.get("emoji"), field="Button emoji", max_length=32, required=False),
+                    "emoji": _text(
+                        raw.get("emoji"), field="Button emoji", max_length=32, required=False
+                    ),
                     "style": style,
                 }
             )
@@ -162,19 +176,27 @@ def validate_action_payload(
         return {}
 
     if action_type is ControlActionType.SET_REPUTATION_THRESHOLDS:
-        builder = _integer(data.get("builder"), field="Builder threshold", minimum=1, maximum=100000)
+        builder = _integer(
+            data.get("builder"), field="Builder threshold", minimum=1, maximum=100000
+        )
         contributor = _integer(
             data.get("contributor"), field="Contributor threshold", minimum=1, maximum=100000
         )
-        mentor = _integer(data.get("mentor"), field="Mentor threshold", minimum=1, maximum=100000)
+        mentor = _integer(
+            data.get("mentor"), field="Mentor threshold", minimum=1, maximum=100000
+        )
         if not builder < contributor < mentor:
             raise ValueError("Thresholds must increase from Builder to Contributor to Mentor.")
         return {"builder": builder, "contributor": contributor, "mentor": mentor}
 
     if action_type is ControlActionType.ADJUST_REPUTATION:
-        points = _integer(data.get("points"), field="Reputation points", minimum=-1000, maximum=1000)
+        points = _integer(
+            data.get("points"), field="Reputation points", minimum=-1000, maximum=1000
+        )
         if points == 0:
-            raise ValueError("Reputation points must be between -1000 and 1000 and cannot be zero.")
+            raise ValueError(
+                "Reputation points must be between -1000 and 1000 and cannot be zero."
+            )
         return {
             "member_id": _snowflake(data.get("member_id"), field="Member"),
             "points": points,
@@ -196,7 +218,9 @@ def validate_action_payload(
             _text(value, field=f"Option {index + 1}", max_length=300)
             for index, value in enumerate(options_raw)
         ]
-        correct = _integer(data.get("correct"), field="Correct answer", minimum=1, maximum=4)
+        correct = _integer(
+            data.get("correct"), field="Correct answer", minimum=1, maximum=4
+        )
         return {
             "category": _text(data.get("category"), field="Category", max_length=50),
             "prompt": _text(data.get("prompt"), field="Prompt", max_length=2000),
@@ -234,20 +258,25 @@ def validate_action_payload(
         return {}
 
     if action_type is ControlActionType.SEND_ANNOUNCEMENT:
-        color = _text(data.get("color", "5865F2"), field="Embed color", max_length=7).removeprefix("#")
+        color = _text(
+            data.get("color", "5865F2"), field="Embed color", max_length=7
+        ).removeprefix("#")
         if len(color) != 6:
             raise ValueError("Color must be a six-digit hex value such as 5865F2.")
         try:
             int(color, 16)
         except ValueError as error:
             raise ValueError("Color must be a six-digit hex value such as 5865F2.") from error
-        body = _text(data.get("body"), field="Announcement body", max_length=4000)
         return {
             "channel_id": _snowflake(data.get("channel_id"), field="Announcement channel"),
-            "message": _text(data.get("message"), field="Message", max_length=2000, required=False),
+            "message": _text(
+                data.get("message"), field="Message", max_length=2000, required=False
+            ),
             "title": _text(data.get("title"), field="Title", max_length=256, required=False),
-            "body": body,
-            "footer": _text(data.get("footer"), field="Footer", max_length=2048, required=False),
+            "body": _text(data.get("body"), field="Announcement body", max_length=4000),
+            "footer": _text(
+                data.get("footer"), field="Footer", max_length=2048, required=False
+            ),
             "color": color.upper(),
             "mentions": _mentions(data.get("mentions")),
         }
