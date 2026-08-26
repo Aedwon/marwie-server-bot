@@ -23,13 +23,16 @@ _ADMIN_ACTIONS = {
     ControlActionType.UPSERT_TICKET_TYPE,
     ControlActionType.DISABLE_TICKET_TYPE,
     ControlActionType.REFRESH_TICKET_PANEL,
+    ControlActionType.POST_LIVE,
 }
 
 
 def required_permission(action_type: ControlActionType) -> ActionPermission:
-    if action_type in _ADMIN_ACTIONS or action_type is ControlActionType.POST_LIVE:
-        return ActionPermission.ADMINISTRATOR
-    return ActionPermission.MANAGE_GUILD
+    return (
+        ActionPermission.ADMINISTRATOR
+        if action_type in _ADMIN_ACTIONS
+        else ActionPermission.MANAGE_GUILD
+    )
 
 
 def _mapping(payload: dict[str, Any] | None) -> dict[str, Any]:
@@ -55,6 +58,12 @@ def _snowflake(value: Any, *, field: str) -> int:
     if result <= 0:
         raise ValueError(f"{field} must be a Discord ID.")
     return result
+
+
+def _optional_snowflake(value: Any, *, field: str) -> int | None:
+    if value in {None, ""}:
+        return None
+    return _snowflake(value, field=field)
 
 
 def _integer(value: Any, *, field: str, minimum: int, maximum: int) -> int:
@@ -93,17 +102,17 @@ def validate_action_payload(
 
     if action_type is ControlActionType.SET_RESOURCE:
         key = ResourceKey(_text(data.get("key"), field="Resource key", max_length=100))
-        return {
-            "key": key.value,
-            "discord_id": _snowflake(data.get("discord_id"), field="Resource"),
-        }
+        return {"key": key.value, "discord_id": _snowflake(data.get("discord_id"), field="Resource")}
 
     if action_type is ControlActionType.CLEAR_RESOURCE:
         key = ResourceKey(_text(data.get("key"), field="Resource key", max_length=100))
         return {"key": key.value}
 
     if action_type is ControlActionType.APPLY_AUTO_SETUP:
-        return {"plan_hash": _text(data.get("plan_hash"), field="Setup plan", max_length=128)}
+        plan_hash = _text(data.get("plan_hash"), field="Setup plan", max_length=128)
+        if len(plan_hash) != 64 or any(character not in "0123456789abcdefABCDEF" for character in plan_hash):
+            raise ValueError("Setup plan is invalid.")
+        return {"plan_hash": plan_hash.lower()}
 
     if action_type is ControlActionType.SET_FEATURE:
         feature = FeatureName(_text(data.get("feature"), field="Feature", max_length=100))
@@ -136,27 +145,21 @@ def validate_action_payload(
             if role_id in seen_roles:
                 raise ValueError("Notification role panel contains a duplicate role.")
             seen_roles.add(role_id)
-            style = _text(
-                raw.get("style", "primary"), field="Button style", max_length=16
-            ).lower()
+            style = _text(raw.get("style", "primary"), field="Button style", max_length=16).lower()
             if style not in {"primary", "secondary", "success", "danger"}:
                 raise ValueError("Notification button style is invalid.")
             buttons.append(
                 {
                     "role_id": role_id,
                     "label": _text(raw.get("label"), field="Button label", max_length=80),
-                    "emoji": _text(
-                        raw.get("emoji"), field="Button emoji", max_length=32, required=False
-                    ),
+                    "emoji": _text(raw.get("emoji"), field="Button emoji", max_length=32, required=False),
                     "style": style,
                 }
             )
         return {
             "channel_id": _snowflake(data.get("channel_id"), field="Panel channel"),
             "title": _text(data.get("title"), field="Panel title", max_length=256),
-            "description": _text(
-                data.get("description"), field="Panel description", max_length=2000
-            ),
+            "description": _text(data.get("description"), field="Panel description", max_length=2000),
             "buttons": buttons,
         }
 
@@ -164,39 +167,27 @@ def validate_action_payload(
         return {
             "key": _text(data.get("key"), field="Ticket type key", max_length=32).lower(),
             "label": _text(data.get("label"), field="Ticket type label", max_length=80),
-            "description": _text(
-                data.get("description"), field="Ticket type description", max_length=200
-            ),
+            "description": _text(data.get("description"), field="Ticket type description", max_length=200),
         }
 
     if action_type is ControlActionType.DISABLE_TICKET_TYPE:
         return {"key": _text(data.get("key"), field="Ticket type key", max_length=32).lower()}
 
-    if action_type is ControlActionType.REFRESH_TICKET_PANEL:
+    if action_type in {ControlActionType.REFRESH_TICKET_PANEL, ControlActionType.POLL_AI_SOURCES}:
         return {}
 
     if action_type is ControlActionType.SET_REPUTATION_THRESHOLDS:
-        builder = _integer(
-            data.get("builder"), field="Builder threshold", minimum=1, maximum=100000
-        )
-        contributor = _integer(
-            data.get("contributor"), field="Contributor threshold", minimum=1, maximum=100000
-        )
-        mentor = _integer(
-            data.get("mentor"), field="Mentor threshold", minimum=1, maximum=100000
-        )
+        builder = _integer(data.get("builder"), field="Builder threshold", minimum=1, maximum=100000)
+        contributor = _integer(data.get("contributor"), field="Contributor threshold", minimum=1, maximum=100000)
+        mentor = _integer(data.get("mentor"), field="Mentor threshold", minimum=1, maximum=100000)
         if not builder < contributor < mentor:
             raise ValueError("Thresholds must increase from Builder to Contributor to Mentor.")
         return {"builder": builder, "contributor": contributor, "mentor": mentor}
 
     if action_type is ControlActionType.ADJUST_REPUTATION:
-        points = _integer(
-            data.get("points"), field="Reputation points", minimum=-1000, maximum=1000
-        )
+        points = _integer(data.get("points"), field="Reputation points", minimum=-1000, maximum=1000)
         if points == 0:
-            raise ValueError(
-                "Reputation points must be between -1000 and 1000 and cannot be zero."
-            )
+            raise ValueError("Reputation points must be between -1000 and 1000 and cannot be zero.")
         return {
             "member_id": _snowflake(data.get("member_id"), field="Member"),
             "points": points,
@@ -204,11 +195,7 @@ def validate_action_payload(
         }
 
     if action_type is ControlActionType.SET_QUIZ_SCHEDULE:
-        return {
-            "interval_hours": _integer(
-                data.get("interval_hours"), field="Quiz interval", minimum=1, maximum=720
-            )
-        }
+        return {"interval_hours": _integer(data.get("interval_hours"), field="Quiz interval", minimum=1, maximum=720)}
 
     if action_type is ControlActionType.ADD_QUIZ_QUESTION:
         options_raw = data.get("options")
@@ -218,17 +205,12 @@ def validate_action_payload(
             _text(value, field=f"Option {index + 1}", max_length=300)
             for index, value in enumerate(options_raw)
         ]
-        correct = _integer(
-            data.get("correct"), field="Correct answer", minimum=1, maximum=4
-        )
         return {
             "category": _text(data.get("category"), field="Category", max_length=50),
             "prompt": _text(data.get("prompt"), field="Prompt", max_length=2000),
             "options": options,
-            "correct": correct,
-            "explanation": _text(
-                data.get("explanation"), field="Explanation", max_length=2000, required=False
-            ),
+            "correct": _integer(data.get("correct"), field="Correct answer", minimum=1, maximum=4),
+            "explanation": _text(data.get("explanation"), field="Explanation", max_length=2000, required=False),
         }
 
     if action_type is ControlActionType.UPSERT_AI_SOURCE:
@@ -236,31 +218,20 @@ def validate_action_payload(
         parsed = urlparse(url)
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             raise ValueError("Source URL must be HTTP or HTTPS.")
-        result = {
+        result: dict[str, Any] = {
             "name": _text(data.get("name"), field="Source name", max_length=100),
             "url": url,
             "category": _text(data.get("category"), field="Source category", max_length=50),
         }
         if data.get("source_id") not in {None, ""}:
-            result["source_id"] = _integer(
-                data.get("source_id"), field="Source ID", minimum=1, maximum=2_147_483_647
-            )
+            result["source_id"] = _integer(data.get("source_id"), field="Source ID", minimum=1, maximum=2_147_483_647)
         return result
 
     if action_type is ControlActionType.DISABLE_AI_SOURCE:
-        return {
-            "source_id": _integer(
-                data.get("source_id"), field="Source ID", minimum=1, maximum=2_147_483_647
-            )
-        }
-
-    if action_type is ControlActionType.POLL_AI_SOURCES:
-        return {}
+        return {"source_id": _integer(data.get("source_id"), field="Source ID", minimum=1, maximum=2_147_483_647)}
 
     if action_type is ControlActionType.SEND_ANNOUNCEMENT:
-        color = _text(
-            data.get("color", "5865F2"), field="Embed color", max_length=7
-        ).removeprefix("#")
+        color = _text(data.get("color", "5865F2"), field="Embed color", max_length=7).removeprefix("#")
         if len(color) != 6:
             raise ValueError("Color must be a six-digit hex value such as 5865F2.")
         try:
@@ -269,25 +240,18 @@ def validate_action_payload(
             raise ValueError("Color must be a six-digit hex value such as 5865F2.") from error
         return {
             "channel_id": _snowflake(data.get("channel_id"), field="Announcement channel"),
-            "message": _text(
-                data.get("message"), field="Message", max_length=2000, required=False
-            ),
+            "message": _text(data.get("message"), field="Message", max_length=2000, required=False),
             "title": _text(data.get("title"), field="Title", max_length=256, required=False),
             "body": _text(data.get("body"), field="Announcement body", max_length=4000),
-            "footer": _text(
-                data.get("footer"), field="Footer", max_length=2048, required=False
-            ),
+            "footer": _text(data.get("footer"), field="Footer", max_length=2048, required=False),
             "color": color.upper(),
             "mentions": _mentions(data.get("mentions")),
         }
 
     if action_type is ControlActionType.POST_LIVE:
         return {
-            "channel_id": (
-                _snowflake(data.get("channel_id"), field="Live channel")
-                if data.get("channel_id") not in {None, ""}
-                else None
-            ),
+            "channel_id": _optional_snowflake(data.get("channel_id"), field="Live channel"),
+            "ping_role_id": _optional_snowflake(data.get("ping_role_id"), field="Live ping role"),
             "topic": _text(data.get("topic"), field="Topic", max_length=500, required=False),
         }
 
