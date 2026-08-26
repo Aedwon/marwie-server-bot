@@ -78,6 +78,7 @@ export default async function handler(req, res) {
       FROM control_actions
       WHERE guild_id = ${guildId}
         AND actor_id = ${session.userId}
+        AND action_type <> 'refresh_snapshot'
         AND created_at >= CURRENT_TIMESTAMP - INTERVAL '60 seconds'
     `;
     if (Number(rateRows[0]?.count || 0) >= 20) {
