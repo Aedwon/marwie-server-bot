@@ -21,6 +21,10 @@ from marwie_bot.features.tickets.service import TicketService
 _DEFAULT_THRESHOLDS = {"builder": 50, "contributor": 150, "mentor": 500}
 
 
+def _id(value: int | None) -> str | None:
+    return str(value) if value is not None else None
+
+
 def _channel_kind(channel: discord.abc.GuildChannel) -> str:
     if isinstance(channel, discord.ForumChannel):
         return "forum"
@@ -42,7 +46,7 @@ def _resource_value(guild: discord.Guild, key: ResourceKey, discord_id: int) -> 
     }:
         role = guild.get_role(discord_id)
         return {
-            "id": discord_id,
+            "id": _id(discord_id),
             "name": role.name if role is not None else None,
             "exists": role is not None,
             "kind": "role",
@@ -52,16 +56,16 @@ def _resource_value(guild: discord.Guild, key: ResourceKey, discord_id: int) -> 
             tag = next((item for item in channel.available_tags if item.id == discord_id), None)
             if tag is not None:
                 return {
-                    "id": discord_id,
+                    "id": _id(discord_id),
                     "name": tag.name,
                     "exists": True,
                     "kind": "forum_tag",
-                    "forum_id": channel.id,
+                    "forum_id": _id(channel.id),
                 }
-        return {"id": discord_id, "name": None, "exists": False, "kind": "forum_tag"}
+        return {"id": _id(discord_id), "name": None, "exists": False, "kind": "forum_tag"}
     channel = guild.get_channel(discord_id)
     return {
-        "id": discord_id,
+        "id": _id(discord_id),
         "name": channel.name if channel is not None else None,
         "exists": channel is not None,
         "kind": _channel_kind(channel) if channel is not None else "channel",
@@ -87,10 +91,10 @@ def serialize_setup_plan(plan: AutoSetupPlan) -> dict[str, Any]:
                 "canonical_name": item.blueprint.name,
                 "action": item.action.value,
                 "target": (
-                    {"id": target.id, "name": target.name} if target is not None else None
+                    {"id": _id(target.id), "name": target.name} if target is not None else None
                 ),
                 "current": (
-                    {"id": current.id, "name": current.name} if current is not None else None
+                    {"id": _id(current.id), "name": current.name} if current is not None else None
                 ),
             }
         )
@@ -98,11 +102,11 @@ def serialize_setup_plan(plan: AutoSetupPlan) -> dict[str, Any]:
     solved = {
         "action": plan.solved_tag.action.value,
         "tag": (
-            {"id": plan.solved_tag.tag.id, "name": plan.solved_tag.tag.name}
+            {"id": _id(plan.solved_tag.tag.id), "name": plan.solved_tag.tag.name}
             if plan.solved_tag.tag is not None
             else None
         ),
-        "forum_id": plan.solved_tag.forum.id if plan.solved_tag.forum is not None else None,
+        "forum_id": _id(plan.solved_tag.forum.id) if plan.solved_tag.forum is not None else None,
     }
     if plan.solved_tag.action in {DiscoveryAction.REMAP, DiscoveryAction.CREATE}:
         counts["review"] += 1
@@ -156,7 +160,7 @@ class GuildSnapshotBuilder:
                 {
                     "key": key.value,
                     "resource_type": record.resource_type.value if record is not None else None,
-                    "updated_by": record.updated_by if record is not None else None,
+                    "updated_by": _id(record.updated_by) if record is not None else None,
                     **resolved,
                 }
             )
@@ -192,10 +196,10 @@ class GuildSnapshotBuilder:
         bot_permissions = bot_member.guild_permissions if bot_member is not None else discord.Permissions.none()
         channels = [
             {
-                "id": channel.id,
+                "id": _id(channel.id),
                 "name": channel.name,
                 "kind": _channel_kind(channel),
-                "category_id": getattr(channel, "category_id", None),
+                "category_id": _id(getattr(channel, "category_id", None)),
             }
             for channel in guild.channels
             if isinstance(
@@ -210,7 +214,7 @@ class GuildSnapshotBuilder:
         ]
         roles = [
             {
-                "id": role.id,
+                "id": _id(role.id),
                 "name": role.name,
                 "position": role.position,
                 "managed": role.managed,
@@ -220,22 +224,22 @@ class GuildSnapshotBuilder:
             if not role.is_default()
         ]
         members = [
-            {"id": member.id, "name": member.display_name}
+            {"id": _id(member.id), "name": member.display_name}
             for member in guild.members
             if not member.bot
         ]
 
         return {
             "guild": {
-                "id": guild.id,
+                "id": _id(guild.id),
                 "name": guild.name,
                 "icon_url": str(guild.icon.url) if guild.icon is not None else None,
-                "owner_id": guild.owner_id,
+                "owner_id": _id(guild.owner_id),
                 "community": "COMMUNITY" in guild.features,
             },
             "bot": {
                 "online": True,
-                "user_id": bot_member.id if bot_member is not None else None,
+                "user_id": _id(bot_member.id) if bot_member is not None else None,
                 "permissions": {
                     "administrator": bot_permissions.administrator,
                     "manage_guild": bot_permissions.manage_guild,
@@ -282,17 +286,17 @@ class GuildSnapshotBuilder:
                 for item in sources
             ],
             "log_exclusions": [
-                int(item) for item in message_log_config.get("ignored_channel_ids", [])
+                str(item) for item in message_log_config.get("ignored_channel_ids", [])
             ],
             "notification_panel": (
                 {
-                    "channel_id": panel.channel_id,
-                    "message_id": panel.message_id,
+                    "channel_id": _id(panel.channel_id),
+                    "message_id": _id(panel.message_id),
                     "title": panel.title,
                     "description": panel.description,
                     "buttons": [
                         {
-                            "role_id": item.role_id,
+                            "role_id": _id(item.role_id),
                             "label": item.label,
                             "emoji": item.emoji or "",
                             "style": item.style,
