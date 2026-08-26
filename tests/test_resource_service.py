@@ -30,6 +30,9 @@ class FakeResourceRepository:
         self.records[(guild_id, key)] = record
         return record
 
+    async def clear(self, guild_id: int, key: ResourceKey) -> bool:
+        return self.records.pop((guild_id, key), None) is not None
+
 
 async def test_resource_service_sets_and_reads_channel() -> None:
     repository = FakeResourceRepository()
@@ -50,6 +53,16 @@ async def test_resource_service_sets_and_reads_channel() -> None:
 async def test_resource_service_returns_none_for_missing_resource() -> None:
     service = ResourceService(FakeResourceRepository())
     assert await service.get(100, ResourceKey.MODERATION_LOG) is None
+
+
+async def test_resource_service_clears_binding() -> None:
+    repository = FakeResourceRepository()
+    service = ResourceService(repository)
+    await service.set_channel(100, ResourceKey.MODERATION_LOG, 200, 300)
+
+    assert await service.clear(100, ResourceKey.MODERATION_LOG) is True
+    assert await service.get(100, ResourceKey.MODERATION_LOG) is None
+    assert await service.clear(100, ResourceKey.MODERATION_LOG) is False
 
 
 def test_live_announcement_resource_types() -> None:

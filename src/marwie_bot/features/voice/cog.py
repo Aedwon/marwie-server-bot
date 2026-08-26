@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 import logging
+from contextlib import suppress
 
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 
 from marwie_bot.config.resources import FeatureName, ResourceKey
 from marwie_bot.db.session import Database
@@ -29,11 +31,17 @@ class VoiceCog(commands.Cog):
         self.repository = repository
         self.resources = resources
         self.features = features
+        self._reconcile_task: asyncio.Task[None] | None = None
         if getattr(getattr(bot, "settings", None), "enable_background_tasks", True):
-            self.reconcile.start()
+            self._reconcile_task = asyncio.create_task(self._reconcile_after_ready())
 
     async def cog_unload(self) -> None:
-        self.reconcile.cancel()
+        if self._reconcile_task is None:
+            return
+        self._reconcile_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await self._reconcile_task
+        self._reconcile_task = None
 
     @commands.Cog.listener()
     async def on_voice_state_update(
@@ -96,8 +104,7 @@ class VoiceCog(commands.Cog):
             return
         await self.repository.remove(channel.id)
 
-    @tasks.loop(minutes=5)
-    async def reconcile(self) -> None:
+    async def _reconcile_once(self) -> None:
         for record in await self.repository.list_all():
             guild = self.bot.get_guild(record.guild_id)
             if guild is None:
@@ -111,9 +118,12 @@ class VoiceCog(commands.Cog):
             ):
                 await self._delete_temp(channel)
 
-    @reconcile.before_loop
-    async def before_reconcile(self) -> None:
+    async def _reconcile_after_ready(self) -> None:
         await self.bot.wait_until_ready()
+        try:
+            await self._reconcile_once()
+        except Exception:
+            logger.exception("Temporary voice startup reconciliation failed")
 
     @commands.Cog.listener()
     async def on_guild_channel_delete(self, channel: discord.abc.GuildChannel) -> None:

@@ -1,0 +1,183 @@
+:root {
+  --page-surface: #f7f7f9;
+  --page-surface-strong: #f0f0f3;
+  --hairline: color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+html[data-theme="dark"] {
+  --page-surface: #1b1b1e;
+  --page-surface-strong: #222226;
+  --hairline: color-mix(in srgb, var(--text) 12%, transparent);
+}
+
+body {
+  letter-spacing: -0.006em;
+}
+
+.sidebar {
+  border-right: 0;
+  background: color-mix(in srgb, var(--sidebar) 92%, var(--bg));
+  padding-inline: 18px;
+}
+
+.brand {
+  padding-inline: 4px;
+}
+
+.brand img,
+.mobilebrand img {
+  border-radius: 9px;
+}
+
+.nav-section {
+  margin-top: 18px;
+}
+
+.nav-section + .nav-section {
+  margin-top: 24px;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.nav-label {
+  padding-left: 7px;
+  color: var(--quiet);
+  font-size: 10.5px;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+}
+
+.nav a {
+  min-height: 34px;
+  margin-left: 13px;
+  padding-inline: 10px;
+  border-radius: 8px;
+}
+
+.nav a:hover {
+  background: color-mix(in srgb, var(--page-surface-strong) 74%, transparent);
+}
+
+.nav a[aria-current="true"],
+.nav a[aria-current="page"] {
+  background: var(--page-surface-strong);
+  color: var(--text);
+}
+
+.appearance {
+  border-top: 0;
+  padding-top: 20px;
+}
+
+.theme-switcher {
+  border: 0;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--page-surface-strong);
+}
+
+.theme-switcher button {
+  border-radius: 8px;
+}
+
+.doc {
+  padding-top: 68px;
+}
+
+.doc-header {
+  border-bottom: 0;
+  padding-bottom: 24px;
+}
+
+.breadcrumbs {
+  margin-bottom: 10px;
+}
+
+h1 {
+  letter-spacing: -0.052em;
+}
+
+h2 {
+  letter-spacing: -0.035em;
+}
+
+.lede {
+  line-height: 1.48;
+}
+
+.section {
+  padding: 52px 0;
+  border-bottom: 0;
+}
+
+.section-heading {
+  margin-bottom: 22px;
+}
+
+.intro {
+  margin-bottom: 20px;
+}
+
+.plain-list,
+.command-list,
+.role-order,
+.steps,
+.resource-list,
+.settings,
+.faq,
+.health-list {
+  border-top-color: var(--hairline);
+}
+
+.plain-item,
+.command,
+.role-order li,
+.step,
+.resource,
+.setting,
+details {
+  border-bottom-color: var(--hairline);
+}
+
+.note,
+.operator-note,
+.setup-principle {
+  border: 0;
+  border-radius: 14px;
+  background: var(--page-surface);
+}
+
+code {
+  border-radius: 6px;
+}
+
+.reset,
+.menubtn {
+  border: 0;
+  background: var(--page-surface-strong);
+}
+
+.mobilebar {
+  border-bottom: 0;
+  box-shadow: 0 1px 0 var(--hairline);
+}
+
+footer {
+  margin-top: 16px;
+}
+
+@media (max-width: 900px) {
+  .sidebar {
+    box-shadow: 18px 0 44px rgba(0, 0, 0, .18);
+  }
+
+  .doc {
+    padding-top: 42px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+  }
+}

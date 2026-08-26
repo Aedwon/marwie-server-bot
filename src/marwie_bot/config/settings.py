@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     sync_commands: bool = True
     enable_message_content: bool = False
     enable_background_tasks: bool = True
+    cutover_read_only: bool = False
+    control_wake_webhook_id: int | None = None
     mar_wie_user_id: int = 703986808962285621
     mar_wie_tiktok_url: str | None = None
 

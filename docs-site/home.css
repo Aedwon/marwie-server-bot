@@ -1,0 +1,425 @@
+@import url('/visual.css?v=1');
+
+.operator-home {
+  --content-width: 900px;
+}
+
+.operator-doc .section {
+  scroll-margin-top: 20px;
+}
+
+.start-section {
+  padding-top: 34px;
+}
+
+.task-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border-radius: 20px;
+  background: var(--hairline);
+}
+
+.task-card {
+  position: relative;
+  min-height: 172px;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 56px 23px 24px;
+  background: var(--page-surface);
+  color: inherit;
+  text-decoration: none;
+  transition: background .14s ease;
+}
+
+.task-card::after {
+  content: '↗';
+  position: absolute;
+  top: 22px;
+  right: 24px;
+  color: var(--quiet);
+  font-size: 18px;
+  transition: transform .14s ease, color .14s ease;
+}
+
+.task-card:hover {
+  background: var(--page-surface-strong);
+}
+
+.task-card:hover::after {
+  color: var(--text);
+  transform: translate(2px, -2px);
+}
+
+.task-audience {
+  margin-bottom: auto;
+  color: var(--quiet);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.task-card h3 {
+  margin: 30px 0 5px;
+  font-size: 23px;
+  line-height: 1.08;
+  letter-spacing: -.035em;
+}
+
+.task-card p {
+  max-width: 330px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.start-section > .operator-note {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 18px;
+  margin-top: 18px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.start-section > .operator-note strong,
+.start-section > .operator-note p {
+  margin: 0;
+}
+
+.health-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 0;
+}
+
+.health-item {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  gap: 12px;
+  padding: 22px 24px 22px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.health-item:nth-child(odd) {
+  padding-right: 30px;
+  border-right: 1px solid var(--hairline);
+}
+
+.health-item:nth-child(even) {
+  padding-left: 30px;
+  padding-right: 0;
+}
+
+.health-number {
+  width: auto;
+  height: auto;
+  display: block;
+  border: 0;
+  border-radius: 0;
+  color: var(--accent-text);
+  font: 11px/1.3 SFMono-Regular, Consolas, monospace;
+  padding-top: 4px;
+}
+
+.health-item h3 {
+  margin: 0 0 5px;
+  font-size: 16px;
+}
+
+.health-item p {
+  margin: 0 0 7px;
+  font-size: 14px;
+}
+
+.health-item a {
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+#health > .operator-note,
+#roles > .operator-note,
+#resources > .operator-note,
+#hosting > .operator-note {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 18px;
+  margin-top: 20px;
+  padding: 16px 0 0;
+  border-top: 1px solid var(--hairline);
+  border-radius: 0;
+  background: transparent;
+}
+
+#health > .operator-note strong,
+#health > .operator-note p,
+#roles > .operator-note strong,
+#roles > .operator-note p,
+#resources > .operator-note strong,
+#resources > .operator-note p,
+#hosting > .operator-note strong,
+#hosting > .operator-note p {
+  margin: 0;
+}
+
+.setup-principle {
+  margin: 0 0 26px;
+  padding: 18px 20px;
+  background: color-mix(in srgb, var(--accent-soft) 62%, var(--page-surface));
+}
+
+.setup-principle strong {
+  margin-bottom: 5px;
+}
+
+.progress-line {
+  margin-top: 2px;
+}
+
+.track {
+  background: var(--page-surface-strong);
+}
+
+.steps {
+  border-top: 0;
+}
+
+.step {
+  grid-template-columns: 34px 1fr 40px;
+  padding-block: 18px;
+}
+
+.step::before {
+  font: 11px/1.5 SFMono-Regular, Consolas, monospace;
+  color: var(--quiet);
+}
+
+#setup > .operator-note {
+  margin-top: 22px;
+  padding: 16px 18px;
+}
+
+.playbook-list {
+  display: block;
+}
+
+.playbook {
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr);
+  column-gap: 38px;
+  padding: 34px 0 38px;
+  border: 0;
+  border-top: 1px solid var(--hairline);
+  border-radius: 0;
+  background: transparent;
+  scroll-margin-top: 22px;
+}
+
+.playbook:first-child {
+  border-top: 0;
+  padding-top: 8px;
+}
+
+.playbook-head {
+  grid-row: 1 / span 2;
+}
+
+.playbook-head > span {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--quiet);
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+}
+
+.playbook-head h3 {
+  margin: 0 0 7px;
+  font-size: 22px;
+  letter-spacing: -.03em;
+}
+
+.playbook-head p {
+  margin: 0;
+  font-size: 13.5px;
+}
+
+.playbook-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: playbook-step;
+  border-top: 0;
+}
+
+.playbook-steps li {
+  counter-increment: playbook-step;
+  position: relative;
+  padding: 9px 0 9px 34px;
+  border-bottom: 1px solid var(--hairline);
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.playbook-steps li:first-child {
+  padding-top: 0;
+}
+
+.playbook-steps li::before {
+  content: counter(playbook-step, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 10px;
+  color: var(--quiet);
+  font: 10px/1.5 SFMono-Regular, Consolas, monospace;
+}
+
+.playbook-steps li:first-child::before {
+  top: 1px;
+}
+
+.playbook-links {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px 9px;
+  margin-top: 17px;
+}
+
+.playbook-links strong {
+  width: 100%;
+  color: var(--quiet);
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.playbook-links a {
+  text-decoration: none;
+}
+
+.playbook-links code {
+  background: var(--page-surface);
+}
+
+.permission-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 38px;
+  margin-top: 28px;
+}
+
+.permission-block {
+  padding-top: 18px;
+  border-top: 1px solid var(--hairline);
+}
+
+.permission-block h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.permission-block .bullets {
+  margin-bottom: 0;
+  font-size: 14px;
+}
+
+#support .plain-item,
+#automatic .plain-item {
+  grid-template-columns: 200px 1fr;
+}
+
+#resources .resource {
+  grid-template-columns: 180px 1fr;
+}
+
+#hosting .setting {
+  grid-template-columns: 210px 1fr;
+}
+
+#resources .note {
+  padding: 16px 18px;
+}
+
+@media (max-width: 760px) {
+  .task-grid,
+  .health-list,
+  .permission-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .task-card {
+    min-height: 148px;
+  }
+
+  .health-item,
+  .health-item:nth-child(odd),
+  .health-item:nth-child(even) {
+    padding: 18px 0;
+    border-right: 0;
+  }
+
+  .playbook {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .playbook-head {
+    grid-row: auto;
+  }
+
+  #support .plain-item,
+  #automatic .plain-item,
+  #resources .resource,
+  #hosting .setting {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .task-grid {
+    border-radius: 16px;
+  }
+
+  .task-card {
+    min-height: 132px;
+    padding: 20px 48px 20px 20px;
+  }
+
+  .task-card h3 {
+    margin-top: 24px;
+    font-size: 21px;
+  }
+
+  .start-section > .operator-note,
+  #health > .operator-note,
+  #roles > .operator-note,
+  #resources > .operator-note,
+  #hosting > .operator-note {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .step {
+    grid-template-columns: 26px 1fr;
+  }
+
+  .check {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .task-card,
+  .task-card::after {
+    transition: none;
+  }
+}

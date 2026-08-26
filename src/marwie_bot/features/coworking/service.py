@@ -26,6 +26,8 @@ class PomodoroRepository(Protocol):
 
     async def due(self, now: datetime) -> list[PomodoroRecord]: ...
 
+    async def next_active_end(self) -> datetime | None: ...
+
 
 class CoworkingService:
     def __init__(self, repository: PomodoroRepository) -> None:
