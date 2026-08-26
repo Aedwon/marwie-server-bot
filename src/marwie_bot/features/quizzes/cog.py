@@ -15,7 +15,11 @@ from marwie_bot.features.configuration.repository import (
     SQLAlchemyFeatureConfigRepository,
     SQLAlchemyResourceRepository,
 )
-from marwie_bot.features.configuration.service import FeatureConfigRecord, FeatureConfigService, ResourceService
+from marwie_bot.features.configuration.service import (
+    FeatureConfigRecord,
+    FeatureConfigService,
+    ResourceService,
+)
 from marwie_bot.features.quizzes.repository import SQLAlchemyQuizRepository
 from marwie_bot.features.quizzes.service import QuizQuestionRecord, QuizService
 from marwie_bot.features.quizzes.views import QuizAnswerView
@@ -24,7 +28,6 @@ from marwie_bot.features.reputation.service import ReputationService
 
 logger = logging.getLogger(__name__)
 
-_AUTO_RETRY_DELAY = timedelta(minutes=30)
 _ERROR_RETRY_DELAY = timedelta(minutes=15)
 
 
@@ -52,7 +55,7 @@ class QuizzesCog(commands.Cog):
         self.features = features
         self._scheduler_wake = asyncio.Event()
         self._scheduler_task: asyncio.Task[None] | None = None
-        self._auto_retry_after: dict[int, datetime] = {}
+        self._auto_blocked_guilds: set[int] = set()
         if getattr(getattr(bot, "settings", None), "enable_background_tasks", True):
             self._scheduler_task = asyncio.create_task(self._scheduler_worker())
 
@@ -66,9 +69,9 @@ class QuizzesCog(commands.Cog):
 
     def notify_scheduler(self, guild_id: int | None = None) -> None:
         if guild_id is None:
-            self._auto_retry_after.clear()
+            self._auto_blocked_guilds.clear()
         else:
-            self._auto_retry_after.pop(guild_id, None)
+            self._auto_blocked_guilds.discard(guild_id)
         self._scheduler_wake.set()
 
     @quiz_group.command(name="add", description="Add a quiz question.")
@@ -252,25 +255,21 @@ class QuizzesCog(commands.Cog):
         return last + timedelta(hours=interval)
 
     async def _process_auto_guild(self, guild: discord.Guild, now: datetime) -> datetime | None:
+        if guild.id in self._auto_blocked_guilds:
+            return None
+
         config = await self.features.get(guild.id, FeatureName.QUIZZES)
         due_at = self._auto_due_at(config, now)
         if due_at is None:
-            self._auto_retry_after.pop(guild.id, None)
             return None
         if due_at > now:
-            self._auto_retry_after.pop(guild.id, None)
             return due_at
-
-        retry_after = self._auto_retry_after.get(guild.id)
-        if retry_after is not None and retry_after > now:
-            return retry_after
 
         channel = await self._quiz_channel(guild)
         message = await self._start_quiz(guild, channel) if channel is not None else None
         if message is None:
-            retry_at = now + _AUTO_RETRY_DELAY
-            self._auto_retry_after[guild.id] = retry_at
-            return retry_at
+            self._auto_blocked_guilds.add(guild.id)
+            return None
 
         interval = max(1, int(config.config["interval_hours"]))
         await self.features.update_config(
@@ -278,7 +277,6 @@ class QuizzesCog(commands.Cog):
             FeatureName.QUIZZES,
             {"last_posted_at": now.isoformat()},
         )
-        self._auto_retry_after.pop(guild.id, None)
         return now + timedelta(hours=interval)
 
     @staticmethod
