@@ -76,6 +76,37 @@ class SQLAlchemyAIUpdatesRepository:
             await session.refresh(model)
             return self._source(model)
 
+    async def update_source(
+        self,
+        guild_id: int,
+        source_id: int,
+        name: str,
+        url: str,
+        category: str,
+    ) -> AISourceRecord | None:
+        async with self.database.session() as session:
+            model = await session.get(AIUpdateSource, source_id)
+            if model is None or model.guild_id != guild_id:
+                return None
+            duplicate = (
+                await session.execute(
+                    select(AIUpdateSource.id).where(
+                        AIUpdateSource.guild_id == guild_id,
+                        AIUpdateSource.url == url,
+                        AIUpdateSource.id != source_id,
+                    )
+                )
+            ).scalar_one_or_none()
+            if duplicate is not None:
+                raise ValueError("Another AI source already uses that URL.")
+            model.name = name
+            model.url = url
+            model.category = category
+            model.enabled = True
+            await session.commit()
+            await session.refresh(model)
+            return self._source(model)
+
     async def list_sources(
         self, guild_id: int | None = None, *, enabled_only: bool = False
     ) -> list[AISourceRecord]:
