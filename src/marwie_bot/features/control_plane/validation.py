@@ -153,9 +153,7 @@ def validate_action_payload(
             if role_id in seen_roles:
                 raise ValueError("Notification role panel contains a duplicate role.")
             seen_roles.add(role_id)
-            style = _text(
-                raw.get("style", "primary"), field="Button style", max_length=16
-            ).lower()
+            style = _text(raw.get("style", "primary"), field="Button style", max_length=16).lower()
             if style not in {"primary", "secondary", "success", "danger"}:
                 raise ValueError("Notification button style is invalid.")
             buttons.append(
@@ -187,9 +185,7 @@ def validate_action_payload(
         }
 
     if action_type is ControlActionType.DISABLE_TICKET_TYPE:
-        return {
-            "key": _text(data.get("key"), field="Ticket type key", max_length=32).lower()
-        }
+        return {"key": _text(data.get("key"), field="Ticket type key", max_length=32).lower()}
 
     if action_type in {
         ControlActionType.REFRESH_TICKET_PANEL,
@@ -204,9 +200,7 @@ def validate_action_payload(
         contributor = _integer(
             data.get("contributor"), field="Contributor threshold", minimum=1, maximum=100000
         )
-        mentor = _integer(
-            data.get("mentor"), field="Mentor threshold", minimum=1, maximum=100000
-        )
+        mentor = _integer(data.get("mentor"), field="Mentor threshold", minimum=1, maximum=100000)
         if not builder < contributor < mentor:
             raise ValueError("Thresholds must increase from Builder to Contributor to Mentor.")
         return {"builder": builder, "contributor": contributor, "mentor": mentor}
@@ -242,9 +236,7 @@ def validate_action_payload(
             "category": _text(data.get("category"), field="Category", max_length=50),
             "prompt": _text(data.get("prompt"), field="Prompt", max_length=2000),
             "options": options,
-            "correct": _integer(
-                data.get("correct"), field="Correct answer", minimum=1, maximum=4
-            ),
+            "correct": _integer(data.get("correct"), field="Correct answer", minimum=1, maximum=4),
             "explanation": _text(
                 data.get("explanation"), field="Explanation", max_length=2000, required=False
             ),
@@ -285,9 +277,7 @@ def validate_action_payload(
             raise ValueError("Color must be a six-digit hex value such as 5865F2.") from error
         return {
             "channel_id": _snowflake(data.get("channel_id"), field="Announcement channel"),
-            "message": _text(
-                data.get("message"), field="Message", max_length=2000, required=False
-            ),
+            "message": _text(data.get("message"), field="Message", max_length=2000, required=False),
             "title": _text(data.get("title"), field="Title", max_length=256, required=False),
             "body": _text(data.get("body"), field="Announcement body", max_length=4000),
             "footer": _text(data.get("footer"), field="Footer", max_length=2048, required=False),
