@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import sqlite3
+import sys
 from datetime import UTC
 from pathlib import Path
 
@@ -11,6 +12,7 @@ MODULE_PATH = Path(__file__).resolve().parents[1] / "tools" / "migrate_sqlite_to
 SPEC = importlib.util.spec_from_file_location("migrate_sqlite_to_postgres", MODULE_PATH)
 assert SPEC is not None and SPEC.loader is not None
 cutover = importlib.util.module_from_spec(SPEC)
+sys.modules[SPEC.name] = cutover
 SPEC.loader.exec_module(cutover)
 
 
