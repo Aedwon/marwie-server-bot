@@ -188,12 +188,24 @@ class ControlActionExecutor:
                 )
                 return {"question_id": record.id}
             case ControlActionType.UPSERT_AI_SOURCE:
-                record = await self.ai_sources.add_source(
-                    guild.id,
-                    str(payload["name"]),
-                    str(payload["url"]),
-                    str(payload["category"]),
-                )
+                source_id = payload.get("source_id")
+                if source_id is None:
+                    record = await self.ai_sources.add_source(
+                        guild.id,
+                        str(payload["name"]),
+                        str(payload["url"]),
+                        str(payload["category"]),
+                    )
+                else:
+                    record = await self.ai_sources.update_source(
+                        guild.id,
+                        int(source_id),
+                        str(payload["name"]),
+                        str(payload["url"]),
+                        str(payload["category"]),
+                    )
+                    if record is None:
+                        raise ActionRejected("That AI source no longer exists in this server.")
                 return {"source_id": record.id, "enabled": record.enabled}
             case ControlActionType.DISABLE_AI_SOURCE:
                 changed = await self.ai_sources.disable_source(
