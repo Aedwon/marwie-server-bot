@@ -67,8 +67,10 @@ class TicketService:
     def __init__(self, repository: TicketRepository) -> None:
         self.repository = repository
 
-    async def list_types(self, guild_id: int) -> list[TicketTypeRecord]:
-        return await self.repository.list_types(guild_id)
+    async def list_types(
+        self, guild_id: int, *, enabled_only: bool = True
+    ) -> list[TicketTypeRecord]:
+        return await self.repository.list_types(guild_id, enabled_only=enabled_only)
 
     async def upsert_type(
         self, guild_id: int, key: str, label: str, description: str
