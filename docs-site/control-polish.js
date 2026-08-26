@@ -1,4 +1,30 @@
 (() => {
+  const style = document.createElement('style');
+  style.textContent = `
+    #setup .resource-disclosure:not([open]) {
+      margin-top: 10px;
+      overflow: visible;
+    }
+    #setup .resource-disclosure:not([open]) > summary {
+      min-height: 46px;
+      padding: 0 12px;
+      border: 0;
+      border-radius: 11px;
+      background: color-mix(in srgb, var(--page-surface) 76%, transparent);
+    }
+    #setup .resource-disclosure:not([open]) > summary > span {
+      line-height: 1.15;
+    }
+    #setup .resource-disclosure:not([open]) > summary > small {
+      margin-left: auto;
+      line-height: 1.15;
+    }
+    #setup .resource-disclosure:not([open]) > summary::after {
+      margin-left: 2px;
+    }
+  `;
+  document.head.appendChild(style);
+
   const refinement = document.createElement('script');
   refinement.src = '/control-refine.js?v=1';
   refinement.addEventListener('load', waitForPublishingRefinement);
