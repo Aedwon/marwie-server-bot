@@ -171,9 +171,7 @@ class CoworkingCog(commands.Cog):
             except Exception:
                 logger.exception("Pomodoro deadline worker failed")
                 try:
-                    await asyncio.wait_for(
-                        self._timer_wake.wait(), timeout=_ERROR_RETRY_SECONDS
-                    )
+                    await asyncio.wait_for(self._timer_wake.wait(), timeout=_ERROR_RETRY_SECONDS)
                 except TimeoutError:
                     pass
                 continue
