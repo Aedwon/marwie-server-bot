@@ -100,6 +100,9 @@ def validate_action_payload(
 ) -> dict[str, Any]:
     data = _mapping(payload)
 
+    if action_type is ControlActionType.REFRESH_SNAPSHOT:
+        return {}
+
     if action_type is ControlActionType.SET_RESOURCE:
         key = ResourceKey(_text(data.get("key"), field="Resource key", max_length=100))
         return {
@@ -285,13 +288,9 @@ def validate_action_payload(
             "message": _text(
                 data.get("message"), field="Message", max_length=2000, required=False
             ),
-            "title": _text(
-                data.get("title"), field="Title", max_length=256, required=False
-            ),
+            "title": _text(data.get("title"), field="Title", max_length=256, required=False),
             "body": _text(data.get("body"), field="Announcement body", max_length=4000),
-            "footer": _text(
-                data.get("footer"), field="Footer", max_length=2048, required=False
-            ),
+            "footer": _text(data.get("footer"), field="Footer", max_length=2048, required=False),
             "color": color.upper(),
             "mentions": _mentions(data.get("mentions")),
         }
@@ -299,9 +298,7 @@ def validate_action_payload(
     if action_type is ControlActionType.POST_LIVE:
         return {
             "channel_id": _optional_snowflake(data.get("channel_id"), field="Live channel"),
-            "ping_role_id": _optional_snowflake(
-                data.get("ping_role_id"), field="Live ping role"
-            ),
+            "ping_role_id": _optional_snowflake(data.get("ping_role_id"), field="Live ping role"),
             "topic": _text(data.get("topic"), field="Topic", max_length=500, required=False),
         }
 
