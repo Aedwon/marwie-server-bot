@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en" data-theme="light" data-preference="system">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="description" content="Rob-bot admin and moderator reference for setup, operations, permissions, troubleshooting, and commands.">
+  <meta name="theme-color" content="#f5f5f7" id="themeColor">
+  <title>Rob-bot Handbook</title>
+  <link rel="icon" type="image/png" sizes="64x64" href="/favicon-robin-v2.png">
+  <link rel="apple-touch-icon" href="/favicon-robin-v2.png">
+  <script>
+    (() => {
+      const pref = localStorage.getItem('rob-doc-theme') || 'system';
+      const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.dataset.preference = pref;
+      document.documentElement.dataset.theme = pref === 'system' ? (dark ? 'dark' : 'light') : pref;
+    })();
+  </script>
+  <link rel="stylesheet" href="/styles.css?v=14">
+  <link rel="stylesheet" href="/home.css?v=2">
+</head>
+<body class="operator-home">
+<a class="skip" href="#content">Skip to handbook</a>
+<div class="mobilebar">
+  <div class="mobilebrand"><img src="/rob-robin.jpg?v=1" alt="">Rob-bot Handbook</div>
+  <button class="menubtn" id="menuBtn" type="button" aria-controls="sidebar" aria-expanded="false">Sections</button>
+</div>
+<div class="layout">
+  <aside class="sidebar" id="sidebar" aria-label="Handbook navigation">
+    <a class="brand" href="#overview"><img src="/rob-robin.jpg?v=1" alt=""><span class="brand-copy">Rob-bot Handbook<small>Admins & moderators</small></span></a>
+
+    <div class="nav-section"><div class="nav-label"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg><span>Start</span></div><nav class="nav">
+      <a href="#overview" aria-current="true">Home</a>
+      <a href="#health">Health</a>
+      <a href="#setup">Setup</a>
+    </nav></div>
+
+    <div class="nav-section"><div class="nav-label"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9h4M7 13h7M7 17h3"/></svg><span>Operate</span></div><nav class="nav">
+      <a href="#playbooks">Playbooks</a>
+      <a href="#roles">Permissions</a>
+      <a href="#support">Member features</a>
+      <a href="#automatic">Automation</a>
+    </nav></div>
+
+    <div class="nav-section"><div class="nav-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M6 14v6"/></svg><span>Reference</span></div><nav class="nav">
+      <a href="/commands">Commands</a>
+      <a href="#resources">Resources</a>
+      <a href="#troubleshooting">Troubleshooting</a>
+      <a href="#hosting">Hosting</a>
+    </nav></div>
+
+    <div class="appearance">
+      <span class="appearance-label">Appearance</span>
+      <div class="theme-switcher" role="group" aria-label="Appearance">
+        <button type="button" data-theme-choice="system" aria-label="Use system appearance" title="System" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></button>
+        <button type="button" data-theme-choice="light" aria-label="Use light appearance" title="Light" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"/></svg></button>
+        <button type="button" data-theme-choice="dark" aria-label="Use dark appearance" title="Dark" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z"/></svg></button>
+      </div>
+    </div>
+  </aside>
+
+  <main id="content">
+    <article class="doc operator-doc">
+      <header class="doc-header" id="overview">
+        <div class="breadcrumbs">AI App Builders / Rob-bot</div>
+        <h1>Rob-bot Handbook</h1>
+        <p class="lede">Admin and moderator reference for setup, operations, permissions, and recovery.</p>
+        <div class="release">V1 · 45 slash commands · commands require confirmation</div>
+      </header>
+
+      <section class="section start-section" aria-labelledby="start-title">
+        <div class="section-heading"><h2 id="start-title">Start</h2></div>
+        <div class="task-grid" id="startRoutes"></div>
+        <div class="operator-note"><strong>Commands</strong><p><a href="/commands">Full manual</a> for syntax, inputs, permissions, side effects, and examples.</p></div>
+      </section>
+
+      <section class="section" id="health">
+        <div class="section-heading"><h2>Health</h2><p class="intro">Check these before changing configuration.</p></div>
+        <div class="health-list" id="healthChecks"></div>
+        <div class="operator-note"><strong>Confirmation</strong><p>Even read-only commands such as <code>/ping</code> and <code>/setup status</code> require approval.</p></div>
+      </section>
+
+      <section class="section" id="setup">
+        <div class="section-heading"><h2>Setup</h2><p class="intro">Use the server you already have. Do not pre-create duplicate channels.</p></div>
+        <div class="setup-principle"><strong><code>/setup auto</code></strong><p>Binds clear existing matches first. Missing resources, remaps, Solved-tag creation, and role-panel changes require a second approval.</p></div>
+        <div class="progress-line"><div class="track" aria-hidden="true"><div class="bar" id="progressBar"></div></div><div class="progress-text" id="progressText" aria-live="polite">0 of 7 complete</div><button class="reset" id="resetChecklist" type="button">Reset</button></div>
+        <div class="steps" id="setupSteps"></div>
+        <div class="operator-note"><strong>Manual choices</strong><p>Ticket types, quiz content, AI sources, reputation thresholds, log exclusions, and feature policy are not auto-created.</p></div>
+      </section>
+
+      <section class="section" id="playbooks">
+        <div class="section-heading"><h2>Playbooks</h2><p class="intro">Common staff workflows.</p></div>
+        <div class="playbook-list" id="playbookList"></div>
+      </section>
+
+      <section class="section" id="roles">
+        <div class="section-heading"><h2>Permissions</h2><p class="intro">Check hierarchy first when moderation or role management fails.</p></div>
+        <ol class="role-order">
+          <li><span class="n">1</span><b>Server Owner</b><span>Highest. Cannot be moderated.</span></li>
+          <li><span class="n">2</span><b>Admin / Leadership</b><span>Optional protected layer.</span></li>
+          <li class="bot-row"><span class="n">3</span><b>Rob-bot</b><span>Above members it moderates and roles it manages.</span></li>
+          <li><span class="n">4</span><b>Moderator / Support</b><span>Day-to-day staff.</span></li>
+          <li><span class="n">5</span><b>Mentor</b><span>Reputation ≥ 500.</span></li>
+          <li><span class="n">6</span><b>Contributor</b><span>Reputation ≥ 150.</span></li>
+          <li><span class="n">7</span><b>Builder</b><span>Reputation ≥ 50.</span></li>
+          <li><span class="n">8</span><b>Member roles</b><span>Community and interest roles.</span></li>
+          <li><span class="n">9</span><b>@everyone</b><span>Base role.</span></li>
+        </ol>
+
+        <div class="permission-grid">
+          <div class="permission-block"><h3>Rob-bot</h3><ul class="bullets"><li>View Channels, Send Messages, Embed Links, Attach Files, Read Message History</li><li>Manage Channels, Manage Threads, Manage Roles, Move Members</li><li>Moderate Members, Kick Members, Ban Members</li></ul></div>
+          <div class="permission-block"><h3>Moderators</h3><ul class="bullets"><li><strong>Moderate Members</strong> — <code>/warn</code>, <code>/timeout</code>, <code>/history</code>, <code>/anonwho</code></li><li><strong>Kick Members</strong> — <code>/kick</code></li><li><strong>Ban Members</strong> — <code>/ban</code>, <code>/unban</code></li><li><strong>Manage Threads</strong> — mark another member's build-help reply solved</li></ul></div>
+        </div>
+        <div class="operator-note"><strong>Hierarchy</strong><p>The moderator and Rob-bot must both outrank the target. The server owner cannot be targeted.</p></div>
+      </section>
+
+      <section class="section" id="support">
+        <div class="section-heading"><h2>Member features</h2><p class="intro">Expected behavior when members need help.</p></div>
+        <div class="plain-list" id="supportList"></div>
+      </section>
+
+      <section class="section" id="automatic">
+        <div class="section-heading"><h2>Automation</h2></div>
+        <div class="plain-list" id="automaticList"></div>
+      </section>
+
+      <section class="section" id="resources">
+        <div class="section-heading"><h2>Resources</h2><p class="intro">Logical mappings. Names are examples; <code>/setup auto</code> matches existing resources first.</p></div>
+        <div class="resource-list" id="resourceList"></div>
+        <div class="operator-note"><strong>Discovery first</strong><p>Use manual <code>/setup …</code> commands only for overrides. Auto-setup never deletes, renames, moves, or merges resources.</p></div>
+        <div class="note"><strong>Ticket privacy</strong><p>Deny <code>@everyone</code> View Channel on the ticket category; allow only ticket staff. Rob-bot adds the opener.</p></div>
+      </section>
+
+      <section class="section" id="troubleshooting">
+        <div class="section-heading"><h2>Troubleshooting</h2></div>
+        <div class="faq" id="faq"></div>
+      </section>
+
+      <section class="section" id="hosting">
+        <div class="section-heading"><h2>Hosting</h2><p class="intro">Command sync, intents, background tasks, persistence, and deployment.</p></div>
+        <h3>Discord</h3>
+        <div class="settings">
+          <div class="setting"><b>Presence Intent</b><p>Off.</p></div>
+          <div class="setting"><b>Server Members Intent</b><p>Off.</p></div>
+          <div class="setting"><b>Message Content Intent</b><p>Optional. Required for full message logs, richer transcripts, solution excerpts, and message-based reputation context.</p></div>
+          <div class="setting"><b>OAuth scopes</b><p><code>bot</code>, <code>applications.commands</code>.</p></div>
+        </div>
+
+        <h3>Environment</h3>
+        <div class="settings">
+          <div class="setting"><b><code>DISCORD_TOKEN</code></b><p>Required secret. Never publish it.</p></div>
+          <div class="setting"><b><code>ENVIRONMENT</code></b><p><code>production</code> on the live host.</p></div>
+          <div class="setting"><b><code>COMMAND_GUILD_ID</code></b><p>Recommended during setup for immediate guild sync.</p></div>
+          <div class="setting"><b><code>SYNC_COMMANDS</code></b><p>Defaults to <code>true</code>.</p></div>
+          <div class="setting"><b><code>ENABLE_MESSAGE_CONTENT</code></b><p><code>true</code> only when the Discord intent is enabled.</p></div>
+          <div class="setting"><b><code>ENABLE_BACKGROUND_TASKS</code></b><p><code>true</code> for scheduled quizzes, feeds, reports, showcase, voice reconciliation, and Pomodoro completion.</p></div>
+          <div class="setting"><b><code>MAR_WIE_USER_ID</code></b><p>Authorizes <code>/live</code>; current default identifies Mar Wie.</p></div>
+          <div class="setting"><b><code>MAR_WIE_TIKTOK_URL</code></b><p>Optional TikTok URL for the live button.</p></div>
+          <div class="setting"><b><code>DATABASE_URL</code></b><p>Optional. Unset uses <code>data/marwie.db</code>; PostgreSQL is supported.</p></div>
+        </div>
+        <div class="operator-note"><strong>Restart</strong><p>Hosting or environment changes require a bot restart. Discord setup commands do not.</p></div>
+      </section>
+
+      <footer>Rob-bot Handbook · <a href="/commands">Commands</a> · <a href="https://github.com/Aedwon/marwie-server-bot" target="_blank" rel="noreferrer">GitHub</a></footer>
+    </article>
+  </main>
+</div>
+<script src="/app.js?v=17" defer></script>
+</body>
+</html>

@@ -1,0 +1,506 @@
+@import url('/visual.css?v=1');
+
+.command-page {
+  --content-width: 960px;
+}
+
+.command-doc .breadcrumbs a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.command-doc .breadcrumbs a:hover {
+  color: var(--text);
+}
+
+.command-header {
+  max-width: 820px;
+}
+
+.manual-toolbar {
+  position: sticky;
+  top: 14px;
+  z-index: 20;
+  display: grid;
+  gap: 8px;
+  margin: 20px 0 6px;
+  padding: 10px;
+  border: 0;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.command-search-wrap {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--page-surface-strong);
+}
+
+.command-search-wrap svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: var(--quiet);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.command-search-wrap input {
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.command-search-wrap input::placeholder {
+  color: var(--quiet);
+}
+
+.command-search-wrap kbd {
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--quiet);
+  font: 11px SFMono-Regular, Consolas, monospace;
+}
+
+.command-search-wrap button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.search-status {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 4px;
+  color: var(--quiet);
+  font-size: 11px;
+}
+
+.manual-content {
+  padding-top: 6px;
+}
+
+.manual-notes {
+  margin: 24px 0 6px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--page-surface);
+}
+
+.manual-notes > summary {
+  min-height: 46px;
+  padding: 0 16px;
+  font-size: 13px;
+}
+
+.manual-notes-body {
+  padding: 0 16px 15px;
+}
+
+.manual-notes-body h3,
+.manual-notes-body h4 {
+  margin-top: 18px;
+}
+
+.manual-content p,
+.manual-content li {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.manual-content p {
+  margin: 0 0 12px;
+}
+
+.manual-content ul,
+.manual-content ol {
+  margin: 7px 0 16px;
+  padding-left: 22px;
+}
+
+.manual-content li {
+  margin: 4px 0;
+}
+
+.workflow-section {
+  padding: 56px 0 8px;
+  scroll-margin-top: 92px;
+}
+
+.workflow-header {
+  max-width: 780px;
+  margin-bottom: 24px;
+}
+
+.workflow-header h2 {
+  margin: 0 0 8px;
+  font-size: 31px;
+  line-height: 1.1;
+  letter-spacing: -.04em;
+}
+
+.workflow-header > p {
+  max-width: 700px;
+  margin-bottom: 14px;
+  font-size: 15px;
+}
+
+.workflow-path {
+  display: grid;
+  grid-template-columns: 54px 1fr;
+  gap: 12px;
+  align-items: start;
+  margin-top: 17px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.workflow-path > strong {
+  padding-top: 3px;
+  color: var(--quiet);
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+}
+
+.workflow-path ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.workflow-path li {
+  position: relative;
+  margin: 0;
+  padding-right: 25px;
+  font-size: 12.5px;
+}
+
+.workflow-path li:not(:last-child)::after {
+  content: '→';
+  position: absolute;
+  right: 8px;
+  color: var(--quiet);
+}
+
+.workflow-context {
+  margin: 0 0 18px;
+  padding: 16px 18px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--page-surface);
+}
+
+.workflow-context > h3 {
+  margin: 0 0 7px;
+  font-size: 16px;
+}
+
+.workflow-context > h4 {
+  margin: 16px 0 6px;
+  font-size: 14px;
+}
+
+.workflow-context > hr {
+  display: none;
+}
+
+.workflow-command-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.command-card {
+  min-width: 0;
+  border: 0;
+  border-radius: 15px;
+  background: var(--page-surface);
+  overflow: clip;
+  scroll-margin-top: 108px;
+  transition: background .14s ease, transform .14s ease;
+}
+
+.command-card:hover {
+  background: var(--page-surface-strong);
+}
+
+.command-card[open] {
+  grid-column: 1 / -1;
+  background: var(--page-surface-strong);
+}
+
+.command-card > summary {
+  position: relative;
+  min-height: 0;
+  display: block;
+  padding: 17px 44px 18px 18px;
+}
+
+.command-card > summary::after {
+  content: '↘';
+  position: absolute;
+  top: 17px;
+  right: 18px;
+  color: var(--quiet);
+  font-size: 15px;
+  font-weight: 400;
+  transition: transform .14s ease, color .14s ease;
+}
+
+.command-card[open] > summary::after {
+  content: '↖';
+}
+
+.command-card:hover > summary::after {
+  color: var(--text);
+}
+
+.command-card-topline {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+.command-name code {
+  padding: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -.02em;
+}
+
+.permission-badge {
+  flex: 0 0 auto;
+  color: var(--quiet);
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: .025em;
+  text-transform: uppercase;
+}
+
+.command-syntax {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.command-syntax code {
+  padding: 2px 4px;
+  background: color-mix(in srgb, var(--bg) 68%, transparent);
+  font-size: 11.5px;
+}
+
+.command-description {
+  display: block;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.command-body {
+  padding: 20px 20px 22px;
+  border-top: 1px solid var(--hairline);
+}
+
+.command-body > :first-child {
+  margin-top: 0;
+}
+
+.command-body h4 {
+  margin: 23px 0 7px;
+  font-size: 15px;
+  letter-spacing: -.015em;
+}
+
+.command-body h5 {
+  margin: 18px 0 6px;
+  font-size: 13px;
+}
+
+.command-body strong {
+  color: var(--text);
+}
+
+.command-body pre {
+  margin: 12px 0 18px;
+  padding: 13px 14px;
+  overflow: auto;
+  border: 0;
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.command-body pre code {
+  padding: 0;
+  background: transparent;
+  white-space: pre;
+}
+
+.command-body blockquote {
+  margin: 16px 0;
+  padding: 0 0 0 14px;
+  border-left: 2px solid var(--accent);
+}
+
+.table-wrap {
+  width: 100%;
+  margin: 12px 0 20px;
+  overflow-x: auto;
+  border: 0;
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.manual-content table {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+}
+
+.manual-content th,
+.manual-content td {
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--hairline);
+  text-align: left;
+  vertical-align: top;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.48;
+}
+
+.manual-content th {
+  background: color-mix(in srgb, var(--page-surface) 78%, var(--bg));
+  color: var(--text);
+  font-weight: 650;
+}
+
+.manual-content tr:last-child td {
+  border-bottom: 0;
+}
+
+.command-empty-note,
+.manual-loading,
+.manual-error {
+  margin: 24px 0;
+  padding: 18px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--page-surface);
+  color: var(--muted);
+}
+
+.command-page .nav a[aria-current="page"],
+.manual-nav a[aria-current="true"] {
+  background: var(--page-surface-strong);
+  color: var(--text);
+  font-weight: 650;
+}
+
+@media (max-width: 760px) {
+  .manual-toolbar {
+    top: 64px;
+    margin-inline: -4px;
+  }
+
+  .workflow-command-list {
+    grid-template-columns: 1fr;
+  }
+
+  .command-card[open] {
+    grid-column: auto;
+  }
+
+  .workflow-path {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .workflow-path ol {
+    display: block;
+  }
+
+  .workflow-path li {
+    padding: 2px 0 2px 18px;
+  }
+
+  .workflow-path li:not(:last-child)::after {
+    content: '↓';
+    left: 0;
+    right: auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .workflow-section {
+    padding-top: 46px;
+  }
+
+  .workflow-header h2 {
+    font-size: 27px;
+  }
+
+  .command-search-wrap {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .command-search-wrap kbd {
+    display: none;
+  }
+
+  .search-status span:last-child {
+    display: none;
+  }
+
+  .command-card > summary {
+    padding: 16px 40px 17px 16px;
+  }
+
+  .command-card-topline {
+    display: grid;
+    justify-content: start;
+    gap: 4px;
+  }
+
+  .permission-badge {
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .command-body {
+    padding: 18px 16px 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .command-card,
+  .command-card > summary::after {
+    transition: none;
+  }
+}
