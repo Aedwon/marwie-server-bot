@@ -193,7 +193,9 @@ class GuildSnapshotBuilder:
         message_log_config = feature_records[FeatureName.MESSAGE_LOGS]
 
         bot_member = guild.me
-        bot_permissions = bot_member.guild_permissions if bot_member is not None else discord.Permissions.none()
+        bot_permissions = (
+            bot_member.guild_permissions if bot_member is not None else discord.Permissions.none()
+        )
         channels = [
             {
                 "id": _id(channel.id),
@@ -280,7 +282,9 @@ class GuildSnapshotBuilder:
                     "category": item.category,
                     "enabled": item.enabled,
                     "last_checked_at": (
-                        item.last_checked_at.isoformat() if item.last_checked_at is not None else None
+                        item.last_checked_at.isoformat()
+                        if item.last_checked_at is not None
+                        else None
                     ),
                 }
                 for item in sources
