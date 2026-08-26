@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import asyncio
 import logging
+from contextlib import suppress
 from datetime import UTC, datetime
 
 import discord
 from discord import app_commands
-from discord.ext import commands, tasks
+from discord.ext import commands
 
 from marwie_bot.config.resources import FeatureName, ResourceKey
 from marwie_bot.db.session import Database
@@ -38,11 +40,21 @@ class CoworkingCog(commands.Cog):
         self.repository = repository
         self.resources = resources
         self.features = features
+        self._timer_wake = asyncio.Event()
+        self._timer_task: asyncio.Task[None] | None = None
         if getattr(getattr(bot, "settings", None), "enable_background_tasks", True):
-            self.timer_loop.start()
+            self._timer_task = asyncio.create_task(self._timer_worker())
 
     async def cog_unload(self) -> None:
-        self.timer_loop.cancel()
+        if self._timer_task is None:
+            return
+        self._timer_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await self._timer_task
+        self._timer_task = None
+
+    def _wake_timer(self) -> None:
+        self._timer_wake.set()
 
     @pomodoro_group.command(name="start", description="Start a focused work timer.")
     async def pomodoro_start(
@@ -67,6 +79,7 @@ class CoworkingCog(commands.Cog):
         except ValueError as error:
             await interaction.response.send_message(str(error), ephemeral=True)
             return
+        self._wake_timer()
         await interaction.response.send_message(
             f"Focus session started. Ends <t:{int(record.ends_at.timestamp())}:R>.", ephemeral=True
         )
@@ -96,6 +109,8 @@ class CoworkingCog(commands.Cog):
             )
             return
         record = await self.service.stop(interaction.guild_id, interaction.user.id)
+        if record is not None:
+            self._wake_timer()
         await interaction.response.send_message(
             "Focus session stopped." if record else "You do not have an active Pomodoro session.",
             ephemeral=True,
@@ -133,8 +148,7 @@ class CoworkingCog(commands.Cog):
             f"Collaboration post created: {message.jump_url}", ephemeral=True
         )
 
-    @tasks.loop(minutes=1)
-    async def timer_loop(self) -> None:
+    async def _complete_due_timers(self) -> None:
         for record in await self.repository.due(datetime.now(UTC)):
             guild = self.bot.get_guild(record.guild_id)
             channel = guild.get_channel(record.channel_id) if guild else None
@@ -145,9 +159,29 @@ class CoworkingCog(commands.Cog):
                     logger.warning("Could not post Pomodoro completion %s: %s", record.id, error)
             await self.repository.stop(record.id, "completed")
 
-    @timer_loop.before_loop
-    async def before_timer_loop(self) -> None:
+    async def _timer_worker(self) -> None:
         await self.bot.wait_until_ready()
+        while True:
+            self._timer_wake.clear()
+            try:
+                await self._complete_due_timers()
+                next_end = await self.repository.next_active_end()
+            except Exception:
+                logger.exception("Pomodoro deadline worker failed")
+                await asyncio.sleep(30)
+                continue
+
+            if self._timer_wake.is_set():
+                continue
+            if next_end is None:
+                await self._timer_wake.wait()
+                continue
+
+            delay = max(0.0, (next_end - datetime.now(UTC)).total_seconds())
+            try:
+                await asyncio.wait_for(self._timer_wake.wait(), timeout=delay)
+            except TimeoutError:
+                pass
 
 
 async def setup(bot: commands.Bot) -> None:
