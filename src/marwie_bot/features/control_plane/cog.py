@@ -189,7 +189,9 @@ class ControlPlaneCog(commands.Cog):
                 try:
                     await self._refresh_snapshot(guild.id)
                 except Exception:
-                    logger.exception("Could not publish initial control snapshot guild_id=%s", guild.id)
+                    logger.exception(
+                        "Could not publish initial control snapshot guild_id=%s", guild.id
+                    )
             self._ready_initialized = True
             if self.settings.control_wake_webhook_id is None:
                 logger.warning(
