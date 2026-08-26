@@ -4,7 +4,7 @@ import asyncio
 import logging
 import secrets
 from importlib.metadata import PackageNotFoundError, version
-from typing import Any
+from typing import Any, Protocol, cast
 
 import discord
 from discord.ext import commands
@@ -32,6 +32,19 @@ from marwie_bot.features.tickets.repository import SQLAlchemyTicketRepository
 from marwie_bot.features.tickets.service import TicketService
 
 logger = logging.getLogger(__name__)
+
+_QUIZ_SCHEDULER_ACTIONS = {
+    ControlActionType.SET_RESOURCE,
+    ControlActionType.CLEAR_RESOURCE,
+    ControlActionType.APPLY_AUTO_SETUP,
+    ControlActionType.SET_FEATURE,
+    ControlActionType.SET_QUIZ_SCHEDULE,
+    ControlActionType.ADD_QUIZ_QUESTION,
+}
+
+
+class QuizScheduler(Protocol):
+    def notify_scheduler(self, guild_id: int | None = None) -> None: ...
 
 
 def _worker_version() -> str:
@@ -78,6 +91,13 @@ class ControlPlaneCog(commands.Cog):
                 self.bot.add_view(view)
             else:
                 self.bot.add_view(view, message_id=panel.message_id)
+
+    def _notify_runtime_schedulers(self, action: ControlActionRecord) -> None:
+        if action.action_type not in _QUIZ_SCHEDULER_ACTIONS:
+            return
+        cog = self.bot.get_cog("QuizzesCog")
+        if cog is not None and hasattr(cog, "notify_scheduler"):
+            cast(QuizScheduler, cog).notify_scheduler(action.guild_id)
 
     async def _execute_snapshot_refresh(self, action: ControlActionRecord) -> dict[str, Any]:
         guild = self.bot.get_guild(action.guild_id)
@@ -132,6 +152,7 @@ class ControlPlaneCog(commands.Cog):
                 refresh_after_action = False
         else:
             await self.repository.complete(action.id, result)
+            self._notify_runtime_schedulers(action)
 
         if not refresh_after_action:
             return
