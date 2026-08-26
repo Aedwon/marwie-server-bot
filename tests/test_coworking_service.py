@@ -34,6 +34,11 @@ class FakePomodoros:
     async def due(self, now: datetime) -> list[PomodoroRecord]:
         return []
 
+    async def next_active_end(self) -> datetime | None:
+        if self.current is None or self.current.status != "active":
+            return None
+        return self.current.ends_at
+
 
 async def test_prevents_second_active_timer() -> None:
     repo = FakePomodoros()
