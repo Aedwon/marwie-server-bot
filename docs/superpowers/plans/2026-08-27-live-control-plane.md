@@ -19,7 +19,7 @@ Scheduler decision: `docs/superpowers/decisions/2026-08-27-neon-idle-schedulers.
 - `src/marwie_bot/db/models.py`: existing application persistence models.
 - `src/marwie_bot/features/control_plane/models.py`: browser sessions, audited actions, guild snapshots and notification-role panel persistence.
 - `migrations/versions/20260827_0003_live_control_plane.py`: live-control schema migration.
-- `tools/migrate_sqlite_to_postgres.py`: one-shot staged SQLite → Neon migration with row-count, digest and sequence verification.
+- `tools/migrate_sqlite_to_postgres.py`: one-shot staged SQLite → Neon migration with row-count, digest and sequence verification. Copy, sequence reset and verification run in one PostgreSQL transaction so a verification failure rolls the imported application rows back instead of leaving a poisoned nonempty retry target.
 - `CUTOVER_READ_ONLY`: freezes slash-command/background writes and makes SQLite application sessions query-only during the final snapshot window.
 
 ### Bot control worker
@@ -45,7 +45,7 @@ Scheduler decision: `docs/superpowers/decisions/2026-08-27-neon-idle-schedulers.
 The free-tier cutover also removes unrelated one- and five-minute database heartbeats that could prevent Neon from scaling to zero:
 
 - Pomodoro completion is driven by the earliest persisted deadline plus an in-process wake event. No recurring database query runs when no timer exists.
-- Quiz close/automatic-post scheduling is driven by persisted deadlines plus an in-process wake event. Slash-command and browser quiz/resource/feature changes wake the scheduler immediately.
+- Quiz close/automatic-post scheduling is driven by persisted deadlines plus an in-process wake event. Slash-command and browser quiz/resource/feature changes wake the scheduler immediately. If an automatic quiz is due but cannot post because no usable post is available, that guild stays blocked in memory until a relevant scheduler wake or bot restart instead of scheduling a periodic retry query.
 - Temporary voice cleanup remains event-driven, with one startup reconciliation for downtime recovery and no five-minute heartbeat.
 - AI feed polling remains at 30 minutes, analytics at 6 hours, and showcase at 12 hours because those jobs implement meaningful periodic product behavior and leave scale-to-zero windows.
 - any future recurring database task at five minutes or less requires explicit cost review.
@@ -97,14 +97,33 @@ OAuth may be configured before migration, but the first functional production-Ne
 7. Add Vercel OAuth/session/CSRF API and state/action endpoints. **Complete.**
 8. Wire approved UI to API. **Complete.**
 9. Add deployment/cutover runbook. **Complete.**
-10. Replace Control polling and short database-heartbeat schedulers with the approved event/deadline-driven free-tier architecture. **Complete.**
-11. Run repository verification gates. **Pending final executable run on the consolidated head. Vercel Hobby currently reports a deployment build-rate limit and will not run another preview for approximately 24 hours; this is an infrastructure quota blocker, not a code result.**
-12. Create/upgrade Neon schema and verify it. **Pending verified code/cutover stage; current target is intentionally empty.**
-13. Ask operator for manual secret/console wiring only where connectors cannot write protected settings. **Pending strict verification.**
-14. Run staged production SQLite → Neon migration and verify counts/invariants. **Pending.**
-15. Cut Bot-Hosting `DATABASE_URL` to Neon and restart only after successful migration verification. **Pending.**
-16. Verify bot startup, queue worker, OAuth login, live state and one low-risk production mutation. **Pending.**
-17. Merge/deploy production only when runtime and control plane are verified together. **Pending explicit operator merge approval.**
+10. Replace Control polling and short database-heartbeat schedulers with the approved event/deadline-driven free-tier architecture. **Complete, including final no-question scheduler blocking repair.**
+11. Complete final static branch/security review and repair identified implementation issues. **Complete. Two concrete findings were repaired: automatic quiz fallback retry behavior and migration verification occurring after commit. No unresolved branch-introduced authorization bypass or browser-XSS finding was confirmed in the reviewed control boundary.**
+12. Run repository verification gates. **Pending final executable run on the consolidated head. Vercel Hobby currently reports a deployment build-rate limit and rejects new previews with `Deployment rate limited — retry in 24 hours`; this is an infrastructure quota blocker, not a code result.**
+13. Create/upgrade Neon schema and verify it. **Pending verified code/cutover stage; current target is intentionally empty.**
+14. Ask operator for manual secret/console wiring only where connectors cannot write protected settings. **Pending strict verification.**
+15. Run staged production SQLite → Neon migration and verify counts/invariants. **Pending.**
+16. Cut Bot-Hosting `DATABASE_URL` to Neon and restart only after successful migration verification. **Pending.**
+17. Verify bot startup, queue worker, OAuth login, live state and one low-risk production mutation. **Pending.**
+18. Merge/deploy production only when runtime and control plane are verified together. **Pending explicit operator merge approval.**
+
+## Static branch/security review
+
+Reviewed security-sensitive boundaries include OAuth/session handling, CSRF/same-origin checks, browser action validation, idempotency, wake delivery, action-status ownership, live bot-side permission revalidation, queue claiming/serialization, publishing mentions, role hierarchy enforcement, browser rendering, scheduler idle behavior, SQLite read-only behavior and SQLite → Neon migration safety.
+
+Review conclusions:
+
+- queued mutations resolve the actor against the live Discord guild and re-check current required permissions before dispatch;
+- `refresh_snapshot` is internal-only and has its own live membership/Manage Server verification;
+- queue draining is serialized in-process and PostgreSQL claiming uses row locking with `SKIP LOCKED`;
+- dynamic Control values reviewed in the live renderer are escaped before HTML interpolation or written with `textContent`; no confirmed branch-introduced browser XSS was found in that pass;
+- the spec explicitly permits authenticated read endpoints to rely on the short-lived OAuth-derived guild authorization, while mutations require live bot-side revalidation;
+- arbitrary HTTP/HTTPS AI feed URLs are existing `main` behavior available through the Manage Server slash-command surface, so that SSRF-shaped capability is pre-existing hardening debt rather than a new Control regression;
+- setup/resource/feature Control mutations retain the existing `/setup` Administrator requirement;
+- migration verification now occurs before the copy transaction commits, so a verification mismatch should roll back imported application rows automatically;
+- an automatic quiz with nothing usable to post is now dormant until a relevant state wake or restart, matching the approved idle-safe scheduler spec.
+
+This static review does not replace executable Ruff, mypy, pytest, migration or preview smoke verification.
 
 ## Verification gates
 
@@ -134,13 +153,13 @@ Latest executed preview evidence:
 
 - commit `d7d3a5564886656a7ca81aa2e4e417e7dd8bc622` reached `ruff format --check` after JavaScript tests, Python compile and Ruff lint had passed;
 - it stopped on a formatting-only finding in `src/marwie_bot/features/control_plane/cog.py` around the initial snapshot logging call;
-- newer source commits include the formatter repair and scheduler hardening;
-- the consolidated branch head has not completed the same executable gate because Vercel rejected the deployment for build-rate quota.
+- newer source commits include the formatter repair, scheduler hardening, no-question scheduler regression test/fix and transactional migration verification test/fix;
+- the consolidated branch head has not completed the same executable gate because Vercel rejects new deployments for the Hobby build-rate quota.
 
 Still required before manual wiring:
 
 - strict consolidated verification must pass Ruff lint, Ruff format-check, mypy, focused Python tests and web tests on the final branch head;
-- scheduler-focused tests must cover deadline/wake behavior and the no-busy-loop cases introduced by the idle-safe redesign;
+- the new scheduler and migration transaction regression tests must execute successfully;
 - full repository verification remains required before production cutover.
 
 Additional focused verification:
@@ -155,6 +174,7 @@ Additional focused verification:
 - announcement mention allow-list matches only explicitly resolved targets;
 - explicit Live ping selection is authoritative, including no-ping;
 - SQLite migration preserves source row counts and deterministic table digests;
+- migration verification failure rolls back copied target rows before commit;
 - target PostgreSQL sequence state is reset after explicit-ID imports;
 - OAuth callback rejects invalid state;
 - mutation endpoint rejects missing/invalid CSRF and wrong origin;
@@ -167,7 +187,7 @@ Additional focused verification:
 - no recurring Control action poll or snapshot heartbeat remains;
 - stale/missing snapshots refresh through the durable wake path while ordinary mutations still require fresh state;
 - Pomodoro scheduling sleeps until the earliest persisted deadline or a local wake and performs no recurring DB query when idle;
-- quiz scheduling sleeps until the earliest close/post deadline or a local wake and does not busy-loop when no question is available;
+- quiz scheduling sleeps until the earliest close/post deadline or a local wake, and a no-question/no-post condition blocks until a relevant wake instead of scheduling a periodic retry;
 - temporary voice reconciliation runs once after ready and not periodically;
 - static review confirms retained periodic DB jobs are 30 minutes or longer.
 
