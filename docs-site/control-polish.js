@@ -46,6 +46,11 @@
     liveLoaded = true;
     const live = document.createElement('script');
     live.src = '/control-live.js?v=1';
+    live.addEventListener('load', () => {
+      const feedEditor = document.createElement('script');
+      feedEditor.src = '/control-feed-edit.js?v=1';
+      document.head.appendChild(feedEditor);
+    });
     document.head.appendChild(live);
   }
 
