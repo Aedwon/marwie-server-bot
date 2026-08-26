@@ -6,10 +6,9 @@ const scheme = matchMedia('(prefers-color-scheme: dark)');
 const WORKFLOWS = [
   {
     id: 'workflow-setup',
-    title: 'Set up and check Rob-bot health',
-    audience: 'Administrator workflow',
-    intro: 'Use this when installing Rob-bot, reconnecting it to an existing server layout, checking configuration, or overriding one resource manually.',
-    path: ['`/ping`', '`/setup auto`', '`/setup status`', 'Use a specific `/setup …` override only when needed'],
+    title: 'Setup & health',
+    intro: 'Install, discover existing resources, verify mappings, then override only what needs manual control.',
+    path: ['`/ping`', '`/setup auto`', '`/setup status`', 'Manual `/setup …` only if needed'],
     commands: [
       '/ping',
       '/setup auto',
@@ -27,58 +26,51 @@ const WORKFLOWS = [
   },
   {
     id: 'workflow-moderation',
-    title: 'Moderate members and investigate incidents',
-    audience: 'Moderator and administrator workflow',
-    intro: 'Start here when reviewing a member’s history, choosing an enforcement action, reversing a ban, or auditing an anonymous question for a legitimate moderation reason.',
-    path: ['Review `/history` when context is needed', 'Choose `/warn`, `/timeout`, `/kick`, or `/ban`', 'Use `/unban` to reverse a ban', 'Use `/anonwho` only for moderation audits'],
+    title: 'Moderation',
+    intro: 'Review context, act, reverse when needed, and audit anonymous questions only for moderation.',
+    path: ['`/history` if needed', '`/warn`, `/timeout`, `/kick`, or `/ban`', '`/unban` to reverse', '`/anonwho` for audits'],
     commands: ['/history', '/warn', '/timeout', '/kick', '/ban', '/unban', '/anonwho'],
   },
   {
     id: 'workflow-tickets',
-    title: 'Set up and run support tickets',
-    audience: 'Administrator setup, staff handling',
-    intro: 'Use these commands to define the support topics members can choose and publish the ticket entry point. Day-to-day claiming, closing, reopening, and transcripts happen through ticket controls.',
-    path: ['`/ticket-type list`', '`/ticket-type add` as needed', '`/ticket-panel post`', 'Staff use the ticket buttons to claim and close'],
+    title: 'Tickets',
+    intro: 'Define support types and publish the entry panel. Claiming, closing, reopening, and transcripts use ticket controls.',
+    path: ['`/ticket-type list`', '`/ticket-type add`', '`/ticket-panel post`', 'Staff ticket controls'],
     commands: ['/ticket-type list', '/ticket-type add', '/ticket-type disable', '/ticket-panel post'],
   },
   {
     id: 'workflow-publishing',
-    title: 'Publish community updates',
-    audience: 'Administrator and leadership workflow',
-    intro: 'Use this when publishing a normal server announcement or notifying the community that Mar Wie is live on TikTok.',
-    path: ['Use `/announce` for normal community announcements', 'Use `/live` for the authorized TikTok Live notice'],
+    title: 'Publishing',
+    intro: 'Publish server announcements or Mar Wie’s TikTok Live notice.',
+    path: ['`/announce` for server updates', '`/live` for TikTok Live'],
     commands: ['/announce', '/live'],
   },
   {
     id: 'workflow-reputation',
-    title: 'Manage reputation and build-help recognition',
-    audience: 'Community operations workflow',
-    intro: 'Use these commands to inspect reputation, tune milestone roles, make staff adjustments, and recognize a helper whose build-help reply solved a problem.',
-    path: ['Review `/rank`, `/profile`, or `/leaderboard`', 'Adjust thresholds or award points only when needed', 'Use `/solve` for accepted build-help answers'],
+    title: 'Reputation & build-help',
+    intro: 'Inspect reputation, tune milestones, make staff adjustments, and recognize solved build-help replies.',
+    path: ['Review reputation', 'Adjust only if needed', '`/solve` accepted replies'],
     commands: ['/rank', '/profile', '/leaderboard', '/reputation award', '/reputation thresholds', '/solve'],
   },
   {
     id: 'workflow-learning',
-    title: 'Run quizzes and anonymous Q&A',
-    audience: 'Administrator setup with member participation',
-    intro: 'Use this workflow to build and schedule learning activities and to understand the member-facing anonymous-question command. Identity audits are documented under moderation because that is the staff workflow where they belong.',
-    path: ['`/quiz add`', 'Use `/quiz start` for an immediate session or `/quiz schedule` for recurring delivery', 'Members use `/anonask` for anonymous questions'],
+    title: 'Quizzes & anonymous Q&A',
+    intro: 'Create and schedule quizzes; support anonymous questions. Identity audits stay under Moderation.',
+    path: ['`/quiz add`', '`/quiz start` or `/quiz schedule`', '`/anonask`'],
     commands: ['/quiz add', '/quiz start', '/quiz schedule', '/anonask'],
   },
   {
     id: 'workflow-collaboration',
-    title: 'Coordinate coworking and collaboration',
-    audience: 'Member-facing workflow staff may need to support',
-    intro: 'These are self-service community tools. They are grouped here so moderators and admins can quickly understand what members are trying to do when they ask for help.',
-    path: ['Use `/pomodoro start` for a focus session', 'Check or stop it with the matching Pomodoro command', 'Use `/lfg` to find collaborators'],
+    title: 'Coworking & collaboration',
+    intro: 'Member self-service tools for focus sessions and finding collaborators.',
+    path: ['`/pomodoro start`', 'Check or stop', '`/lfg`'],
     commands: ['/pomodoro start', '/pomodoro status', '/pomodoro stop', '/lfg'],
   },
   {
     id: 'workflow-operations',
-    title: 'Maintain feeds, analytics, and showcase',
-    audience: 'Administrator and community-operations workflow',
-    intro: 'Use this for trusted AI feed maintenance, operational reporting, and manual App of the Week selection.',
-    path: ['Review `/ai-source list`', 'Add or test sources with `/ai-source add` and `/ai-source poll`', 'Disable stale sources when needed', 'Use `/analytics` and `/app-of-week` for community operations'],
+    title: 'Feeds & operations',
+    intro: 'Maintain AI feeds, review analytics, and select App of the Week.',
+    path: ['Review sources', 'Add, poll, or disable', '`/analytics`', '`/app-of-week`'],
     commands: ['/ai-source list', '/ai-source add', '/ai-source poll', '/ai-source disable', '/analytics', '/app-of-week'],
   },
 ];
@@ -377,7 +369,19 @@ function regroupByWorkflow(container) {
   }
 
   container.replaceChildren();
-  preamble.forEach(node => container.append(node));
+
+  const guidanceStart = preamble.findIndex(node => node.tagName === 'H3');
+  if (guidanceStart >= 0) {
+    const notes = document.createElement('details');
+    notes.className = 'manual-notes';
+    const summary = document.createElement('summary');
+    summary.textContent = 'Using this manual';
+    const body = document.createElement('div');
+    body.className = 'manual-notes-body';
+    preamble.slice(guidanceStart).forEach(node => body.append(node));
+    notes.append(summary, body);
+    container.append(notes);
+  }
 
   const assigned = new Set();
   for (const workflow of WORKFLOWS) {
@@ -386,11 +390,10 @@ function regroupByWorkflow(container) {
     section.id = workflow.id;
     section.innerHTML = `
       <div class="workflow-header">
-        <div class="workflow-audience">${escapeHtml(workflow.audience)}</div>
         <h2>${escapeHtml(workflow.title)}</h2>
         <p>${escapeHtml(workflow.intro)}</p>
-        <div class="workflow-path" aria-label="Typical workflow">
-          <strong>Typical path</strong>
+        <div class="workflow-path" aria-label="Typical path">
+          <strong>Path</strong>
           <ol>${workflow.path.map(step => `<li>${inlineMarkdown(step)}</li>`).join('')}</ol>
         </div>
       </div>`;
@@ -426,7 +429,7 @@ function regroupByWorkflow(container) {
     const section = document.createElement('section');
     section.className = 'workflow-section';
     section.id = 'workflow-other';
-    section.innerHTML = '<div class="workflow-header"><div class="workflow-audience">Reference</div><h2>Other commands</h2><p>These commands were not yet assigned to a staff workflow. They are kept here so the manual never drops newly added commands.</p></div>';
+    section.innerHTML = '<div class="workflow-header"><h2>Other</h2><p>Commands not yet assigned to a workflow.</p></div>';
     const list = document.createElement('div');
     list.className = 'workflow-command-list';
     for (const command of unassigned) {
@@ -443,6 +446,71 @@ function regroupByWorkflow(container) {
   return { sourceCount: commands.size, assignedCount: assigned.size, unassigned };
 }
 
+function labeledParagraph(entry, label) {
+  return [...entry.children].find(node => {
+    if (node.tagName !== 'P') return false;
+    const strong = node.querySelector(':scope > strong');
+    return strong?.textContent.trim() === label;
+  }) || null;
+}
+
+function paragraphValueHtml(paragraph) {
+  if (!paragraph) return '';
+  const copy = paragraph.cloneNode(true);
+  copy.querySelector(':scope > strong')?.remove();
+  return copy.innerHTML.trim();
+}
+
+function shortPermission(paragraph) {
+  if (!paragraph) return '';
+  const value = paragraph.textContent.replace(/^Permission:\s*/i, '').trim();
+  const firstSentence = value.match(/^.*?\.(?:\s|$)/)?.[0] || value;
+  return firstSentence.replace(/\.$/, '').trim();
+}
+
+function structureCommandCards(container) {
+  const entries = [...container.querySelectorAll('.command-entry')];
+
+  for (const entry of entries) {
+    const heading = entry.querySelector(':scope > h3[data-command]');
+    if (!heading) continue;
+
+    const command = heading.dataset.command || headingText(heading);
+    const syntax = labeledParagraph(entry, 'Syntax:');
+    const permission = labeledParagraph(entry, 'Permission:');
+    const behavior = labeledParagraph(entry, 'What happens:');
+    const searchText = entry.textContent.replace(/\s+/g, ' ').trim().toLowerCase();
+
+    const card = document.createElement('details');
+    card.className = 'command-card';
+    card.id = heading.id;
+    card.dataset.command = command;
+    card.dataset.search = searchText;
+
+    const summary = document.createElement('summary');
+    const permissionText = shortPermission(permission);
+    summary.innerHTML = `
+      <span class="command-card-topline">
+        <span class="command-name"><code>${escapeHtml(command)}</code></span>
+        ${permissionText ? `<span class="permission-badge">${escapeHtml(permissionText)}</span>` : ''}
+      </span>
+      ${syntax ? `<span class="command-syntax">${paragraphValueHtml(syntax)}</span>` : ''}
+      ${behavior ? `<span class="command-description">${paragraphValueHtml(behavior)}</span>` : ''}`;
+
+    const body = document.createElement('div');
+    body.className = 'command-body';
+    const extracted = new Set([heading, syntax, permission, behavior].filter(Boolean));
+    [...entry.children].forEach(node => {
+      if (!extracted.has(node)) body.append(node);
+    });
+
+    card.append(summary, body);
+    entry.replaceWith(card);
+  }
+
+  return [...container.querySelectorAll('.command-card')];
+}
+
 function setupManualNavigation() {
   const links = [...document.querySelectorAll('.manual-nav a[href^="#"]')];
   const targets = links
@@ -452,55 +520,94 @@ function setupManualNavigation() {
   if ('IntersectionObserver' in window) {
     const observer = new IntersectionObserver(entries => {
       const visible = entries
-        .filter(entry => entry.isIntersecting)
+        .filter(entry => entry.isIntersecting && !entry.target.hidden)
         .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
       if (!visible) return;
       links.forEach(link => {
         link.setAttribute('aria-current', String(link.getAttribute('href') === `#${visible.target.id}`));
       });
-    }, { rootMargin: '-8% 0px -78% 0px' });
+    }, { rootMargin: '-12% 0px -76% 0px' });
     targets.forEach(target => observer.observe(target));
   }
 }
 
-function setupCommandSearch() {
-  const headings = [...document.querySelectorAll('[data-command]')];
-  const options = document.querySelector('#commandOptions');
+function setupCommandSearch(container, cards) {
   const input = document.querySelector('#commandSearch');
-  const button = document.querySelector('#commandSearchButton');
+  const clear = document.querySelector('#commandSearchClear');
+  const count = document.querySelector('#commandResultCount');
+  const workflows = [...container.querySelectorAll('.workflow-section')];
+  const notes = container.querySelector('.manual-notes');
+  const empty = document.createElement('div');
+  empty.className = 'command-empty-note';
+  empty.hidden = true;
+  empty.textContent = 'No commands match this search.';
+  container.append(empty);
 
-  if (options) {
-    options.innerHTML = headings
-      .map(heading => `<option value="${escapeHtml(heading.dataset.command || '')}"></option>`)
-      .join('');
-  }
-
-  function go() {
+  function applyFilter() {
     const query = (input?.value || '').trim().toLowerCase();
-    if (!query) return;
-    const target = headings.find(heading => (heading.dataset.command || '').toLowerCase() === query)
-      || headings.find(heading => (heading.dataset.command || '').toLowerCase().startsWith(query))
-      || headings.find(heading => (heading.dataset.command || '').toLowerCase().includes(query));
-    if (!target) {
-      input?.setCustomValidity('No matching Rob-bot command was found.');
-      input?.reportValidity();
-      return;
+    const terms = query.split(/\s+/).filter(Boolean);
+    let visible = 0;
+
+    for (const card of cards) {
+      const haystack = `${card.dataset.command || ''} ${card.dataset.search || ''}`;
+      const match = terms.every(term => haystack.includes(term));
+      card.hidden = !match;
+      if (match) visible += 1;
     }
-    input?.setCustomValidity('');
-    history.replaceState(null, '', `#${target.id}`);
-    target.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
-    target.setAttribute('tabindex', '-1');
-    target.focus({ preventScroll: true });
+
+    for (const workflow of workflows) {
+      workflow.hidden = !workflow.querySelector('.command-card:not([hidden])');
+    }
+
+    if (notes) notes.hidden = Boolean(query);
+    if (clear) clear.hidden = !query;
+    if (count) count.textContent = `${visible} command${visible === 1 ? '' : 's'}`;
+    empty.hidden = visible !== 0;
   }
 
-  input?.addEventListener('input', () => input.setCustomValidity(''));
-  input?.addEventListener('keydown', event => {
-    if (event.key === 'Enter') {
+  function clearSearch() {
+    if (!input) return;
+    input.value = '';
+    applyFilter();
+    input.focus();
+  }
+
+  input?.addEventListener('input', applyFilter);
+  clear?.addEventListener('click', clearSearch);
+  addEventListener('keydown', event => {
+    const target = event.target;
+    const typing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target?.isContentEditable;
+    if (event.key === '/' && !typing) {
       event.preventDefault();
-      go();
+      input?.focus();
+      input?.select();
+    }
+    if (event.key === 'Escape' && input && (document.activeElement === input || input.value)) {
+      event.preventDefault();
+      clearSearch();
     }
   });
-  button?.addEventListener('click', go);
+
+  applyFilter();
+}
+
+function revealHashTarget() {
+  if (!location.hash) return;
+  const target = document.querySelector(location.hash);
+  if (!target) return;
+
+  if (target.classList.contains('command-card')) {
+    target.hidden = false;
+    target.open = true;
+    target.closest('.workflow-section')?.removeAttribute('hidden');
+  }
+
+  requestAnimationFrame(() => {
+    target.scrollIntoView({ block: 'start' });
+    if (target.classList.contains('command-card')) {
+      target.querySelector(':scope > summary')?.focus({ preventScroll: true });
+    }
+  });
 }
 
 async function loadManual() {
@@ -514,23 +621,19 @@ async function loadManual() {
     container.innerHTML = renderMarkdown(markdown);
 
     const result = regroupByWorkflow(container);
-    const renderedCount = container.querySelectorAll('[data-command]').length;
+    const cards = structureCommandCards(container);
+    const renderedCount = cards.length;
     if (result.sourceCount !== 45 || result.assignedCount !== 45 || renderedCount !== 45 || result.unassigned.length) {
       console.warn(`Expected 45 workflow-assigned slash commands. Source=${result.sourceCount}, assigned=${result.assignedCount}, rendered=${renderedCount}, unassigned=${result.unassigned.length}.`);
     }
 
     setupManualNavigation();
-    setupCommandSearch();
-
-    if (location.hash) {
-      requestAnimationFrame(() => {
-        const target = document.querySelector(location.hash);
-        target?.scrollIntoView({ block: 'start' });
-      });
-    }
+    setupCommandSearch(container, cards);
+    revealHashTarget();
+    addEventListener('hashchange', revealHashTarget);
   } catch (error) {
     console.error('Could not load command manual', error);
-    container.innerHTML = '<div class="manual-error"><strong>Could not load the workflow-formatted manual.</strong><p>You can still read the <a href="/commands.md">plain Markdown command manual</a>.</p></div>';
+    container.innerHTML = '<div class="manual-error"><strong>Could not load commands.</strong><p>Read the <a href="/commands.md">plain Markdown manual</a>.</p></div>';
   }
 }
 
