@@ -80,3 +80,13 @@ class SQLAlchemyPomodoroRepository:
                 .all()
             )
             return [self._record(model) for model in models]
+
+    async def next_active_end(self) -> datetime | None:
+        async with self.database.session() as session:
+            statement = (
+                select(PomodoroSession.ends_at)
+                .where(PomodoroSession.status == "active")
+                .order_by(PomodoroSession.ends_at)
+                .limit(1)
+            )
+            return (await session.execute(statement)).scalar_one_or_none()
