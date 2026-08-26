@@ -30,6 +30,7 @@ EXTENSIONS = (
     "marwie_bot.features.ai_updates.cog",
     "marwie_bot.features.analytics.cog",
     "marwie_bot.features.showcase.cog",
+    "marwie_bot.features.control_plane.cog",
 )
 
 
