@@ -130,9 +130,7 @@ def upgrade() -> None:
         sa.UniqueConstraint(
             "guild_id", "position", name="uq_notification_role_buttons_guild_position"
         ),
-        sa.UniqueConstraint(
-            "guild_id", "role_id", name="uq_notification_role_buttons_guild_role"
-        ),
+        sa.UniqueConstraint("guild_id", "role_id", name="uq_notification_role_buttons_guild_role"),
     )
     op.create_index(
         "ix_notification_role_buttons_guild_id",
