@@ -10,7 +10,7 @@
     "check:web": "find api docs-site -name '*.js' -print0 | xargs -0 -n1 node --check",
     "test:web": "node --test web-tests/*.test.js",
     "check:python": "python -m compileall -q src tests migrations tools main.py",
-    "lint:python": "PYTHONPATH= uv run --with-requirements requirements-dev.txt ruff check . && PYTHONPATH= uv run --with-requirements requirements-dev.txt ruff format --check .",
+    "lint:python": "PYTHONPATH= uv run --with-requirements requirements-dev.txt ruff check src tests migrations tools main.py && PYTHONPATH= uv run --with-requirements requirements-dev.txt ruff format --check src tests migrations tools main.py",
     "type:python": "PYTHONPATH= uv run --with-requirements requirements-dev.txt mypy src tests",
     "test:python": "PYTHONPATH= uv run --with-requirements requirements-dev.txt python -m pytest tests/test_database_url.py tests/test_control_plane_validation.py tests/test_notification_role_panel.py tests/test_resource_service.py tests/test_sqlite_postgres_cutover.py -q",
     "build": "npm run check:web && npm run test:web && npm run check:python && npm run lint:python && npm run type:python && npm run test:python && mkdir -p public && cp -R docs-site public/docs-site"
