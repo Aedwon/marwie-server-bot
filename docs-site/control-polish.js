@@ -44,14 +44,23 @@
   function loadLiveControl() {
     if (liveLoaded) return;
     liveLoaded = true;
-    const live = document.createElement('script');
-    live.src = '/control-live.js?v=1';
-    live.addEventListener('load', () => {
-      const feedEditor = document.createElement('script');
-      feedEditor.src = '/control-feed-edit.js?v=1';
-      document.head.appendChild(feedEditor);
-    });
-    document.head.appendChild(live);
+
+    const startLive = () => {
+      const live = document.createElement('script');
+      live.src = '/control-live.js?v=1';
+      live.addEventListener('load', () => {
+        const feedEditor = document.createElement('script');
+        feedEditor.src = '/control-feed-edit.js?v=1';
+        document.head.appendChild(feedEditor);
+      });
+      document.head.appendChild(live);
+    };
+
+    const retry = document.createElement('script');
+    retry.src = '/control-fetch-retry.js?v=1';
+    retry.addEventListener('load', startLive, { once: true });
+    retry.addEventListener('error', startLive, { once: true });
+    document.head.appendChild(retry);
   }
 
   function waitForPublishingRefinement() {
