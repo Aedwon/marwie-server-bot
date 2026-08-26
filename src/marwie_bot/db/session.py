@@ -4,6 +4,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+from sqlalchemy import event
 from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -42,10 +43,21 @@ def ensure_sqlite_parent(database_url: str) -> None:
 
 
 class Database:
-    def __init__(self, database_url: str) -> None:
+    def __init__(self, database_url: str, *, read_only: bool = False) -> None:
         self.url = normalize_database_url(database_url)
+        self.read_only = read_only
         ensure_sqlite_parent(self.url)
         self.engine = create_async_engine(self.url, pool_pre_ping=True)
+
+        if read_only and make_url(self.url).drivername.startswith("sqlite"):
+            @event.listens_for(self.engine.sync_engine, "connect")
+            def _enable_query_only(dbapi_connection: object, _connection_record: object) -> None:
+                cursor = dbapi_connection.cursor()  # type: ignore[attr-defined]
+                try:
+                    cursor.execute("PRAGMA query_only=ON")
+                finally:
+                    cursor.close()
+
         self.session_factory = async_sessionmaker(
             self.engine, expire_on_commit=False, class_=AsyncSession
         )
