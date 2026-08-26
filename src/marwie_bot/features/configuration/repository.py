@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from marwie_bot.config.resources import FeatureName, ResourceKey, ResourceType
 from marwie_bot.db.models import FeatureFlag, Guild, GuildResource
@@ -80,6 +80,17 @@ class SQLAlchemyResourceRepository:
             await session.commit()
             await session.refresh(model)
             return self._record(model)
+
+    async def clear(self, guild_id: int, key: ResourceKey) -> bool:
+        async with self.database.session() as session:
+            result = await session.execute(
+                delete(GuildResource).where(
+                    GuildResource.guild_id == guild_id,
+                    GuildResource.key == key.value,
+                )
+            )
+            await session.commit()
+            return bool(result.rowcount)
 
 
 class SQLAlchemyFeatureConfigRepository:
