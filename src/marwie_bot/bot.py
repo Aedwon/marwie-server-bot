@@ -42,6 +42,16 @@ async def send_ephemeral_error(interaction: discord.Interaction, message: str) -
 
 
 class MarwieCommandTree(app_commands.CommandTree):
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        settings = getattr(self.client, "settings", None)
+        if isinstance(settings, Settings) and settings.cutover_read_only:
+            await send_ephemeral_error(
+                interaction,
+                "Rob-bot is temporarily read-only while its database is being migrated. Try again after maintenance.",
+            )
+            return False
+        return True
+
     async def on_error(
         self,
         interaction: discord.Interaction,
@@ -83,6 +93,11 @@ class MarwieBot(commands.Bot):
         intents.message_content = settings.enable_message_content
         intents.voice_states = True
 
+        if settings.cutover_read_only:
+            # Background schedulers can persist state even when nobody invokes a
+            # command. Disable them for the short migration window as well.
+            settings.enable_background_tasks = False
+
         super().__init__(
             command_prefix=commands.when_mentioned,
             intents=intents,
@@ -97,7 +112,16 @@ class MarwieBot(commands.Bot):
         await upgrade_database(self.settings.database_url)
         logger.info("Database migrations are current")
 
-        self.database = Database(self.settings.database_url)
+        self.database = Database(
+            self.settings.database_url,
+            read_only=self.settings.cutover_read_only,
+        )
+        if self.settings.cutover_read_only:
+            logger.warning(
+                "CUTOVER_READ_ONLY is enabled: slash commands and background tasks are disabled, "
+                "and SQLite application sessions are query-only"
+            )
+
         for extension in EXTENSIONS:
             await self.load_extension(extension)
             logger.info("Loaded extension %s", extension)
