@@ -208,9 +208,7 @@ class ControlActionExecutor:
                         raise ActionRejected("That AI source no longer exists in this server.")
                 return {"source_id": record.id, "enabled": record.enabled}
             case ControlActionType.DISABLE_AI_SOURCE:
-                changed = await self.ai_sources.disable_source(
-                    guild.id, int(payload["source_id"])
-                )
+                changed = await self.ai_sources.disable_source(guild.id, int(payload["source_id"]))
                 return {"source_id": int(payload["source_id"]), "disabled": changed}
             case ControlActionType.POLL_AI_SOURCES:
                 return await self._poll_ai_sources(guild)
@@ -233,9 +231,7 @@ class ControlActionExecutor:
         return member
 
     @staticmethod
-    def _require_actor_permission(
-        member: discord.Member, action_type: ControlActionType
-    ) -> None:
+    def _require_actor_permission(member: discord.Member, action_type: ControlActionType) -> None:
         required = required_permission(action_type)
         permissions = member.guild_permissions
         if permissions.administrator:
