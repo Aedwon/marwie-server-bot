@@ -50,6 +50,7 @@ class Database:
         self.engine = create_async_engine(self.url, pool_pre_ping=True)
 
         if read_only and make_url(self.url).drivername.startswith("sqlite"):
+
             @event.listens_for(self.engine.sync_engine, "connect")
             def _enable_query_only(dbapi_connection: object, _connection_record: object) -> None:
                 cursor = dbapi_connection.cursor()  # type: ignore[attr-defined]
