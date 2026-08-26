@@ -12,7 +12,7 @@
     },
     {
       "source": "/control.js",
-      "destination": "/docs-site/control-refine.js"
+      "destination": "/docs-site/control-polish.js"
     },
     {
       "source": "/control-core.js",
