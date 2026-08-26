@@ -12,9 +12,7 @@ import pytest
 # These unit tests exercise pure migration helpers. Vercel installs its own
 # asyncpg extension for serverless functions under a different Python runtime,
 # so avoid importing that native extension into the isolated uv test runtime.
-asyncpg_stub = ModuleType("asyncpg")
-asyncpg_stub.Connection = object  # type: ignore[attr-defined]
-sys.modules.setdefault("asyncpg", asyncpg_stub)
+sys.modules.setdefault("asyncpg", ModuleType("asyncpg"))
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "tools" / "migrate_sqlite_to_postgres.py"
 SPEC = importlib.util.spec_from_file_location("migrate_sqlite_to_postgres", MODULE_PATH)
