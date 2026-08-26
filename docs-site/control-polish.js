@@ -40,6 +40,15 @@
   refinement.addEventListener('load', waitForPublishingRefinement);
   document.head.appendChild(refinement);
 
+  let liveLoaded = false;
+  function loadLiveControl() {
+    if (liveLoaded) return;
+    liveLoaded = true;
+    const live = document.createElement('script');
+    live.src = '/control-live.js?v=1';
+    document.head.appendChild(live);
+  }
+
   function waitForPublishingRefinement() {
     let attempts = 0;
     const timer = setInterval(() => {
@@ -48,14 +57,17 @@
       const liveBtn = document.querySelector('#liveReviewBtn');
       const announcementStatus = document.querySelector('#announcementStatus');
       const liveStatus = document.querySelector('#liveStatus');
+      const notificationPanel = document.querySelector('.notification-panel-editor');
 
-      if (announcementBtn && liveBtn && announcementStatus && liveStatus && announcementBtn.textContent.includes('Send')) {
+      if (announcementBtn && liveBtn && announcementStatus && liveStatus && notificationPanel && announcementBtn.textContent.includes('Send')) {
         clearInterval(timer);
         simplifyAction(announcementBtn, announcementStatus, 'announcement');
         simplifyAction(liveBtn, liveStatus, 'live');
         document.querySelectorAll('.publish-final-note').forEach(note => note.remove());
+        loadLiveControl();
       } else if (attempts >= 100) {
         clearInterval(timer);
+        loadLiveControl();
       }
     }, 25);
   }
