@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import secrets
 from importlib.metadata import PackageNotFoundError, version
+from typing import Any
 
-from discord.ext import commands, tasks
+import discord
+from discord.ext import commands
 
 from marwie_bot.config.settings import Settings
 from marwie_bot.db.session import Database
@@ -15,10 +18,12 @@ from marwie_bot.features.configuration.repository import (
     SQLAlchemyResourceRepository,
 )
 from marwie_bot.features.configuration.service import FeatureConfigService, ResourceService
+from marwie_bot.features.control_plane.domain import ControlActionRecord, ControlActionType
 from marwie_bot.features.control_plane.executor import ActionRejected, ControlActionExecutor
 from marwie_bot.features.control_plane.notification_panel import NotificationRoleView
 from marwie_bot.features.control_plane.repository import SQLAlchemyControlRepository
 from marwie_bot.features.control_plane.snapshot import GuildSnapshotBuilder
+from marwie_bot.features.control_plane.validation import validate_action_payload
 from marwie_bot.features.quizzes.repository import SQLAlchemyQuizRepository
 from marwie_bot.features.quizzes.service import QuizService
 from marwie_bot.features.reputation.repository import SQLAlchemyReputationRepository
@@ -52,13 +57,9 @@ class ControlPlaneCog(commands.Cog):
         self.executor = executor
         self.snapshots = snapshots
         self.worker_id = f"rob-bot:{_worker_version()}"
-        if settings.enable_background_tasks:
-            self.action_loop.start()
-            self.snapshot_loop.start()
-
-    async def cog_unload(self) -> None:
-        self.action_loop.cancel()
-        self.snapshot_loop.cancel()
+        self._drain_lock = asyncio.Lock()
+        self._startup_lock = asyncio.Lock()
+        self._ready_initialized = False
 
     async def _refresh_snapshot(self, guild_id: int) -> None:
         guild = self.bot.get_guild(guild_id)
@@ -78,59 +79,109 @@ class ControlPlaneCog(commands.Cog):
             else:
                 self.bot.add_view(view, message_id=panel.message_id)
 
-    @tasks.loop(seconds=2)
-    async def action_loop(self) -> None:
-        for _index in range(5):
-            action = await self.repository.claim_next(self.worker_id)
-            if action is None:
+    async def _execute_snapshot_refresh(self, action: ControlActionRecord) -> dict[str, Any]:
+        guild = self.bot.get_guild(action.guild_id)
+        if guild is None:
+            raise ActionRejected("Rob-bot is no longer connected to that server.")
+        member = guild.get_member(action.actor_id)
+        if member is None:
+            try:
+                member = await guild.fetch_member(action.actor_id)
+            except (discord.NotFound, discord.Forbidden, discord.HTTPException) as error:
+                raise ActionRejected(
+                    "Your Discord membership could not be verified. Sign in again and retry."
+                ) from error
+        permissions = member.guild_permissions
+        if not permissions.administrator and not permissions.manage_guild:
+            raise ActionRejected("Manage Server permission is required to refresh control state.")
+        validate_action_payload(action.action_type, action.payload)
+        return {"refresh_requested": True}
+
+    async def _execute_action(self, action: ControlActionRecord) -> dict[str, Any]:
+        if action.action_type is ControlActionType.REFRESH_SNAPSHOT:
+            return await self._execute_snapshot_refresh(action)
+        return await self.executor.execute(action)
+
+    async def _process_action(self, action: ControlActionRecord) -> None:
+        try:
+            result = await self._execute_action(action)
+        except ActionRejected as error:
+            await self.repository.reject(action.id, str(error))
+        except ValueError as error:
+            await self.repository.reject(action.id, str(error))
+        except Exception:
+            reference = secrets.token_hex(4).upper()
+            logger.exception(
+                "Control action failed action_id=%s guild_id=%s actor_id=%s error_reference=%s",
+                action.id,
+                action.guild_id,
+                action.actor_id,
+                reference,
+            )
+            await self.repository.fail(
+                action.id,
+                "The action failed unexpectedly.",
+                reference,
+            )
+        else:
+            await self.repository.complete(action.id, result)
+
+        try:
+            await self._refresh_snapshot(action.guild_id)
+        except Exception:
+            logger.exception(
+                "Could not refresh control snapshot after action action_id=%s guild_id=%s",
+                action.id,
+                action.guild_id,
+            )
+
+    async def _drain_actions(self) -> int:
+        if not self.settings.enable_background_tasks:
+            return 0
+        processed = 0
+        async with self._drain_lock:
+            while True:
+                action = await self.repository.claim_next(self.worker_id)
+                if action is None:
+                    return processed
+                await self._process_action(action)
+                processed += 1
+
+    async def _initialize_ready(self) -> None:
+        if not self.settings.enable_background_tasks:
+            return
+        async with self._startup_lock:
+            if self._ready_initialized:
                 return
-            try:
-                result = await self.executor.execute(action)
-            except ActionRejected as error:
-                await self.repository.reject(action.id, str(error))
-            except ValueError as error:
-                await self.repository.reject(action.id, str(error))
-            except Exception:
-                reference = secrets.token_hex(4).upper()
-                logger.exception(
-                    "Control action failed action_id=%s guild_id=%s actor_id=%s error_reference=%s",
-                    action.id,
-                    action.guild_id,
-                    action.actor_id,
-                    reference,
-                )
-                await self.repository.fail(
-                    action.id,
-                    "The action failed unexpectedly.",
-                    reference,
-                )
-            else:
-                await self.repository.complete(action.id, result)
-            try:
-                await self._refresh_snapshot(action.guild_id)
-            except Exception:
-                logger.exception(
-                    "Could not refresh control snapshot after action action_id=%s guild_id=%s",
-                    action.id,
-                    action.guild_id,
+            await self._register_notification_views()
+            await self._drain_actions()
+            for guild in self.bot.guilds:
+                try:
+                    await self._refresh_snapshot(guild.id)
+                except Exception:
+                    logger.exception("Could not publish initial control snapshot guild_id=%s", guild.id)
+            self._ready_initialized = True
+            if self.settings.control_wake_webhook_id is None:
+                logger.warning(
+                    "CONTROL_WAKE_WEBHOOK_ID is not configured; browser actions will only drain at bot startup"
                 )
 
-    @action_loop.before_loop
-    async def before_action_loop(self) -> None:
-        await self.bot.wait_until_ready()
-        await self._register_notification_views()
+    @commands.Cog.listener()
+    async def on_ready(self) -> None:
+        await self._initialize_ready()
 
-    @tasks.loop(seconds=30)
-    async def snapshot_loop(self) -> None:
-        for guild in self.bot.guilds:
-            try:
-                await self._refresh_snapshot(guild.id)
-            except Exception:
-                logger.exception("Could not refresh control snapshot guild_id=%s", guild.id)
-
-    @snapshot_loop.before_loop
-    async def before_snapshot_loop(self) -> None:
-        await self.bot.wait_until_ready()
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message) -> None:
+        webhook_id = self.settings.control_wake_webhook_id
+        if (
+            not self.settings.enable_background_tasks
+            or webhook_id is None
+            or message.webhook_id != webhook_id
+        ):
+            return
+        logger.info("Control wake received webhook_id=%s", webhook_id)
+        processed = await self._drain_actions()
+        logger.info("Control wake drain complete processed=%s", processed)
 
 
 async def setup(bot: commands.Bot) -> None:
