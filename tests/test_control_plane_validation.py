@@ -14,6 +14,7 @@ def test_setup_and_ticket_admin_actions_require_administrator() -> None:
     assert required_permission(ControlActionType.SAVE_NOTIFICATION_PANEL) is ActionPermission.ADMINISTRATOR
     assert required_permission(ControlActionType.UPSERT_TICKET_TYPE) is ActionPermission.ADMINISTRATOR
     assert required_permission(ControlActionType.REFRESH_TICKET_PANEL) is ActionPermission.ADMINISTRATOR
+    assert required_permission(ControlActionType.POST_LIVE) is ActionPermission.ADMINISTRATOR
 
 
 def test_operational_configuration_preserves_manage_guild_permissions() -> None:
@@ -111,3 +112,17 @@ def test_announcement_mentions_are_explicit_structured_targets() -> None:
     )
     assert payload["mentions"]["role_ids"] == [20]
     assert payload["mentions"]["user_ids"] == [30]
+
+
+def test_live_post_preserves_explicit_destination_and_ping_choice() -> None:
+    payload = validate_action_payload(
+        ControlActionType.POST_LIVE,
+        {"channel_id": "10", "ping_role_id": "20", "topic": "Building live"},
+    )
+    assert payload == {"channel_id": 10, "ping_role_id": 20, "topic": "Building live"}
+
+    no_ping = validate_action_payload(
+        ControlActionType.POST_LIVE,
+        {"channel_id": None, "ping_role_id": None, "topic": ""},
+    )
+    assert no_ping == {"channel_id": None, "ping_role_id": None, "topic": ""}
