@@ -37,6 +37,8 @@ class ResourceRepository(Protocol):
         updated_by: int,
     ) -> GuildResourceRecord: ...
 
+    async def clear(self, guild_id: int, key: ResourceKey) -> bool: ...
+
 
 class FeatureConfigRepository(Protocol):
     async def get(self, guild_id: int, feature: FeatureName) -> FeatureConfigRecord | None: ...
@@ -87,6 +89,9 @@ class ResourceService:
         updated_by: int,
     ) -> GuildResourceRecord:
         return await self.set_resource(guild_id, key, ResourceType.CHANNEL, channel_id, updated_by)
+
+    async def clear(self, guild_id: int, key: ResourceKey) -> bool:
+        return await self.repository.clear(guild_id, key)
 
 
 class FeatureConfigService:
