@@ -86,3 +86,8 @@ test('Live post keeps explicit destination and optional ping role', () => {
 test('unsupported action names fail closed', () => {
   assert.throws(() => normalizeActionType('delete_everything'), HttpError);
 });
+
+
+test('internal snapshot refresh is not exposed as a public browser action', () => {
+  assert.throws(() => normalizeActionType('refresh_snapshot'), HttpError);
+});
