@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 from typing import Any
 
 import discord
 
-from marwie_bot.config.resources import FeatureName, ResourceKey
+from marwie_bot.config.resources import FeatureName, ResourceKey, ResourceType
 from marwie_bot.config.settings import Settings
 from marwie_bot.features.ai_updates.repository import SQLAlchemyAIUpdatesRepository
 from marwie_bot.features.configuration.provisioning import (
@@ -14,11 +15,48 @@ from marwie_bot.features.configuration.provisioning import (
     AutoSetupService,
     DiscoveryAction,
 )
-from marwie_bot.features.configuration.service import FeatureConfigService, ResourceService
+from marwie_bot.features.configuration.service import (
+    FeatureConfigRecord,
+    FeatureConfigService,
+    GuildResourceRecord,
+    ResourceService,
+)
 from marwie_bot.features.control_plane.repository import SQLAlchemyControlRepository
 from marwie_bot.features.tickets.service import TicketService
 
 _DEFAULT_THRESHOLDS = {"builder": 50, "contributor": 150, "mentor": 500}
+
+
+class _SnapshotResourceRepository:
+    """Read-only resource repository backed by the snapshot's bulk resource read."""
+
+    def __init__(self, records: list[GuildResourceRecord]) -> None:
+        self._records = list(records)
+        self._by_key = {record.key: record for record in records}
+
+    async def get(self, guild_id: int, key: ResourceKey) -> GuildResourceRecord | None:
+        record = self._by_key.get(key)
+        if record is None or record.guild_id != guild_id:
+            return None
+        return record
+
+    async def list_for_guild(self, guild_id: int) -> list[GuildResourceRecord]:
+        return [record for record in self._records if record.guild_id == guild_id]
+
+    async def set(
+        self,
+        guild_id: int,
+        key: ResourceKey,
+        resource_type: ResourceType,
+        discord_id: int,
+        updated_by: int,
+    ) -> GuildResourceRecord:
+        del guild_id, key, resource_type, discord_id, updated_by
+        raise RuntimeError("Snapshot resource repository is read-only")
+
+    async def clear(self, guild_id: int, key: ResourceKey) -> bool:
+        del guild_id, key
+        raise RuntimeError("Snapshot resource repository is read-only")
 
 
 def _id(value: int | None) -> str | None:
@@ -145,8 +183,22 @@ class GuildSnapshotBuilder:
         self.provisioner = provisioner
         self.settings = settings
 
+    async def _load_features(self, guild_id: int) -> list[FeatureConfigRecord]:
+        return list(
+            await asyncio.gather(
+                *(self.features.get(guild_id, feature) for feature in FeatureName)
+            )
+        )
+
     async def build(self, guild: discord.Guild) -> dict[str, Any]:
-        resource_records = await self.resources.list_for_guild(guild.id)
+        resource_records, loaded_features, ticket_types, sources, panel = await asyncio.gather(
+            self.resources.list_for_guild(guild.id),
+            self._load_features(guild.id),
+            self.tickets.list_types(guild.id, enabled_only=False),
+            self.ai_sources.list_sources(guild.id),
+            self.control.get_notification_panel(guild.id),
+        )
+
         resource_by_key = {record.key: record for record in resource_records}
         resources = []
         for key in ResourceKey:
@@ -171,21 +223,19 @@ class GuildSnapshotBuilder:
 
         feature_rows = []
         feature_records: dict[FeatureName, dict[str, Any]] = {}
-        for feature in FeatureName:
-            feature_record = await self.features.get(guild.id, feature)
-            feature_records[feature] = dict(feature_record.config)
+        for feature_record in loaded_features:
+            feature_records[feature_record.feature] = dict(feature_record.config)
             feature_rows.append(
                 {
-                    "name": feature.value,
+                    "name": feature_record.feature.value,
                     "enabled": feature_record.enabled,
                     "config": dict(feature_record.config),
                 }
             )
 
-        ticket_types = await self.tickets.list_types(guild.id, enabled_only=False)
-        sources = await self.ai_sources.list_sources(guild.id)
-        panel = await self.control.get_notification_panel(guild.id)
-        setup = serialize_setup_plan(await self.provisioner.discover(guild))
+        cached_resources = ResourceService(_SnapshotResourceRepository(resource_records))
+        cached_provisioner = AutoSetupService(cached_resources)
+        setup = serialize_setup_plan(await cached_provisioner.discover(guild))
 
         reputation_config = feature_records[FeatureName.REPUTATION]
         thresholds_raw = reputation_config.get("thresholds", {})
