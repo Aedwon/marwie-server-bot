@@ -18,7 +18,7 @@ export default async function handler(req, res) {
       res.end();
       return;
     }
-    const session = requireSession(await getSession(req));
+    const session = requireSession(await getSession(req, { touch: false }));
     const requestUrl = new URL(req.url, controlBaseUrl(req));
     const id = requestUrl.searchParams.get('id');
     if (!id || !/^[0-9a-f]{32}$/i.test(id)) throw new HttpError(400, 'A valid action id is required.');
