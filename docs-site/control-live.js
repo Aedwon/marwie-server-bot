@@ -107,7 +107,9 @@
     document.querySelectorAll('.control-section').forEach(section => {
       section.classList.toggle('control-disabled', !enabled);
       section.querySelectorAll('input, select, textarea, button').forEach(control => {
-        if (!enabled) control.dataset.liveWasDisabled = String(control.disabled);
+        if (!enabled && control.dataset.liveWasDisabled === undefined) {
+          control.dataset.liveWasDisabled = String(control.disabled);
+        }
         if (!enabled) control.disabled = true;
         else if (control.dataset.liveWasDisabled !== undefined) {
           control.disabled = control.dataset.liveWasDisabled === 'true';
