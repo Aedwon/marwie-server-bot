@@ -1,6 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
+  "functions": {
+    "api/guild-state.js": {
+      "maxDuration": 90
+    }
+  },
   "rewrites": [
     {
       "source": "/",

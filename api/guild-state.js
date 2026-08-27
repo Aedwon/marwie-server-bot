@@ -14,7 +14,7 @@ import {
 } from './_lib/control.js';
 
 const REFRESH_BUCKET_MS = 5 * 1000;
-const REFRESH_WAIT_MS = 7 * 1000;
+const REFRESH_WAIT_MS = 75 * 1000;
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -56,17 +56,17 @@ async function requestSnapshotRefresh(session, guildId) {
 
 async function waitForFreshSnapshot(guildId, wakeDelivered) {
   const deadline = Date.now() + REFRESH_WAIT_MS;
-  let nextWakeRetry = Date.now() + 2 * 1000;
+  let nextWakeRetry = Date.now() + 5 * 1000;
   let delivered = wakeDelivered;
 
   while (Date.now() < deadline) {
-    await sleep(450);
+    await sleep(1000);
     const row = await getSnapshot(guildId);
     if (row && snapshotIsFresh(row)) return row;
 
     if (!delivered && Date.now() >= nextWakeRetry) {
       delivered = await tryWakeControlWorker();
-      nextWakeRetry = Date.now() + 2 * 1000;
+      nextWakeRetry = Date.now() + 5 * 1000;
     }
   }
   return null;
@@ -109,7 +109,7 @@ export default async function handler(req, res) {
     if (!refreshed) {
       throw new HttpError(
         503,
-        'Rob-bot did not refresh server state in time. The refresh request remains queued; retry in a moment.',
+        'Rob-bot did not publish fresh server state in time. Retry in a moment.',
       );
     }
     sendSnapshot(res, refreshed);
