@@ -115,7 +115,8 @@ class ControlPlaneCog(commands.Cog):
         if not permissions.administrator and not permissions.manage_guild:
             raise ActionRejected("Manage Server permission is required to refresh control state.")
         validate_action_payload(action.action_type, action.payload)
-        return {"refresh_requested": True}
+        await self._refresh_snapshot(action.guild_id)
+        return {"snapshot_refreshed": True}
 
     async def _execute_action(self, action: ControlActionRecord) -> dict[str, Any]:
         if action.action_type is ControlActionType.REFRESH_SNAPSHOT:
@@ -123,17 +124,13 @@ class ControlPlaneCog(commands.Cog):
         return await self.executor.execute(action)
 
     async def _process_action(self, action: ControlActionRecord) -> None:
-        refresh_after_action = True
+        refresh_after_action = action.action_type is not ControlActionType.REFRESH_SNAPSHOT
         try:
             result = await self._execute_action(action)
         except ActionRejected as error:
             await self.repository.reject(action.id, str(error))
-            if action.action_type is ControlActionType.REFRESH_SNAPSHOT:
-                refresh_after_action = False
         except ValueError as error:
             await self.repository.reject(action.id, str(error))
-            if action.action_type is ControlActionType.REFRESH_SNAPSHOT:
-                refresh_after_action = False
         except Exception:
             reference = secrets.token_hex(4).upper()
             logger.exception(
@@ -148,8 +145,6 @@ class ControlPlaneCog(commands.Cog):
                 "The action failed unexpectedly.",
                 reference,
             )
-            if action.action_type is ControlActionType.REFRESH_SNAPSHOT:
-                refresh_after_action = False
         else:
             await self.repository.complete(action.id, result)
             self._notify_runtime_schedulers(action)
