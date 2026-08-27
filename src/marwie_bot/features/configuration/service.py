@@ -43,6 +43,15 @@ class ResourceRepository(Protocol):
 class FeatureConfigRepository(Protocol):
     async def get(self, guild_id: int, feature: FeatureName) -> FeatureConfigRecord | None: ...
 
+    async def list_for_guild(self, guild_id: int) -> list[FeatureConfigRecord]: ...
+
+    async def set_enabled(
+        self,
+        guild_id: int,
+        feature: FeatureName,
+        enabled: bool,
+    ) -> FeatureConfigRecord: ...
+
     async def set(
         self,
         guild_id: int,
@@ -110,14 +119,22 @@ class FeatureConfigService:
             return record
         return FeatureConfigRecord(guild_id, feature, default_enabled, {})
 
+    async def list_for_guild(self, guild_id: int) -> list[FeatureConfigRecord]:
+        persisted = {
+            record.feature: record for record in await self.repository.list_for_guild(guild_id)
+        }
+        return [
+            persisted.get(feature, FeatureConfigRecord(guild_id, feature, True, {}))
+            for feature in FeatureName
+        ]
+
     async def is_enabled(self, guild_id: int, feature: FeatureName) -> bool:
         return (await self.get(guild_id, feature)).enabled
 
     async def set_enabled(
         self, guild_id: int, feature: FeatureName, enabled: bool
     ) -> FeatureConfigRecord:
-        current = await self.get(guild_id, feature)
-        return await self.repository.set(guild_id, feature, enabled, current.config)
+        return await self.repository.set_enabled(guild_id, feature, enabled)
 
     async def update_config(
         self,
