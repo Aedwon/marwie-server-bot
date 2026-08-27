@@ -92,7 +92,7 @@ export default async function handler(req, res) {
       res.end();
       return;
     }
-    const session = requireSession(await getSession(req));
+    const session = requireSession(await getSession(req, { touch: false }));
     const requestUrl = new URL(req.url, controlBaseUrl(req));
     const guildId = requestUrl.searchParams.get('guild_id');
     if (!guildId || !/^\d{1,20}$/.test(guildId)) throw new HttpError(400, 'A valid guild_id is required.');
