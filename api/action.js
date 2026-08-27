@@ -1,7 +1,6 @@
 import {
   database,
   getSession,
-  getSnapshot,
   handleError,
   HttpError,
   json,
@@ -10,7 +9,6 @@ import {
   requireCsrf,
   requireGuild,
   requireSession,
-  snapshotIsFresh,
   tryWakeControlWorker,
 } from './_lib/control.js';
 import {
@@ -61,7 +59,7 @@ export default async function handler(req, res) {
       return;
     }
 
-    const session = requireSession(await getSession(req));
+    const session = requireSession(await getSession(req, { touch: false }));
     requireCsrf(req, session);
     const body = await parseJsonBody(req);
     const guildId = String(body.guild_id || '').trim();
@@ -72,29 +70,13 @@ export default async function handler(req, res) {
     const payload = validateActionPayload(actionType, body.payload || {});
     const key = idempotencyKey(req, body);
 
-    const snapshot = await getSnapshot(guildId);
-    if (!snapshot || !snapshotIsFresh(snapshot)) {
-      throw new HttpError(503, 'Rob-bot is not reporting fresh server state. Wait for it to reconnect before making changes.');
-    }
-
     const sql = database();
-    const rateRows = await sql`
-      SELECT COUNT(*) AS count
-      FROM control_actions
-      WHERE guild_id = ${guildId}
-        AND actor_id = ${session.userId}
-        AND action_type <> 'refresh_snapshot'
-        AND created_at >= CURRENT_TIMESTAMP - INTERVAL '60 seconds'
-    `;
-    if (Number(rateRows[0]?.count || 0) >= 20) {
-      throw new HttpError(429, 'Too many control changes were requested. Wait a minute and retry.');
-    }
-
     const actionId = randomToken(16);
     const inserted = await sql`
       INSERT INTO control_actions (
         id, guild_id, actor_id, action_type, payload_json, idempotency_key, status
-      ) VALUES (
+      )
+      SELECT
         ${actionId},
         ${guildId},
         ${session.userId},
@@ -102,7 +84,21 @@ export default async function handler(req, res) {
         ${JSON.stringify(payload)}::json,
         ${key},
         'queued'
+      WHERE EXISTS (
+        SELECT 1
+        FROM control_guild_snapshots
+        WHERE guild_id = ${guildId}
+          AND updated_at <= CURRENT_TIMESTAMP
+          AND updated_at >= CURRENT_TIMESTAMP - INTERVAL '3 minutes'
       )
+        AND (
+          SELECT COUNT(*)
+          FROM control_actions
+          WHERE guild_id = ${guildId}
+            AND actor_id = ${session.userId}
+            AND action_type <> 'refresh_snapshot'
+            AND created_at >= CURRENT_TIMESTAMP - INTERVAL '60 seconds'
+        ) < 20
       ON CONFLICT ON CONSTRAINT uq_control_actions_actor_idempotency DO NOTHING
       RETURNING id, guild_id, action_type, status, created_at
     `;
@@ -120,11 +116,39 @@ export default async function handler(req, res) {
         AND idempotency_key = ${key}
       LIMIT 1
     `;
-    if (!existing[0]) throw new HttpError(409, 'The action retry could not be resolved safely.');
-    if (existing[0].action_type !== actionType) {
-      throw new HttpError(409, 'That idempotency key was already used for a different action.');
+    if (existing[0]) {
+      if (existing[0].action_type !== actionType) {
+        throw new HttpError(409, 'That idempotency key was already used for a different action.');
+      }
+      await respondWithWake(res, 200, existing[0], true);
+      return;
     }
-    await respondWithWake(res, 200, existing[0], true);
+
+    const checks = await sql`
+      SELECT
+        EXISTS (
+          SELECT 1
+          FROM control_guild_snapshots
+          WHERE guild_id = ${guildId}
+            AND updated_at <= CURRENT_TIMESTAMP
+            AND updated_at >= CURRENT_TIMESTAMP - INTERVAL '3 minutes'
+        ) AS snapshot_fresh,
+        (
+          SELECT COUNT(*)
+          FROM control_actions
+          WHERE guild_id = ${guildId}
+            AND actor_id = ${session.userId}
+            AND action_type <> 'refresh_snapshot'
+            AND created_at >= CURRENT_TIMESTAMP - INTERVAL '60 seconds'
+        ) AS rate_count
+    `;
+    if (!checks[0]?.snapshot_fresh) {
+      throw new HttpError(503, 'Rob-bot is not reporting fresh server state. Wait for it to reconnect before making changes.');
+    }
+    if (Number(checks[0]?.rate_count || 0) >= 20) {
+      throw new HttpError(429, 'Too many control changes were requested. Wait a minute and retry.');
+    }
+    throw new HttpError(409, 'The action could not be queued safely. Refresh and retry.');
   } catch (error) {
     handleError(res, error);
   }
