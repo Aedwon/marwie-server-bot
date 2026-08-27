@@ -149,10 +149,10 @@ class SQLAlchemyFeatureConfigRepository:
                     FeatureFlag.feature == feature.value,
                 )
                 .values(enabled=enabled)
-                .returning(FeatureFlag.config_json)
+                .returning(FeatureFlag.id, FeatureFlag.config_json)
             )
-            existing_config = (await session.execute(statement)).scalar_one_or_none()
-            if existing_config is None:
+            row = (await session.execute(statement)).one_or_none()
+            if row is None:
                 await _ensure_guild(session, guild_id)
                 session.add(
                     FeatureFlag(
@@ -164,7 +164,7 @@ class SQLAlchemyFeatureConfigRepository:
                 )
                 config: dict[str, Any] = {}
             else:
-                config = dict(existing_config or {})
+                config = dict(row.config_json or {})
             await session.commit()
             return FeatureConfigRecord(guild_id, feature, enabled, config)
 
