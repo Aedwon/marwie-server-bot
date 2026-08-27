@@ -107,7 +107,6 @@ class SQLAlchemyControlRepository:
                 model.claimed_by = worker_id[:100]
                 model.claimed_at = datetime.now(UTC)
                 await session.commit()
-                await session.refresh(model)
                 return self._action_record(model)
         return None
 
@@ -170,7 +169,6 @@ class SQLAlchemyControlRepository:
             model.error_reference = error_reference
             model.finished_at = datetime.now(UTC)
             await session.commit()
-            await session.refresh(model)
             return self._action_record(model)
 
     async def upsert_snapshot(
@@ -178,19 +176,20 @@ class SQLAlchemyControlRepository:
     ) -> GuildSnapshotRecord:
         async with self.database.session() as session:
             model = await session.get(ControlGuildSnapshot, guild_id)
+            updated_at = datetime.now(UTC)
             if model is None:
                 model = ControlGuildSnapshot(
                     guild_id=guild_id,
                     snapshot_json=dict(snapshot),
                     worker_version=worker_version,
+                    updated_at=updated_at,
                 )
                 session.add(model)
             else:
                 model.snapshot_json = dict(snapshot)
                 model.worker_version = worker_version
-                model.updated_at = datetime.now(UTC)
+                model.updated_at = updated_at
             await session.commit()
-            await session.refresh(model)
             return GuildSnapshotRecord(
                 guild_id=model.guild_id,
                 snapshot=dict(model.snapshot_json or {}),
