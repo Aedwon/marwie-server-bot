@@ -133,9 +133,7 @@ class FeatureConfigService:
         return FeatureConfigRecord(guild_id, feature, default_enabled, {})
 
     async def list_for_guild(self, guild_id: int) -> list[FeatureConfigRecord]:
-        persisted = {
-            record.feature: record for record in await self._persisted_for_guild(guild_id)
-        }
+        persisted = {record.feature: record for record in await self._persisted_for_guild(guild_id)}
         return [
             persisted.get(feature, FeatureConfigRecord(guild_id, feature, True, {}))
             for feature in FeatureName
