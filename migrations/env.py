@@ -15,7 +15,7 @@ from marwie_bot.db.session import ensure_sqlite_parent, normalize_database_url
 config = context.config
 
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 raw_url = config.get_main_option("sqlalchemy.url")
 database_url = normalize_database_url(raw_url)
