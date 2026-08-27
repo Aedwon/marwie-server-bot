@@ -12,6 +12,7 @@ import {
   snapshotIsFresh,
   tryWakeControlWorker,
 } from './_lib/control.js';
+import { overlayCompletedFeatureActions } from './_lib/guild-state-overlay.js';
 
 const REFRESH_BUCKET_MS = 5 * 1000;
 const REFRESH_WAIT_MS = 75 * 1000;
@@ -52,6 +53,19 @@ async function requestSnapshotRefresh(session, guildId) {
   `;
   if (!existing[0] || existing[0].status === 'queued') return await tryWakeControlWorker();
   return true;
+}
+
+async function completedMutationsAfter(guildId, updatedAt) {
+  const sql = database();
+  return await sql`
+    SELECT action_type, result_json, finished_at
+    FROM control_actions
+    WHERE guild_id = ${guildId}
+      AND status = 'completed'
+      AND action_type <> 'refresh_snapshot'
+      AND finished_at > ${updatedAt}
+    ORDER BY finished_at, id
+  `;
 }
 
 async function waitForFreshSnapshot(guildId, wakeDelivered) {
@@ -100,8 +114,21 @@ export default async function handler(req, res) {
 
     const current = await getSnapshot(guildId);
     if (current && snapshotIsFresh(current)) {
-      sendSnapshot(res, current);
-      return;
+      const newerMutations = await completedMutationsAfter(guildId, current.updated_at);
+      if (!newerMutations.length) {
+        sendSnapshot(res, current);
+        return;
+      }
+
+      const overlaid = overlayCompletedFeatureActions(current.snapshot_json, newerMutations);
+      if (overlaid) {
+        sendSnapshot(res, {
+          ...current,
+          snapshot_json: overlaid,
+          updated_at: newerMutations.at(-1).finished_at,
+        });
+        return;
+      }
     }
 
     const wakeDelivered = await requestSnapshotRefresh(session, guildId);
