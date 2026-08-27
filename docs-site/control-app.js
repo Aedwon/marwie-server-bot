@@ -1,6 +1,7 @@
 import { identityMarkup, navigationMarkup, pageMarkup } from './control-components.js';
 import { createNavigationState, installDrawerController, navigationModel } from './control-navigation.js';
 import { resolveControlRoute } from './control-router.js';
+import { hydrateControlPages, installControlStateGuards } from './control-page-registry.js';
 
 const ROUTE_KEY = 'rob-control-last-route';
 const DOMAIN_ROUTE_KEY = 'rob-control-last-domain-routes';
@@ -121,8 +122,15 @@ async function loadSession() {
   const data = await request(`/api/guild-state?guild_id=${encodeURIComponent(guild.id)}`);
   guildState = data.state;
   snapshot = data.snapshot;
+  hydrateControlPages(guildState, snapshot?.page_revisions || guildState?.meta?.page_revisions || {});
   setStatus(snapshot?.fresh ? 'Server state is current.' : 'Server state is unavailable.', snapshot?.fresh ? 'good' : 'bad');
   renderMain();
+}
+
+function requestRegisteredPageSave(pageKey, request) {
+  document.dispatchEvent(new CustomEvent('rob-control-save-requested', {
+    detail: { pageKey, request },
+  }));
 }
 
 function installThemeControls() {
@@ -157,6 +165,10 @@ installDrawerController({
   mediaQuery: matchMedia(NARROW_QUERY),
 });
 installThemeControls();
+installControlStateGuards({
+  getCurrentPageKey: () => navState.current.path,
+  onSave: requestRegisteredPageSave,
+});
 renderNavigation();
 
 if (location.pathname !== resolvedInitial.path) history.replaceState({ control: true }, '', resolvedInitial.path);
