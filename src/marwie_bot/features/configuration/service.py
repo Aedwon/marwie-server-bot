@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from typing import Any, Protocol
 
@@ -15,7 +16,7 @@ class GuildResourceRecord:
     updated_by: int
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True=True)
 class FeatureConfigRecord:
     guild_id: int
     feature: FeatureName
@@ -106,6 +107,18 @@ class ResourceService:
 class FeatureConfigService:
     def __init__(self, repository: FeatureConfigRepository) -> None:
         self.repository = repository
+        self._load_tasks: dict[int, asyncio.Task[list[FeatureConfigRecord]]] = {}
+
+    async def _persisted_for_guild(self, guild_id: int) -> list[FeatureConfigRecord]:
+        task = self._load_tasks.get(guild_id)
+        if task is None:
+            task = asyncio.create_task(self.repository.list_for_guild(guild_id))
+            self._load_tasks[guild_id] = task
+        try:
+            return await task
+        finally:
+            if self._load_tasks.get(guild_id) is task:
+                self._load_tasks.pop(guild_id, None)
 
     async def get(
         self,
@@ -114,14 +127,14 @@ class FeatureConfigService:
         *,
         default_enabled: bool = True,
     ) -> FeatureConfigRecord:
-        record = await self.repository.get(guild_id, feature)
-        if record is not None:
-            return record
+        for record in await self._persisted_for_guild(guild_id):
+            if record.feature is feature:
+                return record
         return FeatureConfigRecord(guild_id, feature, default_enabled, {})
 
     async def list_for_guild(self, guild_id: int) -> list[FeatureConfigRecord]:
         persisted = {
-            record.feature: record for record in await self.repository.list_for_guild(guild_id)
+            record.feature: record for record in await self._persisted_for_guild(guild_id)
         }
         return [
             persisted.get(feature, FeatureConfigRecord(guild_id, feature, True, {}))
