@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="description" content="Rob-bot browser control panel prototype for server setup and operations.">
-  <meta name="theme-color" content="#f5f5f7" id="themeColor">
+  <meta name="description" content="Rob-bot Control for server configuration and administration.">
+  <meta name="theme-color" content="#f5f5f7">
   <title>Control · Rob-bot Handbook</title>
   <link rel="icon" type="image/png" sizes="64x64" href="/favicon-robin-v2.png">
   <link rel="apple-touch-icon" href="/favicon-robin-v2.png">
@@ -17,265 +17,36 @@
     })();
   </script>
   <link rel="stylesheet" href="/styles.css?v=14">
-  <link rel="stylesheet" href="/control.css?v=2">
+  <link rel="stylesheet" href="/control.css?v=3">
 </head>
 <body class="control-page">
-<a class="skip" href="#content">Skip to control panel</a>
-<div class="mobilebar">
-  <div class="mobilebrand"><img src="/rob-robin.jpg?v=1" alt="">Rob-bot Control</div>
-  <button class="menubtn" id="menuBtn" type="button" aria-controls="sidebar" aria-expanded="false">Sections</button>
-</div>
-<div class="layout">
-  <aside class="sidebar" id="sidebar" aria-label="Control navigation">
-    <a class="brand" href="/"><img src="/rob-robin.jpg?v=1" alt=""><span class="brand-copy">Rob-bot Handbook<small>Admins & moderators</small></span></a>
+  <a class="skip" href="#controlMain">Skip to active Control page</a>
+  <header class="control-topbar">
+    <button id="controlMenuButton" class="control-menu-button" type="button" aria-controls="controlNavDrawer" aria-expanded="false">Menu</button>
+    <a class="control-mobile-brand" href="/control">Rob-bot Control</a>
+    <div id="controlIdentity" class="control-identity" aria-label="Current Control identity"></div>
+  </header>
 
-    <div class="nav-section"><div class="nav-label"><span>Reference</span></div><nav class="nav">
-      <a href="/">Handbook</a>
-      <a href="/commands">Commands</a>
-      <a href="/control" aria-current="page">Control</a>
-    </nav></div>
-
-    <div class="nav-section"><div class="nav-label"><span>Configure</span></div><nav class="nav control-nav">
-      <a href="#overview" aria-current="true">Overview</a>
-      <a href="#setup">Setup</a>
-      <a href="#features">Features</a>
-      <a href="#tickets">Tickets</a>
-      <a href="#reputation">Reputation</a>
-      <a href="#quizzes">Quizzes</a>
-      <a href="#feeds">Feeds</a>
-      <a href="#publishing">Publishing</a>
-      <a href="#logs">Logs & automation</a>
-      <a href="#advanced">Advanced</a>
-    </nav></div>
-
-    <div class="appearance">
-      <span class="appearance-label">Appearance</span>
-      <div class="theme-switcher" role="group" aria-label="Appearance">
-        <button type="button" data-theme-choice="system" aria-label="Use system appearance" title="System" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></button>
-        <button type="button" data-theme-choice="light" aria-label="Use light appearance" title="Light" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"/></svg></button>
-        <button type="button" data-theme-choice="dark" aria-label="Use dark appearance" title="Dark" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z"/></svg></button>
+  <div class="control-shell">
+    <aside id="controlNavDrawer" class="control-rail" aria-label="Control navigation">
+      <div class="control-rail-head">
+        <a class="control-brand" href="/"><img src="/rob-robin.jpg?v=1" alt=""><span>Rob-bot<small>Control</small></span></a>
+        <button id="controlNavClose" class="control-nav-close" type="button" aria-label="Close Control navigation">Close</button>
       </div>
+      <div id="controlNavContent"></div>
+      <div class="control-appearance" role="group" aria-label="Appearance">
+        <button type="button" data-theme-choice="system" aria-pressed="true">System</button>
+        <button type="button" data-theme-choice="light" aria-pressed="false">Light</button>
+        <button type="button" data-theme-choice="dark" aria-pressed="false">Dark</button>
+      </div>
+    </aside>
+
+    <div class="control-workspace">
+      <div id="controlGlobalStatus" class="control-global-status" role="status" aria-live="polite"></div>
+      <main id="controlMain" class="control-main" tabindex="-1"></main>
     </div>
-  </aside>
+  </div>
 
-  <main id="content">
-    <article class="doc control-doc">
-      <header class="control-header" id="overview">
-        <div class="breadcrumbs"><a href="/">Rob-bot Handbook</a> / Control</div>
-        <div class="prototype-strip"><strong>Prototype</strong><span>Local preview only · no live writes</span></div>
-        <div class="control-title-row">
-          <div>
-            <h1>Control</h1>
-            <p class="lede">Server configuration before the live backend is wired.</p>
-          </div>
-          <div class="identity-cluster">
-            <label class="server-picker control-field"><span>Server</span><select><option>AI App Builders</option></select></label>
-            <div class="mock-user"><span class="avatar">A</span><span><b>Admin preview</b><small>Discord OAuth later</small></span></div>
-          </div>
-        </div>
-        <div class="health-strip" id="healthStrip"></div>
-      </header>
-
-      <section class="control-section" id="setup">
-        <div class="section-heading"><h2>Setup</h2><p>Bind existing resources. Review create/remap work.</p></div>
-        <div class="setup-statusbar">
-          <div class="setup-status-items" aria-label="Automatic setup status">
-            <div class="setup-metric matched"><span class="status-dot good"></span><strong>21</strong><span>matched</span></div>
-            <div class="setup-metric review"><span class="status-dot warn"></span><strong>2</strong><span>review</span></div>
-            <div class="setup-metric missing"><span class="status-dot"></span><strong>2</strong><span>missing</span></div>
-          </div>
-          <button class="primary prototype-action" id="setupReviewBtn" type="button" data-prototype-action="Review setup">Review setup</button>
-        </div>
-        <div class="setup-preview" aria-label="Automatic setup preview">
-          <div><span class="status-dot good"></span><b>Existing</b><span>#moderation-log, #tickets, #announcements, Builder, Contributor…</span></div>
-          <div><span class="status-dot warn"></span><b>Review</b><span>build-help forum → #general-questions · Solved tag → Solved</span></div>
-          <div><span class="status-dot"></span><b>Missing</b><span>Quiz channel · Analytics channel</span></div>
-        </div>
-        <details class="control-disclosure resource-disclosure" open>
-          <summary><span>Resource mappings</span><small id="resourceCount">25 mappings</small></summary>
-          <div id="resourceGroups" class="resource-groups"></div>
-        </details>
-        <div class="row-action dependent-action">
-          <div><b>Role panel</b><span>Uses <code>role_panel</code> + <code>live_ping_role</code>.</span></div>
-          <button class="secondary prototype-action" id="rolePanelBtn" type="button" data-prototype-action="Refresh role panel" disabled>Refresh role panel</button>
-        </div>
-      </section>
-
-      <section class="control-section" id="features">
-        <div class="section-heading"><h2>Features</h2><p>Guild-level switches with prerequisites kept visible.</p></div>
-        <div id="featureList" class="feature-list"></div>
-      </section>
-
-      <section class="control-section" id="tickets">
-        <div class="section-heading"><h2>Tickets</h2><p>Types, entry panel and private-category prerequisites.</p></div>
-        <div class="field-grid compact" data-dirty-group="tickets">
-          <label class="control-field"><span>Panel channel</span><select><option>#tickets</option><option>#support</option></select></label>
-          <label class="control-field"><span>Private category</span><select><option>TICKETS</option><option>Support</option></select></label>
-          <label class="control-field"><span>Logs</span><select><option>#ticket-logs</option><option>#bot-logs</option></select></label>
-        </div>
-        <div class="subhead"><h3>Ticket types</h3><button class="action-add prototype-action" type="button" data-prototype-action="Add ticket type"><span aria-hidden="true">+</span> Add type</button></div>
-        <div class="data-table ticket-table">
-          <div class="data-row head"><span>Key</span><span>Label</span><span>Description</span><span>State</span></div>
-          <div class="data-row"><code>support</code><span>Support</span><span>General help from staff.</span><span class="state on">On</span></div>
-          <div class="data-row"><code>report</code><span>Report</span><span>Private member or server report.</span><span class="state on">On</span></div>
-        </div>
-        <div class="row-action dependent-action"><div><b>Member panel</b><span>Requires at least one enabled type.</span></div><button class="secondary prototype-action" type="button" data-prototype-action="Post ticket panel">Post / refresh panel</button></div>
-      </section>
-
-      <section class="control-section" id="reputation">
-        <div class="section-heading"><h2>Reputation</h2><p>Tier thresholds must increase in order.</p></div>
-        <div class="threshold-editor" id="thresholdEditor">
-          <div class="thresholds">
-            <label class="control-field"><span>Builder</span><input id="builderThreshold" type="number" value="50" min="1" max="100000"><small>Builder role</small></label>
-            <label class="control-field"><span>Contributor</span><input id="contributorThreshold" type="number" value="150" min="1" max="100000"><small>Contributor role</small></label>
-            <label class="control-field"><span>Mentor</span><input id="mentorThreshold" type="number" value="500" min="1" max="100000"><small>Mentor role</small></label>
-          </div>
-          <div class="editor-action"><span id="thresholdStatus">No changes</span><button class="secondary prototype-action" id="thresholdSaveBtn" type="button" data-prototype-action="Save reputation thresholds" disabled>Save thresholds</button></div>
-        </div>
-        <details class="control-disclosure" open>
-          <summary><span>Manual adjustment</span><small>Manage Server</small></summary>
-          <div class="field-grid compact detail-fields" id="reputationAdjustment">
-            <label class="control-field"><span>Member</span><select id="repMember"><option value="">Select member…</option><option value="aerol">@aerol</option><option value="mod">@moderator</option></select></label>
-            <label class="control-field"><span>Points</span><input id="repPoints" type="number" min="-1000" max="1000" value="10"></label>
-            <label class="control-field wide"><span>Reason</span><input id="repReason" type="text" maxlength="200" placeholder="Reason for the adjustment"></label>
-          </div>
-          <div class="disclosure-action"><span id="repStatus">Select a member and enter a reason.</span><button class="secondary prototype-action" id="repReviewBtn" type="button" data-prototype-action="Review reputation adjustment" disabled>Review adjustment</button></div>
-        </details>
-      </section>
-
-      <section class="control-section" id="quizzes">
-        <div class="section-heading"><h2>Quizzes</h2><p>Question bank and automatic interval.</p></div>
-        <div class="inline-setting" id="quizSchedule">
-          <div><b>Automatic quiz</b><span>Posts to the configured quiz channel.</span></div>
-          <div class="inline-editor"><label class="control-field"><span>Every</span><input id="quizInterval" type="number" value="24" min="1" max="720"></label><span>hours</span><button class="quiet-action prototype-action" id="quizScheduleBtn" type="button" data-prototype-action="Save quiz schedule" disabled>Save</button></div>
-        </div>
-        <details class="control-disclosure" open>
-          <summary><span>Question editor</span><small>Required fields marked by context</small></summary>
-          <div class="question-form detail-fields" id="quizQuestionForm">
-            <div class="field-grid two"><label class="control-field"><span>Category</span><input id="quizCategory" type="text" maxlength="50" value="AI"></label><label class="control-field"><span>Correct answer</span><select id="quizCorrect"><option>A</option><option>B</option><option>C</option><option>D</option></select></label></div>
-            <label class="control-field"><span>Prompt</span><textarea id="quizPrompt" maxlength="2000" rows="3" placeholder="Question"></textarea></label>
-            <div class="option-grid"><label class="control-field"><span>A</span><input id="quizA" maxlength="300" placeholder="Option A"></label><label class="control-field"><span>B</span><input id="quizB" maxlength="300" placeholder="Option B"></label><label class="control-field"><span>C</span><input id="quizC" maxlength="300" placeholder="Option C"></label><label class="control-field"><span>D</span><input id="quizD" maxlength="300" placeholder="Option D"></label></div>
-            <label class="control-field"><span>Explanation <small>optional</small></span><textarea id="quizExplanation" maxlength="2000" rows="2" placeholder="Shown after the quiz closes"></textarea></label>
-          </div>
-          <div class="disclosure-action"><span id="quizQuestionStatus">Complete the prompt and all four options.</span><button class="secondary prototype-action" id="quizQuestionBtn" type="button" data-prototype-action="Save quiz question" disabled>Save question</button></div>
-        </details>
-      </section>
-
-      <section class="control-section" id="feeds">
-        <div class="section-heading"><h2>Feeds</h2><p>RSS/Atom sources for AI updates.</p></div>
-        <div class="data-table feed-table">
-          <div class="data-row head"><span>Source</span><span>Category</span><span>URL</span><span>State</span></div>
-          <div class="data-row"><b>OpenAI</b><code>AI</code><span>https://example.com/feed.xml</span><span class="state on">On</span></div>
-          <div class="data-row"><b>Anthropic</b><code>AI</code><span>https://example.com/rss.xml</span><span class="state off">Off</span></div>
-        </div>
-        <details class="control-disclosure" open>
-          <summary><span>Add source</span><small>HTTP / HTTPS</small></summary>
-          <div class="field-grid compact detail-fields" id="feedSourceForm"><label class="control-field"><span>Name</span><input id="feedName" maxlength="100" placeholder="OpenAI News"></label><label class="control-field"><span>Category</span><input id="feedCategory" maxlength="50" placeholder="AI"></label><label class="control-field wide"><span>URL</span><input id="feedUrl" type="url" maxlength="1000" placeholder="https://example.com/feed.xml"></label></div>
-          <div class="disclosure-action"><span id="feedStatus">Name, category and URL required.</span><button class="secondary prototype-action" id="feedAddBtn" type="button" data-prototype-action="Add AI source" disabled>Add source</button></div>
-        </details>
-        <div class="row-action dependent-action"><div><b>Diagnostics</b><span>Future live view: last check, errors and posted items.</span></div><button class="secondary prototype-action" type="button" data-prototype-action="Poll feeds">Poll now</button></div>
-      </section>
-
-      <section class="control-section" id="publishing">
-        <div class="section-heading"><h2>Publishing</h2><p>Compose with the resulting Discord output in view.</p></div>
-
-        <div class="publish-workflow" id="announcementWorkflow">
-          <div class="publish-editor">
-            <div class="subhead"><div><h3>Announcement</h3><small>Manage Server</small></div><span class="prototype-caption">Prototype · no live send</span></div>
-            <label class="control-field"><span>Channel</span><select id="announcementChannel"><option>#announcements</option><option>#server-updates</option></select></label>
-            <label class="control-field"><span>Title <small>optional</small></span><input id="announcementTitle" maxlength="256" placeholder="Announcement title"></label>
-            <label class="control-field"><span>Body</span><textarea id="announcementBody" maxlength="4000" rows="5" placeholder="Write the announcement"></textarea></label>
-            <div class="field-grid two"><label class="control-field"><span>Footer</span><input id="announcementFooter" maxlength="2048" placeholder="Optional footer"></label><label class="control-field"><span>Embed color</span><input id="announcementColor" value="5865F2" maxlength="7" inputmode="text"></label></div>
-            <div class="editor-action"><span id="announcementStatus">Write a body to review.</span><button class="primary prototype-action" id="announcementReviewBtn" type="button" data-prototype-action="Review announcement" disabled>Review announcement</button></div>
-          </div>
-          <div class="preview-shell" aria-label="Announcement Discord preview">
-            <div class="preview-heading"><span>Discord preview</span><b id="announcementPreviewChannel">#announcements</b></div>
-            <div class="discord-canvas">
-              <div class="discord-message">
-                <img src="/rob-robin.jpg?v=1" alt="" class="discord-avatar">
-                <div class="discord-message-body"><div class="discord-author"><b>Rob-bot</b><span class="bot-badge">APP</span><small>Today at 8:15 PM</small></div>
-                  <div class="discord-embed" id="announcementEmbed">
-                    <div class="discord-embed-title" id="announcementPreviewTitle" hidden></div>
-                    <div class="discord-embed-copy" id="announcementPreviewBody">Your announcement will appear here.</div>
-                    <div class="discord-embed-footer" id="announcementPreviewFooter" hidden></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="publish-workflow live-workflow" id="liveWorkflow">
-          <div class="publish-editor">
-            <div class="subhead"><div><h3>Live</h3><small>Mar Wie only</small></div><span class="prototype-caption">Prototype · no live send</span></div>
-            <label class="control-field"><span>Destination</span><select id="liveDestination"><option>#live</option><option>#announcements (fallback)</option></select></label>
-            <label class="control-field"><span>Ping role</span><select id="livePing"><option>Live Notifications</option><option>None</option></select></label>
-            <label class="control-field"><span>Topic <small>optional</small></span><input id="liveTopic" placeholder="Current livestream"></label>
-            <label class="control-field read-only-field"><span>TikTok URL</span><input value="Configured on host" disabled></label>
-            <div class="editor-action"><span id="liveStatus">Change a field to review.</span><button class="primary prototype-action" id="liveReviewBtn" type="button" data-prototype-action="Review live announcement" disabled>Review live</button></div>
-          </div>
-          <div class="preview-shell" aria-label="Live Discord preview">
-            <div class="preview-heading"><span>Discord preview</span><b id="livePreviewChannel">#live</b></div>
-            <div class="discord-canvas">
-              <div class="discord-message">
-                <img src="/rob-robin.jpg?v=1" alt="" class="discord-avatar">
-                <div class="discord-message-body"><div class="discord-author"><b>Rob-bot</b><span class="bot-badge">APP</span><small>Today at 8:15 PM</small></div>
-                  <div class="discord-ping" id="livePreviewPing">@Live Notifications</div>
-                  <div class="discord-embed live-embed">
-                    <div class="discord-embed-title">Mar Wie is live on TikTok</div>
-                    <div class="discord-embed-copy" id="livePreviewTopic">Join the livestream.</div>
-                    <div class="discord-link-button">Watch on TikTok ↗</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="control-section" id="logs">
-        <div class="section-heading"><h2>Logs & automation</h2><p>Privacy boundaries and scheduled operations.</p></div>
-        <div class="field-grid compact">
-          <label class="control-field"><span>Moderation log</span><select><option>#moderation-log</option></select></label>
-          <label class="control-field"><span>Message log</span><select><option>#bot-logs</option></select></label>
-          <label class="control-field"><span>Bot log</span><select><option>#bot-logs</option></select></label>
-        </div>
-        <div class="ignored-block"><div><b>Ignored message-log channels</b><span>Excluded from mirrored edit/delete logs.</span></div><div class="token-editor"><div class="token-list" id="ignoredChannels"><button class="value-chip" type="button" data-token="#staff-private">#staff-private <span aria-hidden="true">×</span></button><button class="value-chip" type="button" data-token="#tickets">#tickets <span aria-hidden="true">×</span></button></div><button class="action-add prototype-action" data-prototype-action="Add ignored channel" type="button"><span aria-hidden="true">+</span> Add channel</button></div></div>
-        <div class="automation-list">
-          <div><b>Analytics report</b><span>Every 7 days · #analytics</span><span class="state on">On</span></div>
-          <div><b>Unanswered build-help</b><span>Checks daily · surfaces after 24 hours</span><span class="state on">On</span></div>
-          <div><b>AI polling</b><span>Every 30 minutes</span><span class="state on">On</span></div>
-          <div><b>Quiz scheduler</b><span>Every 24 hours</span><span class="state on">On</span></div>
-        </div>
-      </section>
-
-      <section class="control-section" id="advanced">
-        <div class="section-heading"><h2>Advanced</h2><p>Deployment state. Secrets stay outside ordinary guild configuration.</p></div>
-        <div class="advanced-grid">
-          <div><span>Environment</span><b>production</b><small>Read-only</small></div>
-          <div><span>Database</span><b>Neon Postgres</b><small>Not connected yet</small></div>
-          <div><span>Background tasks</span><b>Enabled</b><small>Host setting</small></div>
-          <div><span>Message Content</span><b>Optional</b><small>Discord Portal + host</small></div>
-          <div><span>Command sync</span><b>Enabled</b><small>Host setting</small></div>
-          <div><span>Guild sync ID</span><b>Configured</b><small>Host setting</small></div>
-        </div>
-        <div class="secret-boundary"><div><b>Never shown here</b><span><code>DISCORD_TOKEN</code>, database password, Bot-Hosting API key.</span></div><div><b>Restart required</b><span>Process-level environment changes.</span></div></div>
-      </section>
-
-      <footer>Rob-bot Handbook · <a href="/">Home</a> · <a href="/commands">Commands</a> · Control prototype</footer>
-    </article>
-  </main>
-</div>
-
-<dialog id="prototypeDialog" class="prototype-dialog">
-  <form method="dialog">
-    <div class="dialog-head"><span>Prototype</span><button value="close" aria-label="Close">×</button></div>
-    <h2 id="prototypeDialogTitle">Review only</h2>
-    <p id="prototypeDialogCopy">No live change will be sent.</p>
-    <button class="primary" value="close">Close</button>
-  </form>
-</dialog>
-
-<script src="/control.js?v=2" defer></script>
+  <script type="module" src="/control-app.js?v=1"></script>
 </body>
 </html>
