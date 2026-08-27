@@ -185,9 +185,7 @@ class GuildSnapshotBuilder:
 
     async def _load_features(self, guild_id: int) -> list[FeatureConfigRecord]:
         return list(
-            await asyncio.gather(
-                *(self.features.get(guild_id, feature) for feature in FeatureName)
-            )
+            await asyncio.gather(*(self.features.get(guild_id, feature) for feature in FeatureName))
         )
 
     async def build(self, guild: discord.Guild) -> dict[str, Any]:
