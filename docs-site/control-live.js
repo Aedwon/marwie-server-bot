@@ -17,7 +17,7 @@
     temp_voice_category: 'category', coworking_lounge: 'voice', announcements: 'text',
     live_announcements: 'text', live_ping_role: 'role', role_panel: 'text', ai_updates: 'text',
     build_help_forum: 'forum', solved_tag: 'forum_tag', quiz_channel: 'text',
-    anon_questions: 'text', analytics: 'text', showcase_forum: 'forum', app_of_week: 'text',
+    anon_questions: 'text', analytics: 'text', showcase_forum: 'forum', app_of_the_week: 'text',
     collab_lfg: 'text', builder_role: 'role', contributor_role: 'role', mentor_role: 'role',
   };
 
