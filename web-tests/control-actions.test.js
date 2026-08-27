@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import {
@@ -11,6 +12,10 @@ import { guildCanManage, guildIsAdministrator, HttpError } from '../api/_lib/con
 
 const MANAGE_GUILD = String(0x20n);
 const ADMINISTRATOR = String(0x8n);
+const CONTROL_LIVE_SOURCE = readFileSync(
+  new URL('../docs-site/control-live.js', import.meta.url),
+  'utf8',
+);
 
 
 test('Discord OAuth permission bits preserve admin/manage semantics', () => {
@@ -90,4 +95,16 @@ test('unsupported action names fail closed', () => {
 
 test('internal snapshot refresh is not exposed as a public browser action', () => {
   assert.throws(() => normalizeActionType('refresh_snapshot'), HttpError);
+});
+
+
+test('nested control locks preserve each control original disabled state', () => {
+  assert.match(
+    CONTROL_LIVE_SOURCE,
+    /if \(!enabled && control\.dataset\.liveWasDisabled === undefined\)/,
+  );
+  assert.doesNotMatch(
+    CONTROL_LIVE_SOURCE,
+    /if \(!enabled\) control\.dataset\.liveWasDisabled = String\(control\.disabled\);/,
+  );
 });
