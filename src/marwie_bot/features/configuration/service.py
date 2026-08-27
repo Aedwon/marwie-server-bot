@@ -16,7 +16,7 @@ class GuildResourceRecord:
     updated_by: int
 
 
-@dataclass(frozen=True, slots=True=True)
+@dataclass(frozen=True, slots=True)
 class FeatureConfigRecord:
     guild_id: int
     feature: FeatureName
