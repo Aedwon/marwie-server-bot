@@ -277,6 +277,7 @@ async def setup(bot: commands.Bot) -> None:
         control=control,
         provisioner=provisioner,
         settings=settings,
+        quizzes=quizzes,
     )
     await bot.add_cog(
         ControlPlaneCog(
