@@ -21,6 +21,7 @@ from marwie_bot.features.configuration.service import (
     GuildResourceRecord,
     ResourceService,
 )
+from marwie_bot.features.control_plane.mappings import serialize_mapping_review
 from marwie_bot.features.control_plane.repository import SQLAlchemyControlRepository
 from marwie_bot.features.tickets.service import TicketService
 
@@ -233,7 +234,9 @@ class GuildSnapshotBuilder:
 
         cached_resources = ResourceService(_SnapshotResourceRepository(resource_records))
         cached_provisioner = AutoSetupService(cached_resources)
-        setup = serialize_setup_plan(await cached_provisioner.discover(guild))
+        setup_plan = await cached_provisioner.discover(guild)
+        setup = serialize_setup_plan(setup_plan)
+        mappings_review = serialize_mapping_review(setup_plan)
 
         reputation_config = feature_records[FeatureName.REPUTATION]
         thresholds_raw = reputation_config.get("thresholds", {})
@@ -306,6 +309,7 @@ class GuildSnapshotBuilder:
                 "top_role_position": bot_member.top_role.position if bot_member is not None else 0,
             },
             "setup": setup,
+            "mappings_review": mappings_review,
             "resources": resources,
             "features": feature_rows,
             "channels": channels,
