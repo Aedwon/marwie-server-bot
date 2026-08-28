@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 
 from marwie_bot.features.control_plane.page_save_contract import normalize_page_save_payload
@@ -7,12 +9,12 @@ def normalize_action_type(value: str) -> str:
     return value
 
 
-def validate_action_payload(action_type: str, payload: dict[str, object]) -> dict[str, object]:
+def validate_action_payload(action_type: str, payload: dict[str, Any]) -> dict[str, Any]:
     del action_type
     return dict(payload)
 
 
-def normalize(raw: dict[str, object]) -> dict[str, object]:
+def normalize(raw: dict[str, Any]) -> dict[str, Any]:
     return normalize_page_save_payload(
         raw,
         normalize_action_type=normalize_action_type,
