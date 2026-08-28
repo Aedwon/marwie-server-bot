@@ -322,12 +322,28 @@ class ControlActionExecutor:
     async def _save_notification_panel(
         self, guild: discord.Guild, actor: discord.Member, payload: dict[str, Any]
     ) -> dict[str, Any]:
-        channel = guild.get_channel(int(payload["channel_id"]))
+        mapped_destination = payload.get("channel_id") is None
+        channel_id = payload.get("channel_id")
+        if mapped_destination:
+            resource = await self.resources.get(guild.id, ResourceKey.ROLE_PANEL)
+            channel_id = resource.discord_id if resource is not None else None
+
+        channel = guild.get_channel(int(channel_id)) if channel_id is not None else None
         if not isinstance(channel, discord.TextChannel):
+            if mapped_destination:
+                raise ActionRejected(
+                    "Configure the notification role panel destination in Mappings first."
+                )
             raise ActionRejected("Select a text channel for the notification role panel.")
+
         bot_member = guild.me
         if bot_member is None or not bot_member.guild_permissions.manage_roles:
             raise ActionRejected("Rob-bot needs Manage Roles before this panel can be saved.")
+        permissions = channel.permissions_for(bot_member)
+        if not permissions.send_messages or not permissions.embed_links:
+            raise ActionRejected(
+                "Rob-bot needs Send Messages and Embed Links in the panel channel."
+            )
         for item in cast(list[dict[str, Any]], payload["buttons"]):
             role = guild.get_role(int(item["role_id"]))
             if role is None or role.is_default() or role.managed or bot_member.top_role <= role:
