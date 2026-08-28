@@ -74,6 +74,28 @@ def _ai_sources(snapshot: dict[str, Any]) -> list[dict[str, Any]]:
     return rows
 
 
+def _quiz_questions(snapshot: dict[str, Any]) -> list[dict[str, Any]]:
+    rows = []
+    quiz = snapshot.get("quiz") or {}
+    for item in quiz.get("questions", []) if isinstance(quiz, dict) else []:
+        if not isinstance(item, dict):
+            continue
+        options = item.get("options")
+        rows.append(
+            {
+                "id": item.get("id"),
+                "category": item.get("category"),
+                "prompt": item.get("prompt"),
+                "options": list(options) if isinstance(options, (list, tuple)) else [],
+                "correct": item.get("correct"),
+                "explanation": item.get("explanation"),
+                "enabled": bool(item.get("enabled", False)),
+            }
+        )
+    rows.sort(key=lambda item: str(item.get("id", "")))
+    return rows
+
+
 def _notification_panel(snapshot: dict[str, Any]) -> dict[str, Any] | None:
     panel = snapshot.get("notification_panel")
     if not isinstance(panel, dict):
@@ -108,6 +130,7 @@ def _material(snapshot: dict[str, Any], page_key: str) -> Any:
         return {
             "feature": _feature_enabled(snapshot, "quizzes"),
             "interval_hours": (snapshot.get("quiz") or {}).get("interval_hours"),
+            "questions": _quiz_questions(snapshot),
         }
     if page_key == "/control/community/voice-coworking":
         return {"features": _features_enabled(snapshot, "voice", "coworking")}
