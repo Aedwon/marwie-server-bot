@@ -1,10 +1,12 @@
 import { identityMarkup, navigationMarkup, pageMarkup } from './control-components.js';
 import { installAccountMenu } from './control-account.js';
+import { registerAnalyticsPage } from './control-analytics.js';
 import { mountControlDestination } from './control-page-adapter.js';
 import { registerMappingPages } from './control-mappings.js';
 import { installThemeControls } from './control-theme.js';
 import { createNavigationState, installDrawerController, navigationModel } from './control-navigation.js';
 import { resolveControlRoute } from './control-router.js';
+import { workflowPageMarkup } from './control-workflows.js';
 import {
   controlState,
   hydrateControlPages,
@@ -42,17 +44,24 @@ let snapshot = null;
 let removeAccountMenu = () => {};
 let removePageInteractions = () => {};
 
-function installMappingStyles() {
-  if (document.querySelector('link[data-control-mappings-styles]')) return;
-  const link = document.createElement('link');
-  link.rel = 'stylesheet';
-  link.href = '/control-mappings.css?v=1';
-  link.dataset.controlMappingsStyles = 'true';
-  document.head.append(link);
+function installPageStyles() {
+  const styles = [
+    ['data-control-mappings-styles', '/control-mappings.css?v=1'],
+    ['data-control-analytics-workflows-styles', '/control-analytics-workflows.css?v=1'],
+  ];
+  for (const [attribute, href] of styles) {
+    if (document.querySelector(`link[${attribute}]`)) continue;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = href;
+    link.setAttribute(attribute, 'true');
+    document.head.append(link);
+  }
 }
 
-installMappingStyles();
+installPageStyles();
 registerMappingPages();
+registerAnalyticsPage();
 
 function readJson(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key) || '') || fallback; } catch { return fallback; }
@@ -98,17 +107,18 @@ function renderMain() {
   const registeredMarkup = session?.authenticated
     ? renderRegisteredControlPage(pageKey, { snapshot: guildState })
     : null;
+  const workflowMarkup = session?.authenticated ? workflowPageMarkup(pageKey) : '';
 
   mountControlDestination({
     main: shell.main,
     destination: navState.current,
     legacyRoot: shell.legacy,
     allowLegacy: Boolean(session?.authenticated),
-    renderFallback: destination => registeredMarkup ?? pageMarkup(destination, {
+    renderFallback: destination => registeredMarkup ?? (workflowMarkup || pageMarkup(destination, {
       authenticated: Boolean(session?.authenticated),
       state: guildState,
       snapshot,
-    }),
+    })),
   });
 
   if (registeredMarkup !== null) {
