@@ -20,6 +20,7 @@ class ControlActionType(StrEnum):
     SET_RESOURCE = "set_resource"
     CLEAR_RESOURCE = "clear_resource"
     APPLY_AUTO_SETUP = "apply_auto_setup"
+    APPLY_MAPPING_SUGGESTIONS = "apply_mapping_suggestions"
     SET_FEATURE = "set_feature"
     SET_LOG_EXCLUSIONS = "set_log_exclusions"
     SAVE_NOTIFICATION_PANEL = "save_notification_panel"
