@@ -14,6 +14,7 @@ class QuizQuestionRecord:
     options: tuple[str, str, str, str]
     correct_index: int
     explanation: str | None
+    active: bool = True
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,6 +38,25 @@ class QuizRepository(Protocol):
         correct_index: int,
         explanation: str | None,
     ) -> QuizQuestionRecord: ...
+
+    async def list_questions(
+        self, guild_id: int, *, active_only: bool = False
+    ) -> list[QuizQuestionRecord]: ...
+
+    async def update_question(
+        self,
+        guild_id: int,
+        question_id: int,
+        category: str,
+        prompt: str,
+        options: tuple[str, str, str, str],
+        correct_index: int,
+        explanation: str | None,
+    ) -> QuizQuestionRecord | None: ...
+
+    async def set_question_active(
+        self, guild_id: int, question_id: int, active: bool
+    ) -> QuizQuestionRecord | None: ...
 
     async def random_question(self, guild_id: int) -> QuizQuestionRecord | None: ...
 
@@ -70,15 +90,14 @@ class QuizService:
     def __init__(self, repository: QuizRepository) -> None:
         self.repository = repository
 
-    async def add_question(
-        self,
-        guild_id: int,
+    @staticmethod
+    def _normalize_question(
         category: str,
         prompt: str,
         options: tuple[str, str, str, str],
         correct_index: int,
         explanation: str | None,
-    ) -> QuizQuestionRecord:
+    ) -> tuple[str, str, tuple[str, str, str, str], int, str | None]:
         if correct_index not in range(4):
             raise ValueError("Correct answer must be 1, 2, 3 or 4.")
         normalized = tuple(option.strip()[:300] for option in options)
@@ -90,14 +109,60 @@ class QuizService:
             normalized[2],
             normalized[3],
         )
-        return await self.repository.add_question(
-            guild_id,
+        return (
             category.strip()[:50] or "general",
             prompt.strip()[:2000],
             typed_options,
             correct_index,
             explanation.strip()[:2000] if explanation else None,
         )
+
+    async def add_question(
+        self,
+        guild_id: int,
+        category: str,
+        prompt: str,
+        options: tuple[str, str, str, str],
+        correct_index: int,
+        explanation: str | None,
+    ) -> QuizQuestionRecord:
+        normalized = self._normalize_question(
+            category,
+            prompt,
+            options,
+            correct_index,
+            explanation,
+        )
+        return await self.repository.add_question(guild_id, *normalized)
+
+    async def list_questions(
+        self, guild_id: int, *, active_only: bool = False
+    ) -> list[QuizQuestionRecord]:
+        return await self.repository.list_questions(guild_id, active_only=active_only)
+
+    async def update_question(
+        self,
+        guild_id: int,
+        question_id: int,
+        category: str,
+        prompt: str,
+        options: tuple[str, str, str, str],
+        correct_index: int,
+        explanation: str | None,
+    ) -> QuizQuestionRecord | None:
+        normalized = self._normalize_question(
+            category,
+            prompt,
+            options,
+            correct_index,
+            explanation,
+        )
+        return await self.repository.update_question(guild_id, question_id, *normalized)
+
+    async def set_question_active(
+        self, guild_id: int, question_id: int, active: bool
+    ) -> QuizQuestionRecord | None:
+        return await self.repository.set_question_active(guild_id, question_id, active)
 
     async def new_session(
         self, guild_id: int, channel_id: int, duration_minutes: int = 60
