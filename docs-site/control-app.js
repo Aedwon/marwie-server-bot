@@ -1,11 +1,23 @@
 import { identityMarkup, navigationMarkup, pageMarkup } from './control-components.js';
 import { installAccountMenu } from './control-account.js';
 import { mountControlDestination } from './control-page-adapter.js';
+import { registerMappingPages } from './control-mappings.js';
 import { installThemeControls } from './control-theme.js';
 import { createNavigationState, installDrawerController, navigationModel } from './control-navigation.js';
 import { resolveControlRoute } from './control-router.js';
-import { controlState, hydrateControlPages, installControlStateGuards } from './control-page-registry.js';
-import { enqueuePageSave, loadGuildState, waitForAction } from './control-api.js';
+import {
+  controlState,
+  hydrateControlPages,
+  installControlStateGuards,
+  installRegisteredControlPage,
+  renderRegisteredControlPage,
+} from './control-page-registry.js';
+import {
+  enqueueControlAction,
+  enqueuePageSave,
+  loadGuildState,
+  waitForAction,
+} from './control-api.js';
 
 const ROUTE_KEY = 'rob-control-last-route';
 const DOMAIN_ROUTE_KEY = 'rob-control-last-domain-routes';
@@ -28,6 +40,9 @@ let guild = null;
 let guildState = null;
 let snapshot = null;
 let removeAccountMenu = () => {};
+let removePageInteractions = () => {};
+
+registerMappingPages();
 
 function readJson(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key) || '') || fallback; } catch { return fallback; }
@@ -66,17 +81,34 @@ function renderNavigation() {
 }
 
 function renderMain() {
+  removePageInteractions();
+  removePageInteractions = () => {};
+
+  const pageKey = navState.current.path;
+  const registeredMarkup = session?.authenticated
+    ? renderRegisteredControlPage(pageKey, { snapshot: guildState })
+    : null;
+
   mountControlDestination({
     main: shell.main,
     destination: navState.current,
     legacyRoot: shell.legacy,
     allowLegacy: Boolean(session?.authenticated),
-    renderFallback: destination => pageMarkup(destination, {
+    renderFallback: destination => registeredMarkup ?? pageMarkup(destination, {
       authenticated: Boolean(session?.authenticated),
       state: guildState,
       snapshot,
     }),
   });
+
+  if (registeredMarkup !== null) {
+    removePageInteractions = installRegisteredControlPage(pageKey, shell.main, {
+      snapshot: guildState,
+      onSave: requestRegisteredPageSave,
+      onApplySuggestions: requestMappingSuggestions,
+      rerender: renderMain,
+    });
+  }
   shell.main.focus({ preventScroll: true });
 }
 
@@ -164,7 +196,6 @@ async function loadSession() {
   renderMain();
 }
 
-
 function announcePageState(pageKey) {
   document.dispatchEvent(new CustomEvent('rob-control-page-state', {
     detail: { pageKey, state: controlState.get(pageKey) },
@@ -175,6 +206,7 @@ async function requestRegisteredPageSave(pageKey, request) {
   if (!session?.authenticated || !guild) return;
   controlState.markSaving(pageKey, request);
   announcePageState(pageKey);
+  renderMain();
   try {
     const queued = await enqueuePageSave({
       guildId: guild.id,
@@ -185,6 +217,7 @@ async function requestRegisteredPageSave(pageKey, request) {
     if (action.status === 'failed' || action.status === 'rejected') {
       controlState.markSaveError(pageKey, action.error || 'The page could not be saved.');
       announcePageState(pageKey);
+      renderMain();
       return;
     }
 
@@ -203,11 +236,40 @@ async function requestRegisteredPageSave(pageKey, request) {
       setTimeout(() => {
         controlState.settleSaved(pageKey);
         announcePageState(pageKey);
+        if (navState.current.path === pageKey) renderMain();
       }, 2500);
     }
   } catch (error) {
     controlState.markSaveError(pageKey, error.message);
     announcePageState(pageKey);
+    renderMain();
+  }
+}
+
+async function requestMappingSuggestions(payload) {
+  if (!session?.authenticated || !guild) return;
+  setStatus('Applying reviewed mapping changes…');
+  try {
+    const queued = await enqueueControlAction({
+      guildId: guild.id,
+      csrfToken: session.csrf_token,
+      actionType: 'apply_mapping_suggestions',
+      payload,
+    });
+    const action = await waitForAction(queued.action.id);
+    if (action.status === 'failed' || action.status === 'rejected') {
+      setStatus(action.error || 'The reviewed mappings could not be applied.', 'bad');
+      return;
+    }
+
+    const data = await loadGuildState(guild.id);
+    guildState = data.state;
+    snapshot = data.snapshot;
+    hydrateControlPages(guildState, snapshot?.page_revisions || guildState?.meta?.page_revisions || {});
+    setStatus('Reviewed mappings applied.', 'good');
+    renderMain();
+  } catch (error) {
+    setStatus(error.message, 'bad');
   }
 }
 
