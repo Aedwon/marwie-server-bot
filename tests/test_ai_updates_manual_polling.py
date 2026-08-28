@@ -12,7 +12,6 @@ from marwie_bot.features.ai_updates.manual_polling import (
 from marwie_bot.features.ai_updates.repository import AISourceRecord
 from marwie_bot.features.ai_updates.service import FeedItem
 
-
 GUILD_ID = 100
 ACTOR_ID = 200
 DESTINATION_ID = 300
