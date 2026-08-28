@@ -53,7 +53,7 @@ export function identityMarkup(session, guild) {
     </div>`;
 }
 
-export function pageMarkup(destination, { authenticated = false, state = null, snapshot = null } = {}) {
+export function pageMarkup(destination, { authenticated = false } = {}) {
   if (!authenticated) {
     return `<section class="control-empty"><h1>${escapeHtml(destination.label)}</h1><p>Sign in with Discord to load Control.</p><a class="control-primary-button" href="/api/auth/start">Sign in with Discord</a></section>`;
   }
@@ -65,17 +65,12 @@ export function pageMarkup(destination, { authenticated = false, state = null, s
     return `<section class="control-page-section"><h1>Activity</h1><p>Administrative history is sourced from the durable Control action audit trail.</p></section>`;
   }
 
-  const health = snapshot?.fresh ? 'Fresh server state' : 'Server state unavailable';
   const intro = destination.domain === 'workflows'
     ? `Operational guidance for ${escapeHtml(destination.label)}. Configuration remains with its owning Control destination or command.`
     : `Review the current Rob-bot state for ${escapeHtml(destination.label)}.`;
 
   return `<section class="control-page-section" data-page-key="${escapeHtml(destination.path)}">
-    <div class="control-page-heading"><div><p class="control-eyebrow">${escapeHtml(destination.domain || 'Control')}</p><h1>${escapeHtml(destination.label)}</h1></div><span class="control-state-chip">${escapeHtml(health)}</span></div>
+    <h1>${escapeHtml(destination.label)}</h1>
     <p class="control-page-intro">${intro}</p>
-    <div class="control-read-summary" aria-label="Current Control state">
-      <p><strong>Rob-bot:</strong> ${state?.bot?.online ? 'online' : 'status unavailable'}</p>
-      <p><strong>Snapshot:</strong> ${escapeHtml(snapshot?.updated_at || 'not loaded')}</p>
-    </div>
   </section>`;
 }
