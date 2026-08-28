@@ -76,6 +76,52 @@ export const MAPPING_RESOURCE_DEFINITIONS = Object.freeze({
 
 const suggestionReviewOpen = new Set();
 const suggestionConfirmations = new Map();
+const suggestionOperations = new Map();
+
+function reviewPlanHash(snapshot) {
+  return String(snapshot?.mappings_review?.plan_hash || '');
+}
+
+function confirmationStateFor(pageKey, snapshot) {
+  const planHash = reviewPlanHash(snapshot);
+  const existing = suggestionConfirmations.get(pageKey);
+  if (existing?.planHash === planHash) return existing;
+
+  const fresh = { planHash, confirmedKeys: new Set() };
+  suggestionConfirmations.set(pageKey, fresh);
+  return fresh;
+}
+
+function operationStateFor(pageKey, snapshot) {
+  const planHash = reviewPlanHash(snapshot);
+  const existing = suggestionOperations.get(pageKey);
+  if (existing?.planHash === planHash) return existing;
+
+  const fresh = { planHash, status: 'idle', message: '' };
+  suggestionOperations.set(pageKey, fresh);
+  return fresh;
+}
+
+function setOperationState(pageKey, snapshot, status, message = '') {
+  const state = {
+    planHash: reviewPlanHash(snapshot),
+    status,
+    message,
+  };
+  suggestionOperations.set(pageKey, state);
+  return state;
+}
+
+function clearOperationFeedback(pageKey, snapshot) {
+  const operation = operationStateFor(pageKey, snapshot);
+  if (operation.status !== 'applying') {
+    setOperationState(pageKey, snapshot, 'idle');
+  }
+}
+
+function clearAppliedConfirmations() {
+  suggestionConfirmations.clear();
+}
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -323,10 +369,21 @@ function suggestionMarkup(pageKey, snapshot) {
   const review = snapshot?.mappings_review || { quiet: true, proposed: [] };
   const quiet = Boolean(review.quiet || !approvedProposals(snapshot).length);
   const open = suggestionReviewOpen.has(pageKey);
-  const confirmations = suggestionConfirmations.get(pageKey) || new Set();
+  const confirmationState = confirmationStateFor(pageKey, snapshot);
+  const confirmations = confirmationState.confirmedKeys;
+  const operation = operationStateFor(pageKey, snapshot);
   const groups = mappingSuggestionGroups(snapshot);
   const required = approvedProposals(snapshot).filter(item => item.requires_confirmation);
   const allConfirmed = required.every(item => confirmations.has(item.key));
+  const applyPending = operation.status === 'applying';
+
+  const operationMarkup = operation.status === 'applying'
+    ? '<p class="mapping-page-message mapping-suggestion-status" role="status" aria-live="polite">Applying reviewed mapping changes…</p>'
+    : operation.status === 'success'
+      ? '<p class="mapping-page-message mapping-suggestion-status" role="status" aria-live="polite">Reviewed mappings applied.</p>'
+      : operation.status === 'error'
+        ? `<p class="mapping-page-message mapping-suggestion-status" role="alert">${escapeHtml(operation.message)}</p>`
+        : '';
 
   let reviewMarkup = '';
   if (open) {
@@ -359,7 +416,7 @@ function suggestionMarkup(pageKey, snapshot) {
       ? '<p class="mapping-suggestion-empty">No mapping changes are suggested right now.</p>'
       : `${sections}
         <div class="mapping-suggestion-actions">
-          <button class="control-button control-button-primary" type="button" data-mapping-apply-suggestions${allConfirmed ? '' : ' disabled'}>Apply reviewed mappings</button>
+          <button class="control-button control-button-primary" type="button" data-mapping-apply-suggestions${allConfirmed && !applyPending ? '' : ' disabled'}>${applyPending ? 'Applying…' : 'Apply reviewed mappings'}</button>
         </div>`;
   }
 
@@ -372,6 +429,7 @@ function suggestionMarkup(pageKey, snapshot) {
         </div>
         <button class="control-button control-button-secondary" type="button" data-mapping-review>${open ? 'Close review' : 'Review suggested mappings'}</button>
       </div>
+      ${operationMarkup}
       ${reviewMarkup}
     </section>`;
 }
@@ -432,7 +490,7 @@ export function installMappingPageInteractions({
 } = {}) {
   if (!root?.addEventListener) return () => {};
 
-  const onClick = event => {
+  const onClick = async event => {
     const edit = event.target?.closest?.('[data-mapping-edit]');
     if (edit) {
       store.beginEdit(pageKey);
@@ -461,14 +519,66 @@ export function installMappingPageInteractions({
       } else {
         suggestionReviewOpen.add(pageKey);
       }
+      clearOperationFeedback(pageKey, snapshot);
       rerender();
       return;
     }
 
     const apply = event.target?.closest?.('[data-mapping-apply-suggestions]');
     if (apply) {
-      const confirmations = suggestionConfirmations.get(pageKey) || new Set();
-      onApplySuggestions?.(mappingSuggestionApplyPayload(snapshot, confirmations));
+      const operation = operationStateFor(pageKey, snapshot);
+      if (operation.status === 'applying' || !onApplySuggestions) return;
+
+      const confirmations = confirmationStateFor(pageKey, snapshot).confirmedKeys;
+      const required = approvedProposals(snapshot).filter(item => item.requires_confirmation);
+      if (!required.every(item => confirmations.has(item.key))) return;
+
+      setOperationState(
+        pageKey,
+        snapshot,
+        'applying',
+        'Applying reviewed mapping changes…',
+      );
+      rerender();
+
+      try {
+        const result = await onApplySuggestions(
+          mappingSuggestionApplyPayload(snapshot, confirmations),
+        );
+        clearAppliedConfirmations();
+
+        const reconciledSnapshot = result?.snapshot || snapshot;
+        setOperationState(
+          pageKey,
+          reconciledSnapshot,
+          'success',
+          'Reviewed mappings applied.',
+        );
+        rerender();
+
+        const successPlanHash = reviewPlanHash(reconciledSnapshot);
+        const timer = setTimeout(() => {
+          const current = suggestionOperations.get(pageKey);
+          if (
+            current?.planHash === successPlanHash
+            && current.status === 'success'
+          ) {
+            suggestionOperations.set(pageKey, {
+              planHash: successPlanHash,
+              status: 'idle',
+              message: '',
+            });
+            rerender();
+          }
+        }, 1800);
+        timer?.unref?.();
+      } catch (error) {
+        const message = error instanceof Error && error.message
+          ? error.message
+          : 'The reviewed mappings could not be applied.';
+        setOperationState(pageKey, snapshot, 'error', message);
+        rerender();
+      }
     }
   };
 
@@ -488,10 +598,15 @@ export function installMappingPageInteractions({
     const confirmation = event.target?.closest?.('[data-mapping-confirm-key]');
     if (confirmation?.dataset?.mappingConfirmKey) {
       const key = confirmation.dataset.mappingConfirmKey;
-      const confirmations = new Set(suggestionConfirmations.get(pageKey) || []);
+      const confirmationState = confirmationStateFor(pageKey, snapshot);
+      const confirmations = new Set(confirmationState.confirmedKeys);
       if (confirmation.checked) confirmations.add(key);
       else confirmations.delete(key);
-      suggestionConfirmations.set(pageKey, confirmations);
+      suggestionConfirmations.set(pageKey, {
+        planHash: confirmationState.planHash,
+        confirmedKeys: confirmations,
+      });
+      clearOperationFeedback(pageKey, snapshot);
       rerender();
     }
   };

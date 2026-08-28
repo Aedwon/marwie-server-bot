@@ -257,30 +257,29 @@ async function requestRegisteredPageSave(pageKey, request) {
 }
 
 async function requestMappingSuggestions(payload) {
-  if (!session?.authenticated || !guild) return;
-  setStatus('Applying reviewed mapping changes…');
-  try {
-    const queued = await enqueueControlAction({
-      guildId: guild.id,
-      csrfToken: session.csrf_token,
-      actionType: 'apply_mapping_suggestions',
-      payload,
-    });
-    const action = await waitForAction(queued.action.id);
-    if (action.status === 'failed' || action.status === 'rejected') {
-      setStatus(action.error || 'The reviewed mappings could not be applied.', 'bad');
-      return;
-    }
-
-    const data = await loadGuildState(guild.id);
-    guildState = data.state;
-    snapshot = data.snapshot;
-    hydrateControlPages(guildState, snapshot?.page_revisions || guildState?.meta?.page_revisions || {});
-    setStatus('Reviewed mappings applied.', 'good');
-    renderMain();
-  } catch (error) {
-    setStatus(error.message, 'bad');
+  if (!session?.authenticated || !guild) {
+    throw new Error('Sign in and select a server before applying reviewed mappings.');
   }
+
+  const queued = await enqueueControlAction({
+    guildId: guild.id,
+    csrfToken: session.csrf_token,
+    actionType: 'apply_mapping_suggestions',
+    payload,
+  });
+  const action = await waitForAction(queued.action.id);
+  if (action.status === 'failed' || action.status === 'rejected') {
+    throw new Error(action.error || 'The reviewed mappings could not be applied.');
+  }
+
+  const data = await loadGuildState(guild.id);
+  guildState = data.state;
+  snapshot = data.snapshot;
+  hydrateControlPages(
+    guildState,
+    snapshot?.page_revisions || guildState?.meta?.page_revisions || {},
+  );
+  return { snapshot };
 }
 
 window.addEventListener('popstate', () => {
