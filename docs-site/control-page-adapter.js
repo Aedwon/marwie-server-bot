@@ -63,10 +63,6 @@ const LEGACY_MOUNT_PLAN_BY_PATH = Object.freeze({
     sections: Object.freeze(['features']),
     featureKeys: Object.freeze(['anonymous_questions']),
   }),
-  '/control/analytics': Object.freeze({
-    sections: Object.freeze(['features']),
-    featureKeys: Object.freeze(['analytics']),
-  }),
 });
 
 const mountedByMain = new WeakMap();
