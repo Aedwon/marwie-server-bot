@@ -1,7 +1,8 @@
 import { identityMarkup, navigationMarkup, pageMarkup } from './control-components.js';
 import { createNavigationState, installDrawerController, navigationModel } from './control-navigation.js';
 import { resolveControlRoute } from './control-router.js';
-import { hydrateControlPages, installControlStateGuards } from './control-page-registry.js';
+import { controlState, hydrateControlPages, installControlStateGuards } from './control-page-registry.js';
+import { enqueuePageSave, loadGuildState, waitForAction } from './control-api.js';
 
 const ROUTE_KEY = 'rob-control-last-route';
 const DOMAIN_ROUTE_KEY = 'rob-control-last-domain-routes';
@@ -119,7 +120,7 @@ async function loadSession() {
   }
 
   setStatus('Loading fresh server state…');
-  const data = await request(`/api/guild-state?guild_id=${encodeURIComponent(guild.id)}`);
+  const data = await loadGuildState(guild.id);
   guildState = data.state;
   snapshot = data.snapshot;
   hydrateControlPages(guildState, snapshot?.page_revisions || guildState?.meta?.page_revisions || {});
@@ -127,10 +128,51 @@ async function loadSession() {
   renderMain();
 }
 
-function requestRegisteredPageSave(pageKey, request) {
-  document.dispatchEvent(new CustomEvent('rob-control-save-requested', {
-    detail: { pageKey, request },
+
+function announcePageState(pageKey) {
+  document.dispatchEvent(new CustomEvent('rob-control-page-state', {
+    detail: { pageKey, state: controlState.get(pageKey) },
   }));
+}
+
+async function requestRegisteredPageSave(pageKey, request) {
+  if (!session?.authenticated || !guild) return;
+  controlState.markSaving(pageKey, request);
+  announcePageState(pageKey);
+  try {
+    const queued = await enqueuePageSave({
+      guildId: guild.id,
+      csrfToken: session.csrf_token,
+      request,
+    });
+    const action = await waitForAction(queued.action.id);
+    if (action.status === 'failed' || action.status === 'rejected') {
+      controlState.markSaveError(pageKey, action.error || 'The page could not be saved.');
+      announcePageState(pageKey);
+      return;
+    }
+
+    const data = await loadGuildState(guild.id);
+    guildState = data.state;
+    snapshot = data.snapshot;
+    const revision = snapshot?.page_revisions?.[pageKey]
+      || guildState?.meta?.page_revisions?.[pageKey]
+      || action.result?.revision
+      || action.result?.current_revision
+      || null;
+    controlState.reconcile(pageKey, action.result || { outcome: 'saved' }, guildState, revision);
+    announcePageState(pageKey);
+    renderMain();
+    if (controlState.get(pageKey).status === 'saved') {
+      setTimeout(() => {
+        controlState.settleSaved(pageKey);
+        announcePageState(pageKey);
+      }, 2500);
+    }
+  } catch (error) {
+    controlState.markSaveError(pageKey, error.message);
+    announcePageState(pageKey);
+  }
 }
 
 function installThemeControls() {

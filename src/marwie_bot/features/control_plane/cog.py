@@ -21,6 +21,8 @@ from marwie_bot.features.configuration.service import FeatureConfigService, Reso
 from marwie_bot.features.control_plane.domain import ControlActionRecord, ControlActionType
 from marwie_bot.features.control_plane.executor import ActionRejected, ControlActionExecutor
 from marwie_bot.features.control_plane.notification_panel import NotificationRoleView
+from marwie_bot.features.control_plane.page_revisions import build_page_revisions
+from marwie_bot.features.control_plane.page_save_executor import PageSaveExecutor
 from marwie_bot.features.control_plane.repository import SQLAlchemyControlRepository
 from marwie_bot.features.control_plane.snapshot import GuildSnapshotBuilder
 from marwie_bot.features.control_plane.validation import validate_action_payload
@@ -69,6 +71,7 @@ class ControlPlaneCog(commands.Cog):
         self.repository = repository
         self.executor = executor
         self.snapshots = snapshots
+        self.page_saves = PageSaveExecutor(bot=bot, executor=executor, snapshots=snapshots)
         self.worker_id = f"rob-bot:{_worker_version()}"
         self._drain_lock = asyncio.Lock()
         self._startup_lock = asyncio.Lock()
@@ -79,6 +82,11 @@ class ControlPlaneCog(commands.Cog):
         if guild is None:
             return
         snapshot = await self.snapshots.build(guild)
+        snapshot = dict(snapshot)
+        snapshot["meta"] = {
+            **dict(snapshot.get("meta") or {}),
+            "page_revisions": build_page_revisions(snapshot),
+        }
         await self.repository.upsert_snapshot(guild.id, snapshot, self.worker_id)
 
     async def _register_notification_views(self) -> None:
@@ -92,8 +100,25 @@ class ControlPlaneCog(commands.Cog):
             else:
                 self.bot.add_view(view, message_id=panel.message_id)
 
+    @staticmethod
+    def _affects_quiz_scheduler(action: ControlActionRecord) -> bool:
+        if action.action_type in _QUIZ_SCHEDULER_ACTIONS:
+            return True
+        if action.action_type is not ControlActionType.SAVE_PAGE:
+            return False
+        for change in action.payload.get("changes", []):
+            if not isinstance(change, dict):
+                continue
+            try:
+                nested = ControlActionType(str(change.get("action_type") or ""))
+            except ValueError:
+                continue
+            if nested in _QUIZ_SCHEDULER_ACTIONS:
+                return True
+        return False
+
     def _notify_runtime_schedulers(self, action: ControlActionRecord) -> None:
-        if action.action_type not in _QUIZ_SCHEDULER_ACTIONS:
+        if not self._affects_quiz_scheduler(action):
             return
         cog = self.bot.get_cog("QuizzesCog")
         if cog is not None and hasattr(cog, "notify_scheduler"):
@@ -121,6 +146,8 @@ class ControlPlaneCog(commands.Cog):
     async def _execute_action(self, action: ControlActionRecord) -> dict[str, Any]:
         if action.action_type is ControlActionType.REFRESH_SNAPSHOT:
             return await self._execute_snapshot_refresh(action)
+        if action.action_type is ControlActionType.SAVE_PAGE:
+            return await self.page_saves.execute(action)
         return await self.executor.execute(action)
 
     async def _process_action(self, action: ControlActionRecord) -> None:

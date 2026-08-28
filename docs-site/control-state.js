@@ -20,6 +20,8 @@ function pageState(definition) {
     saveError: null,
     conflictRevision: null,
     savedAt: null,
+    pendingRequest: null,
+    retryChanges: [],
   };
 }
 
@@ -31,7 +33,7 @@ function recalculate(state) {
   }
   state.errors = state.definition.validateDraft?.(state.draft) || {};
   const diff = state.definition.diffDraft(state.persisted, state.draft) || [];
-  state.dirty = diff.length > 0;
+  state.dirty = diff.length > 0 || state.retryChanges.length > 0;
   if (state.status !== 'saving' && state.status !== 'conflict') {
     state.status = state.dirty ? 'dirty' : 'clean';
   }
@@ -104,6 +106,8 @@ export function createControlStateStore() {
       state.dirty = false;
       state.saveError = null;
       state.conflictRevision = null;
+      state.pendingRequest = null;
+      state.retryChanges = [];
       state.status = 'clean';
       return state;
     },
@@ -122,16 +126,18 @@ export function createControlStateStore() {
       recalculate(state);
       if (!this.canSave(pageKey)) throw new Error('This page does not have a meaningful valid save target.');
       const diff = state.definition.diffDraft(state.persisted, state.draft) || [];
+      const changes = diff.length > 0 ? diff : clone(state.retryChanges);
       return state.definition.buildSaveRequest
-        ? state.definition.buildSaveRequest(diff, state.revision)
-        : { page_key: pageKey, base_revision: state.revision, changes: diff };
+        ? state.definition.buildSaveRequest(changes, state.revision)
+        : { page_key: pageKey, base_revision: state.revision, changes };
     },
 
-    markSaving(pageKey) {
+    markSaving(pageKey, request = null) {
       const state = requireState(pageKey);
       if (!this.canSave(pageKey)) throw new Error('This page cannot be saved in its current state.');
       state.status = 'saving';
       state.saveError = null;
+      state.pendingRequest = request ? clone(request) : null;
       return state;
     },
 
@@ -139,6 +145,7 @@ export function createControlStateStore() {
       const state = requireState(pageKey);
       state.status = state.dirty ? 'dirty' : 'clean';
       state.saveError = String(error || 'Save failed.');
+      state.pendingRequest = null;
       return state;
     },
 
@@ -166,16 +173,24 @@ export function createControlStateStore() {
         state.mode = 'read';
         state.status = 'saved';
         state.savedAt = Date.now();
+        state.pendingRequest = null;
+        state.retryChanges = [];
         return state;
       }
 
       if (result?.outcome === 'conflict') {
         state.status = 'conflict';
         state.conflictRevision = result.current_revision || revision || null;
+        state.pendingRequest = null;
         return recalculate(state);
       }
 
-      // Partial external failure keeps the user's unresolved intended draft.
+      // Partial external failure keeps both the user's draft and any operation
+      // whose side effect remains unresolved after persisted state reconciles.
+      const pendingChanges = state.pendingRequest?.changes || [];
+      const applied = new Set(result?.applied_indices || []);
+      state.retryChanges = pendingChanges.filter((_change, index) => !applied.has(index));
+      state.pendingRequest = null;
       state.mode = 'edit';
       state.status = 'dirty';
       return recalculate(state);

@@ -58,3 +58,12 @@ test('the Control app hydrates registered pages and installs shared state guards
   assert.match(source, /hydrateControlPages\(/);
   assert.match(source, /installControlStateGuards\(/);
 });
+
+test('registered save requests use the canonical page-save client and reconcile authoritative state', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const source = await readFile(new URL('../docs-site/control-app.js', import.meta.url), 'utf8');
+  assert.match(source, /enqueuePageSave\(/);
+  assert.match(source, /waitForAction\(/);
+  assert.match(source, /controlState\.reconcile\(/);
+  assert.match(source, /loadGuildState\(/);
+});

@@ -16,6 +16,7 @@ class ControlActionStatus(StrEnum):
 
 class ControlActionType(StrEnum):
     REFRESH_SNAPSHOT = "refresh_snapshot"
+    SAVE_PAGE = "save_page"
     SET_RESOURCE = "set_resource"
     CLEAR_RESOURCE = "clear_resource"
     APPLY_AUTO_SETUP = "apply_auto_setup"

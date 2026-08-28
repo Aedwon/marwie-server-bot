@@ -65,3 +65,24 @@ test('partial save keeps unresolved intended differences and conflict remains di
   assert.equal(store.get('/control/community/reputation').status, 'conflict');
   assert.equal(store.get('/control/community/reputation').conflictRevision, 'd'.repeat(64));
 });
+
+test('partial external failure remains retryable when persisted configuration already matches the draft', () => {
+  const store = freshStore();
+  const key = '/control/community/reputation';
+  store.beginEdit(key);
+  store.updateDraft(key, draft => { draft.builder = 60; });
+  const request = store.buildSaveRequest(key);
+  store.markSaving(key, request);
+  store.reconcile(
+    key,
+    { outcome: 'partial', applied_indices: [], failed_indices: [0] },
+    { reputation: { builder: 60, contributor: 150, mentor: 500 } },
+    'e'.repeat(64),
+  );
+  const state = store.get(key);
+  assert.equal(state.dirty, true);
+  assert.equal(state.retryChanges.length, 1);
+  const retry = store.buildSaveRequest(key);
+  assert.deepEqual(retry.changes, request.changes);
+  assert.equal(retry.base_revision, 'e'.repeat(64));
+});
