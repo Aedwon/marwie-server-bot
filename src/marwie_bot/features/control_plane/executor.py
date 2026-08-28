@@ -17,6 +17,7 @@ from marwie_bot.features.configuration.provisioning import (
 )
 from marwie_bot.features.configuration.service import FeatureConfigService, ResourceService
 from marwie_bot.features.control_plane.domain import ControlActionRecord, ControlActionType
+from marwie_bot.features.control_plane.mappings import serialize_mapping_review, scoped_mapping_plan
 from marwie_bot.features.control_plane.notification_panel import upsert_notification_panel
 from marwie_bot.features.control_plane.repository import SQLAlchemyControlRepository
 from marwie_bot.features.control_plane.snapshot import serialize_setup_plan
@@ -128,6 +129,8 @@ class ControlActionExecutor:
                 return {"key": key.value, "cleared": changed}
             case ControlActionType.APPLY_AUTO_SETUP:
                 return await self._apply_auto_setup(guild, actor, payload)
+            case ControlActionType.APPLY_MAPPING_SUGGESTIONS:
+                return await self._apply_mapping_suggestions(guild, actor, payload)
             case ControlActionType.SET_FEATURE:
                 feature = FeatureName(str(payload["feature"]))
                 feature_record = await self.features.set_enabled(
@@ -276,6 +279,41 @@ class ControlActionExecutor:
             )
         connected = await self.provisioner.connect_existing(guild, actor.id, current)
         changed = await self.provisioner.apply_mutations(guild, actor.id, current)
+        return {
+            "connected": [item.key.value for item in connected],
+            "changed": [item.key.value for item in changed],
+        }
+
+    async def _apply_mapping_suggestions(
+        self, guild: discord.Guild, actor: discord.Member, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        current = await self.provisioner.discover(guild)
+        review = serialize_mapping_review(current)
+        if review["plan_hash"] != payload["plan_hash"]:
+            raise ActionRejected(
+                "Server resources changed after review. Review suggested mappings again before applying."
+            )
+
+        expected_items = [
+            {
+                "key": item["key"],
+                "action": item["action"],
+                "target_id": int(item["target"]["id"]) if item["target"] is not None else None,
+            }
+            for item in review["proposed"]
+        ]
+        if payload["items"] != expected_items:
+            raise ActionRejected(
+                "The mapping review no longer matches the approved resource scope. Review it again."
+            )
+        if payload["confirmed_keys"] != review["required_confirmations"]:
+            raise ActionRejected(
+                "Every resource creation or replacement requires confirmation before applying."
+            )
+
+        scoped = scoped_mapping_plan(current)
+        connected = await self.provisioner.connect_existing(guild, actor.id, scoped)
+        changed = await self.provisioner.apply_mutations(guild, actor.id, scoped)
         return {
             "connected": [item.key.value for item in connected],
             "changed": [item.key.value for item in changed],
