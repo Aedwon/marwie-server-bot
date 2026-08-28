@@ -95,6 +95,13 @@ def _require_ownership(page_key: str, action_type: str, payload: dict[str, Any])
         if str(payload.get("key", "")) not in expected:
             raise ValueError("That Discord mapping is not owned by this Mappings page.")
 
+    if (
+        page_key == "/control/utilities/notification-roles"
+        and action_type == "save_notification_panel"
+        and payload.get("channel_id") is not None
+    ):
+        raise ValueError("Notification role destination is owned by Mappings.")
+
 
 def normalize_page_save_payload(
     raw_payload: dict[str, Any] | None,
