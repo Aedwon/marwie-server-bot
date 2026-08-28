@@ -1,0 +1,192 @@
+.analytics-page,
+.workflow-page {
+  width: min(100%, 980px);
+  margin: 0 auto;
+  min-width: 0;
+}
+
+.analytics-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.analytics-page-header h1,
+.workflow-page-header h1,
+.analytics-settings h2,
+.workflow-section h2 {
+  margin: 0;
+}
+
+.analytics-page-header > div > p:last-child,
+.workflow-page-header > p:last-child,
+.analytics-settings p,
+.analytics-metric-label,
+.analytics-metric-detail,
+.workflow-section p,
+.workflow-section li,
+.analytics-period {
+  color: var(--control-muted, var(--muted, #6e6e73));
+}
+
+.analytics-page-header > div > p:last-child,
+.workflow-page-header > p:last-child {
+  margin: 8px 0 0;
+  line-height: 1.55;
+}
+
+.analytics-period {
+  display: flex;
+  gap: 10px 20px;
+  flex-wrap: wrap;
+  padding: 12px 0 18px;
+  border-bottom: 1px solid var(--control-border);
+  font-size: 0.82rem;
+}
+
+.analytics-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.analytics-metric,
+.analytics-settings,
+.workflow-section {
+  min-width: 0;
+  border: 1px solid var(--control-border);
+  border-radius: 14px;
+  background: var(--page-surface, #fff);
+}
+
+.analytics-metric {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+}
+
+.analytics-metric strong {
+  font-size: clamp(1.45rem, 4vw, 2rem);
+  line-height: 1.05;
+}
+
+.analytics-metric-label,
+.analytics-metric-detail,
+.analytics-channel-label {
+  font-size: 0.8rem;
+}
+
+.analytics-settings {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+  padding: 18px;
+}
+
+.analytics-settings p {
+  margin: 6px 0 0;
+}
+
+.analytics-toggle,
+.analytics-channel-row,
+.analytics-page-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.analytics-toggle {
+  min-height: 44px;
+}
+
+.analytics-toggle input {
+  width: 18px;
+  height: 18px;
+}
+
+.analytics-channel-row {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.analytics-channel-row > div {
+  display: grid;
+  gap: 4px;
+}
+
+.analytics-channel-row a,
+.workflow-links a {
+  color: inherit;
+  font-weight: 650;
+}
+
+.analytics-page-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.analytics-page-message {
+  color: var(--bad, #b42318);
+}
+
+.workflow-page-header {
+  margin-bottom: 24px;
+}
+
+.workflow-sections {
+  display: grid;
+  gap: 12px;
+}
+
+.workflow-section {
+  padding: 18px;
+}
+
+.workflow-section p,
+.workflow-section ol {
+  margin: 10px 0 0;
+  line-height: 1.6;
+}
+
+.workflow-section ol {
+  padding-left: 22px;
+}
+
+.workflow-section li + li {
+  margin-top: 8px;
+}
+
+.workflow-links {
+  display: flex;
+  gap: 8px 16px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+@media (max-width: 720px) {
+  .analytics-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analytics-page-header > .control-button,
+  .analytics-page-actions .control-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 460px) {
+  .analytics-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .analytics-metric,
+  .analytics-settings,
+  .workflow-section {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+}
