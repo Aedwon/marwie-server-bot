@@ -146,7 +146,7 @@ function buildLegacyMount({
   };
 }
 
-test('canonical feature destinations detach Commands-only legacy controls and restore them off-page', () => {
+test('remaining transitional feature destinations detach Commands-only legacy controls and restore them off-page', () => {
   const cases = [
     {
       path: '/control/community/reputation',
@@ -154,14 +154,6 @@ test('canonical feature destinations detach Commands-only legacy controls and re
       legitimateId: 'thresholdEditor',
       restrictedId: 'repReviewBtn',
       restrictedOwnerTag: 'details',
-    },
-    {
-      path: '/control/utilities/ticket-configuration',
-      sectionId: 'tickets',
-      legitimateId: 'ticketTypeEditor',
-      restrictedId: 'refreshTicketPanel',
-      restrictedOwnerClasses: ['row-action', 'dependent-action'],
-      restrictedDataset: { prototypeAction: 'Post ticket panel' },
     },
     {
       path: '/control/content/feeds',
