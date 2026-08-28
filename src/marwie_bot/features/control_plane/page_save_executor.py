@@ -109,11 +109,7 @@ class PageSaveExecutor:
 
             if action_type is ControlActionType.SAVE_NOTIFICATION_PANEL:
                 resource = await self.executor.resources.get(guild.id, ResourceKey.ROLE_PANEL)
-                channel = (
-                    guild.get_channel(resource.discord_id)
-                    if resource is not None
-                    else None
-                )
+                channel = guild.get_channel(resource.discord_id) if resource is not None else None
                 if not isinstance(channel, discord.TextChannel):
                     raise ActionRejected(
                         "Configure the notification role panel destination in Mappings first."
