@@ -146,7 +146,7 @@ function buildLegacyMount({
   };
 }
 
-test('canonical feature destinations detach Commands-only legacy controls and restore them off-page', () => {
+test('remaining transitional feature destinations detach Commands-only legacy controls and restore them off-page', () => {
   const cases = [
     {
       path: '/control/community/reputation',
@@ -162,14 +162,6 @@ test('canonical feature destinations detach Commands-only legacy controls and re
       restrictedId: 'refreshTicketPanel',
       restrictedOwnerClasses: ['row-action', 'dependent-action'],
       restrictedDataset: { prototypeAction: 'Post ticket panel' },
-    },
-    {
-      path: '/control/content/feeds',
-      sectionId: 'feeds',
-      legitimateId: 'feedSourceForm',
-      restrictedId: 'pollFeeds',
-      restrictedOwnerClasses: ['row-action', 'dependent-action'],
-      restrictedDataset: { prototypeAction: 'Poll feeds' },
     },
   ];
 
@@ -215,6 +207,30 @@ test('canonical feature destinations detach Commands-only legacy controls and re
       'detached legacy controls must be restored outside the canonical feature page',
     );
   }
+});
+
+test('canonical Feeds leaves the entire legacy feed section outside the mounted page', () => {
+  const fixture = buildLegacyMount({
+    sectionId: 'feeds',
+    legitimateId: 'feedSourceForm',
+    restrictedId: 'pollFeeds',
+    restrictedOwnerClasses: ['row-action', 'dependent-action'],
+    restrictedDataset: { prototypeAction: 'Poll feeds' },
+  });
+
+  mountControlDestination({
+    main: fixture.main,
+    destination: resolveControlRoute('/control/content/feeds'),
+    legacyRoot: fixture.legacyRoot,
+    renderFallback: destination => `<h1>${destination.label}</h1>`,
+  });
+
+  assert.equal(fixture.main.querySelector('#feedSourceForm'), null);
+  assert.equal(fixture.main.querySelector('#pollFeeds'), null);
+  assert.match(fixture.main.innerHTML, /Feeds/);
+  assert.equal(fixture.legacyRoot.querySelector('#feedSourceForm'), fixture.legitimate);
+  assert.equal(fixture.legacyRoot.querySelector('#pollFeeds'), fixture.restrictedControl);
+  assert.equal(fixture.restrictedControl.executionCount, 0);
 });
 
 test('legacy markup and runtime retain the three Commands-only actions outside canonical ownership', () => {
