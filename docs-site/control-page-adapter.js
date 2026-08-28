@@ -1,6 +1,4 @@
 const LEGACY_SECTION_BY_PATH = Object.freeze({
-  '/control/community/reputation': 'reputation',
-  '/control/community/quizzes': 'quizzes',
   '/control/content/feeds': 'feeds',
   '/control/content/announcements': 'publishing',
   '/control/content/live': 'publishing',
@@ -8,25 +6,6 @@ const LEGACY_SECTION_BY_PATH = Object.freeze({
 });
 
 const LEGACY_MOUNT_PLAN_BY_PATH = Object.freeze({
-  '/control/community/reputation': Object.freeze({
-    sections: Object.freeze(['features', 'reputation']),
-    featureKeys: Object.freeze(['reputation']),
-    commandsOnlyControls: Object.freeze([
-      Object.freeze({ controlSelector: '#repReviewBtn', ownerSelector: 'details' }),
-    ]),
-  }),
-  '/control/community/quizzes': Object.freeze({
-    sections: Object.freeze(['features', 'quizzes']),
-    featureKeys: Object.freeze(['quizzes']),
-  }),
-  '/control/community/voice-coworking': Object.freeze({
-    sections: Object.freeze(['features']),
-    featureKeys: Object.freeze(['voice', 'coworking']),
-  }),
-  '/control/community/showcase': Object.freeze({
-    sections: Object.freeze(['features']),
-    featureKeys: Object.freeze(['showcase']),
-  }),
   '/control/content/feeds': Object.freeze({
     sections: Object.freeze(['features', 'feeds']),
     featureKeys: Object.freeze(['ai_updates']),
