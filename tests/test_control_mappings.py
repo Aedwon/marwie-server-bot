@@ -3,7 +3,7 @@ from __future__ import annotations
 import importlib
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -65,7 +65,7 @@ def mappings_module() -> Any:
     return importlib.import_module("marwie_bot.features.control_plane.mappings")
 
 
-def _blueprint(key: ResourceKey):
+def _blueprint(key: ResourceKey) -> Any:
     return next(item for item in AUTO_SETUP_RESOURCES if item.key is key)
 
 
@@ -73,12 +73,20 @@ def _resource(discord_id: int, name: str) -> SimpleNamespace:
     return SimpleNamespace(id=discord_id, name=name)
 
 
+def _guild() -> Any:
+    return SimpleNamespace(id=1)
+
+
+def _actor() -> Any:
+    return SimpleNamespace(id=42)
+
+
 def _discovery(
     key: ResourceKey,
     action: DiscoveryAction,
     *,
-    target: SimpleNamespace | None = None,
-    current: SimpleNamespace | None = None,
+    target: Any | None = None,
+    current: Any | None = None,
 ) -> ResourceDiscovery:
     return ResourceDiscovery(_blueprint(key), action, target, current)
 
@@ -172,14 +180,14 @@ class FakeProvisioner:
 
 def _executor(provisioner: FakeProvisioner) -> ControlActionExecutor:
     executor = object.__new__(ControlActionExecutor)
-    executor.provisioner = provisioner
+    executor.provisioner = cast(Any, provisioner)
     return executor
 
 
 def _scoped_action_type() -> ControlActionType:
     action = getattr(ControlActionType, "APPLY_MAPPING_SUGGESTIONS", None)
     assert action is not None, "Wave 5 requires a scoped reviewed-Mappings action type."
-    return action
+    return cast(ControlActionType, action)
 
 
 def test_mapping_backend_owns_exact_approved_resources_only() -> None:
@@ -335,16 +343,20 @@ async def test_scoped_apply_rediscovery_then_mutates_only_the_reviewed_approved_
     payload = validate_action_payload(action, _browser_review_payload(review))
 
     result = await executor._apply_mapping_suggestions(
-        SimpleNamespace(id=1),
-        SimpleNamespace(id=42),
+        _guild(),
+        _actor(),
         payload,
     )
 
     assert result == {"connected": [], "changed": []}
     assert provisioner.connected_plan is not None
     assert provisioner.applied_plan is not None
-    connected_keys = {item.blueprint.key for item in provisioner.connected_plan.resources}
-    applied_keys = {item.blueprint.key for item in provisioner.applied_plan.resources}
+    connected_keys = {
+        item.blueprint.key for item in cast(AutoSetupPlan, provisioner.connected_plan).resources
+    }
+    applied_keys = {
+        item.blueprint.key for item in cast(AutoSetupPlan, provisioner.applied_plan).resources
+    }
     assert connected_keys <= APPROVED_KEYS
     assert applied_keys <= APPROVED_KEYS
     assert not connected_keys & EXCLUDED_KEYS
@@ -367,9 +379,7 @@ async def test_scoped_apply_rejects_stale_plan_before_any_mutation() -> None:
     payload = validate_action_payload(action, raw)
 
     with pytest.raises(ActionRejected, match="changed after review"):
-        await executor._apply_mapping_suggestions(
-            SimpleNamespace(id=1), SimpleNamespace(id=42), payload
-        )
+        await executor._apply_mapping_suggestions(_guild(), _actor(), payload)
 
     assert provisioner.connected_plan is None
     assert provisioner.applied_plan is None
@@ -389,9 +399,7 @@ async def test_scoped_apply_rejects_missing_consequence_confirmation_before_muta
     payload = validate_action_payload(action, raw)
 
     with pytest.raises(ActionRejected, match="confirmation"):
-        await executor._apply_mapping_suggestions(
-            SimpleNamespace(id=1), SimpleNamespace(id=42), payload
-        )
+        await executor._apply_mapping_suggestions(_guild(), _actor(), payload)
 
     assert provisioner.connected_plan is None
     assert provisioner.applied_plan is None
@@ -412,9 +420,7 @@ async def test_scoped_apply_rejects_review_scope_mismatch_before_mutation() -> N
     payload = validate_action_payload(action, raw)
 
     with pytest.raises(ActionRejected, match="review"):
-        await executor._apply_mapping_suggestions(
-            SimpleNamespace(id=1), SimpleNamespace(id=42), payload
-        )
+        await executor._apply_mapping_suggestions(_guild(), _actor(), payload)
 
     assert provisioner.connected_plan is None
     assert provisioner.applied_plan is None
@@ -428,8 +434,8 @@ async def test_legacy_apply_auto_setup_remains_full_plan_compatible() -> None:
     plan_hash = serialize_setup_plan(plan)["plan_hash"]
 
     await executor._apply_auto_setup(
-        SimpleNamespace(id=1),
-        SimpleNamespace(id=42),
+        _guild(),
+        _actor(),
         {"plan_hash": plan_hash},
     )
 

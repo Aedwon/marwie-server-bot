@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 
 from marwie_bot.config.resources import ResourceKey
 from marwie_bot.features.configuration.provisioning import (
@@ -16,14 +17,20 @@ from marwie_bot.features.configuration.provisioning import (
 MODULE_PATH = Path("src/marwie_bot/features/control_plane/mappings.py")
 
 
-def _module():
+def _module() -> Any:
     assert MODULE_PATH.exists(), "Wave 5 must provide the scoped Mappings backend module."
     return importlib.import_module("marwie_bot.features.control_plane.mappings")
 
 
-def _discovery(key: ResourceKey, action: DiscoveryAction, target_id: int | None = None):
+def _discovery(
+    key: ResourceKey,
+    action: DiscoveryAction,
+    target_id: int | None = None,
+) -> ResourceDiscovery:
     blueprint = next(item for item in AUTO_SETUP_RESOURCES if item.key is key)
-    target = SimpleNamespace(id=target_id, name=blueprint.name) if target_id is not None else None
+    target: Any = (
+        SimpleNamespace(id=target_id, name=blueprint.name) if target_id is not None else None
+    )
     return ResourceDiscovery(blueprint, action, target, None)
 
 
