@@ -42,6 +42,16 @@ let snapshot = null;
 let removeAccountMenu = () => {};
 let removePageInteractions = () => {};
 
+function installMappingStyles() {
+  if (document.querySelector('link[data-control-mappings-styles]')) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = '/control-mappings.css?v=1';
+  link.dataset.controlMappingsStyles = 'true';
+  document.head.append(link);
+}
+
+installMappingStyles();
 registerMappingPages();
 
 function readJson(key, fallback) {
