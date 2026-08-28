@@ -207,8 +207,7 @@ async def test_weekly_analytics_uses_exact_utc_168_hour_window_and_only_v1_metri
             "anonymous_questions": 1,
             "reputation_events": 1,
         }
-        serialized = repr(projection).lower()
-        for forbidden in (
+        for forbidden_key in (
             "user_id",
             "author_id",
             "message_id",
@@ -218,7 +217,7 @@ async def test_weekly_analytics_uses_exact_utc_168_hour_window_and_only_v1_metri
             "build_help",
             "solutions",
         ):
-            assert forbidden not in serialized
+            assert forbidden_key not in projection
     finally:
         await database.close()
 
