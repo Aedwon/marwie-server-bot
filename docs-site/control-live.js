@@ -10,6 +10,19 @@
     busy: false,
   };
 
+  const canonicalHost = document.querySelector('#controlLegacyHost');
+
+  function canonicalGuildId(session) {
+    if (canonicalHost && session.guilds.length) {
+      return String(session.guilds[0].id);
+    }
+
+    const remembered = localStorage.getItem('rob-control-guild');
+    return session.guilds.some(guild => String(guild.id) === remembered)
+      ? remembered
+      : String(session.guilds[0].id);
+  }
+
   const ADMIN_SECTIONS = new Set(['setup', 'features', 'tickets', 'logs']);
   const RESOURCE_KIND = {
     moderation_log: 'text', message_log: 'text', bot_log: 'text', ticket_panel: 'text',
@@ -83,10 +96,15 @@
   }
 
   function status(message, tone = '') {
-    const node = document.querySelector('#controlLiveStatus');
-    if (!node) return;
-    node.textContent = message || '';
-    node.dataset.tone = tone;
+    const nodes = [
+      document.querySelector('#controlLiveStatus'),
+      canonicalHost ? document.querySelector('#controlGlobalStatus') : null,
+    ].filter(Boolean);
+
+    for (const node of nodes) {
+      node.textContent = message || '';
+      node.dataset.tone = tone;
+    }
   }
 
   function prepareShell() {
@@ -149,6 +167,15 @@
   function renderIdentity() {
     const identity = document.querySelector('.identity-cluster');
     if (!identity) return;
+
+    if (canonicalHost) {
+      const user = live.session.user;
+      identity.innerHTML = `<div class="mock-user">
+        ${user.avatar_url ? `<img class="avatar" src="${esc(user.avatar_url)}" alt="">` : `<span class="avatar">${esc((user.name || '?')[0])}</span>`}
+        <span><b>${esc(user.name)}</b><small>Canonical Control account</small></span>
+      </div>`;
+      return;
+    }
     const guildOptions = live.session.guilds.map(guild => `<option value="${esc(guild.id)}"${String(guild.id) === String(live.guildId) ? ' selected' : ''}>${esc(guild.name)}</option>`).join('');
     const user = live.session.user;
     identity.innerHTML = `
@@ -886,8 +913,7 @@
         status('No Discord server is currently both manageable by you and reporting Rob-bot control state.', 'bad');
         return;
       }
-      const remembered = localStorage.getItem('rob-control-guild');
-      live.guildId = session.guilds.some(guild => String(guild.id) === remembered) ? remembered : String(session.guilds[0].id);
+      live.guildId = canonicalGuildId(session);
       renderIdentity();
       await loadGuild();
     } catch (error) {

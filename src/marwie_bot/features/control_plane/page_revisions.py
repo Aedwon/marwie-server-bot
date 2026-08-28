@@ -25,7 +25,6 @@ CHANNEL_RESOURCE_KEYS = frozenset(
         "showcase_forum",
         "app_of_the_week",
         "collab_lfg",
-        "bot_log",
     }
 )
 
@@ -134,10 +133,6 @@ def _material(snapshot: dict[str, Any], page_key: str) -> Any:
         return {"feature": _feature_enabled(snapshot, "anonymous_questions")}
     if page_key == "/control/analytics":
         return {"feature": _feature_enabled(snapshot, "analytics")}
-    if page_key == "/control/workflows/moderation":
-        return {"feature": _feature_enabled(snapshot, "moderation")}
-    if page_key in {"/control/workflows/ticket-handling", "/control/workflows/events"}:
-        return {}
     if page_key == "/control/mappings/channels":
         return {"resources": _resources(snapshot, CHANNEL_RESOURCE_KEYS)}
     if page_key == "/control/mappings/roles":
@@ -159,9 +154,6 @@ PAGE_REVISION_KEYS = (
     "/control/utilities/notification-roles",
     "/control/utilities/anonymous-questions",
     "/control/analytics",
-    "/control/workflows/moderation",
-    "/control/workflows/ticket-handling",
-    "/control/workflows/events",
     "/control/mappings/channels",
     "/control/mappings/roles",
     "/control/mappings/categories",

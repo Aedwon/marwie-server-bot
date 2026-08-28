@@ -23,7 +23,7 @@ PAGE_SAVE_ACTIONS_BY_PAGE: dict[str, frozenset[str]] = {
     "/control/utilities/notification-roles": frozenset({"save_notification_panel"}),
     "/control/utilities/anonymous-questions": frozenset({"set_feature"}),
     "/control/analytics": frozenset({"set_feature"}),
-    "/control/workflows/moderation": frozenset({"set_feature"}),
+    "/control/workflows/moderation": frozenset(),
     "/control/workflows/ticket-handling": frozenset(),
     "/control/workflows/events": frozenset(),
     "/control/mappings/channels": frozenset({"set_resource", "clear_resource"}),
@@ -42,7 +42,6 @@ FEATURE_OWNER: dict[str, frozenset[str]] = {
     "/control/utilities/ticket-configuration": frozenset({"tickets"}),
     "/control/utilities/anonymous-questions": frozenset({"anonymous_questions"}),
     "/control/analytics": frozenset({"analytics"}),
-    "/control/workflows/moderation": frozenset({"moderation"}),
 }
 
 ROLE_RESOURCE_KEYS = frozenset(
@@ -66,7 +65,6 @@ CHANNEL_RESOURCE_KEYS = frozenset(
         "showcase_forum",
         "app_of_the_week",
         "collab_lfg",
-        "bot_log",
     }
 )
 

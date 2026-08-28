@@ -1,8 +1,5 @@
 (() => {
-  const core = document.createElement('script');
-  core.src = '/control-core.js?v=2';
-  core.addEventListener('load', refineControlPrototype);
-  document.head.appendChild(core);
+  refineControlPrototype();
 
   function refineControlPrototype() {
     const style = document.createElement('style');

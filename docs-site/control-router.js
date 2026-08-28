@@ -101,7 +101,7 @@ export function resolveControlRoute(pathname, lastDestination = null, lastByDoma
   const match = normalized.match(/^\/control\/([^/]+)(?:\/.*)?$/);
   if (match) {
     const domain = DOMAIN_BY_KEY.get(match[1]);
-    if (domain) return destinationForDomain(domain.key, lastByDomain);
+    if (domain) return firstDestinationForDomain(domain.key);
   }
   return DESTINATION_BY_PATH.get(CONTROL_FALLBACK_PATH);
 }

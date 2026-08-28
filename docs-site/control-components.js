@@ -36,9 +36,20 @@ export function identityMarkup(session, guild) {
   const avatar = session.user?.avatar_url
     ? `<img src="${escapeHtml(session.user.avatar_url)}" alt="">`
     : `<span class="control-avatar" aria-hidden="true">${escapeHtml((session.user?.name || '?').slice(0, 1))}</span>`;
-  return `<div class="control-context">
-      <span class="control-guild-name">${escapeHtml(guild?.name || 'Rob-bot server')}</span>
-      <span class="control-user">${avatar}<span>${escapeHtml(session.user?.name || 'Discord user')}</span></span>
+  return `<div class="control-account">
+      <button class="control-user control-account-trigger" type="button"
+        data-account-trigger aria-haspopup="menu" aria-expanded="false">
+        ${avatar}
+        <span class="control-account-copy">
+          <strong>${escapeHtml(session.user?.name || 'Discord user')}</strong>
+          <small>${escapeHtml(guild?.name || 'Rob-bot server')}</small>
+        </span>
+      </button>
+      <div class="control-account-menu" data-account-menu role="menu" hidden>
+        <a href="/" role="menuitem">Rob-bot Handbook</a>
+        <a href="/commands" role="menuitem">Commands</a>
+        <button type="button" role="menuitem" data-account-sign-out>Sign out</button>
+      </div>
     </div>`;
 }
 
@@ -51,14 +62,18 @@ export function pageMarkup(destination, { authenticated = false, state = null, s
     return `<section class="control-page-section"><h1>Commands</h1><p>Slash-command administration remains documented in the canonical command manual.</p><p><a href="/commands">Open Commands</a></p></section>`;
   }
   if (destination.path === '/control/activity') {
-    return `<section class="control-page-section"><h1>Activity</h1><p data-foundation-placeholder>Administrative history uses the existing durable Control action audit trail. The final Activity UI is intentionally deferred.</p></section>`;
+    return `<section class="control-page-section"><h1>Activity</h1><p>Administrative history is sourced from the durable Control action audit trail.</p></section>`;
   }
 
   const health = snapshot?.fresh ? 'Fresh server state' : 'Server state unavailable';
+  const intro = destination.domain === 'workflows'
+    ? `Operational guidance for ${escapeHtml(destination.label)}. Configuration remains with its owning Control destination or command.`
+    : `Review the current Rob-bot state for ${escapeHtml(destination.label)}.`;
+
   return `<section class="control-page-section" data-page-key="${escapeHtml(destination.path)}">
     <div class="control-page-heading"><div><p class="control-eyebrow">${escapeHtml(destination.domain || 'Control')}</p><h1>${escapeHtml(destination.label)}</h1></div><span class="control-state-chip">${escapeHtml(health)}</span></div>
-    <p class="control-page-intro">This Foundation route is live against the existing Control read boundary. Its domain editor is intentionally left to the assigned migration wave.</p>
-    <div class="control-read-summary" aria-label="Foundation read state">
+    <p class="control-page-intro">${intro}</p>
+    <div class="control-read-summary" aria-label="Current Control state">
       <p><strong>Rob-bot:</strong> ${state?.bot?.online ? 'online' : 'status unavailable'}</p>
       <p><strong>Snapshot:</strong> ${escapeHtml(snapshot?.updated_at || 'not loaded')}</p>
     </div>

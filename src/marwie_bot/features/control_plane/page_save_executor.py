@@ -23,6 +23,37 @@ from marwie_bot.features.control_plane.validation import validate_action_payload
 logger = logging.getLogger(__name__)
 
 
+_DB_ONLY_ACTIONS = frozenset(
+    {
+        ControlActionType.SET_RESOURCE,
+        ControlActionType.CLEAR_RESOURCE,
+        ControlActionType.SET_FEATURE,
+        ControlActionType.SET_LOG_EXCLUSIONS,
+        ControlActionType.UPSERT_TICKET_TYPE,
+        ControlActionType.DISABLE_TICKET_TYPE,
+        ControlActionType.SET_REPUTATION_THRESHOLDS,
+        ControlActionType.SET_QUIZ_SCHEDULE,
+        ControlActionType.ADD_QUIZ_QUESTION,
+        ControlActionType.UPSERT_AI_SOURCE,
+        ControlActionType.DISABLE_AI_SOURCE,
+    }
+)
+
+
+class _PageSaveMutationFailed(Exception):
+    def __init__(
+        self,
+        *,
+        index: int,
+        user_error: str,
+        error_reference: str | None,
+    ) -> None:
+        super().__init__(user_error)
+        self.index = index
+        self.user_error = user_error
+        self.error_reference = error_reference
+
+
 class PageSaveExecutor:
     def __init__(
         self,
@@ -91,6 +122,43 @@ class PageSaveExecutor:
                             f"Rob-bot cannot manage the configured role for `{item['label']}`."
                         )
 
+    async def _execute_change(
+        self,
+        action: ControlActionRecord,
+        index: int,
+        change: dict[str, Any],
+    ) -> dict[str, Any]:
+        nested = replace(
+            action,
+            action_type=ControlActionType(str(change["action_type"])),
+            payload=cast(dict[str, Any], change["payload"]),
+        )
+        try:
+            return await self.executor.execute(nested)
+        except (ActionRejected, ValueError) as error:
+            raise _PageSaveMutationFailed(
+                index=index,
+                user_error=str(error),
+                error_reference=None,
+            ) from error
+        except Exception as error:
+            reference = secrets.token_hex(4).upper()
+            logger.exception(
+                "Page save item failed "
+                "action_id=%s guild_id=%s actor_id=%s "
+                "index=%s error_reference=%s",
+                action.id,
+                action.guild_id,
+                action.actor_id,
+                index,
+                reference,
+            )
+            raise _PageSaveMutationFailed(
+                index=index,
+                user_error="That change failed unexpectedly.",
+                error_reference=reference,
+            ) from error
+
     async def execute(self, action: ControlActionRecord) -> dict[str, Any]:
         guild = self.bot.get_guild(action.guild_id)
         if guild is None:
@@ -124,71 +192,180 @@ class PageSaveExecutor:
         # All known validation and Discord prerequisites are checked before the first mutation.
         await self._preflight(guild, actor, changes)
 
-        items: list[dict[str, Any]] = []
+        items_by_index: dict[int, dict[str, Any]] = {}
         applied_indices: list[int] = []
         failed_indices: list[int] = []
-        failed = False
+
+        database_indices: list[int] = []
+        external_indices: list[int] = []
+
         for index, change in enumerate(changes):
-            if failed:
-                items.append(
-                    {
+            action_type = ControlActionType(str(change["action_type"]))
+            if action_type in _DB_ONLY_ACTIONS:
+                database_indices.append(index)
+            else:
+                external_indices.append(index)
+
+        if database_indices:
+            try:
+                async with self.executor.control.database.transaction():
+                    for index in database_indices:
+                        result = await self._execute_change(
+                            action,
+                            index,
+                            changes[index],
+                        )
+                        items_by_index[index] = {
+                            "index": index,
+                            "action_type": changes[index]["action_type"],
+                            "status": "applied",
+                            "result": result,
+                        }
+            except _PageSaveMutationFailed as failure:
+                failed_indices.append(failure.index)
+                failure_position = database_indices.index(failure.index)
+
+                for position, index in enumerate(database_indices):
+                    change = changes[index]
+                    if position < failure_position:
+                        items_by_index[index] = {
+                            "index": index,
+                            "action_type": change["action_type"],
+                            "status": "rolled_back",
+                        }
+                    elif index == failure.index:
+                        items_by_index[index] = {
+                            "index": index,
+                            "action_type": change["action_type"],
+                            "status": "failed",
+                            "error": failure.user_error,
+                            "error_reference": failure.error_reference,
+                        }
+                    else:
+                        items_by_index[index] = {
+                            "index": index,
+                            "action_type": change["action_type"],
+                            "status": "not_attempted",
+                        }
+
+                for index in external_indices:
+                    change = changes[index]
+                    items_by_index[index] = {
                         "index": index,
                         "action_type": change["action_type"],
                         "status": "not_attempted",
                     }
-                )
-                continue
 
-            nested = replace(
-                action,
-                action_type=ControlActionType(str(change["action_type"])),
-                payload=cast(dict[str, Any], change["payload"]),
-            )
-            try:
-                result = await self.executor.execute(nested)
-            except (ActionRejected, ValueError) as error:
-                failed = True
-                failed_indices.append(index)
-                items.append(
-                    {
-                        "index": index,
-                        "action_type": change["action_type"],
-                        "status": "failed",
-                        "error": str(error),
-                        "error_reference": None,
-                    }
+                after = await self.snapshots.build(guild)
+                revision = page_revision(
+                    after,
+                    str(payload["page_key"]),
                 )
+                return {
+                    "outcome": "partial",
+                    "page_key": payload["page_key"],
+                    "base_revision": payload["base_revision"],
+                    "revision": revision,
+                    "items": [items_by_index[index] for index in range(len(changes))],
+                    "applied_indices": [],
+                    "failed_indices": failed_indices,
+                }
             except Exception:
-                failed = True
-                failed_indices.append(index)
                 reference = secrets.token_hex(4).upper()
                 logger.exception(
-                    "Page save item failed action_id=%s guild_id=%s actor_id=%s index=%s error_reference=%s",
+                    "Page save database transaction failed "
+                    "action_id=%s guild_id=%s actor_id=%s "
+                    "error_reference=%s",
                     action.id,
                     action.guild_id,
                     action.actor_id,
-                    index,
                     reference,
                 )
-                items.append(
-                    {
+                failed_indices.extend(database_indices)
+
+                for index in database_indices:
+                    change = changes[index]
+                    items_by_index[index] = {
                         "index": index,
                         "action_type": change["action_type"],
-                        "status": "failed",
-                        "error": "That change failed unexpectedly.",
+                        "status": "rolled_back",
+                        "error": ("The database changes could not be saved atomically."),
                         "error_reference": reference,
                     }
-                )
-            else:
-                applied_indices.append(index)
-                items.append(
-                    {
+
+                for index in external_indices:
+                    change = changes[index]
+                    items_by_index[index] = {
                         "index": index,
                         "action_type": change["action_type"],
-                        "status": "applied",
-                        "result": result,
+                        "status": "not_attempted",
                     }
+
+                after = await self.snapshots.build(guild)
+                revision = page_revision(
+                    after,
+                    str(payload["page_key"]),
                 )
+                return {
+                    "outcome": "partial",
+                    "page_key": payload["page_key"],
+                    "base_revision": payload["base_revision"],
+                    "revision": revision,
+                    "items": [items_by_index[index] for index in range(len(changes))],
+                    "applied_indices": [],
+                    "failed_indices": failed_indices,
+                }
+            else:
+                applied_indices.extend(database_indices)
+
+        external_failed = False
+        for index in external_indices:
+            change = changes[index]
+
+            if external_failed:
+                items_by_index[index] = {
+                    "index": index,
+                    "action_type": change["action_type"],
+                    "status": "not_attempted",
+                }
+                continue
+
+            try:
+                result = await self._execute_change(
+                    action,
+                    index,
+                    change,
+                )
+            except _PageSaveMutationFailed as failure:
+                external_failed = True
+                failed_indices.append(index)
+                items_by_index[index] = {
+                    "index": index,
+                    "action_type": change["action_type"],
+                    "status": "failed",
+                    "error": failure.user_error,
+                    "error_reference": failure.error_reference,
+                }
+            else:
+                applied_indices.append(index)
+                items_by_index[index] = {
+                    "index": index,
+                    "action_type": change["action_type"],
+                    "status": "applied",
+                    "result": result,
+                }
+
+        items = [
+            items_by_index.get(
+                index,
+                {
+                    "index": index,
+                    "action_type": change["action_type"],
+                    "status": "not_attempted",
+                },
+            )
+            for index, change in enumerate(changes)
+        ]
 
         after = await self.snapshots.build(guild)
         revision = page_revision(after, str(payload["page_key"]))

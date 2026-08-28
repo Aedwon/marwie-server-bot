@@ -77,3 +77,154 @@
   .control-workspace { padding-inline: 16px; }
   .control-primary-nav a, .control-secondary-nav a, .control-nav-domain > button { white-space: normal; overflow-wrap: anywhere; }
 }
+
+/* Foundation R2 transitional shell repairs -------------------------------- */
+
+.control-rail {
+  display: flex;
+  flex-direction: column;
+}
+
+.control-rail-head {
+  align-items: flex-start;
+}
+
+.control-identity {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.control-brand {
+  margin-top: auto;
+}
+
+.control-appearance {
+  margin-top: 12px;
+}
+
+.control-account {
+  position: relative;
+  width: 100%;
+}
+
+.control-account-trigger {
+  width: 100%;
+  padding: 6px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.control-account-trigger:hover {
+  background: color-mix(in srgb, currentColor 6%, transparent);
+}
+
+.control-account-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.control-account-copy strong,
+.control-account-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.control-account-copy strong {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.control-account-copy small {
+  color: var(--control-muted);
+  font-size: 10px;
+}
+
+.control-account-menu {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  padding: 6px;
+  border: 1px solid var(--control-border);
+  border-radius: 10px;
+  background: var(--page-surface-strong, var(--page-surface, #fff));
+  box-shadow: 0 12px 32px rgb(0 0 0 / .16);
+}
+
+.control-account-menu[hidden] {
+  display: none;
+}
+
+.control-account-menu :is(a, button) {
+  width: 100%;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.control-account-menu :is(a, button):hover {
+  background: color-mix(in srgb, currentColor 7%, transparent);
+}
+
+#controlLegacyHost[hidden] {
+  display: none !important;
+}
+
+/*
+ * Transitional adapters expose only capability owned by the canonical page.
+ * Commands-only/manual actions and Discord wiring remain hidden.
+ */
+.control-main[data-page-key="/control/community/reputation"]
+  #reputation > details.control-disclosure {
+  display: none;
+}
+
+.control-main[data-page-key="/control/content/feeds"]
+  #feeds > .row-action.dependent-action {
+  display: none;
+}
+
+.control-main[data-page-key="/control/utilities/ticket-configuration"]
+  #tickets > .field-grid.compact,
+.control-main[data-page-key="/control/utilities/ticket-configuration"]
+  #tickets > .row-action.dependent-action {
+  display: none;
+}
+
+.control-main[data-page-key="/control/content/announcements"]
+  #liveWorkflow {
+  display: none;
+}
+
+.control-main[data-page-key="/control/content/live"]
+  #announcementWorkflow {
+  display: none;
+}
+
+@media (max-width: 944px) {
+  .control-topbar {
+    grid-template-columns: auto 1fr;
+  }
+
+  .control-account-menu {
+    position: static;
+    margin-top: 6px;
+  }
+}

@@ -1,4 +1,7 @@
 import { identityMarkup, navigationMarkup, pageMarkup } from './control-components.js';
+import { installAccountMenu } from './control-account.js';
+import { mountControlDestination } from './control-page-adapter.js';
+import { installThemeControls } from './control-theme.js';
 import { createNavigationState, installDrawerController, navigationModel } from './control-navigation.js';
 import { resolveControlRoute } from './control-router.js';
 import { controlState, hydrateControlPages, installControlStateGuards } from './control-page-registry.js';
@@ -17,12 +20,14 @@ const shell = {
   main: document.querySelector('#controlMain'),
   identity: document.querySelector('#controlIdentity'),
   status: document.querySelector('#controlGlobalStatus'),
+  legacy: document.querySelector('#controlLegacyHost'),
 };
 
 let session = null;
 let guild = null;
 let guildState = null;
 let snapshot = null;
+let removeAccountMenu = () => {};
 
 function readJson(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key) || '') || fallback; } catch { return fallback; }
@@ -61,12 +66,17 @@ function renderNavigation() {
 }
 
 function renderMain() {
-  shell.main.innerHTML = pageMarkup(navState.current, {
-    authenticated: Boolean(session?.authenticated),
-    state: guildState,
-    snapshot,
+  mountControlDestination({
+    main: shell.main,
+    destination: navState.current,
+    legacyRoot: shell.legacy,
+    allowLegacy: Boolean(session?.authenticated),
+    renderFallback: destination => pageMarkup(destination, {
+      authenticated: Boolean(session?.authenticated),
+      state: guildState,
+      snapshot,
+    }),
   });
-  shell.main.dataset.pageKey = navState.current.path;
   shell.main.focus({ preventScroll: true });
 }
 
@@ -97,9 +107,35 @@ async function request(url, options = {}) {
   return data;
 }
 
+function mountIdentity(markup) {
+  removeAccountMenu();
+  shell.identity.innerHTML = markup;
+  removeAccountMenu = installAccountMenu(shell.identity, {
+    onSignOut: signOut,
+  });
+}
+
+async function signOut() {
+  if (!session?.authenticated || !session.csrf_token) return;
+  try {
+    await request('/api/logout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Rob-CSRF': session.csrf_token,
+      },
+      body: '{}',
+    });
+  } catch (error) {
+    setStatus(error.message, 'bad');
+    return;
+  }
+  location.reload();
+}
+
 async function loadSession() {
   session = await request('/api/session');
-  shell.identity.innerHTML = identityMarkup(session, null);
+  mountIdentity(identityMarkup(session, null));
   if (!session.authenticated) {
     guild = null;
     guildState = null;
@@ -112,7 +148,7 @@ async function loadSession() {
   // Product IA intentionally has no server selector. Control uses the first
   // installed/manageable Rob-bot guild returned by the authenticated session.
   guild = session.guilds?.[0] || null;
-  shell.identity.innerHTML = identityMarkup(session, guild);
+  mountIdentity(identityMarkup(session, guild));
   if (!guild) {
     setStatus('No manageable Rob-bot server is available for this account.', 'bad');
     renderMain();
@@ -175,23 +211,6 @@ async function requestRegisteredPageSave(pageKey, request) {
   }
 }
 
-function installThemeControls() {
-  const buttons = [...document.querySelectorAll('[data-theme-choice]')];
-  const media = matchMedia('(prefers-color-scheme: dark)');
-  const apply = preference => {
-    const theme = preference === 'system' ? (media.matches ? 'dark' : 'light') : preference;
-    document.documentElement.dataset.preference = preference;
-    document.documentElement.dataset.theme = theme;
-    localStorage.setItem('rob-doc-theme', preference);
-    buttons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.themeChoice === preference)));
-  };
-  buttons.forEach(button => button.addEventListener('click', () => apply(button.dataset.themeChoice)));
-  media.addEventListener('change', () => {
-    if ((localStorage.getItem('rob-doc-theme') || 'system') === 'system') apply('system');
-  });
-  apply(localStorage.getItem('rob-doc-theme') || 'system');
-}
-
 window.addEventListener('popstate', () => {
   const destination = resolveControlRoute(location.pathname, navState.current.path, navState.lastByDomain);
   navState.select(destination.path);
@@ -206,7 +225,13 @@ installDrawerController({
   closeButton: shell.close,
   mediaQuery: matchMedia(NARROW_QUERY),
 });
-installThemeControls();
+installThemeControls({
+  root: document.documentElement,
+  buttons: [...document.querySelectorAll('[data-theme-choice]')],
+  media: matchMedia('(prefers-color-scheme: dark)'),
+  storage: localStorage,
+  themeColor: document.querySelector('meta[name="theme-color"]'),
+});
 installControlStateGuards({
   getCurrentPageKey: () => navState.current.path,
   onSave: requestRegisteredPageSave,

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { CONTROL_DESTINATIONS } from '../docs-site/control-router.js';
 
 const CANONICAL_DESTINATIONS = [
   '/control/community/reputation','/control/community/quizzes','/control/community/voice-coworking','/control/community/showcase',
@@ -16,14 +17,11 @@ const executorSource = readFileSync(new URL('../src/marwie_bot/features/control_
 const cogSource = readFileSync(new URL('../src/marwie_bot/features/control_plane/cog.py', import.meta.url), 'utf8');
 const snapshotSource = readFileSync(new URL('../src/marwie_bot/features/control_plane/snapshot.py', import.meta.url), 'utf8');
 
-test('approved destination and ownership contract excludes removed or commands-only surfaces', () => {
-  assert.equal(CANONICAL_DESTINATIONS.includes('/control/overview'), false);
-  assert.equal(CANONICAL_DESTINATIONS.some(path => path.includes('build-help')), false);
-  assert.deepEqual(
-    ['adjust_reputation', 'refresh_ticket_panel', 'poll_ai_sources'],
-    ['adjust_reputation', 'refresh_ticket_panel', 'poll_ai_sources'],
-    'commands-only capabilities remain explicit future absence contracts for canonical feature pages',
-  );
+test('approved destination contract is backed by the real router registry', () => {
+  const actual = CONTROL_DESTINATIONS.map(item => item.path);
+  assert.deepEqual(actual, CANONICAL_DESTINATIONS);
+  assert.equal(actual.includes('/control/overview'), false);
+  assert.equal(actual.some(path => path.includes('build-help')), false);
 });
 
 test('browser mutations remain idempotent, rate bounded and fresh-snapshot gated', () => {
