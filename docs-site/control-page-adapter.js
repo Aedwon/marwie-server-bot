@@ -11,6 +11,9 @@ const LEGACY_MOUNT_PLAN_BY_PATH = Object.freeze({
   '/control/community/reputation': Object.freeze({
     sections: Object.freeze(['features', 'reputation']),
     featureKeys: Object.freeze(['reputation']),
+    commandsOnlyControls: Object.freeze([
+      Object.freeze({ controlSelector: '#repReviewBtn', ownerSelector: 'details' }),
+    ]),
   }),
   '/control/community/quizzes': Object.freeze({
     sections: Object.freeze(['features', 'quizzes']),
@@ -27,6 +30,12 @@ const LEGACY_MOUNT_PLAN_BY_PATH = Object.freeze({
   '/control/content/feeds': Object.freeze({
     sections: Object.freeze(['features', 'feeds']),
     featureKeys: Object.freeze(['ai_updates']),
+    commandsOnlyControls: Object.freeze([
+      Object.freeze({
+        controlSelector: '[data-prototype-action="Poll feeds"]',
+        ownerSelector: '.row-action',
+      }),
+    ]),
   }),
   '/control/content/announcements': Object.freeze({
     sections: Object.freeze(['features', 'publishing']),
@@ -39,6 +48,12 @@ const LEGACY_MOUNT_PLAN_BY_PATH = Object.freeze({
   '/control/utilities/ticket-configuration': Object.freeze({
     sections: Object.freeze(['features', 'tickets']),
     featureKeys: Object.freeze(['tickets']),
+    commandsOnlyControls: Object.freeze([
+      Object.freeze({
+        controlSelector: '[data-prototype-action="Post ticket panel"]',
+        ownerSelector: '.row-action',
+      }),
+    ]),
   }),
   '/control/utilities/notification-roles': Object.freeze({
     sections: Object.freeze(['setup']),
@@ -103,12 +118,22 @@ export function legacyMountPlanForPath(path) {
   return LEGACY_MOUNT_PLAN_BY_PATH[path] || null;
 }
 
+function restoreDetachedControls(detachedControls) {
+  for (const detached of detachedControls || []) {
+    const { node, parent, nextSibling } = detached;
+    if (!node || !parent?.insertBefore) continue;
+    const reference = nextSibling?.parentNode === parent ? nextSibling : null;
+    parent.insertBefore(node, reference);
+  }
+}
+
 function restoreMounted(main, legacyRoot) {
   const mounted = mountedByMain.get(main);
   if (!mounted) return;
 
   mountedByMain.delete(main);
-  for (const section of mounted) {
+  restoreDetachedControls(mounted.detachedControls);
+  for (const section of mounted.sections) {
     legacyRoot?.append?.(section);
   }
 }
@@ -176,6 +201,33 @@ function configureSection(section, plan) {
   if (section?.id === 'setup') configureSetupSection(section, plan);
 }
 
+function detachCommandsOnlyControls(section, plan) {
+  const detachedControls = [];
+
+  for (const ownership of plan.commandsOnlyControls || []) {
+    const control = section?.querySelector?.(ownership.controlSelector);
+    if (!control) continue;
+
+    const ownedNode = ownership.ownerSelector
+      ? control.closest?.(ownership.ownerSelector) || control
+      : control;
+    const parent = ownedNode?.parentNode;
+    if (!parent) continue;
+
+    const nextSibling = ownedNode.nextSibling || null;
+    if (typeof ownedNode.remove === 'function') {
+      ownedNode.remove();
+    } else {
+      parent.removeChild?.(ownedNode);
+    }
+
+    if (ownedNode.parentNode === parent) continue;
+    detachedControls.push({ node: ownedNode, parent, nextSibling });
+  }
+
+  return detachedControls;
+}
+
 export function mountControlDestination({
   main,
   destination,
@@ -203,11 +255,13 @@ export function mountControlDestination({
     main.innerHTML = '';
     main.replaceChildren?.(...legacySections);
 
+    const detachedControls = [];
     for (const section of legacySections) {
       configureSection(section, plan);
+      detachedControls.push(...detachCommandsOnlyControls(section, plan));
     }
 
-    mountedByMain.set(main, legacySections);
+    mountedByMain.set(main, { sections: legacySections, detachedControls });
     main.dataset.pageKey = destination.path;
 
     return {
