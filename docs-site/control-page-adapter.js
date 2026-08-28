@@ -67,45 +67,6 @@ const LEGACY_MOUNT_PLAN_BY_PATH = Object.freeze({
     sections: Object.freeze(['features']),
     featureKeys: Object.freeze(['analytics']),
   }),
-  '/control/mappings/channels': Object.freeze({
-    sections: Object.freeze(['setup']),
-    setupMode: 'mappings',
-    resourceKeys: Object.freeze([
-      'moderation_log',
-      'ticket_panel',
-      'ticket_logs',
-      'create_workspace_voice',
-      'coworking_lounge',
-      'announcements',
-      'live_announcements',
-      'role_panel',
-      'ai_updates',
-      'quiz_channel',
-      'anon_questions',
-      'analytics',
-      'showcase_forum',
-      'app_of_the_week',
-      'collab_lfg',
-    ]),
-  }),
-  '/control/mappings/roles': Object.freeze({
-    sections: Object.freeze(['setup']),
-    setupMode: 'mappings',
-    resourceKeys: Object.freeze([
-      'live_ping_role',
-      'builder_role',
-      'contributor_role',
-      'mentor_role',
-    ]),
-  }),
-  '/control/mappings/categories': Object.freeze({
-    sections: Object.freeze(['setup']),
-    setupMode: 'mappings',
-    resourceKeys: Object.freeze([
-      'ticket_category',
-      'temp_voice_category',
-    ]),
-  }),
 });
 
 const mountedByMain = new WeakMap();
