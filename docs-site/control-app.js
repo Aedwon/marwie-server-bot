@@ -2,6 +2,7 @@ import { identityMarkup, navigationMarkup, pageMarkup } from './control-componen
 import { installAccountMenu } from './control-account.js';
 import { mountControlDestination } from './control-page-adapter.js';
 import { registerMappingPages } from './control-mappings.js';
+import { registerUtilitiesPages } from './control-utilities.js';
 import { installThemeControls } from './control-theme.js';
 import { createNavigationState, installDrawerController, navigationModel } from './control-navigation.js';
 import { resolveControlRoute } from './control-router.js';
@@ -51,8 +52,19 @@ function installMappingStyles() {
   document.head.append(link);
 }
 
+function installUtilitiesStyles() {
+  if (document.querySelector('link[data-control-utilities-styles]')) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = '/control-utilities.css?v=1';
+  link.dataset.controlUtilitiesStyles = 'true';
+  document.head.append(link);
+}
+
 installMappingStyles();
+installUtilitiesStyles();
 registerMappingPages();
+registerUtilitiesPages();
 
 function readJson(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key) || '') || fallback; } catch { return fallback; }
