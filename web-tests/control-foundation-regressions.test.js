@@ -554,45 +554,6 @@ test('compatibility adapter preserves every still-live canonical capability', as
       sections: ['features'],
       featureKeys: ['analytics'],
     }],
-    ['/control/mappings/channels', {
-      sections: ['setup'],
-      setupMode: 'mappings',
-      resourceKeys: [
-        'moderation_log',
-        'ticket_panel',
-        'ticket_logs',
-        'create_workspace_voice',
-        'coworking_lounge',
-        'announcements',
-        'live_announcements',
-        'role_panel',
-        'ai_updates',
-        'quiz_channel',
-        'anon_questions',
-        'analytics',
-        'showcase_forum',
-        'app_of_the_week',
-        'collab_lfg',
-      ],
-    }],
-    ['/control/mappings/roles', {
-      sections: ['setup'],
-      setupMode: 'mappings',
-      resourceKeys: [
-        'live_ping_role',
-        'builder_role',
-        'contributor_role',
-        'mentor_role',
-      ],
-    }],
-    ['/control/mappings/categories', {
-      sections: ['setup'],
-      setupMode: 'mappings',
-      resourceKeys: [
-        'ticket_category',
-        'temp_voice_category',
-      ],
-    }],
   ]);
 
   for (const [path, wanted] of expected) {
@@ -605,6 +566,9 @@ test('compatibility adapter preserves every still-live canonical capability', as
   }
 
   for (const path of [
+    '/control/mappings/channels',
+    '/control/mappings/roles',
+    '/control/mappings/categories',
     '/control/workflows/moderation',
     '/control/workflows/ticket-handling',
     '/control/workflows/events',
