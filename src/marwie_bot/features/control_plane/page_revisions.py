@@ -91,7 +91,6 @@ def _notification_panel(snapshot: dict[str, Any]) -> dict[str, Any] | None:
             }
         )
     return {
-        "channel_id": panel.get("channel_id"),
         "title": panel.get("title"),
         "description": panel.get("description"),
         "buttons": buttons,
