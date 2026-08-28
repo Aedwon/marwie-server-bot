@@ -19,6 +19,29 @@ export function hydrateControlPages(snapshot, revisions = {}) {
   }
 }
 
+export function renderRegisteredControlPage(pageKey, context = {}) {
+  const definition = registeredControlPage(pageKey);
+  if (!definition || typeof definition.render !== 'function') return null;
+  return definition.render({
+    pageKey,
+    state: controlState.get(pageKey),
+    store: controlState,
+    ...context,
+  });
+}
+
+export function installRegisteredControlPage(pageKey, root, context = {}) {
+  const definition = registeredControlPage(pageKey);
+  if (!definition || typeof definition.install !== 'function') return () => {};
+  return definition.install({
+    root,
+    pageKey,
+    state: controlState.get(pageKey),
+    store: controlState,
+    ...context,
+  }) || (() => {});
+}
+
 export function installControlStateGuards({
   getCurrentPageKey,
   onSave,
