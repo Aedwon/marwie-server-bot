@@ -14,6 +14,8 @@ const CANONICAL_DESTINATIONS = [
 const actionSource = readFileSync(new URL('../api/action.js', import.meta.url), 'utf8');
 const guildStateSource = readFileSync(new URL('../api/guild-state.js', import.meta.url), 'utf8');
 const executorSource = readFileSync(new URL('../src/marwie_bot/features/control_plane/executor.py', import.meta.url), 'utf8');
+const executorBaseSource = readFileSync(new URL('../src/marwie_bot/features/control_plane/executor_base.py', import.meta.url), 'utf8');
+const aiUpdatesCogSource = readFileSync(new URL('../src/marwie_bot/features/ai_updates/cog.py', import.meta.url), 'utf8');
 const cogSource = readFileSync(new URL('../src/marwie_bot/features/control_plane/cog.py', import.meta.url), 'utf8');
 const snapshotSource = readFileSync(new URL('../src/marwie_bot/features/control_plane/snapshot.py', import.meta.url), 'utf8');
 
@@ -38,8 +40,9 @@ test('stale snapshot refresh remains an internal durable action path', () => {
 });
 
 test('worker keeps live permission recheck and sanitized unexpected failures', () => {
-  assert.match(executorSource, /_require_actor_permission/);
-  assert.match(executorSource, /guild\.fetch_member/);
+  const effectiveExecutorSource = `${executorBaseSource}\n${executorSource}`;
+  assert.match(effectiveExecutorSource, /_require_actor_permission/);
+  assert.match(effectiveExecutorSource, /guild\.fetch_member/);
   assert.match(cogSource, /The action failed unexpectedly\./);
   assert.match(cogSource, /error_reference/);
   assert.match(cogSource, /repository\.fail/);
@@ -51,10 +54,16 @@ test('snapshot keeps the state families required by approved destinations', () =
   }
 });
 
-test('current manual AI poll is characterized as a publishing path', () => {
-  assert.match(executorSource, /case ControlActionType\.POLL_AI_SOURCES/);
-  assert.match(executorSource, /_poll_source\(source\)/);
-  assert.match(executorSource, /return \{['\"]posted['\"]:\s*posted\}/);
-});
+test('manual AI polling is Commands-only while scheduled polling retains automatic publishing', () => {
+  assert.match(executorSource, /Commands-only/);
+  assert.match(executorSource, /\/ai-source poll/);
+  assert.doesNotMatch(executorSource, /_poll_source/);
 
-test.todo('Wave 7: manual AI feed polling previews candidates without publishing until explicit post');
+  assert.match(aiUpdatesCogSource, /manual_polling\.preview/);
+  assert.match(aiUpdatesCogSource, /class ManualFeedPollView/);
+  assert.match(aiUpdatesCogSource, /label="Post"/);
+  assert.match(aiUpdatesCogSource, /label="Cancel"/);
+  assert.match(aiUpdatesCogSource, /async def _poll_source/);
+  assert.match(aiUpdatesCogSource, /_publish_candidates/);
+  assert.match(aiUpdatesCogSource, /poll_loop[\s\S]*?_poll_source/);
+});
