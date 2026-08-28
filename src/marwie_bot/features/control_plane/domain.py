@@ -31,6 +31,8 @@ class ControlActionType(StrEnum):
     ADJUST_REPUTATION = "adjust_reputation"
     SET_QUIZ_SCHEDULE = "set_quiz_schedule"
     ADD_QUIZ_QUESTION = "add_quiz_question"
+    UPDATE_QUIZ_QUESTION = "update_quiz_question"
+    SET_QUIZ_QUESTION_ENABLED = "set_quiz_question_enabled"
     UPSERT_AI_SOURCE = "upsert_ai_source"
     DISABLE_AI_SOURCE = "disable_ai_source"
     POLL_AI_SOURCES = "poll_ai_sources"
