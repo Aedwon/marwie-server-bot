@@ -115,16 +115,16 @@ class ManualFeedPollingService:
 
     def _purge_expired(self, now: datetime) -> None:
         expired = [
-            token
-            for token, stored in self._previews.items()
-            if stored.preview.expires_at <= now
+            token for token, stored in self._previews.items() if stored.preview.expires_at <= now
         ]
         for token in expired:
             self._previews.pop(token, None)
 
     async def _authorized_context(self, guild_id: int, actor_id: int) -> int:
         if not await self.can_manage_guild(guild_id, actor_id):
-            raise ManualFeedPreviewInvalid("Manage Server permission is required for manual polling.")
+            raise ManualFeedPreviewInvalid(
+                "Manage Server permission is required for manual polling."
+            )
         if not await self.is_feature_enabled(guild_id):
             raise ManualFeedPreviewInvalid("AI updates are disabled for this server.")
         destination_id = await self.resolve_destination(guild_id)
@@ -173,9 +173,7 @@ class ManualFeedPollingService:
         )
         return preview
 
-    def _require_preview(
-        self, token: str, *, guild_id: int, actor_id: int
-    ) -> _StoredPreview:
+    def _require_preview(self, token: str, *, guild_id: int, actor_id: int) -> _StoredPreview:
         stored = self._previews.get(token)
         if stored is None:
             raise ManualFeedPreviewInvalid("That manual feed preview is no longer available.")
