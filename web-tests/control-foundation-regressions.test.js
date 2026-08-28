@@ -152,18 +152,9 @@ test('canonical routes use a narrow internal live compatibility adapter', async 
     adapter.legacySectionForPath('/control/community/quizzes'),
     'quizzes',
   );
-  assert.equal(
-    adapter.legacySectionForPath('/control/content/feeds'),
-    'feeds',
-  );
-  assert.equal(
-    adapter.legacySectionForPath('/control/content/announcements'),
-    'publishing',
-  );
-  assert.equal(
-    adapter.legacySectionForPath('/control/content/live'),
-    'publishing',
-  );
+  assert.equal(adapter.legacySectionForPath('/control/content/feeds'), null);
+  assert.equal(adapter.legacySectionForPath('/control/content/announcements'), null);
+  assert.equal(adapter.legacySectionForPath('/control/content/live'), null);
   assert.equal(
     adapter.legacySectionForPath('/control/utilities/ticket-configuration'),
     'tickets',
@@ -182,18 +173,16 @@ test('canonical routes use a narrow internal live compatibility adapter', async 
   assert.equal(adapter.legacySectionForPath('/control/activity'), null);
 });
 
-test('browser-style mounting covers two domains plus Commands and Activity', async () => {
+test('browser-style mounting covers legacy and canonical domains plus Commands and Activity', async () => {
   const { mountControlDestination } =
     await import('../docs-site/control-page-adapter.js');
 
   const reputation = { id: 'reputation', parentNode: null };
-  const feeds = { id: 'feeds', parentNode: null };
   const returned = [];
 
   const legacyRoot = {
     querySelector(selector) {
       if (selector === '#reputation') return reputation;
-      if (selector === '#feeds') return feeds;
       return null;
     },
     append(node) {
@@ -202,7 +191,6 @@ test('browser-style mounting covers two domains plus Commands and Activity', asy
     },
   };
   reputation.parentNode = legacyRoot;
-  feeds.parentNode = legacyRoot;
 
   const main = {
     currentNode: null,
@@ -233,8 +221,9 @@ test('browser-style mounting covers two domains plus Commands and Activity', asy
     legacyRoot,
     renderFallback: fallback,
   });
-  assert.equal(main.currentNode, feeds);
+  assert.equal(main.currentNode, null);
   assert.ok(returned.includes('reputation'));
+  assert.match(main.innerHTML, /Feeds/);
   assert.equal(main.dataset.pageKey, '/control/content/feeds');
 
   mountControlDestination({
@@ -526,18 +515,6 @@ test('compatibility adapter preserves every still-live canonical capability', as
       sections: ['features'],
       featureKeys: ['showcase'],
     }],
-    ['/control/content/feeds', {
-      sections: ['features', 'feeds'],
-      featureKeys: ['ai_updates'],
-    }],
-    ['/control/content/announcements', {
-      sections: ['features', 'publishing'],
-      featureKeys: ['announcements'],
-    }],
-    ['/control/content/live', {
-      sections: ['features', 'publishing'],
-      featureKeys: ['live_announcements'],
-    }],
     ['/control/utilities/ticket-configuration', {
       sections: ['features', 'tickets'],
       featureKeys: ['tickets'],
@@ -566,6 +543,9 @@ test('compatibility adapter preserves every still-live canonical capability', as
   }
 
   for (const path of [
+    '/control/content/feeds',
+    '/control/content/announcements',
+    '/control/content/live',
     '/control/mappings/channels',
     '/control/mappings/roles',
     '/control/mappings/categories',

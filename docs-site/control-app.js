@@ -1,5 +1,6 @@
 import { identityMarkup, navigationMarkup, pageMarkup } from './control-components.js';
 import { installAccountMenu } from './control-account.js';
+import { registerContentPages } from './control-content.js';
 import { mountControlDestination } from './control-page-adapter.js';
 import { registerMappingPages } from './control-mappings.js';
 import { installThemeControls } from './control-theme.js';
@@ -42,17 +43,24 @@ let snapshot = null;
 let removeAccountMenu = () => {};
 let removePageInteractions = () => {};
 
-function installMappingStyles() {
-  if (document.querySelector('link[data-control-mappings-styles]')) return;
-  const link = document.createElement('link');
-  link.rel = 'stylesheet';
-  link.href = '/control-mappings.css?v=1';
-  link.dataset.controlMappingsStyles = 'true';
-  document.head.append(link);
+function installPageStyles() {
+  const styles = [
+    ['control-mappings', '/control-mappings.css?v=1'],
+    ['control-content', '/control-content.css?v=1'],
+  ];
+  for (const [key, href] of styles) {
+    if (document.querySelector(`link[data-${key}-styles]`)) continue;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = href;
+    link.setAttribute(`data-${key}-styles`, 'true');
+    document.head.append(link);
+  }
 }
 
-installMappingStyles();
+installPageStyles();
 registerMappingPages();
+registerContentPages();
 
 function readJson(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key) || '') || fallback; } catch { return fallback; }
@@ -116,6 +124,8 @@ function renderMain() {
       snapshot: guildState,
       onSave: requestRegisteredPageSave,
       onApplySuggestions: requestMappingSuggestions,
+      onAction: requestContentAction,
+      onConfirm: message => window.confirm(message),
       rerender: renderMain,
     });
   }
@@ -280,6 +290,31 @@ async function requestMappingSuggestions(payload) {
     snapshot?.page_revisions || guildState?.meta?.page_revisions || {},
   );
   return { snapshot };
+}
+
+async function requestContentAction(action) {
+  if (!session?.authenticated || !guild) {
+    throw new Error('Sign in and select a server before publishing content.');
+  }
+  const queued = await enqueueControlAction({
+    guildId: guild.id,
+    csrfToken: session.csrf_token,
+    actionType: action.actionType,
+    payload: action.payload,
+  });
+  const completed = await waitForAction(queued.action.id);
+  if (completed.status === 'failed' || completed.status === 'rejected') {
+    throw new Error(completed.error || 'The content action could not be completed.');
+  }
+
+  const data = await loadGuildState(guild.id);
+  guildState = data.state;
+  snapshot = data.snapshot;
+  hydrateControlPages(
+    guildState,
+    snapshot?.page_revisions || guildState?.meta?.page_revisions || {},
+  );
+  return completed.result || {};
 }
 
 window.addEventListener('popstate', () => {
