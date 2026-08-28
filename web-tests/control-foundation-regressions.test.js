@@ -550,10 +550,6 @@ test('compatibility adapter preserves every still-live canonical capability', as
       sections: ['features'],
       featureKeys: ['anonymous_questions'],
     }],
-    ['/control/analytics', {
-      sections: ['features'],
-      featureKeys: ['analytics'],
-    }],
   ]);
 
   for (const [path, wanted] of expected) {
@@ -566,6 +562,7 @@ test('compatibility adapter preserves every still-live canonical capability', as
   }
 
   for (const path of [
+    '/control/analytics',
     '/control/mappings/channels',
     '/control/mappings/roles',
     '/control/mappings/categories',
