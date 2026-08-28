@@ -101,9 +101,7 @@ def test_runtime_observation_fields_do_not_create_configuration_conflicts() -> N
     second["quiz"]["last_posted_at"] = "2026-08-28T01:00:00Z"
     second["ai_sources"][0]["last_checked_at"] = "2026-08-28T01:00:00Z"
     second["notification_panel"]["message_id"] = "11"
-    second["resources"][0].update(
-        {"name": "Renamed Builder", "exists": False, "updated_by": "77"}
-    )
+    second["resources"][0].update({"name": "Renamed Builder", "exists": False, "updated_by": "77"})
     before = build_page_revisions(first)
     after = build_page_revisions(second)
     assert before["/control/community/quizzes"] == after["/control/community/quizzes"]
