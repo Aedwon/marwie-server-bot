@@ -102,10 +102,6 @@ def serialize_mapping_review(plan: AutoSetupPlan) -> dict[str, Any]:
 
 def scoped_mapping_plan(plan: AutoSetupPlan) -> AutoSetupPlan:
     return AutoSetupPlan(
-        tuple(
-            item
-            for item in plan.resources
-            if item.blueprint.key in _APPROVED_MAPPING_KEY_SET
-        ),
+        tuple(item for item in plan.resources if item.blueprint.key in _APPROVED_MAPPING_KEY_SET),
         SolvedTagDiscovery(DiscoveryAction.KEEP, None, None),
     )

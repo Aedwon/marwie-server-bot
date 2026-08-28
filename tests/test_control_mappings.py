@@ -245,7 +245,10 @@ def test_mapping_review_hash_ignores_message_logging_build_help_and_solved_tag_c
         solved_action=DiscoveryAction.BIND,
     )
 
-    assert module.serialize_mapping_review(first)["plan_hash"] == module.serialize_mapping_review(second)["plan_hash"]
+    assert (
+        module.serialize_mapping_review(first)["plan_hash"]
+        == module.serialize_mapping_review(second)["plan_hash"]
+    )
 
 
 def test_scoped_mapping_plan_cannot_mutate_excluded_resources_or_solved_tag() -> None:
@@ -364,7 +367,9 @@ async def test_scoped_apply_rejects_stale_plan_before_any_mutation() -> None:
     payload = validate_action_payload(action, raw)
 
     with pytest.raises(ActionRejected, match="changed after review"):
-        await executor._apply_mapping_suggestions(SimpleNamespace(id=1), SimpleNamespace(id=42), payload)
+        await executor._apply_mapping_suggestions(
+            SimpleNamespace(id=1), SimpleNamespace(id=42), payload
+        )
 
     assert provisioner.connected_plan is None
     assert provisioner.applied_plan is None
@@ -384,7 +389,9 @@ async def test_scoped_apply_rejects_missing_consequence_confirmation_before_muta
     payload = validate_action_payload(action, raw)
 
     with pytest.raises(ActionRejected, match="confirmation"):
-        await executor._apply_mapping_suggestions(SimpleNamespace(id=1), SimpleNamespace(id=42), payload)
+        await executor._apply_mapping_suggestions(
+            SimpleNamespace(id=1), SimpleNamespace(id=42), payload
+        )
 
     assert provisioner.connected_plan is None
     assert provisioner.applied_plan is None
@@ -401,13 +408,13 @@ async def test_scoped_apply_rejects_review_scope_mismatch_before_mutation() -> N
     action = _scoped_action_type()
     raw = _browser_review_payload(review)
     raw["items"] = raw["items"][:-1]
-    raw["confirmed_keys"] = [
-        key for key in raw["confirmed_keys"] if key != "showcase_forum"
-    ]
+    raw["confirmed_keys"] = [key for key in raw["confirmed_keys"] if key != "showcase_forum"]
     payload = validate_action_payload(action, raw)
 
     with pytest.raises(ActionRejected, match="review"):
-        await executor._apply_mapping_suggestions(SimpleNamespace(id=1), SimpleNamespace(id=42), payload)
+        await executor._apply_mapping_suggestions(
+            SimpleNamespace(id=1), SimpleNamespace(id=42), payload
+        )
 
     assert provisioner.connected_plan is None
     assert provisioner.applied_plan is None
