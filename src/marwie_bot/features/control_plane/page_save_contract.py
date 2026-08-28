@@ -10,7 +10,13 @@ MAX_PAYLOAD_BYTES = 64 * 1024
 PAGE_SAVE_ACTIONS_BY_PAGE: dict[str, frozenset[str]] = {
     "/control/community/reputation": frozenset({"set_feature", "set_reputation_thresholds"}),
     "/control/community/quizzes": frozenset(
-        {"set_feature", "set_quiz_schedule", "add_quiz_question"}
+        {
+            "set_feature",
+            "set_quiz_schedule",
+            "add_quiz_question",
+            "update_quiz_question",
+            "set_quiz_question_enabled",
+        }
     ),
     "/control/community/voice-coworking": frozenset({"set_feature"}),
     "/control/community/showcase": frozenset({"set_feature"}),
