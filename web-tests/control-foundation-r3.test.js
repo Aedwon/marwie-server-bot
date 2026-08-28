@@ -10,11 +10,23 @@ const controlHtml = readFileSync(
   new URL('../docs-site/control.html', import.meta.url),
   'utf8',
 );
+const controlLive = readFileSync(
+  new URL('../docs-site/control-live.js', import.meta.url),
+  'utf8',
+);
 
 class FakeElement {
-  constructor({ id = '', owner = null, children = [] } = {}) {
+  constructor({
+    id = '',
+    tagName = 'div',
+    classes = [],
+    dataset = {},
+    children = [],
+  } = {}) {
     this.id = id;
-    this.dataset = owner ? { controlOwner: owner } : {};
+    this.tagName = tagName.toLowerCase();
+    this.classList = new Set(classes);
+    this.dataset = { ...dataset };
     this.parentNode = null;
     this.children = [];
     this.innerHTML = '';
@@ -59,6 +71,26 @@ class FakeElement {
     return index >= 0 ? this.parentNode.children[index + 1] || null : null;
   }
 
+  matches(selector) {
+    if (selector.startsWith('#')) return this.id === selector.slice(1);
+    if (selector === 'details') return this.tagName === 'details';
+    if (selector === '.row-action') return this.classList.has('row-action');
+
+    const dataAction = selector.match(/^\[data-prototype-action="(.+)"\]$/);
+    if (dataAction) return this.dataset.prototypeAction === dataAction[1];
+
+    return false;
+  }
+
+  closest(selector) {
+    let node = this;
+    while (node) {
+      if (node.matches?.(selector)) return node;
+      node = node.parentNode;
+    }
+    return null;
+  }
+
   querySelector(selector) {
     return this.querySelectorAll(selector)[0] || null;
   }
@@ -66,14 +98,7 @@ class FakeElement {
   querySelectorAll(selector) {
     const matches = [];
     const visit = node => {
-      if (selector.startsWith('#') && node.id === selector.slice(1)) {
-        matches.push(node);
-      } else if (
-        selector === '[data-control-owner="commands"]'
-        && node.dataset?.controlOwner === 'commands'
-      ) {
-        matches.push(node);
-      }
+      if (node.matches?.(selector)) matches.push(node);
       for (const child of node.children || []) visit(child);
     };
     for (const child of this.children) visit(child);
@@ -85,12 +110,23 @@ class FakeElement {
   }
 }
 
-function buildLegacyMount({ sectionId, legitimateId, restrictedId }) {
+function buildLegacyMount({
+  sectionId,
+  legitimateId,
+  restrictedId,
+  restrictedOwnerTag = 'div',
+  restrictedOwnerClasses = [],
+  restrictedDataset = {},
+}) {
   const legitimate = new FakeElement({ id: legitimateId });
-  const restrictedControl = new FakeElement({ id: restrictedId });
+  const restrictedControl = new FakeElement({
+    id: restrictedId,
+    dataset: restrictedDataset,
+  });
   const restrictedOwner = new FakeElement({
     id: `${restrictedId}-owner`,
-    owner: 'commands',
+    tagName: restrictedOwnerTag,
+    classes: restrictedOwnerClasses,
     children: [restrictedControl],
   });
   const section = new FakeElement({
@@ -117,18 +153,23 @@ test('canonical feature destinations detach Commands-only legacy controls and re
       sectionId: 'reputation',
       legitimateId: 'thresholdEditor',
       restrictedId: 'repReviewBtn',
+      restrictedOwnerTag: 'details',
     },
     {
       path: '/control/utilities/ticket-configuration',
       sectionId: 'tickets',
       legitimateId: 'ticketTypeEditor',
       restrictedId: 'refreshTicketPanel',
+      restrictedOwnerClasses: ['row-action', 'dependent-action'],
+      restrictedDataset: { prototypeAction: 'Post ticket panel' },
     },
     {
       path: '/control/content/feeds',
       sectionId: 'feeds',
       legitimateId: 'feedSourceForm',
       restrictedId: 'pollFeeds',
+      restrictedOwnerClasses: ['row-action', 'dependent-action'],
+      restrictedDataset: { prototypeAction: 'Poll feeds' },
     },
   ];
 
@@ -176,22 +217,23 @@ test('canonical feature destinations detach Commands-only legacy controls and re
   }
 });
 
-test('legacy markup explicitly marks only the three Commands-owned transitional controls', () => {
-  const ownershipMarkers = controlHtml.match(/data-control-owner="commands"/g) || [];
-  assert.equal(ownershipMarkers.length, 3);
+test('legacy markup and runtime retain the three Commands-only actions outside canonical ownership', () => {
+  assert.match(
+    controlHtml,
+    /Manual adjustment[\s\S]*?id="repReviewBtn"/,
+  );
+  assert.match(
+    controlHtml,
+    /data-prototype-action="Post ticket panel"[^>]*>Post \/ refresh panel/,
+  );
+  assert.match(
+    controlHtml,
+    /data-prototype-action="Poll feeds"[^>]*>Poll now/,
+  );
 
-  assert.match(
-    controlHtml,
-    /<details[^>]*data-control-owner="commands"[^>]*>[\s\S]*?Manual adjustment[\s\S]*?id="repReviewBtn"/,
-  );
-  assert.match(
-    controlHtml,
-    /<div[^>]*data-control-owner="commands"[^>]*>[\s\S]*?Post \/ refresh panel/,
-  );
-  assert.match(
-    controlHtml,
-    /<div[^>]*data-control-owner="commands"[^>]*>[\s\S]*?Poll now/,
-  );
+  assert.match(controlLive, /queueAction\('adjust_reputation'/);
+  assert.match(controlLive, /queueAction\('refresh_ticket_panel'/);
+  assert.match(controlLive, /queueAction\('poll_ai_sources'/);
 });
 
 test('workflow renderer is guidance-only without duplicated page status chrome', () => {
