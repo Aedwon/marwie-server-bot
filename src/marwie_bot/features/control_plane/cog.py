@@ -12,6 +12,7 @@ from discord.ext import commands
 from marwie_bot.config.settings import Settings
 from marwie_bot.db.session import Database
 from marwie_bot.features.ai_updates.repository import SQLAlchemyAIUpdatesRepository
+from marwie_bot.features.analytics.service import AnalyticsService
 from marwie_bot.features.configuration.provisioning import AutoSetupService
 from marwie_bot.features.configuration.repository import (
     SQLAlchemyFeatureConfigRepository,
@@ -71,6 +72,7 @@ class ControlPlaneCog(commands.Cog):
         self.repository = repository
         self.executor = executor
         self.snapshots = snapshots
+        self.analytics = AnalyticsService(repository.database)
         self.page_saves = PageSaveExecutor(bot=bot, executor=executor, snapshots=snapshots)
         self.worker_id = f"rob-bot:{_worker_version()}"
         self._drain_lock = asyncio.Lock()
@@ -83,6 +85,7 @@ class ControlPlaneCog(commands.Cog):
             return
         snapshot = await self.snapshots.build(guild)
         snapshot = dict(snapshot)
+        snapshot["analytics"] = (await self.analytics.weekly(guild.id)).to_snapshot()
         snapshot["meta"] = {
             **dict(snapshot.get("meta") or {}),
             "page_revisions": build_page_revisions(snapshot),
