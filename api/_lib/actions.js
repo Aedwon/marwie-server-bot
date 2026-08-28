@@ -4,6 +4,7 @@ export const ACTIONS = Object.freeze({
   SET_RESOURCE: 'set_resource',
   CLEAR_RESOURCE: 'clear_resource',
   APPLY_AUTO_SETUP: 'apply_auto_setup',
+  APPLY_MAPPING_SUGGESTIONS: 'apply_mapping_suggestions',
   SET_FEATURE: 'set_feature',
   SET_LOG_EXCLUSIONS: 'set_log_exclusions',
   SAVE_NOTIFICATION_PANEL: 'save_notification_panel',
@@ -26,6 +27,7 @@ const ADMIN_ACTIONS = new Set([
   ACTIONS.SET_RESOURCE,
   ACTIONS.CLEAR_RESOURCE,
   ACTIONS.APPLY_AUTO_SETUP,
+  ACTIONS.APPLY_MAPPING_SUGGESTIONS,
   ACTIONS.SET_FEATURE,
   ACTIONS.SET_LOG_EXCLUSIONS,
   ACTIONS.SAVE_NOTIFICATION_PANEL,
@@ -42,6 +44,15 @@ const RESOURCE_KEYS = new Set([
   'solved_tag', 'quiz_channel', 'anon_questions', 'analytics', 'showcase_forum',
   'app_of_the_week', 'collab_lfg', 'builder_role', 'contributor_role', 'mentor_role', 'bot_log',
 ]);
+
+const MAPPING_RESOURCE_KEYS = new Set([
+  'moderation_log', 'ticket_panel', 'ticket_logs', 'create_workspace_voice', 'coworking_lounge',
+  'announcements', 'live_announcements', 'role_panel', 'ai_updates', 'quiz_channel',
+  'anon_questions', 'analytics', 'showcase_forum', 'app_of_the_week', 'collab_lfg',
+  'live_ping_role', 'builder_role', 'contributor_role', 'mentor_role',
+  'ticket_category', 'temp_voice_category',
+]);
+const MAPPING_ACTIONS = new Set(['bind', 'remap', 'create']);
 
 const FEATURE_NAMES = new Set([
   'moderation', 'message_logs', 'tickets', 'voice', 'announcements', 'live_announcements',
@@ -88,6 +99,46 @@ function uniqueSnowflakes(values, field, limit) {
   return result;
 }
 
+function mappingPlanHash(value) {
+  const planHash = text(value, 'Mapping review', 128);
+  if (!/^[0-9a-f]{64}$/i.test(planHash)) throw new HttpError(400, 'Mapping review is invalid.');
+  return planHash.toLowerCase();
+}
+
+function mappingSuggestionItems(value) {
+  if (!Array.isArray(value)) throw new HttpError(400, 'Mapping review items must be a list.');
+  if (value.length > MAPPING_RESOURCE_KEYS.size) throw new HttpError(400, 'Mapping review contains too many resources.');
+  const seen = new Set();
+  return value.map((raw, index) => {
+    const item = object(raw, `Mapping item ${index + 1}`);
+    const key = text(item.key, 'Resource key', 100);
+    if (!MAPPING_RESOURCE_KEYS.has(key)) throw new HttpError(400, 'Resource is not managed by Mappings.');
+    if (seen.has(key)) throw new HttpError(400, 'Mapping review contains a duplicate resource.');
+    seen.add(key);
+    const action = text(item.action, 'Mapping action', 16).toLowerCase();
+    if (!MAPPING_ACTIONS.has(action)) throw new HttpError(400, 'Mapping review action is invalid.');
+    if (action === 'create') {
+      if (item.target_id !== null && item.target_id !== undefined && item.target_id !== '') {
+        throw new HttpError(400, 'Created mapping resources cannot include a target ID.');
+      }
+      return { key, action, target_id: null };
+    }
+    return { key, action, target_id: snowflake(item.target_id, 'Mapping target') };
+  });
+}
+
+function mappingConfirmations(value) {
+  if (!Array.isArray(value)) throw new HttpError(400, 'Mapping confirmations must be a list.');
+  const seen = new Set();
+  return value.map((raw) => {
+    const key = text(raw, 'Confirmed resource', 100);
+    if (!MAPPING_RESOURCE_KEYS.has(key)) throw new HttpError(400, 'Resource is not managed by Mappings.');
+    if (seen.has(key)) throw new HttpError(400, 'Mapping confirmations contain a duplicate resource.');
+    seen.add(key);
+    return key;
+  });
+}
+
 function mentions(value) {
   const data = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
   return {
@@ -129,6 +180,12 @@ export function validateActionPayload(actionType, rawPayload) {
       if (!/^[0-9a-f]{64}$/i.test(planHash)) throw new HttpError(400, 'Setup plan is invalid.');
       return { plan_hash: planHash.toLowerCase() };
     }
+    case ACTIONS.APPLY_MAPPING_SUGGESTIONS:
+      return {
+        plan_hash: mappingPlanHash(data.plan_hash),
+        items: mappingSuggestionItems(data.items),
+        confirmed_keys: mappingConfirmations(data.confirmed_keys),
+      };
     case ACTIONS.SET_FEATURE: {
       const feature = text(data.feature, 'Feature', 100);
       if (!FEATURE_NAMES.has(feature)) throw new HttpError(400, 'Unknown feature.');
