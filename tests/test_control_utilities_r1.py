@@ -194,7 +194,9 @@ async def test_notification_page_preflight_resolves_role_panel_mapping(monkeypat
     assert resources.calls == [(123, ResourceKey.ROLE_PANEL)]
 
 
-async def test_notification_save_derives_mapped_destination_before_persisting(monkeypatch: Any) -> None:
+async def test_notification_save_derives_mapped_destination_before_persisting(
+    monkeypatch: Any,
+) -> None:
     monkeypatch.setattr(executor_module.discord, "TextChannel", _TextChannel)
     channel = _TextChannel(789)
     guild = _notification_guild(channel)
@@ -228,7 +230,9 @@ async def test_notification_save_derives_mapped_destination_before_persisting(mo
     assert added_views[0][1] == 991
 
 
-async def test_notification_publication_failure_happens_after_config_persistence(monkeypatch: Any) -> None:
+async def test_notification_publication_failure_happens_after_config_persistence(
+    monkeypatch: Any,
+) -> None:
     monkeypatch.setattr(executor_module.discord, "TextChannel", _TextChannel)
     channel = _TextChannel(789)
     guild = _notification_guild(channel)
@@ -274,10 +278,11 @@ def test_anonymous_question_control_revision_ignores_submitter_identity() -> Non
 
 def test_message_logging_has_no_control_page_save_owner() -> None:
     assert all(
-        "set_log_exclusions" not in actions
-        for actions in PAGE_SAVE_ACTIONS_BY_PAGE.values()
+        "set_log_exclusions" not in actions for actions in PAGE_SAVE_ACTIONS_BY_PAGE.values()
     )
-    assert not any("message" in page_key and "log" in page_key for page_key in PAGE_SAVE_ACTIONS_BY_PAGE)
+    assert not any(
+        "message" in page_key and "log" in page_key for page_key in PAGE_SAVE_ACTIONS_BY_PAGE
+    )
 
 
 async def test_ticket_type_upsert_explicitly_reenables_disabled_type() -> None:
