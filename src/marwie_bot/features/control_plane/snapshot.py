@@ -23,6 +23,7 @@ from marwie_bot.features.configuration.service import (
 )
 from marwie_bot.features.control_plane.mappings import serialize_mapping_review
 from marwie_bot.features.control_plane.repository import SQLAlchemyControlRepository
+from marwie_bot.features.quizzes.service import QuizQuestionRecord, QuizService
 from marwie_bot.features.tickets.service import TicketService
 
 _DEFAULT_THRESHOLDS = {"builder": 50, "contributor": 150, "mentor": 500}
@@ -164,6 +165,21 @@ def serialize_setup_plan(plan: AutoSetupPlan) -> dict[str, Any]:
     }
 
 
+def serialize_quiz_questions(questions: list[QuizQuestionRecord]) -> list[dict[str, Any]]:
+    return [
+        {
+            "id": question.id,
+            "category": question.category,
+            "prompt": question.prompt,
+            "options": list(question.options),
+            "correct": question.correct_index + 1,
+            "explanation": question.explanation,
+            "enabled": question.active,
+        }
+        for question in questions
+    ]
+
+
 class GuildSnapshotBuilder:
     def __init__(
         self,
@@ -175,6 +191,7 @@ class GuildSnapshotBuilder:
         control: SQLAlchemyControlRepository,
         provisioner: AutoSetupService,
         settings: Settings,
+        quizzes: QuizService | None = None,
     ) -> None:
         self.resources = resources
         self.features = features
@@ -183,19 +200,28 @@ class GuildSnapshotBuilder:
         self.control = control
         self.provisioner = provisioner
         self.settings = settings
+        self.quizzes = quizzes
 
     async def _load_features(self, guild_id: int) -> list[FeatureConfigRecord]:
         return list(
             await asyncio.gather(*(self.features.get(guild_id, feature) for feature in FeatureName))
         )
 
+    async def _load_quiz_questions(self, guild_id: int) -> list[QuizQuestionRecord]:
+        if self.quizzes is None:
+            return []
+        return await self.quizzes.list_questions(guild_id, active_only=False)
+
     async def build(self, guild: discord.Guild) -> dict[str, Any]:
-        resource_records, loaded_features, ticket_types, sources, panel = await asyncio.gather(
-            self.resources.list_for_guild(guild.id),
-            self._load_features(guild.id),
-            self.tickets.list_types(guild.id, enabled_only=False),
-            self.ai_sources.list_sources(guild.id),
-            self.control.get_notification_panel(guild.id),
+        resource_records, loaded_features, ticket_types, sources, panel, quiz_questions = (
+            await asyncio.gather(
+                self.resources.list_for_guild(guild.id),
+                self._load_features(guild.id),
+                self.tickets.list_types(guild.id, enabled_only=False),
+                self.ai_sources.list_sources(guild.id),
+                self.control.get_notification_panel(guild.id),
+                self._load_quiz_questions(guild.id),
+            )
         )
 
         resource_by_key = {record.key: record for record in resource_records}
@@ -329,6 +355,7 @@ class GuildSnapshotBuilder:
             "quiz": {
                 "interval_hours": quiz_config.get("interval_hours"),
                 "last_posted_at": quiz_config.get("last_posted_at"),
+                "questions": serialize_quiz_questions(quiz_questions),
             },
             "ai_sources": [
                 {
