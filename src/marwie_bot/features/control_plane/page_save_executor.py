@@ -34,6 +34,8 @@ _DB_ONLY_ACTIONS = frozenset(
         ControlActionType.SET_REPUTATION_THRESHOLDS,
         ControlActionType.SET_QUIZ_SCHEDULE,
         ControlActionType.ADD_QUIZ_QUESTION,
+        ControlActionType.UPDATE_QUIZ_QUESTION,
+        ControlActionType.SET_QUIZ_QUESTION_ENABLED,
         ControlActionType.UPSERT_AI_SOURCE,
         ControlActionType.DISABLE_AI_SOURCE,
     }
