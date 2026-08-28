@@ -53,7 +53,7 @@ def _resources(snapshot: dict[str, Any], allowed: frozenset[str]) -> list[dict[s
         for item in snapshot.get("resources", [])
         if isinstance(item, dict) and str(item.get("key", "")) in allowed
     ]
-    rows.sort(key=lambda item: item["key"])
+    rows.sort(key=lambda item: str(item["key"]))
     return rows
 
 
