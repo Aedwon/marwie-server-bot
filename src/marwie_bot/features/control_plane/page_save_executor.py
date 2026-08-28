@@ -75,7 +75,18 @@ class PageSaveExecutor:
 
     @staticmethod
     def _validate_action_payload(action_type: str, payload: dict[str, Any]) -> dict[str, Any]:
-        return validate_action_payload(ControlActionType(action_type), payload)
+        normalized_type = ControlActionType(action_type)
+        if normalized_type is ControlActionType.SAVE_NOTIFICATION_PANEL:
+            # The legacy single-action contract still requires channel_id. Canonical
+            # page-save owns only panel behavior, so validate the shared shape with a
+            # temporary valid snowflake and restore the destination to unresolved.
+            data = dict(payload)
+            if data.get("channel_id") in {None, ""}:
+                data["channel_id"] = 1
+                validated = validate_action_payload(normalized_type, data)
+                validated["channel_id"] = None
+                return validated
+        return validate_action_payload(normalized_type, payload)
 
     async def _preflight(
         self,
@@ -97,9 +108,16 @@ class PageSaveExecutor:
                     )
 
             if action_type is ControlActionType.SAVE_NOTIFICATION_PANEL:
-                channel = guild.get_channel(int(payload["channel_id"]))
+                resource = await self.executor.resources.get(guild.id, ResourceKey.ROLE_PANEL)
+                channel = (
+                    guild.get_channel(resource.discord_id)
+                    if resource is not None
+                    else None
+                )
                 if not isinstance(channel, discord.TextChannel):
-                    raise ActionRejected("Select a text channel for the notification role panel.")
+                    raise ActionRejected(
+                        "Configure the notification role panel destination in Mappings first."
+                    )
                 bot_member = guild.me
                 if bot_member is None or not bot_member.guild_permissions.manage_roles:
                     raise ActionRejected(
@@ -121,6 +139,10 @@ class PageSaveExecutor:
                         raise ActionRejected(
                             f"Rob-bot cannot manage the configured role for `{item['label']}`."
                         )
+                # The destination is injected only after all page-save ownership and
+                # Discord prerequisites have passed. The nested legacy action can then
+                # execute through its existing validated contract.
+                payload["channel_id"] = channel.id
 
     async def _execute_change(
         self,
