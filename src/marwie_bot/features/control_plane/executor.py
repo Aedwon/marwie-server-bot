@@ -17,7 +17,7 @@ from marwie_bot.features.configuration.provisioning import (
 )
 from marwie_bot.features.configuration.service import FeatureConfigService, ResourceService
 from marwie_bot.features.control_plane.domain import ControlActionRecord, ControlActionType
-from marwie_bot.features.control_plane.mappings import serialize_mapping_review, scoped_mapping_plan
+from marwie_bot.features.control_plane.mappings import scoped_mapping_plan, serialize_mapping_review
 from marwie_bot.features.control_plane.notification_panel import upsert_notification_panel
 from marwie_bot.features.control_plane.repository import SQLAlchemyControlRepository
 from marwie_bot.features.control_plane.snapshot import serialize_setup_plan
