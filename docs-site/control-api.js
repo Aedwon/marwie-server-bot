@@ -17,11 +17,30 @@ async function jsonRequest(url, options = {}, fetchImpl = fetch) {
   return data;
 }
 
-export function pageSaveIdempotencyKey(pageKey, cryptoImpl = crypto) {
-  const token = typeof cryptoImpl.randomUUID === 'function'
+function randomToken(cryptoImpl = crypto) {
+  return typeof cryptoImpl.randomUUID === 'function'
     ? cryptoImpl.randomUUID()
     : Array.from(cryptoImpl.getRandomValues(new Uint32Array(4)), value => value.toString(16)).join('');
-  return `page-save:${String(pageKey).replace(/[^a-z0-9]+/gi, '-').slice(-36)}:${token}`.slice(0, 100);
+}
+
+export function pageSaveIdempotencyKey(pageKey, cryptoImpl = crypto) {
+  return `page-save:${String(pageKey).replace(/[^a-z0-9]+/gi, '-').slice(-36)}:${randomToken(cryptoImpl)}`.slice(0, 100);
+}
+
+export function controlActionIdempotencyKey(actionType, cryptoImpl = crypto) {
+  return `control:${String(actionType).replace(/[^a-z0-9]+/gi, '-').slice(-40)}:${randomToken(cryptoImpl)}`.slice(0, 100);
+}
+
+async function retryQueuedRequest(url, options, fetchImpl, delay) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await jsonRequest(url, options, fetchImpl);
+    } catch (error) {
+      if (error?.status !== 503 || attempt === 2) throw error;
+      await delay(500 * (attempt + 1));
+    }
+  }
+  throw new Error('The control action could not be queued.');
 }
 
 export async function enqueuePageSave({ guildId, csrfToken, request, idempotencyKey, fetchImpl = fetch, delay = ms => new Promise(resolve => setTimeout(resolve, ms)) }) {
@@ -35,17 +54,23 @@ export async function enqueuePageSave({ guildId, csrfToken, request, idempotency
       payload: request,
     }),
   };
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    try {
-      return await jsonRequest('/api/page-save', options, fetchImpl);
-    } catch (error) {
-      if (error?.status !== 503 || attempt === 2) throw error;
-      await delay(500 * (attempt + 1));
-    }
-  }
-  throw new Error('The page save could not be queued.');
+  return await retryQueuedRequest('/api/page-save', options, fetchImpl, delay);
 }
 
+export async function enqueueControlAction({ guildId, csrfToken, actionType, payload, idempotencyKey, fetchImpl = fetch, delay = ms => new Promise(resolve => setTimeout(resolve, ms)) }) {
+  const key = idempotencyKey || controlActionIdempotencyKey(actionType);
+  const options = {
+    method: 'POST',
+    headers: { 'X-Rob-CSRF': csrfToken },
+    body: JSON.stringify({
+      guild_id: String(guildId),
+      action_type: String(actionType),
+      idempotency_key: key,
+      payload: payload || {},
+    }),
+  };
+  return await retryQueuedRequest('/api/action', options, fetchImpl, delay);
+}
 
 export async function waitForAction(actionId, { fetchImpl = fetch, delay = ms => new Promise(resolve => setTimeout(resolve, ms)), maxAttempts = 90 } = {}) {
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
