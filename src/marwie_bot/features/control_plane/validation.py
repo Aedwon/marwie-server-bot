@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 
 from marwie_bot.config.resources import FeatureName, ResourceKey
 from marwie_bot.features.control_plane.domain import ControlActionType
+from marwie_bot.features.control_plane.mappings import APPROVED_MAPPING_KEYS
 
 
 class ActionPermission(StrEnum):
@@ -17,6 +18,7 @@ _ADMIN_ACTIONS = {
     ControlActionType.SET_RESOURCE,
     ControlActionType.CLEAR_RESOURCE,
     ControlActionType.APPLY_AUTO_SETUP,
+    ControlActionType.APPLY_MAPPING_SUGGESTIONS,
     ControlActionType.SET_FEATURE,
     ControlActionType.SET_LOG_EXCLUSIONS,
     ControlActionType.SAVE_NOTIFICATION_PANEL,
@@ -25,6 +27,8 @@ _ADMIN_ACTIONS = {
     ControlActionType.REFRESH_TICKET_PANEL,
     ControlActionType.POST_LIVE,
 }
+_APPROVED_MAPPING_KEY_SET = frozenset(APPROVED_MAPPING_KEYS)
+_MAPPING_SUGGESTION_ACTIONS = frozenset({"bind", "remap", "create"})
 
 
 def required_permission(action_type: ControlActionType) -> ActionPermission:
@@ -94,6 +98,68 @@ def _mentions(value: Any) -> dict[str, Any]:
     }
 
 
+def _mapping_plan_hash(value: Any) -> str:
+    plan_hash = _text(value, field="Mapping review", max_length=128)
+    if len(plan_hash) != 64 or any(
+        character not in "0123456789abcdefABCDEF" for character in plan_hash
+    ):
+        raise ValueError("Mapping review is invalid.")
+    return plan_hash.lower()
+
+
+def _mapping_suggestion_items(value: Any) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        raise ValueError("Mapping review items must be a list.")
+    if len(value) > len(APPROVED_MAPPING_KEYS):
+        raise ValueError("Mapping review contains too many resources.")
+
+    result: list[dict[str, Any]] = []
+    seen: set[ResourceKey] = set()
+    for raw in value:
+        if not isinstance(raw, dict):
+            raise ValueError("Each mapping review item must be an object.")
+        key = ResourceKey(_text(raw.get("key"), field="Resource key", max_length=100))
+        if key not in _APPROVED_MAPPING_KEY_SET:
+            raise ValueError(f"Resource `{key.value}` is not managed by Mappings.")
+        if key in seen:
+            raise ValueError("Mapping review contains a duplicate resource.")
+        seen.add(key)
+        action = _text(raw.get("action"), field="Mapping action", max_length=16).lower()
+        if action not in _MAPPING_SUGGESTION_ACTIONS:
+            raise ValueError("Mapping review action is invalid.")
+        target_id = raw.get("target_id")
+        if action == "create":
+            if target_id not in {None, ""}:
+                raise ValueError("Created mapping resources cannot include a target ID.")
+            normalized_target: int | None = None
+        else:
+            normalized_target = _snowflake(target_id, field="Mapping target")
+        result.append(
+            {
+                "key": key.value,
+                "action": action,
+                "target_id": normalized_target,
+            }
+        )
+    return result
+
+
+def _mapping_confirmations(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        raise ValueError("Mapping confirmations must be a list.")
+    result: list[str] = []
+    seen: set[ResourceKey] = set()
+    for raw in value:
+        key = ResourceKey(_text(raw, field="Confirmed resource", max_length=100))
+        if key not in _APPROVED_MAPPING_KEY_SET:
+            raise ValueError(f"Resource `{key.value}` is not managed by Mappings.")
+        if key in seen:
+            raise ValueError("Mapping confirmations contain a duplicate resource.")
+        seen.add(key)
+        result.append(key.value)
+    return result
+
+
 def validate_action_payload(
     action_type: ControlActionType,
     payload: dict[str, Any] | None,
@@ -121,6 +187,13 @@ def validate_action_payload(
         ):
             raise ValueError("Setup plan is invalid.")
         return {"plan_hash": plan_hash.lower()}
+
+    if action_type is ControlActionType.APPLY_MAPPING_SUGGESTIONS:
+        return {
+            "plan_hash": _mapping_plan_hash(data.get("plan_hash")),
+            "items": _mapping_suggestion_items(data.get("items")),
+            "confirmed_keys": _mapping_confirmations(data.get("confirmed_keys")),
+        }
 
     if action_type is ControlActionType.SET_FEATURE:
         feature = FeatureName(_text(data.get("feature"), field="Feature", max_length=100))
