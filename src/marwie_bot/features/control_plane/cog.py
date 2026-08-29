@@ -42,6 +42,7 @@ _QUIZ_SCHEDULER_ACTIONS = {
     ControlActionType.SET_FEATURE,
     ControlActionType.SET_QUIZ_SCHEDULE,
     ControlActionType.ADD_QUIZ_QUESTION,
+    ControlActionType.SET_QUIZ_QUESTION_ENABLED,
 }
 
 
