@@ -146,15 +146,8 @@ function buildLegacyMount({
   };
 }
 
-test('canonical feature destinations detach Commands-only legacy controls and restore them off-page', () => {
+test('transitional feature destinations detach Commands-only legacy controls and restore them off-page', () => {
   const cases = [
-    {
-      path: '/control/community/reputation',
-      sectionId: 'reputation',
-      legitimateId: 'thresholdEditor',
-      restrictedId: 'repReviewBtn',
-      restrictedOwnerTag: 'details',
-    },
     {
       path: '/control/utilities/ticket-configuration',
       sectionId: 'tickets',
