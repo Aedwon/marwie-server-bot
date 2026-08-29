@@ -181,7 +181,7 @@ class ControlActionExecutor:
                 return {"interval_hours": interval}
             case ControlActionType.ADD_QUIZ_QUESTION:
                 options = cast(list[str], payload["options"])
-                question_record = await self.quizzes.add_question(
+                created_question = await self.quizzes.add_question(
                     guild.id,
                     str(payload["category"]),
                     str(payload["prompt"]),
@@ -189,7 +189,7 @@ class ControlActionExecutor:
                     int(payload["correct"]) - 1,
                     str(payload["explanation"]) or None,
                 )
-                return {"question_id": question_record.id}
+                return {"question_id": created_question.id}
             case ControlActionType.UPDATE_QUIZ_QUESTION:
                 options = cast(list[str], payload["options"])
                 question_record = await self.quizzes.update_question(
