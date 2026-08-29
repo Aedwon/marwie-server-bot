@@ -12,7 +12,6 @@ from marwie_bot.features.control_plane.page_save_contract import (
 from marwie_bot.features.control_plane.validation import validate_action_payload
 from marwie_bot.features.quizzes.service import QuizQuestionRecord, QuizService
 
-
 QUIZ_PAGE = "/control/community/quizzes"
 
 
