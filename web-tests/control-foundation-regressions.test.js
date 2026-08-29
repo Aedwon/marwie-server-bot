@@ -141,7 +141,7 @@ test('invalid child URLs use the domain first child, never remembered child', ()
   assert.equal(resolveControlRoute(resolved.path).path, resolved.path);
 });
 
-test('canonical Community and Content routes bypass the narrow internal live compatibility adapter', async () => {
+test('canonical Community, Content and Utilities routes bypass the narrow internal live compatibility adapter', async () => {
   const adapter = await import('../docs-site/control-page-adapter.js');
 
   for (const path of [
@@ -152,15 +152,14 @@ test('canonical Community and Content routes bypass the narrow internal live com
     '/control/content/feeds',
     '/control/content/announcements',
     '/control/content/live',
+    '/control/utilities/ticket-configuration',
+    '/control/utilities/notification-roles',
+    '/control/utilities/anonymous-questions',
   ]) {
     assert.equal(adapter.legacySectionForPath(path), null);
     assert.equal(adapter.legacyMountPlanForPath(path), null);
   }
 
-  assert.equal(
-    adapter.legacySectionForPath('/control/utilities/ticket-configuration'),
-    'tickets',
-  );
 
   // Do not map broad legacy sections that would re-expose removed ownership.
   assert.equal(
@@ -175,12 +174,11 @@ test('canonical Community and Content routes bypass the narrow internal live com
   assert.equal(adapter.legacySectionForPath('/control/activity'), null);
 });
 
-test('browser-style mounting keeps Community and Content canonical while transitional Utilities still mount live state', async () => {
+test('browser-style mounting keeps Community, Content and Utilities canonical', async () => {
   const { mountControlDestination } =
     await import('../docs-site/control-page-adapter.js');
 
   const tickets = { id: 'tickets', parentNode: null };
-  const returned = [];
   const legacyRoot = {
     querySelector(selector) {
       if (selector === '#tickets') return tickets;
@@ -188,7 +186,6 @@ test('browser-style mounting keeps Community and Content canonical while transit
     },
     append(node) {
       node.parentNode = this;
-      returned.push(node.id);
     },
   };
   tickets.parentNode = legacyRoot;
@@ -208,6 +205,7 @@ test('browser-style mounting keeps Community and Content canonical while transit
   for (const [path, label] of [
     ['/control/community/reputation', 'Reputation'],
     ['/control/content/feeds', 'Feeds'],
+    ['/control/utilities/ticket-configuration', 'Ticket configuration'],
   ]) {
     mountControlDestination({ main, destination: resolveControlRoute(path), legacyRoot, renderFallback: fallback });
     assert.equal(main.currentNode, null);
@@ -215,25 +213,7 @@ test('browser-style mounting keeps Community and Content canonical while transit
     assert.equal(main.dataset.pageKey, path);
   }
 
-  mountControlDestination({
-    main,
-    destination: resolveControlRoute('/control/utilities/ticket-configuration'),
-    legacyRoot,
-    renderFallback: fallback,
-  });
-  assert.equal(main.currentNode, tickets);
-  assert.equal(main.dataset.pageKey, '/control/utilities/ticket-configuration');
-
-  mountControlDestination({
-    main,
-    destination: resolveControlRoute('/control/commands'),
-    legacyRoot,
-    renderFallback: fallback,
-  });
-  assert.equal(main.currentNode, null);
-  assert.ok(returned.includes('tickets'));
-  assert.match(main.innerHTML, /Commands/);
-  assert.equal(main.dataset.pageKey, '/control/commands');
+  assert.equal(tickets.parentNode, legacyRoot);
 });
 
 test('signed-out state does not expose live compatibility editors', async () => {
@@ -488,18 +468,6 @@ test('compatibility adapter preserves every still-live transitional capability',
   const adapter = await import('../docs-site/control-page-adapter.js');
 
   const expected = new Map([
-    ['/control/utilities/ticket-configuration', {
-      sections: ['features', 'tickets'],
-      featureKeys: ['tickets'],
-    }],
-    ['/control/utilities/notification-roles', {
-      sections: ['setup'],
-      setupMode: 'notification-roles',
-    }],
-    ['/control/utilities/anonymous-questions', {
-      sections: ['features'],
-      featureKeys: ['anonymous_questions'],
-    }],
     ['/control/analytics', {
       sections: ['features'],
       featureKeys: ['analytics'],
@@ -523,6 +491,9 @@ test('compatibility adapter preserves every still-live transitional capability',
     '/control/content/feeds',
     '/control/content/announcements',
     '/control/content/live',
+    '/control/utilities/ticket-configuration',
+    '/control/utilities/notification-roles',
+    '/control/utilities/anonymous-questions',
     '/control/mappings/channels',
     '/control/mappings/roles',
     '/control/mappings/categories',

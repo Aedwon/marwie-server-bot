@@ -4,6 +4,7 @@ import { registerContentPages } from './control-content.js';
 import { mountControlDestination } from './control-page-adapter.js';
 import { registerCommunityPages } from './control-community.js';
 import { registerMappingPages } from './control-mappings.js';
+import { registerUtilitiesPages } from './control-utilities.js';
 import { installThemeControls } from './control-theme.js';
 import { createNavigationState, installDrawerController, navigationModel } from './control-navigation.js';
 import { resolveControlRoute } from './control-router.js';
@@ -55,10 +56,12 @@ function installDomainStyles({ marker, href }) {
 
 installDomainStyles({ marker: 'data-control-community-styles', href: '/control-community.css?v=1' });
 installDomainStyles({ marker: 'data-control-content-styles', href: '/control-content.css?v=1' });
+installDomainStyles({ marker: 'data-control-utilities-styles', href: '/control-utilities.css?v=1' });
 installDomainStyles({ marker: 'data-control-mappings-styles', href: '/control-mappings.css?v=1' });
 registerCommunityPages();
-registerMappingPages();
 registerContentPages();
+registerUtilitiesPages();
+registerMappingPages();
 
 function readJson(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key) || '') || fallback; } catch { return fallback; }

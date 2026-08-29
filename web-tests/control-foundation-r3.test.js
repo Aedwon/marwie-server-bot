@@ -146,60 +146,28 @@ function buildLegacyMount({
   };
 }
 
-test('remaining transitional feature destinations detach Commands-only legacy controls and restore them off-page', () => {
-  const cases = [
-    {
-      path: '/control/utilities/ticket-configuration',
-      sectionId: 'tickets',
-      legitimateId: 'ticketTypeEditor',
-      restrictedId: 'refreshTicketPanel',
-      restrictedOwnerClasses: ['row-action', 'dependent-action'],
-      restrictedDataset: { prototypeAction: 'Post ticket panel' },
-    },
-  ];
+test('canonical Ticket Configuration leaves the legacy ticket section and Commands-only refresh off-page', () => {
+  const fixture = buildLegacyMount({
+    sectionId: 'tickets',
+    legitimateId: 'ticketTypeEditor',
+    restrictedId: 'refreshTicketPanel',
+    restrictedOwnerClasses: ['row-action', 'dependent-action'],
+    restrictedDataset: { prototypeAction: 'Post ticket panel' },
+  });
 
-  for (const scenario of cases) {
-    const fixture = buildLegacyMount(scenario);
+  mountControlDestination({
+    main: fixture.main,
+    destination: resolveControlRoute('/control/utilities/ticket-configuration'),
+    legacyRoot: fixture.legacyRoot,
+    renderFallback: destination => `<h1>${destination.label}</h1>`,
+  });
 
-    mountControlDestination({
-      main: fixture.main,
-      destination: resolveControlRoute(scenario.path),
-      legacyRoot: fixture.legacyRoot,
-      renderFallback: destination => `<h1>${destination.label}</h1>`,
-    });
-
-    assert.equal(
-      fixture.main.querySelector(`#${scenario.legitimateId}`),
-      fixture.legitimate,
-      `${scenario.path} must keep its neighboring owned capability`,
-    );
-
-    const exposed = fixture.main.querySelector(`#${scenario.restrictedId}`);
-    exposed?.execute();
-    assert.equal(
-      exposed,
-      null,
-      `${scenario.path} must not expose its Commands-only action`,
-    );
-    assert.equal(
-      fixture.restrictedControl.executionCount,
-      0,
-      `${scenario.path} must not make its Commands-only action executable`,
-    );
-
-    mountControlDestination({
-      main: fixture.main,
-      destination: resolveControlRoute('/control/commands'),
-      legacyRoot: fixture.legacyRoot,
-      renderFallback: destination => `<h1>${destination.label}</h1>`,
-    });
-
-    assert.equal(
-      fixture.section.querySelector(`#${scenario.restrictedId}`),
-      fixture.restrictedControl,
-      'detached legacy controls must be restored outside the canonical feature page',
-    );
-  }
+  assert.equal(fixture.main.querySelector('#ticketTypeEditor'), null);
+  assert.equal(fixture.main.querySelector('#refreshTicketPanel'), null);
+  assert.match(fixture.main.innerHTML, /Ticket configuration/);
+  assert.equal(fixture.legacyRoot.querySelector('#ticketTypeEditor'), fixture.legitimate);
+  assert.equal(fixture.legacyRoot.querySelector('#refreshTicketPanel'), fixture.restrictedControl);
+  assert.equal(fixture.restrictedControl.executionCount, 0);
 });
 
 test('canonical Feeds leaves the entire legacy feed section outside the mounted page', () => {
