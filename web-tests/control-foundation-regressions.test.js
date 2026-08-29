@@ -164,10 +164,17 @@ test('canonical routes use a narrow internal live compatibility adapter', async 
     adapter.legacySectionForPath('/control/content/live'),
     'publishing',
   );
-  assert.equal(
-    adapter.legacySectionForPath('/control/utilities/ticket-configuration'),
-    'tickets',
-  );
+  for (const path of [
+    '/control/utilities/ticket-configuration',
+    '/control/utilities/notification-roles',
+    '/control/utilities/anonymous-questions',
+  ]) {
+    assert.equal(
+      adapter.legacySectionForPath(path),
+      null,
+      `${path} is a canonical registered Utilities page`,
+    );
+  }
 
   // Do not map broad legacy sections that would re-expose removed ownership.
   assert.equal(
@@ -538,18 +545,6 @@ test('compatibility adapter preserves every still-live canonical capability', as
       sections: ['features', 'publishing'],
       featureKeys: ['live_announcements'],
     }],
-    ['/control/utilities/ticket-configuration', {
-      sections: ['features', 'tickets'],
-      featureKeys: ['tickets'],
-    }],
-    ['/control/utilities/notification-roles', {
-      sections: ['setup'],
-      setupMode: 'notification-roles',
-    }],
-    ['/control/utilities/anonymous-questions', {
-      sections: ['features'],
-      featureKeys: ['anonymous_questions'],
-    }],
     ['/control/analytics', {
       sections: ['features'],
       featureKeys: ['analytics'],
@@ -566,6 +561,9 @@ test('compatibility adapter preserves every still-live canonical capability', as
   }
 
   for (const path of [
+    '/control/utilities/ticket-configuration',
+    '/control/utilities/notification-roles',
+    '/control/utilities/anonymous-questions',
     '/control/mappings/channels',
     '/control/mappings/roles',
     '/control/mappings/categories',
