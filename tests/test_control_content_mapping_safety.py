@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 
 import discord
 import pytest
@@ -93,9 +93,10 @@ def executor(
     features: FakeFeatures | None = None,
 ) -> ControlActionExecutor:
     value = object.__new__(ControlActionExecutor)
-    value.resources = FakeResources(mappings)
-    value.features = features or FakeFeatures()
-    value.settings = SimpleNamespace(
+    fake_value = cast(Any, value)
+    fake_value.resources = FakeResources(mappings)
+    fake_value.features = features or FakeFeatures()
+    fake_value.settings = SimpleNamespace(
         mar_wie_user_id=ACTOR_ID,
         mar_wie_tiktok_url="https://www.tiktok.com/@example",
     )
@@ -127,6 +128,23 @@ def live_payload(channel_id: int, *, ping_role_id: int | None = None) -> dict[st
     }
 
 
+async def send_announcement(
+    worker: ControlActionExecutor,
+    guild: FakeGuild,
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    return await worker._send_announcement(cast(discord.Guild, guild), payload)
+
+
+async def post_live(
+    worker: ControlActionExecutor,
+    guild: FakeGuild,
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    actor = cast(discord.Member, SimpleNamespace(id=ACTOR_ID))
+    return await worker._post_live(cast(discord.Guild, guild), actor, payload)
+
+
 @pytest.fixture(autouse=True)
 def fake_text_channel_type(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(discord, "TextChannel", FakeTextChannel)
@@ -141,7 +159,7 @@ async def test_announcement_modified_payload_cannot_redirect_to_another_text_cha
     worker = executor({ResourceKey.ANNOUNCEMENTS: 101})
 
     with pytest.raises(ActionRejected, match="mapping|Mappings|destination"):
-        await worker._send_announcement(guild, announcement_payload(999))
+        await send_announcement(worker, guild, announcement_payload(999))
 
     assert mapped.sent == []
     assert tampered.sent == []
@@ -156,7 +174,7 @@ async def test_announcement_mapping_change_after_action_construction_fails_close
     worker = executor({ResourceKey.ANNOUNCEMENTS: 102})
 
     with pytest.raises(ActionRejected, match="mapping|Mappings|destination"):
-        await worker._send_announcement(guild, announcement_payload(101))
+        await send_announcement(worker, guild, announcement_payload(101))
 
     assert reviewed.sent == []
     assert current.sent == []
@@ -169,7 +187,7 @@ async def test_announcement_current_mapped_destination_still_publishes() -> None
     guild.channels = {101: mapped}
     worker = executor({ResourceKey.ANNOUNCEMENTS: 101})
 
-    result = await worker._send_announcement(guild, announcement_payload(101))
+    result = await send_announcement(worker, guild, announcement_payload(101))
 
     assert result["channel_id"] == 101
     assert len(mapped.sent) == 1
@@ -185,11 +203,11 @@ async def test_announcement_feature_and_bot_permission_checks_remain_active() ->
 
     features.enabled[FeatureName.ANNOUNCEMENTS] = False
     with pytest.raises(ActionRejected, match="disabled"):
-        await worker._send_announcement(guild, announcement_payload(101))
+        await send_announcement(worker, guild, announcement_payload(101))
 
     features.enabled[FeatureName.ANNOUNCEMENTS] = True
     with pytest.raises(ActionRejected, match="Send Messages"):
-        await worker._send_announcement(guild, announcement_payload(101))
+        await send_announcement(worker, guild, announcement_payload(101))
 
     assert channel.sent == []
 
@@ -203,7 +221,7 @@ async def test_live_modified_payload_cannot_redirect_to_another_text_channel() -
     worker = executor({ResourceKey.LIVE_ANNOUNCEMENTS: 201})
 
     with pytest.raises(ActionRejected, match="mapping|Mappings|destination"):
-        await worker._post_live(guild, SimpleNamespace(id=ACTOR_ID), live_payload(999))
+        await post_live(worker, guild, live_payload(999))
 
     assert mapped.sent == []
     assert tampered.sent == []
@@ -218,7 +236,7 @@ async def test_live_mapping_change_after_action_construction_fails_closed() -> N
     worker = executor({ResourceKey.LIVE_ANNOUNCEMENTS: 202})
 
     with pytest.raises(ActionRejected, match="mapping|Mappings|destination"):
-        await worker._post_live(guild, SimpleNamespace(id=ACTOR_ID), live_payload(201))
+        await post_live(worker, guild, live_payload(201))
 
     assert reviewed.sent == []
     assert current.sent == []
@@ -231,7 +249,7 @@ async def test_live_fallback_mapping_is_revalidated_server_side() -> None:
     guild.channels = {203: fallback}
     worker = executor({ResourceKey.ANNOUNCEMENTS: 203})
 
-    result = await worker._post_live(guild, SimpleNamespace(id=ACTOR_ID), live_payload(203))
+    result = await post_live(worker, guild, live_payload(203))
 
     assert result["channel_id"] == 203
     assert len(fallback.sent) == 1
@@ -253,11 +271,7 @@ async def test_live_cannot_substitute_an_arbitrary_ping_role() -> None:
     )
 
     with pytest.raises(ActionRejected, match="mapping|Mappings|role"):
-        await worker._post_live(
-            guild,
-            SimpleNamespace(id=ACTOR_ID),
-            live_payload(201, ping_role_id=999),
-        )
+        await post_live(worker, guild, live_payload(201, ping_role_id=999))
 
     assert channel.sent == []
 
@@ -278,11 +292,7 @@ async def test_live_role_mapping_change_after_confirmation_fails_closed() -> Non
     )
 
     with pytest.raises(ActionRejected, match="mapping|Mappings|role"):
-        await worker._post_live(
-            guild,
-            SimpleNamespace(id=ACTOR_ID),
-            live_payload(201, ping_role_id=301),
-        )
+        await post_live(worker, guild, live_payload(201, ping_role_id=301))
 
     assert channel.sent == []
 
@@ -301,11 +311,7 @@ async def test_live_current_mapped_destination_and_role_still_publish() -> None:
         }
     )
 
-    result = await worker._post_live(
-        guild,
-        SimpleNamespace(id=ACTOR_ID),
-        live_payload(201, ping_role_id=301),
-    )
+    result = await post_live(worker, guild, live_payload(201, ping_role_id=301))
 
     assert result["channel_id"] == 201
     assert result["ping_role_id"] == 301
@@ -323,10 +329,10 @@ async def test_live_feature_and_bot_permission_checks_remain_active() -> None:
 
     features.enabled[FeatureName.LIVE_ANNOUNCEMENTS] = False
     with pytest.raises(ActionRejected, match="disabled"):
-        await worker._post_live(guild, SimpleNamespace(id=ACTOR_ID), live_payload(201))
+        await post_live(worker, guild, live_payload(201))
 
     features.enabled[FeatureName.LIVE_ANNOUNCEMENTS] = True
     with pytest.raises(ActionRejected, match="Embed Links"):
-        await worker._post_live(guild, SimpleNamespace(id=ACTOR_ID), live_payload(201))
+        await post_live(worker, guild, live_payload(201))
 
     assert channel.sent == []
