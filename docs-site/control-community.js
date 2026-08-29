@@ -159,14 +159,14 @@ function quizzesMarkup(state, snapshot) {
   if (state.mode === 'edit') {
     return `<section class="control-page community-page" data-page-key="${QUIZZES}">
       ${pageHeader('Quizzes', 'Configure scheduling and maintain the question bank. The quiz channel stays in Mappings.', true)}${statusMarkup(state)}
-      <div class="community-section-grid">${toggleEditor('enabled', 'Scheduled quizzes', value.enabled, 'Turn scheduled quiz posting on or off.')}<label class="community-field-card">Interval in hours<input type="number" min="1" max="720" step="1" data-community-field="intervalHours" value="${escapeHtml(value.intervalHours)}"><small>Between 1 and 720 hours.</small>${state.errors?.intervalHours ? `<span class="community-field-error" role="alert">${escapeHtml(state.errors.intervalHours)}</span>` : ''}</label></div>
+      <div class="community-section-grid">${toggleEditor('enabled', 'Scheduled quizzes', value.enabled, 'Turn scheduled quiz posting on or off.')}<label class="community-field-card">Interval in hours<input type="number" min="1" max="720" step="1" data-community-field="intervalHours" value="${value.intervalHours == null ? '' : escapeHtml(value.intervalHours)}" placeholder="24"><small>Between 1 and 720 hours. Leave blank if automatic scheduling is not configured.</small>${state.errors?.intervalHours ? `<span class="community-field-error" role="alert">${escapeHtml(state.errors.intervalHours)}</span>` : ''}</label></div>
       <section class="community-question-section"><div class="community-section-heading"><div><h2>Question bank</h2><p>${count} question${count === 1 ? '' : 's'} in this server.</p></div><button class="control-button control-button-secondary" type="button" data-community-add-question>Add question</button></div><div class="community-question-list">${value.questions.map((question, index) => questionEditor(question, index, state.errors?.[`question_${index}`])).join('')}</div></section>
       ${saveBar(state)}<section class="community-mappings"><h2>Discord mappings</h2>${mappings}</section></section>`;
   }
   const enabledCount = value.questions.filter(question => question.enabled).length;
   return `<section class="control-page community-page" data-page-key="${QUIZZES}">
     ${pageHeader('Quizzes', 'Current schedule and question-bank status.', false)}${statusMarkup(state)}
-    <div class="community-read-grid"><article class="community-summary-card"><strong>Feature status</strong>${statePill(value.enabled)}</article><article class="community-summary-card"><strong>Schedule</strong><span>Every ${escapeHtml(value.intervalHours)} hours</span><small>${value.lastPostedAt ? `Last posted ${escapeHtml(value.lastPostedAt)}` : 'No recorded post yet'}</small></article><article class="community-summary-card"><strong>Question bank</strong><span>${count} question${count === 1 ? '' : 's'}</span><small>${enabledCount} enabled</small></article></div>
+    <div class="community-read-grid"><article class="community-summary-card"><strong>Feature status</strong>${statePill(value.enabled)}</article><article class="community-summary-card"><strong>Schedule</strong><span>${value.intervalHours == null ? 'Not configured' : `Every ${escapeHtml(value.intervalHours)} hours`}</span><small>${value.lastPostedAt ? `Last posted ${escapeHtml(value.lastPostedAt)}` : 'No recorded post yet'}</small></article><article class="community-summary-card"><strong>Question bank</strong><span>${count} question${count === 1 ? '' : 's'}</span><small>${enabledCount} enabled</small></article></div>
     <section class="community-mappings"><h2>Discord mappings</h2>${mappings}</section></section>`;
 }
 
@@ -222,12 +222,15 @@ export function createCommunityPageDefinition(pageKey) {
           mentor: Number(raw.mentor ?? DEFAULT_THRESHOLDS.mentor),
         } };
       }
-      if (pageKey === QUIZZES) return {
-        enabled: featureEnabled(snapshot, 'quizzes'),
-        intervalHours: Number(snapshot?.quiz?.interval_hours ?? 24),
-        lastPostedAt: snapshot?.quiz?.last_posted_at || null,
-        questions: (snapshot?.quiz?.questions || []).map(normalizeQuestion),
-      };
+      if (pageKey === QUIZZES) {
+        const intervalHours = snapshot?.quiz?.interval_hours;
+        return {
+          enabled: featureEnabled(snapshot, 'quizzes'),
+          intervalHours: intervalHours == null ? null : Number(intervalHours),
+          lastPostedAt: snapshot?.quiz?.last_posted_at || null,
+          questions: (snapshot?.quiz?.questions || []).map(normalizeQuestion),
+        };
+      }
       if (pageKey === VOICE_COWORKING) return { voiceEnabled: featureEnabled(snapshot, 'voice'), coworkingEnabled: featureEnabled(snapshot, 'coworking') };
       return { enabled: featureEnabled(snapshot, 'showcase') };
     },
@@ -243,8 +246,10 @@ export function createCommunityPageDefinition(pageKey) {
         }
       }
       if (pageKey === QUIZZES) {
-        const interval = integer(draft?.intervalHours);
-        if (interval === null || interval < 1 || interval > 720) errors.intervalHours = 'Quiz interval must be between 1 and 720 hours.';
+        if (draft?.intervalHours != null) {
+          const interval = integer(draft.intervalHours);
+          if (interval === null || interval < 1 || interval > 720) errors.intervalHours = 'Quiz interval must be between 1 and 720 hours.';
+        }
         (draft?.questions || []).forEach((question, index) => {
           const error = validateQuestion(question);
           if (error) errors[`question_${index}`] = error;
@@ -261,7 +266,9 @@ export function createCommunityPageDefinition(pageKey) {
       }
       if (pageKey === QUIZZES) {
         if (persisted.enabled !== draft.enabled) changes.push({ action_type: 'set_feature', payload: { feature: 'quizzes', enabled: draft.enabled } });
-        if (Number(persisted.intervalHours) !== Number(draft.intervalHours)) changes.push({ action_type: 'set_quiz_schedule', payload: { interval_hours: Number(draft.intervalHours) } });
+        const persistedInterval = persisted.intervalHours == null ? null : Number(persisted.intervalHours);
+        const draftInterval = draft.intervalHours == null ? null : Number(draft.intervalHours);
+        if (draftInterval !== null && persistedInterval !== draftInterval) changes.push({ action_type: 'set_quiz_schedule', payload: { interval_hours: draftInterval } });
         const existing = new Map(persisted.questions.filter(question => question.id != null).map(question => [Number(question.id), question]));
         for (const question of draft.questions) {
           if (question.id == null) {

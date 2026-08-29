@@ -172,7 +172,10 @@ class QuizService:
             return None
         closes_at = datetime.now(UTC) + timedelta(minutes=max(5, min(duration_minutes, 1440)))
         session = await self.repository.create_session(guild_id, channel_id, question.id, closes_at)
-        return session, question
+        published_question = await self.repository.get_question(question.id)
+        if published_question is None:
+            raise RuntimeError("Quiz question disappeared after session creation.")
+        return session, published_question
 
     async def record_answer(
         self, message_id: int, guild_id: int, user_id: int, answer_index: int

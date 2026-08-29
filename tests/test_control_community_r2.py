@@ -10,7 +10,7 @@ from marwie_bot.config.resources import FeatureName
 from marwie_bot.db.base import Base
 from marwie_bot.db.session import Database
 from marwie_bot.features.configuration.repository import SQLAlchemyFeatureConfigRepository
-from marwie_bot.features.configuration.service import FeatureConfigService, FeatureConfigRecord
+from marwie_bot.features.configuration.service import FeatureConfigRecord, FeatureConfigService
 from marwie_bot.features.control_plane.domain import (
     ControlActionRecord,
     ControlActionStatus,
@@ -336,6 +336,7 @@ async def test_quiz_page_save_rolls_back_earlier_db_change_when_open_question_ed
         assert result["failed_indices"] == [1]
         assert result["items"][0]["status"] == "rolled_back"
         assert result["items"][1]["status"] == "failed"
+        assert "open quiz" in result["items"][1]["error"]
         assert result["revision"] == base_revision
     finally:
         await database.close()
