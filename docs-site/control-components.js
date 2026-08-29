@@ -1,9 +1,11 @@
+import { activityPageMarkup, commandsPageMarkup } from './control-secondary.js';
+
 export function escapeHtml(value) {
   return String(value ?? '')
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
+    .replaceAll('\"', '&quot;')
     .replaceAll("'", '&#39;');
 }
 
@@ -53,17 +55,13 @@ export function identityMarkup(session, guild) {
     </div>`;
 }
 
-export function pageMarkup(destination, { authenticated = false } = {}) {
+export function pageMarkup(destination, { authenticated = false, activityState = null } = {}) {
   if (!authenticated) {
     return `<section class="control-empty"><h1>${escapeHtml(destination.label)}</h1><p>Sign in with Discord to load Control.</p><a class="control-primary-button" href="/api/auth/start">Sign in with Discord</a></section>`;
   }
 
-  if (destination.path === '/control/commands') {
-    return `<section class="control-page-section"><h1>Commands</h1><p>Slash-command administration remains documented in the canonical command manual.</p><p><a href="/commands">Open Commands</a></p></section>`;
-  }
-  if (destination.path === '/control/activity') {
-    return `<section class="control-page-section"><h1>Activity</h1><p>Administrative history is sourced from the durable Control action audit trail.</p></section>`;
-  }
+  if (destination.path === '/control/commands') return commandsPageMarkup();
+  if (destination.path === '/control/activity') return activityPageMarkup(activityState || {});
 
   const intro = destination.domain === 'workflows'
     ? `Operational guidance for ${escapeHtml(destination.label)}. Configuration remains with its owning Control destination or command.`

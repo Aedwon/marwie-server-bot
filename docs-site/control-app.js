@@ -9,6 +9,7 @@ import { registerUtilitiesPages } from './control-utilities.js';
 import { installThemeControls } from './control-theme.js';
 import { createNavigationState, installDrawerController, navigationModel } from './control-navigation.js';
 import { resolveControlRoute } from './control-router.js';
+import { createActivityController, installActivityPage } from './control-secondary.js';
 import { workflowPageMarkup } from './control-workflows.js';
 import {
   controlState,
@@ -20,6 +21,7 @@ import {
 import {
   enqueueControlAction,
   enqueuePageSave,
+  loadActivity,
   loadGuildState,
   waitForAction,
 } from './control-api.js';
@@ -46,6 +48,8 @@ let guildState = null;
 let snapshot = null;
 let removeAccountMenu = () => {};
 let removePageInteractions = () => {};
+let activityController = null;
+let activityGuildId = null;
 
 function installDomainStyles({ marker, href }) {
   if (document.querySelector(`link[${marker}]`)) return;
@@ -61,6 +65,7 @@ installDomainStyles({ marker: 'data-control-content-styles', href: '/control-con
 installDomainStyles({ marker: 'data-control-utilities-styles', href: '/control-utilities.css?v=1' });
 installDomainStyles({ marker: 'data-control-analytics-workflows-styles', href: '/control-analytics-workflows.css?v=1' });
 installDomainStyles({ marker: 'data-control-mappings-styles', href: '/control-mappings.css?v=1' });
+installDomainStyles({ marker: 'data-control-secondary-styles', href: '/control-secondary.css?v=1' });
 registerCommunityPages();
 registerContentPages();
 registerUtilitiesPages();
@@ -104,11 +109,36 @@ function renderNavigation() {
   });
 }
 
+function resetActivityController() {
+  activityController = null;
+  activityGuildId = null;
+}
+
+function ensureActivityController() {
+  if (!session?.authenticated || !guild) return null;
+  const guildId = String(guild.id);
+  if (!activityController || activityGuildId !== guildId) {
+    activityGuildId = guildId;
+    activityController = createActivityController({
+      guildId,
+      actorId: session.user?.id || null,
+      loadPage: (requestedGuildId, { cursor }) => loadActivity(requestedGuildId, { cursor }),
+      onChange: () => {
+        if (navState.current.path === '/control/activity') renderMain();
+      },
+    });
+  }
+  return activityController;
+}
+
 function renderMain() {
   removePageInteractions();
   removePageInteractions = () => {};
 
   const pageKey = navState.current.path;
+  const activity = pageKey === '/control/activity' && session?.authenticated && guild
+    ? ensureActivityController()
+    : null;
   const registeredMarkup = session?.authenticated
     ? renderRegisteredControlPage(pageKey, { snapshot: guildState })
     : null;
@@ -123,6 +153,7 @@ function renderMain() {
       authenticated: Boolean(session?.authenticated),
       state: guildState,
       snapshot,
+      activityState: activity?.state || null,
     })),
   });
 
@@ -135,6 +166,8 @@ function renderMain() {
       onConfirm: message => window.confirm(message),
       rerender: renderMain,
     });
+  } else if (activity) {
+    removePageInteractions = installActivityPage(shell.main, activity);
   }
   shell.main.focus({ preventScroll: true });
 }
@@ -199,6 +232,7 @@ async function loadSession() {
     guild = null;
     guildState = null;
     snapshot = null;
+    resetActivityController();
     setStatus('Sign in to load server state.');
     renderMain();
     return;
@@ -209,6 +243,7 @@ async function loadSession() {
   guild = session.guilds?.[0] || null;
   mountIdentity(identityMarkup(session, guild));
   if (!guild) {
+    resetActivityController();
     setStatus('No manageable Rob-bot server is available for this account.', 'bad');
     renderMain();
     return;
