@@ -68,6 +68,7 @@ test('Control shell wires authenticated Activity through the canonical loader an
 
 test('secondary surfaces provide wrapping and narrow reflow without event-card styling', () => {
   assert.match(secondaryCss, /\.control-activity-meta/);
+  assert.match(secondaryCss, /\.control-activity-meta\s*\{[^}]*font-size:\s*13px\s*;/);
   assert.match(secondaryCss, /overflow-wrap:\s*anywhere/);
   assert.match(secondaryCss, /@media\s*\(max-width:\s*560px\)/);
   assert.doesNotMatch(secondaryCss, /activity-card|box-shadow/);
