@@ -32,6 +32,56 @@ class FakeQuiz:
     ) -> QuizQuestionRecord:
         return self.question
 
+    async def list_questions(
+        self, guild_id: int, *, active_only: bool = False
+    ) -> list[QuizQuestionRecord]:
+        if guild_id != self.question.guild_id:
+            return []
+        if active_only and not self.question.active:
+            return []
+        return [self.question]
+
+    async def update_question(
+        self,
+        guild_id: int,
+        question_id: int,
+        category: str,
+        prompt: str,
+        options: tuple[str, str, str, str],
+        correct_index: int,
+        explanation: str | None,
+    ) -> QuizQuestionRecord | None:
+        if guild_id != self.question.guild_id or question_id != self.question.id:
+            return None
+        self.question = QuizQuestionRecord(
+            self.question.id,
+            self.question.guild_id,
+            category,
+            prompt,
+            options,
+            correct_index,
+            explanation,
+            self.question.active,
+        )
+        return self.question
+
+    async def set_question_active(
+        self, guild_id: int, question_id: int, active: bool
+    ) -> QuizQuestionRecord | None:
+        if guild_id != self.question.guild_id or question_id != self.question.id:
+            return None
+        self.question = QuizQuestionRecord(
+            self.question.id,
+            self.question.guild_id,
+            self.question.category,
+            self.question.prompt,
+            self.question.options,
+            self.question.correct_index,
+            self.question.explanation,
+            active,
+        )
+        return self.question
+
     async def random_question(self, guild_id: int) -> QuizQuestionRecord | None:
         return self.question
 
