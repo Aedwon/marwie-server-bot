@@ -213,15 +213,20 @@ class GuildSnapshotBuilder:
         return await self.quizzes.list_questions(guild_id, active_only=False)
 
     async def build(self, guild: discord.Guild) -> dict[str, Any]:
-        resource_records, loaded_features, ticket_types, sources, panel, quiz_questions = (
-            await asyncio.gather(
-                self.resources.list_for_guild(guild.id),
-                self._load_features(guild.id),
-                self.tickets.list_types(guild.id, enabled_only=False),
-                self.ai_sources.list_sources(guild.id),
-                self.control.get_notification_panel(guild.id),
-                self._load_quiz_questions(guild.id),
-            )
+        (
+            resource_records,
+            loaded_features,
+            ticket_types,
+            sources,
+            panel,
+            quiz_questions,
+        ) = await asyncio.gather(
+            self.resources.list_for_guild(guild.id),
+            self._load_features(guild.id),
+            self.tickets.list_types(guild.id, enabled_only=False),
+            self.ai_sources.list_sources(guild.id),
+            self.control.get_notification_panel(guild.id),
+            self._load_quiz_questions(guild.id),
         )
 
         resource_by_key = {record.key: record for record in resource_records}
