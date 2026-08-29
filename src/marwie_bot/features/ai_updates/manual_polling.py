@@ -9,6 +9,9 @@ from typing import Protocol
 from marwie_bot.features.ai_updates.repository import AISourceRecord
 from marwie_bot.features.ai_updates.service import FeedItem
 
+MANUAL_PREVIEW_DESCRIPTION_LIMIT = 4096
+MANUAL_PREVIEW_MAX_CANDIDATES = 20
+
 
 class ManualFeedPreviewInvalid(ValueError):
     """The manual feed preview is missing, stale, or no longer safe to publish."""
@@ -53,6 +56,34 @@ class ManualFeedCandidate:
             published_at=self.published_at,
             dedupe_key=self.dedupe_key,
         )
+
+
+def manual_preview_line(candidate: ManualFeedCandidate) -> str:
+    return (
+        f"- **{candidate.source_name}** · `{candidate.source_category}` · "
+        f"[{candidate.title}]({candidate.url})"
+    )
+
+
+def bounded_manual_preview_candidates(
+    candidates: tuple[ManualFeedCandidate, ...],
+) -> tuple[ManualFeedCandidate, ...]:
+    selected: list[ManualFeedCandidate] = []
+    description_length = 0
+    for candidate in candidates:
+        if len(selected) >= MANUAL_PREVIEW_MAX_CANDIDATES:
+            break
+        line = manual_preview_line(candidate)
+        added_length = len(line) + (1 if selected else 0)
+        if description_length + added_length > MANUAL_PREVIEW_DESCRIPTION_LIMIT:
+            if not selected:
+                raise ManualFeedPreviewInvalid(
+                    "A feed candidate is too large to review safely in Discord. Nothing was posted."
+                )
+            break
+        selected.append(candidate)
+        description_length += added_length
+    return tuple(selected)
 
 
 @dataclass(frozen=True, slots=True)
@@ -152,12 +183,17 @@ class ManualFeedPollingService:
         )
         return tuple(candidate for candidate in fetched if candidate.dedupe_key not in existing)
 
+    async def _preview_candidates(
+        self, guild_id: int, sources: list[AISourceRecord]
+    ) -> tuple[ManualFeedCandidate, ...]:
+        return bounded_manual_preview_candidates(await self._candidates(guild_id, sources))
+
     async def preview(self, *, guild_id: int, actor_id: int) -> ManualFeedPreview:
         now = self.clock()
         self._purge_expired(now)
         destination_id = await self._authorized_context(guild_id, actor_id)
         sources = await self.repository.list_sources(guild_id, enabled_only=True)
-        candidates = await self._candidates(guild_id, sources)
+        candidates = await self._preview_candidates(guild_id, sources)
         token = secrets.token_urlsafe(24)
         preview = ManualFeedPreview(
             token=token,
@@ -208,7 +244,7 @@ class ManualFeedPollingService:
                 "An AI source changed after preview. Fetch a new preview."
             )
 
-        candidates = await self._candidates(guild_id, sources)
+        candidates = await self._preview_candidates(guild_id, sources)
         if candidates != stored.preview.candidates:
             self._previews.pop(token, None)
             raise ManualFeedPreviewInvalid(
