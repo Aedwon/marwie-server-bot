@@ -16,6 +16,7 @@ from marwie_bot.features.ai_updates.manual_polling import (
     ManualFeedPollingService,
     ManualFeedPreview,
     ManualFeedPreviewInvalid,
+    manual_preview_line,
 )
 from marwie_bot.features.ai_updates.repository import AISourceRecord, SQLAlchemyAIUpdatesRepository
 from marwie_bot.features.ai_updates.service import FeedItem, parse_feed
@@ -29,19 +30,12 @@ logger = logging.getLogger(__name__)
 
 
 def _preview_embed(preview: ManualFeedPreview) -> discord.Embed:
-    lines: list[str] = []
-    for candidate in preview.candidates[:20]:
-        lines.append(
-            f"- **{candidate.source_name}** · `{candidate.source_category}` · "
-            f"[{candidate.title}]({candidate.url})"
-        )
-    if len(preview.candidates) > 20:
-        lines.append(f"- …and {len(preview.candidates) - 20} more candidate(s).")
+    lines = [manual_preview_line(candidate) for candidate in preview.candidates]
     if not lines:
         lines.append("No new feed candidates were found.")
     embed = discord.Embed(
         title="AI feed poll preview",
-        description="\n".join(lines)[:4096],
+        description="\n".join(lines),
         color=discord.Color.blurple(),
     )
     embed.set_footer(
@@ -95,6 +89,7 @@ class ManualFeedPollView(discord.ui.View):
 
         self.completed = True
         await interaction.response.defer(ephemeral=True, thinking=True)
+        completion = "AI feed poll failed unexpectedly. Fetch a new preview before trying again."
         try:
             posted = await self.service.post(
                 self.preview.token,
@@ -109,6 +104,18 @@ class ManualFeedPollView(discord.ui.View):
         except ManualFeedPreviewInvalid as error:
             completion = "Feed preview expired or changed; nothing was posted."
             await interaction.followup.send(str(error), ephemeral=True)
+        except Exception:
+            logger.exception(
+                "Unexpected manual feed publication failure "
+                "guild_id=%s actor_id=%s candidate_count=%s",
+                guild.id,
+                interaction.user.id,
+                len(self.preview.candidates),
+            )
+            await interaction.followup.send(
+                "The AI feed poll failed unexpectedly. Fetch a new preview before trying again.",
+                ephemeral=True,
+            )
         finally:
             self.stop()
             if self.message is not None:

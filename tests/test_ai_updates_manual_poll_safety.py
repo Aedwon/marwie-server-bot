@@ -74,8 +74,7 @@ class PreviewHarness:
         self.repository = FakeRepository()
         self.published: list[tuple[ManualFeedCandidate, ...]] = []
         self.feed_items = {
-            source_id: [item(source_id, index) for index in range(10)]
-            for source_id in (1, 2, 3)
+            source_id: [item(source_id, index) for index in range(10)] for source_id in (1, 2, 3)
         }
 
         async def fetch_items(record: AISourceRecord) -> list[FeedItem]:

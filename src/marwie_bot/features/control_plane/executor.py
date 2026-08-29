@@ -8,7 +8,6 @@ from discord.ext import commands
 
 from marwie_bot.config.resources import RESOURCE_TYPES, FeatureName, ResourceKey
 from marwie_bot.config.settings import Settings
-from marwie_bot.features.ai_updates.cog import AIUpdatesCog
 from marwie_bot.features.ai_updates.repository import SQLAlchemyAIUpdatesRepository
 from marwie_bot.features.configuration.provisioning import (
     AUTO_SETUP_RESOURCES,
@@ -394,22 +393,32 @@ class ControlActionExecutor:
         return {"member_id": member.id, "total": total}
 
     async def _poll_ai_sources(self, guild: discord.Guild) -> dict[str, Any]:
-        cog = self.bot.get_cog("AIUpdatesCog")
-        if not isinstance(cog, AIUpdatesCog):
-            raise ActionRejected("AI feed polling is unavailable right now.")
-        posted = 0
-        for source in await self.ai_sources.list_sources(guild.id, enabled_only=True):
-            posted += await cog._poll_source(source)
-        return {"posted": posted}
+        del guild
+        raise ActionRejected(
+            "Manual feed polling is Commands-only. Use the `/ai-source poll` command to preview "
+            "candidates before choosing Post or Cancel."
+        )
 
     async def _send_announcement(
         self, guild: discord.Guild, payload: dict[str, Any]
     ) -> dict[str, Any]:
         if not await self.features.is_enabled(guild.id, FeatureName.ANNOUNCEMENTS):
             raise ActionRejected("Announcements are disabled in this server.")
-        channel = guild.get_channel(int(payload["channel_id"]))
+        destination_resource = await self.resources.get(guild.id, ResourceKey.ANNOUNCEMENTS)
+        channel = (
+            guild.get_channel(destination_resource.discord_id)
+            if destination_resource is not None
+            else None
+        )
         if not isinstance(channel, discord.TextChannel):
-            raise ActionRejected("Select a text channel for the announcement.")
+            raise ActionRejected(
+                "Configure the Announcements destination in Mappings before publishing."
+            )
+        if int(payload["channel_id"]) != channel.id:
+            raise ActionRejected(
+                "The Announcements destination changed in Mappings after review. "
+                "Review the page again before publishing."
+            )
         bot_member = guild.me
         if bot_member is None:
             raise ActionRejected("Rob-bot's server member is unavailable.")
@@ -469,20 +478,20 @@ class ControlActionExecutor:
             raise ActionRejected("Live announcements are disabled in this server.")
 
         channel: discord.TextChannel | None = None
-        if payload["channel_id"] is not None:
-            candidate = guild.get_channel(int(payload["channel_id"]))
-            if not isinstance(candidate, discord.TextChannel):
-                raise ActionRejected("The selected Live destination is no longer a text channel.")
-            channel = candidate
-        else:
-            for key in (ResourceKey.LIVE_ANNOUNCEMENTS, ResourceKey.ANNOUNCEMENTS):
-                resource = await self.resources.get(guild.id, key)
-                candidate = guild.get_channel(resource.discord_id) if resource is not None else None
-                if isinstance(candidate, discord.TextChannel):
-                    channel = candidate
-                    break
+        for key in (ResourceKey.LIVE_ANNOUNCEMENTS, ResourceKey.ANNOUNCEMENTS):
+            resource = await self.resources.get(guild.id, key)
+            candidate = guild.get_channel(resource.discord_id) if resource is not None else None
+            if isinstance(candidate, discord.TextChannel):
+                channel = candidate
+                break
         if channel is None:
-            raise ActionRejected("No live-announcement channel is configured.")
+            raise ActionRejected("Configure a Live destination in Mappings before publishing.")
+        expected_channel_id = payload.get("channel_id")
+        if expected_channel_id is None or int(expected_channel_id) != channel.id:
+            raise ActionRejected(
+                "The Live destination changed in Mappings after review. "
+                "Review the page again before publishing."
+            )
 
         bot_member = guild.me
         if bot_member is None:
@@ -495,9 +504,15 @@ class ControlActionExecutor:
         allowed = discord.AllowedMentions.none()
         ping_role_id = payload.get("ping_role_id")
         if ping_role_id is not None:
-            role = guild.get_role(int(ping_role_id))
+            role_resource = await self.resources.get(guild.id, ResourceKey.LIVE_PING_ROLE)
+            role = guild.get_role(role_resource.discord_id) if role_resource is not None else None
             if role is None or role.is_default():
-                raise ActionRejected("The selected Live ping role no longer exists.")
+                raise ActionRejected("Configure the Live ping role in Mappings before publishing.")
+            if int(ping_role_id) != role.id:
+                raise ActionRejected(
+                    "The Live ping role changed in Mappings after confirmation. "
+                    "Review the page again before publishing."
+                )
             if not role.mentionable and not permissions.mention_everyone:
                 raise ActionRejected(
                     f"Rob-bot cannot mention the `{role.name}` role in that channel."
