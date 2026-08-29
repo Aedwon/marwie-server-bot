@@ -1124,11 +1124,13 @@ With background tasks enabled, enabled sources are also polled automatically eve
 
 **Permission:** Manage Server.
 
-**What happens:** Privately builds an aggregate report for the previous 7 days. The report includes moderation cases, tickets opened, tickets closed, solved build-help threads, quiz answers and correct-answer count, anonymous questions, and reputation events.
+**What happens:** After approval, Rob-bot privately builds an aggregate report for the exact previous 168-hour UTC window `[period_start, period_end)`. The report includes moderation cases, tickets opened, tickets closed by `closed_at`, quiz answers, quiz accuracy, anonymous questions, and reputation events. If there are no quiz answers, quiz accuracy is shown as `No answers in this period`.
+
+The report is aggregate-only and does not include member-level or raw activity data. Build Help is not an Analytics V1 metric.
 
 **Parameters:** None.
 
-This command reads the report on demand. Separately, the background automation checks every 6 hours whether a weekly analytics post is due in the configured `analytics` channel and whether old unanswered build-help threads should be surfaced.
+This command reads the report on demand and replies privately. Separately, the background automation checks every 6 hours whether a weekly analytics post is due in the configured `analytics` channel. Unanswered Build Help surfacing remains a separate automation outside Analytics V1.
 
 **Example usage:**
 
