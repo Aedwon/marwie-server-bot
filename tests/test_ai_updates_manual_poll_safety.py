@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -214,7 +214,7 @@ def preview() -> ManualFeedPreview:
 
 @pytest.mark.asyncio
 async def test_unexpected_post_failure_has_no_secondary_exception_or_false_success() -> None:
-    view = ManualFeedPollView(service=FailingPostService(), preview=preview())
+    view = ManualFeedPollView(service=cast(Any, FailingPostService()), preview=preview())
     prompt = FakePromptMessage()
     view.message = prompt  # type: ignore[assignment]
     interaction = SimpleNamespace(
@@ -223,9 +223,9 @@ async def test_unexpected_post_failure_has_no_secondary_exception_or_false_succe
         response=FakeResponse(),
         followup=FakeFollowup(),
     )
-    post_button = next(item for item in view.children if item.label == "Post")
+    post_button = next(item for item in view.children if getattr(item, "label", None) == "Post")
 
-    await post_button.callback(interaction)  # type: ignore[arg-type]
+    await cast(Any, post_button).callback(cast(Any, interaction))
 
     assert interaction.response.deferred is True
     assert len(interaction.followup.messages) == 1
