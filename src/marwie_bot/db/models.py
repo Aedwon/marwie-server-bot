@@ -169,23 +169,6 @@ class ReputationTotal(Base):
     )
 
 
-class ForumSolution(Base):
-    __tablename__ = "forum_solutions"
-    __table_args__ = (UniqueConstraint("guild_id", "thread_id", name="uq_solution_guild_thread"),)
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    guild_id: Mapped[int] = mapped_column(BigInteger, nullable=False, index=True)
-    thread_id: Mapped[int] = mapped_column(BigInteger, nullable=False, index=True)
-    answer_message_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    helper_id: Mapped[int] = mapped_column(BigInteger, nullable=False, index=True)
-    solved_by: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    question_title: Mapped[str] = mapped_column(String(200), nullable=False)
-    answer_excerpt: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-
-
 class QuizQuestion(Base):
     __tablename__ = "quiz_questions"
 

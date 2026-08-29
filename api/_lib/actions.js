@@ -10,14 +10,11 @@ export const ACTIONS = Object.freeze({
   SAVE_NOTIFICATION_PANEL: 'save_notification_panel',
   UPSERT_TICKET_TYPE: 'upsert_ticket_type',
   DISABLE_TICKET_TYPE: 'disable_ticket_type',
-  REFRESH_TICKET_PANEL: 'refresh_ticket_panel',
   SET_REPUTATION_THRESHOLDS: 'set_reputation_thresholds',
-  ADJUST_REPUTATION: 'adjust_reputation',
   SET_QUIZ_SCHEDULE: 'set_quiz_schedule',
   ADD_QUIZ_QUESTION: 'add_quiz_question',
   UPSERT_AI_SOURCE: 'upsert_ai_source',
   DISABLE_AI_SOURCE: 'disable_ai_source',
-  POLL_AI_SOURCES: 'poll_ai_sources',
   SEND_ANNOUNCEMENT: 'send_announcement',
   POST_LIVE: 'post_live',
 });
@@ -33,15 +30,14 @@ const ADMIN_ACTIONS = new Set([
   ACTIONS.SAVE_NOTIFICATION_PANEL,
   ACTIONS.UPSERT_TICKET_TYPE,
   ACTIONS.DISABLE_TICKET_TYPE,
-  ACTIONS.REFRESH_TICKET_PANEL,
   ACTIONS.POST_LIVE,
 ]);
 
 const RESOURCE_KEYS = new Set([
   'moderation_log', 'message_log', 'ticket_panel', 'ticket_category', 'ticket_logs',
   'create_workspace_voice', 'temp_voice_category', 'coworking_lounge', 'announcements',
-  'live_announcements', 'live_ping_role', 'role_panel', 'ai_updates', 'build_help_forum',
-  'solved_tag', 'quiz_channel', 'anon_questions', 'analytics', 'showcase_forum',
+  'live_announcements', 'live_ping_role', 'role_panel', 'ai_updates', 'quiz_channel',
+  'anon_questions', 'analytics', 'showcase_forum',
   'app_of_the_week', 'collab_lfg', 'builder_role', 'contributor_role', 'mentor_role', 'bot_log',
 ]);
 
@@ -56,7 +52,7 @@ const MAPPING_ACTIONS = new Set(['bind', 'remap', 'create']);
 
 const FEATURE_NAMES = new Set([
   'moderation', 'message_logs', 'tickets', 'voice', 'announcements', 'live_announcements',
-  'reputation', 'build_help', 'quizzes', 'anonymous_questions', 'coworking', 'ai_updates',
+  'reputation', 'quizzes', 'anonymous_questions', 'coworking', 'ai_updates',
   'analytics', 'showcase',
 ]);
 
@@ -235,9 +231,6 @@ export function validateActionPayload(actionType, rawPayload) {
     }
     case ACTIONS.DISABLE_TICKET_TYPE:
       return { key: text(data.key, 'Ticket type key', 32).toLowerCase() };
-    case ACTIONS.REFRESH_TICKET_PANEL:
-    case ACTIONS.POLL_AI_SOURCES:
-      return {};
     case ACTIONS.SET_REPUTATION_THRESHOLDS: {
       const builder = integer(data.builder, 'Builder threshold', 1, 100000);
       const contributor = integer(data.contributor, 'Contributor threshold', 1, 100000);
@@ -246,15 +239,6 @@ export function validateActionPayload(actionType, rawPayload) {
         throw new HttpError(400, 'Thresholds must increase from Builder to Contributor to Mentor.');
       }
       return { builder, contributor, mentor };
-    }
-    case ACTIONS.ADJUST_REPUTATION: {
-      const points = integer(data.points, 'Reputation points', -1000, 1000);
-      if (points === 0) throw new HttpError(400, 'Reputation points cannot be zero.');
-      return {
-        member_id: snowflake(data.member_id, 'Member'),
-        points,
-        reason: text(data.reason, 'Reason', 200),
-      };
     }
     case ACTIONS.SET_QUIZ_SCHEDULE:
       return { interval_hours: integer(data.interval_hours, 'Quiz interval', 1, 720) };

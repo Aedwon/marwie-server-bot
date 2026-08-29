@@ -23,7 +23,6 @@ EXTENSIONS = (
     "marwie_bot.features.announcements.cog",
     "marwie_bot.features.live_announcements.cog",
     "marwie_bot.features.reputation.cog",
-    "marwie_bot.features.build_help.cog",
     "marwie_bot.features.quizzes.cog",
     "marwie_bot.features.anonymous_questions.cog",
     "marwie_bot.features.coworking.cog",

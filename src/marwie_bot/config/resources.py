@@ -17,8 +17,6 @@ class ResourceKey(StrEnum):
     LIVE_PING_ROLE = "live_ping_role"
     ROLE_PANEL = "role_panel"
     AI_UPDATES = "ai_updates"
-    BUILD_HELP_FORUM = "build_help_forum"
-    SOLVED_TAG = "solved_tag"
     QUIZ_CHANNEL = "quiz_channel"
     ANON_QUESTIONS = "anon_questions"
     ANALYTICS = "analytics"
@@ -46,7 +44,6 @@ class FeatureName(StrEnum):
     ANNOUNCEMENTS = "announcements"
     LIVE_ANNOUNCEMENTS = "live_announcements"
     REPUTATION = "reputation"
-    BUILD_HELP = "build_help"
     QUIZZES = "quizzes"
     ANONYMOUS_QUESTIONS = "anonymous_questions"
     COWORKING = "coworking"
@@ -69,8 +66,6 @@ RESOURCE_TYPES: dict[ResourceKey, ResourceType] = {
     ResourceKey.LIVE_PING_ROLE: ResourceType.ROLE,
     ResourceKey.ROLE_PANEL: ResourceType.CHANNEL,
     ResourceKey.AI_UPDATES: ResourceType.CHANNEL,
-    ResourceKey.BUILD_HELP_FORUM: ResourceType.CHANNEL,
-    ResourceKey.SOLVED_TAG: ResourceType.FORUM_TAG,
     ResourceKey.QUIZ_CHANNEL: ResourceType.CHANNEL,
     ResourceKey.ANON_QUESTIONS: ResourceType.CHANNEL,
     ResourceKey.ANALYTICS: ResourceType.CHANNEL,

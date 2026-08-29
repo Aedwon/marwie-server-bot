@@ -2,7 +2,7 @@
 
 Production-oriented Discord bot for the Marwie AI App Builders community. It is a clean rebuild of the older community bot with per-guild configuration, async SQLAlchemy persistence, Alembic migrations, restart-safe background jobs and Discord-native interactions.
 
-The V1 implementation covers moderation, message logs, tickets, temporary voice workspaces, announcements, TikTok live announcements, reputation, solved build-help, quizzes, anonymous questions, coworking utilities, AI update feeds, analytics and showcase automation. Semantic `/ask-community` RAG is intentionally reserved for a later phase.
+The V1 implementation covers moderation, message logs, tickets, temporary voice workspaces, announcements, TikTok live announcements, reputation, quizzes, anonymous questions, coworking utilities, AI update feeds, analytics and showcase automation. Semantic `/ask-community` RAG is intentionally reserved for a later phase.
 
 ## Command confirmation
 
@@ -16,20 +16,20 @@ Every slash command requires one explicit confirmation before it runs.
 
 Only the member who invoked the command can approve or decline it. This applies to all slash commands, including read-only commands such as `/rank`, `/profile`, `/leaderboard` and `/setup status`.
 
-`/setup auto` has one additional safety layer. The first approval authorizes discovery and safe connection to existing Discord resources. If Rob-bot still needs to create something, remap an existing binding, add the `Solved` tag or refresh the self-role panel, it shows a second private confirmation listing the exact proposed changes before applying them.
+`/setup auto` has one additional safety layer. The first approval authorizes discovery and safe connection to existing Discord resources. If Rob-bot still needs to create something, remap an existing binding or refresh the self-role panel, it shows a second private confirmation listing the exact proposed changes before applying them.
 
 If an approved command fails unexpectedly, the private failure message includes a short error reference. Known safe operational failures, including automatic-setup Discord errors, also explain the failing resource or stage without exposing raw tracebacks or secrets.
 
 ## Commands
 
-For exact syntax, permissions, every accepted option and range, side effects, failure conditions, and realistic examples for all 45 slash commands, see the **[Rob-bot command manual](docs/commands.md)**.
+For exact syntax, permissions, every accepted option and range, side effects, failure conditions, and realistic examples for all 43 slash commands, see the **[Rob-bot command manual](docs/commands.md)**.
 
 Core and setup:
 
 - `/ping`
 - `/setup auto` — recommended first-run setup; discovers and connects existing resources before proposing missing ones
 - `/setup role-panel` — post or refresh the member self-role panel
-- `/setup text-channel`, `/setup voice-channel`, `/setup forum`, `/setup category`, `/setup role`, `/setup solved-tag` — manual resource overrides
+- `/setup text-channel`, `/setup voice-channel`, `/setup forum`, `/setup category`, `/setup role` — manual resource overrides
 - `/setup feature`, `/setup log-ignore`, `/setup status`
 
 Operations:
@@ -43,7 +43,6 @@ Community:
 
 - `/rank`, `/leaderboard`, `/profile`
 - `/reputation award`, `/reputation thresholds`
-- `/solve`
 - `/quiz add|start|schedule`
 - `/anonask`, `/anonwho`
 - `/pomodoro start|status|stop`
@@ -117,7 +116,7 @@ Recommended bot permissions for the full V1:
 
 Administrator also covers these permissions and is the simplest configuration for a trusted server-owned bot. The bot role must sit above members it needs to moderate and above the Builder, Contributor, Mentor and Live Notifications roles it manages.
 
-**Message Content intent is optional.** The bot works without it. Enable the privileged Message Content intent in the Developer Portal and set `ENABLE_MESSAGE_CONTENT=true` if you want full before/after/deleted message text, richer ticket transcripts, solution excerpts and message-based reputation. Server Members and Presence privileged intents are not required.
+**Message Content intent is optional.** The bot works without it. Enable the privileged Message Content intent in the Developer Portal and set `ENABLE_MESSAGE_CONTENT=true` if you want full before/after/deleted message text, richer ticket transcripts and message-based reputation. Server Members and Presence privileged intents are not required.
 
 ## Recommended one-time server setup
 
@@ -136,7 +135,7 @@ The normal first-run path is:
 
 Automatic name matching is case-insensitive and ignores decorative emoji and separators. Spaces, underscores and hyphens are treated as equivalent separators. This means existing names such as `🚨-announcements`, `🤖-ai-updates`, `🤝-collab-lfg`, `📱-app-of-the-week` and `🤓-roles` match their logical resources without needing to be renamed.
 
-A small explicit alias list also recognizes the server's established terminology where the logical meaning is unambiguous. Examples include `🔴-live` for live announcements, `🎫-tickets` for the ticket panel, `Create VC` for the workspace creator, `Coworking` for the coworking lounge, `🎭-anonymous` for anonymous questions, `general-questions` for the build-help forum and `CO-WORKING SPACE` for the workspace category.
+A small explicit alias list also recognizes the server's established terminology where the logical meaning is unambiguous. Examples include `🔴-live` for live announcements, `🎫-tickets` for the ticket panel, `Create VC` for the workspace creator, `Coworking` for the coworking lounge, `🎭-anonymous` for anonymous questions and `CO-WORKING SPACE` for the workspace category.
 
 Matching always requires the expected Discord object type. For example, a category named `SHOWCASE` cannot satisfy the `showcase_forum` resource because that resource requires a Forum Channel.
 
@@ -166,8 +165,6 @@ A Discord resource is created only when no suitable existing resource or intenti
 | `live_ping_role` | `Live Notifications` | `live-notifications`, `live-ping` |
 | `role_panel` | `#roles` | decorative-prefix variants such as `🤓-roles` |
 | `ai_updates` | `#ai-updates` | decorative-prefix variants such as `🤖-ai-updates` |
-| `build_help_forum` | `#build-help` forum | `general-questions` Forum Channel |
-| `solved_tag` | `Solved` tag | existing `Solved` tag in the selected build-help forum |
 | `quiz_channel` | `#quizzes` | `quiz` |
 | `anon_questions` | `#anonymous-questions` | `anonymous`, including `🎭-anonymous` |
 | `analytics` | `#analytics` | decorative-prefix variants |
@@ -203,10 +200,9 @@ The individual `/setup` commands still exist for custom server layouts. Use them
 
 - `/setup text-channel` for text destinations such as `announcements`, `role_panel` or `bot_log`
 - `/setup voice-channel` for `create_workspace_voice` or `coworking_lounge`
-- `/setup forum` for `build_help_forum` or `showcase_forum`
+- `/setup forum` for `showcase_forum`
 - `/setup category` for `ticket_category` or `temp_voice_category`
 - `/setup role` for `builder_role`, `contributor_role`, `mentor_role` or `live_ping_role`
-- `/setup solved-tag` to choose an existing build-help forum tag
 - `/setup role-panel` to repost or refresh the Live Notifications button panel after a manual role/channel override
 - `/setup status` to inspect all current mappings and identify stale Discord IDs
 

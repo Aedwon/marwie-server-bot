@@ -2,7 +2,6 @@ import { identityMarkup, navigationMarkup, pageMarkup } from './control-componen
 import { installAccountMenu } from './control-account.js';
 import { registerContentPages } from './control-content.js';
 import { registerAnalyticsPage } from './control-analytics.js';
-import { mountControlDestination } from './control-page-adapter.js';
 import { registerCommunityPages } from './control-community.js';
 import { registerMappingPages } from './control-mappings.js';
 import { registerUtilitiesPages } from './control-utilities.js';
@@ -39,7 +38,6 @@ const shell = {
   main: document.querySelector('#controlMain'),
   identity: document.querySelector('#controlIdentity'),
   status: document.querySelector('#controlGlobalStatus'),
-  legacy: document.querySelector('#controlLegacyHost'),
 };
 
 let session = null;
@@ -71,7 +69,6 @@ registerContentPages();
 registerUtilitiesPages();
 registerAnalyticsPage();
 registerMappingPages();
-registerAnalyticsPage();
 
 function readJson(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key) || '') || fallback; } catch { return fallback; }
@@ -144,18 +141,14 @@ function renderMain() {
     : null;
   const workflowMarkup = session?.authenticated ? workflowPageMarkup(pageKey) : '';
 
-  mountControlDestination({
-    main: shell.main,
-    destination: navState.current,
-    legacyRoot: shell.legacy,
-    allowLegacy: Boolean(session?.authenticated),
-    renderFallback: destination => registeredMarkup ?? (workflowMarkup || pageMarkup(destination, {
-      authenticated: Boolean(session?.authenticated),
-      state: guildState,
-      snapshot,
-      activityState: activity?.state || null,
-    })),
-  });
+  shell.main.replaceChildren?.();
+  shell.main.innerHTML = registeredMarkup ?? (workflowMarkup || pageMarkup(navState.current, {
+    authenticated: Boolean(session?.authenticated),
+    state: guildState,
+    snapshot,
+    activityState: activity?.state || null,
+  }));
+  shell.main.dataset.pageKey = pageKey;
 
   if (registeredMarkup !== null) {
     removePageInteractions = installRegisteredControlPage(pageKey, shell.main, {

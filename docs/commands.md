@@ -2,7 +2,7 @@
 
 This is the canonical operating manual for Rob-bot's slash commands. It documents the behavior currently implemented in `src/marwie_bot/features/`.
 
-Rob-bot currently registers **45 slash commands**.
+Rob-bot currently registers **43 slash commands**.
 
 ## How to read this manual
 
@@ -52,61 +52,59 @@ This also applies to read-only commands such as `/ping`, `/rank`, `/profile`, `/
 6. `/setup forum`
 7. `/setup category`
 8. `/setup role`
-9. `/setup solved-tag`
-10. `/setup feature`
-11. `/setup log-ignore`
-12. `/setup status`
+9. `/setup feature`
+10. `/setup log-ignore`
+11. `/setup status`
 
 ### Moderation
 
-13. `/warn`
-14. `/timeout`
-15. `/kick`
-16. `/ban`
-17. `/unban`
-18. `/history`
+12. `/warn`
+13. `/timeout`
+14. `/kick`
+15. `/ban`
+16. `/unban`
+17. `/history`
 
 ### Tickets and announcements
 
-19. `/ticket-type add`
-20. `/ticket-type disable`
-21. `/ticket-type list`
-22. `/ticket-panel post`
-23. `/announce`
-24. `/live`
+18. `/ticket-type add`
+19. `/ticket-type disable`
+20. `/ticket-type list`
+21. `/ticket-panel post`
+22. `/announce`
+23. `/live`
 
-### Reputation and build-help
+### Reputation
 
-25. `/rank`
-26. `/profile`
-27. `/leaderboard`
-28. `/reputation award`
-29. `/reputation thresholds`
-30. `/solve`
+24. `/rank`
+25. `/profile`
+26. `/leaderboard`
+27. `/reputation award`
+28. `/reputation thresholds`
 
 ### Quizzes and anonymous questions
 
-31. `/quiz add`
-32. `/quiz start`
-33. `/quiz schedule`
-34. `/anonask`
-35. `/anonwho`
+29. `/quiz add`
+30. `/quiz start`
+31. `/quiz schedule`
+32. `/anonask`
+33. `/anonwho`
 
 ### Coworking and collaboration
 
-36. `/pomodoro start`
-37. `/pomodoro status`
-38. `/pomodoro stop`
-39. `/lfg`
+34. `/pomodoro start`
+35. `/pomodoro status`
+36. `/pomodoro stop`
+37. `/lfg`
 
 ### AI updates, analytics, and showcase
 
-40. `/ai-source add`
-41. `/ai-source list`
-42. `/ai-source disable`
-43. `/ai-source poll`
-44. `/analytics`
-45. `/app-of-week`
+38. `/ai-source add`
+39. `/ai-source list`
+40. `/ai-source disable`
+41. `/ai-source poll`
+42. `/analytics`
+43. `/app-of-week`
 
 ---
 
@@ -138,7 +136,7 @@ This also applies to read-only commands such as `/ping`, `/rank`, `/profile`, `/
 
 **Rob-bot permissions required:** View Channels, Send Messages, Embed Links, Read Message History, Manage Channels, and Manage Roles.
 
-**What happens:** This is the recommended first-run setup command. After the first approval, Rob-bot scans the existing server for the channels, Forum Channels, categories, voice channels, and roles its features need. It normalizes case, decorative emoji, spaces, underscores, and hyphens when comparing names, and it knows explicit aliases used by the community such as `live`, `Create VC`, `Coworking`, `general-questions`, and `CO-WORKING SPACE`.
+**What happens:** This is the recommended first-run setup command. After the first approval, Rob-bot scans the existing server for the channels, Forum Channels, categories, voice channels, and roles its features need. It normalizes case, decorative emoji, spaces, underscores, and hyphens when comparing names, and it knows explicit aliases used by the community such as `live`, `Create VC`, `Coworking`, and `CO-WORKING SPACE`.
 
 Clear existing matches are stored as resource bindings without renaming, moving, or editing the Discord objects. If multiple suitable matches exist, Rob-bot prefers the oldest matching Discord object. This helps an older founder-created channel win over a newer duplicate created by an earlier setup run.
 
@@ -148,7 +146,6 @@ If discovery still requires a mutation, Rob-bot shows a second private plan befo
 
 - remapping an automatic-style stored binding to a better existing match;
 - creating a missing text channel, voice channel, Forum Channel, category, or role;
-- adding the `Solved` tag to the selected build-help forum;
 - posting or refreshing the Live Notifications self-role panel.
 
 Pressing **Approve changes** applies only the listed mutations. Pressing **Decline changes** keeps any safe existing-resource bindings discovered during the first phase, but does not create or modify Discord resources.
@@ -207,7 +204,7 @@ Rob-bot never automatically deletes, renames, moves, or merges existing server r
 
 **Recommended text-channel keys:** `moderation_log`, `message_log`, `ticket_panel`, `ticket_logs`, `announcements`, `live_announcements`, `role_panel`, `ai_updates`, `quiz_channel`, `anon_questions`, `analytics`, `app_of_the_week`, `collab_lfg`, and `bot_log`.
 
-**Important note:** Some logical resources such as `build_help_forum`, `showcase_forum`, `create_workspace_voice`, and `coworking_lounge` also use the generic stored resource type `channel`, but their features expect a Forum Channel or voice channel at runtime. Use `/setup forum` or `/setup voice-channel` for those instead. The storage layer does not currently distinguish every Discord channel subtype.
+**Important note:** Some logical resources such as `showcase_forum`, `create_workspace_voice`, and `coworking_lounge` also use the generic stored resource type `channel`, but their features expect a Forum Channel or voice channel at runtime. Use `/setup forum` or `/setup voice-channel` for those instead. The storage layer does not currently distinguish every Discord channel subtype.
 
 **Example usage:**
 
@@ -252,11 +249,9 @@ Rob-bot never automatically deletes, renames, moves, or merges existing server r
 | `key` | yes | A `ResourceKey` whose stored type is `channel` | Logical resource to bind. |
 | `forum` | yes | Existing Discord Forum Channel | Forum whose Discord ID will be stored. |
 
-**Recommended keys:** `build_help_forum` and `showcase_forum`.
+**Recommended key:** `showcase_forum`.
 
 **Example usage:**
-
-`/setup forum key:build_help_forum forum:general-questions`
 
 ---
 
@@ -300,25 +295,6 @@ Rob-bot does not grant the role merely because it was mapped. `live_ping_role` i
 
 ---
 
-## `/setup solved-tag`
-
-**Syntax:** `/setup solved-tag [forum] [tag_name]`
-
-**Permission:** Administrator.
-
-**What happens:** Looks for an already-existing Forum tag with the exact supplied name in the selected forum and stores that tag ID as `solved_tag`. It does not create a tag.
-
-| Parameter | Required | Accepted input | Meaning |
-| --- | --- | --- | --- |
-| `forum` | yes | Existing Discord Forum Channel | Forum whose available tags are searched. |
-| `tag_name` | yes | Text, 1 to 100 characters | Must exactly match an existing tag name, including case. |
-
-If no tag has that exact name, the command makes no mapping change and reports that the tag was not found.
-
-**Example usage:**
-
-`/setup solved-tag forum:general-questions tag_name:Solved`
-
 ---
 
 ## `/setup feature`
@@ -331,7 +307,7 @@ If no tag has that exact name, the command makes no mapping change and reports t
 
 | Parameter | Required | Accepted input | Meaning |
 | --- | --- | --- | --- |
-| `feature` | yes | One of the configured feature choices | `moderation`, `message_logs`, `tickets`, `voice`, `announcements`, `live_announcements`, `reputation`, `build_help`, `quizzes`, `anonymous_questions`, `coworking`, `ai_updates`, `analytics`, or `showcase`. |
+| `feature` | yes | One of the configured feature choices | `moderation`, `message_logs`, `tickets`, `voice`, `announcements`, `live_announcements`, `reputation`, `quizzes`, `anonymous_questions`, `coworking`, `ai_updates`, `analytics`, or `showcase`. |
 | `enabled` | yes | Boolean `true` or `false` | `true` enables the feature; `false` disables it. |
 
 Features default to enabled if the server has never stored an override.
@@ -696,7 +672,7 @@ If the Live Notifications role exists but is not mentionable and Rob-bot lacks p
 
 ---
 
-# Reputation and build-help
+# Reputation
 
 ## `/rank`
 
@@ -803,35 +779,6 @@ Changing thresholds stores the new policy. The command does not iterate through 
 `/reputation thresholds builder:50 contributor:150 mentor:500`
 
 ---
-
-## `/solve`
-
-**Syntax:** `/solve [answer_message_id]`
-
-**Permission:** The author of the current build-help thread, or a member with Manage Threads.
-
-**Where it works:** Only inside a thread whose parent is the configured `build_help_forum`.
-
-**What happens:** Fetches the selected message from the current thread, records it as the accepted solution, optionally applies the configured `Solved` Forum tag, awards the answer author 10 reputation points, and posts a success response in the thread.
-
-| Parameter | Required | Accepted input | Meaning |
-| --- | --- | --- | --- |
-| `answer_message_id` | yes | Numeric Discord message ID supplied as text | Message in the current thread that should be accepted as the solution. |
-
-**Restrictions:**
-
-- the `build_help` feature must be enabled;
-- the thread must be in the configured build-help forum;
-- only the thread owner or someone with Manage Threads may mark it solved;
-- the ID must resolve to a message in that thread;
-- a bot-authored message cannot be selected;
-- a thread can only be recorded as solved once.
-
-To obtain a message ID, enable Discord Developer Mode and use **Copy Message ID** on the answer.
-
-**Example usage:**
-
-`/solve answer_message_id:123456789012345678`
 
 ---
 
@@ -1132,11 +1079,11 @@ With background tasks enabled, enabled sources are still polled automatically ev
 
 **What happens:** After approval, Rob-bot privately builds an aggregate report for the exact previous 168-hour UTC window `[period_start, period_end)`. The report includes moderation cases, tickets opened, tickets closed by `closed_at`, quiz answers, quiz accuracy, anonymous questions, and reputation events. If there are no quiz answers, quiz accuracy is shown as `No answers in this period`.
 
-The report is aggregate-only and does not include member-level or raw activity data. Build Help is not an Analytics V1 metric.
+The report is aggregate-only and does not include member-level or raw activity data.
 
 **Parameters:** None.
 
-This command reads the report on demand and replies privately. Separately, the background automation checks every 6 hours whether a weekly analytics post is due in the configured `analytics` channel. Unanswered Build Help surfacing remains a separate automation outside Analytics V1.
+This command reads the report on demand and replies privately. Separately, the background automation checks every 6 hours whether a weekly analytics post is due in the configured `analytics` channel.
 
 **Example usage:**
 

@@ -90,8 +90,8 @@ class FakeTickets:
 async def test_ticket_type_normalizes_key() -> None:
     repo = FakeTickets()
     service = TicketService(repo)
-    item = await service.upsert_type(1, "  Build_Help ", "Build help", "Technical support")
-    assert item.key == "build_help"
+    item = await service.upsert_type(1, "  Ticket_Support ", "Ticket support", "Technical support")
+    assert item.key == "ticket_support"
 
 
 async def test_ticket_type_rejects_invalid_key() -> None:

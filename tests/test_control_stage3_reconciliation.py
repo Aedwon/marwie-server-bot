@@ -118,7 +118,7 @@ def test_command_manual_copies_are_byte_identical_and_keep_wave7_wave9_contracts
     assert docs == site
     text = docs.decode()
     index = text.split("## Command index", 1)[1].split("\n## ", 1)[0]
-    assert len(re.findall(r"(?m)^\d+\. `/", index)) == 45
+    assert len(re.findall(r"(?m)^\d+\. `/", index)) == 43
     poll = text.split("## `/ai-source poll`", 1)[1].split("\n## ", 1)[0].lower()
     for phrase in ("preview", "post", "cancel", "60 seconds", "20", "scheduled"):
         assert phrase in poll
@@ -131,8 +131,6 @@ def test_command_manual_copies_are_byte_identical_and_keep_wave7_wave9_contracts
         "aggregate-only",
         "replies privately",
         "weekly analytics post",
-        "Build Help is not an Analytics V1 metric",
-        "Unanswered Build Help surfacing remains a separate automation",
     ):
         assert phrase in analytics
 
@@ -152,14 +150,8 @@ def test_message_logging_stays_outside_control_domains() -> None:
     assert "bot_log" not in _text("docs-site/control-mappings.js")
 
 
-def test_build_help_runtime_remains_present() -> None:
-    build_help = ROOT / "src/marwie_bot/features/build_help"
-    assert build_help.is_dir()
-    assert any(path.suffix == ".py" for path in build_help.iterdir())
-
-
-def test_stage3_reconciliation_introduces_no_new_migration_revision() -> None:
+def test_wave11_cleanup_migration_follows_stage3_revision() -> None:
     versions = ROOT / "migrations/versions"
     names = [path.name for path in versions.glob("*.py") if path.name != "__init__.py"]
     assert any("20260827_0003" in name for name in names)
-    assert not any(re.match(r"202608(?:28|29|30)_", name) for name in names)
+    assert any("20260830_0004" in name for name in names)

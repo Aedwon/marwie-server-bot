@@ -81,6 +81,7 @@ export function installDrawerController({ drawer, trigger, closeButton, mediaQue
     drawer.inert = false;
     drawer.removeAttribute('aria-hidden');
     drawer.dataset.open = 'true';
+    trigger.setAttribute('aria-expanded', 'true');
     focusableWithin(drawer)[0]?.focus();
   };
 

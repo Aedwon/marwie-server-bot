@@ -2,15 +2,30 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
   "functions": {
-    "api/guild-state.js": { "maxDuration": 90 }
+    "api/guild-state.js": {
+      "maxDuration": 90
+    }
   },
   "rewrites": [
-    { "source": "/", "destination": "/docs-site/index" },
-    { "source": "/commands", "destination": "/docs-site/commands" },
-    { "source": "/control", "destination": "/docs-site/control" },
-    { "source": "/control/(.*)", "destination": "/docs-site/control" },
-    { "source": "/control.js", "destination": "/docs-site/control-polish.js" },
-    { "source": "/control-core.js", "destination": "/docs-site/control.js" },
-    { "source": "/(.*)", "destination": "/docs-site/$1" }
+    {
+      "source": "/",
+      "destination": "/docs-site/index"
+    },
+    {
+      "source": "/commands",
+      "destination": "/docs-site/commands"
+    },
+    {
+      "source": "/control",
+      "destination": "/docs-site/control"
+    },
+    {
+      "source": "/control/(.*)",
+      "destination": "/docs-site/control"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/docs-site/$1"
+    }
   ]
 }

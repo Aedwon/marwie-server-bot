@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { legacyMountPlanForPath } from '../docs-site/control-page-adapter.js';
 import { createControlStateStore } from '../docs-site/control-state.js';
 
 const REPUTATION = '/control/community/reputation';
@@ -54,12 +53,6 @@ function quizSnapshot() {
     resources: [{ key: 'quiz_channel', id: '99', name: 'quiz', exists: true }],
   };
 }
-
-test('Community routes no longer use legacy prototype mounts', () => {
-  for (const path of [REPUTATION, QUIZZES, VOICE_COWORKING, SHOWCASE]) {
-    assert.equal(legacyMountPlanForPath(path), null, `${path} must be canonical`);
-  }
-});
 
 test('Community page module owns all four canonical Community pages', async () => {
   const module = await communityModule();

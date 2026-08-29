@@ -69,23 +69,6 @@ def test_page_save_rejects_commands_only_and_cross_page_actions() -> None:
         )
 
 
-def test_legacy_build_help_mapping_is_not_owned_by_new_mapping_pages() -> None:
-    for key in ("build_help_forum", "solved_tag"):
-        with pytest.raises(ValueError, match="not owned"):
-            normalize(
-                {
-                    "page_key": "/control/mappings/channels",
-                    "base_revision": "a" * 64,
-                    "changes": [
-                        {
-                            "action_type": "set_resource",
-                            "payload": {"key": key, "discord_id": 1},
-                        }
-                    ],
-                }
-            )
-
-
 def test_revision_count_and_payload_limits_are_enforced() -> None:
     with pytest.raises(ValueError, match="SHA-256"):
         normalize(

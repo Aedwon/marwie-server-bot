@@ -7,7 +7,7 @@ from enum import StrEnum
 
 import discord
 
-from marwie_bot.config.resources import RESOURCE_TYPES, ResourceKey, ResourceType
+from marwie_bot.config.resources import RESOURCE_TYPES, ResourceKey
 from marwie_bot.features.configuration.service import ResourceService
 from marwie_bot.shared.errors import UserFacingCommandError, describe_discord_failure
 
@@ -78,16 +78,8 @@ class ResourceDiscovery:
 
 
 @dataclass(frozen=True, slots=True)
-class SolvedTagDiscovery:
-    action: DiscoveryAction
-    tag: discord.ForumTag | None
-    forum: discord.ForumChannel | None
-
-
-@dataclass(frozen=True, slots=True)
 class AutoSetupPlan:
     resources: tuple[ResourceDiscovery, ...]
-    solved_tag: SolvedTagDiscovery
 
     @property
     def resource_mutations(self) -> tuple[ResourceDiscovery, ...]:
@@ -99,10 +91,7 @@ class AutoSetupPlan:
 
     @property
     def needs_second_confirmation(self) -> bool:
-        return bool(self.resource_mutations) or self.solved_tag.action in {
-            DiscoveryAction.REMAP,
-            DiscoveryAction.CREATE,
-        }
+        return bool(self.resource_mutations)
 
 
 AUTO_SETUP_RESOURCES: tuple[ResourceBlueprint, ...] = (
@@ -156,12 +145,6 @@ AUTO_SETUP_RESOURCES: tuple[ResourceBlueprint, ...] = (
     ),
     ResourceBlueprint(ResourceKey.ROLE_PANEL, ProvisionKind.TEXT, "roles"),
     ResourceBlueprint(ResourceKey.AI_UPDATES, ProvisionKind.TEXT, "ai-updates"),
-    ResourceBlueprint(
-        ResourceKey.BUILD_HELP_FORUM,
-        ProvisionKind.FORUM,
-        "build-help",
-        aliases=("general-questions",),
-    ),
     ResourceBlueprint(
         ResourceKey.QUIZ_CHANNEL,
         ProvisionKind.TEXT,
@@ -254,8 +237,7 @@ class AutoSetupService:
                     ResourceDiscovery(blueprint, DiscoveryAction.REMAP, target, current)
                 )
 
-        solved = await self._discover_solved_tag(guild, tuple(discoveries))
-        return AutoSetupPlan(tuple(discoveries), solved)
+        return AutoSetupPlan(tuple(discoveries))
 
     async def connect_existing(
         self,
@@ -283,22 +265,6 @@ class AutoSetupService:
                 )
             )
 
-        if plan.solved_tag.action == DiscoveryAction.BIND and plan.solved_tag.tag is not None:
-            await self.resources.set_resource(
-                guild.id,
-                ResourceKey.SOLVED_TAG,
-                ResourceType.FORUM_TAG,
-                plan.solved_tag.tag.id,
-                actor_id,
-            )
-            results.append(
-                ProvisionResult(
-                    ResourceKey.SOLVED_TAG,
-                    ProvisionAction.ADOPTED,
-                    plan.solved_tag.tag.name,
-                    plan.solved_tag.tag.id,
-                )
-            )
         return results
 
     async def apply_mutations(
@@ -376,119 +342,7 @@ class AutoSetupService:
             ensured[blueprint.key] = resource
             results.append(ProvisionResult(blueprint.key, action, resource.name, resource.id))
 
-        if plan.solved_tag.action in {DiscoveryAction.REMAP, DiscoveryAction.CREATE}:
-            results.append(await self._apply_solved_tag(guild, actor_id, plan, ensured))
-
         return results
-
-    async def _discover_solved_tag(
-        self,
-        guild: discord.Guild,
-        discoveries: tuple[ResourceDiscovery, ...],
-    ) -> SolvedTagDiscovery:
-        forum_discovery = next(
-            item for item in discoveries if item.blueprint.key == ResourceKey.BUILD_HELP_FORUM
-        )
-        forum_resource = forum_discovery.target or forum_discovery.current
-        if not isinstance(forum_resource, discord.ForumChannel):
-            return SolvedTagDiscovery(DiscoveryAction.CREATE, None, None)
-
-        configured = await self.resources.get(guild.id, ResourceKey.SOLVED_TAG)
-        current = None
-        if configured is not None:
-            current = next(
-                (tag for tag in forum_resource.available_tags if tag.id == configured.discord_id),
-                None,
-            )
-
-        if current is not None and current.name.casefold() != "solved":
-            action = (
-                DiscoveryAction.REMAP
-                if forum_discovery.action == DiscoveryAction.REMAP
-                else DiscoveryAction.KEEP
-            )
-            return SolvedTagDiscovery(action, current, forum_resource)
-
-        solved = next(
-            (tag for tag in forum_resource.available_tags if tag.name.casefold() == "solved"),
-            None,
-        )
-        if forum_discovery.action in {DiscoveryAction.REMAP, DiscoveryAction.CREATE}:
-            return SolvedTagDiscovery(
-                DiscoveryAction.REMAP if solved is not None else DiscoveryAction.CREATE,
-                solved,
-                forum_resource,
-            )
-        if current is not None:
-            return SolvedTagDiscovery(DiscoveryAction.KEEP, current, forum_resource)
-        if solved is not None:
-            return SolvedTagDiscovery(DiscoveryAction.BIND, solved, forum_resource)
-        return SolvedTagDiscovery(DiscoveryAction.CREATE, None, forum_resource)
-
-    async def _apply_solved_tag(
-        self,
-        guild: discord.Guild,
-        actor_id: int,
-        plan: AutoSetupPlan,
-        ensured: dict[ResourceKey, DiscordResource],
-    ) -> ProvisionResult:
-        forum_resource = ensured.get(ResourceKey.BUILD_HELP_FORUM)
-        if not isinstance(forum_resource, discord.ForumChannel):
-            discovery = next(
-                item
-                for item in plan.resources
-                if item.blueprint.key == ResourceKey.BUILD_HELP_FORUM
-            )
-            candidate = discovery.target or discovery.current
-            if isinstance(candidate, discord.ForumChannel):
-                forum_resource = candidate
-        if not isinstance(forum_resource, discord.ForumChannel):
-            raise UserFacingCommandError(
-                "Could not finish `solved_tag` because no build-help Forum Channel was resolved."
-            )
-
-        existing = next(
-            (tag for tag in forum_resource.available_tags if tag.name.casefold() == "solved"),
-            None,
-        )
-        action = ProvisionAction.REMAPPED
-        if existing is None:
-            try:
-                updated_forum = await forum_resource.edit(
-                    available_tags=[
-                        *forum_resource.available_tags,
-                        discord.ForumTag(name="Solved"),
-                    ],
-                    reason="Rob-bot auto setup: solved_tag",
-                )
-            except discord.HTTPException as error:
-                raise UserFacingCommandError(
-                    describe_discord_failure("Could not add the `Solved` forum tag", error)
-                ) from error
-            existing = next(
-                (tag for tag in updated_forum.available_tags if tag.name.casefold() == "solved"),
-                None,
-            )
-            action = ProvisionAction.CREATED
-
-        if existing is None:
-            raise UserFacingCommandError(
-                "Discord did not return the `Solved` tag after Rob-bot created it."
-            )
-
-        await self.resources.set_resource(
-            guild.id,
-            ResourceKey.SOLVED_TAG,
-            ResourceType.FORUM_TAG,
-            existing.id,
-            actor_id,
-        )
-        return ProvisionResult(
-            ResourceKey.SOLVED_TAG,
-            action,
-            existing.name,
-            existing.id,
-        )
 
     def _find_matches(
         self,

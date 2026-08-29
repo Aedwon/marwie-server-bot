@@ -3,7 +3,6 @@ import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import { ACTIONS, requireBrowserPermission, validateActionPayload } from '../api/_lib/actions.js';
-import { legacyMountPlanForPath } from '../docs-site/control-page-adapter.js';
 import {
   controlState,
   registeredControlPage,
@@ -154,12 +153,6 @@ function fakeTarget(dataset = {}, value = '') {
     },
   };
 }
-
-test('all three Mappings routes leave the transitional setup adapter', () => {
-  for (const pageKey of Object.values(PAGE_KEYS)) {
-    assert.equal(legacyMountPlanForPath(pageKey), null);
-  }
-});
 
 test('canonical Mappings page definitions own exactly the approved keys', async () => {
   const { MAPPING_PAGE_CONFIGS, MAPPING_RESOURCE_DEFINITIONS } = await mappingsModule();

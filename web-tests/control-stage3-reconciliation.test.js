@@ -21,19 +21,6 @@ test('Stage 3 app registers every canonical domain module and stylesheet', () =>
   ]) assert.match(app, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 });
 
-test('migrated Stage 3 routes have no legacy adapter ownership', () => {
-  const adapter = read('docs-site/control-page-adapter.js');
-  assert.match(adapter, /LEGACY_SECTION_BY_PATH = Object\.freeze\(\{\}\)/);
-  assert.match(adapter, /LEGACY_MOUNT_PLAN_BY_PATH = Object\.freeze\(\{\}\)/);
-  for (const route of [
-    '/control/community/reputation', '/control/community/quizzes',
-    '/control/community/voice-coworking', '/control/community/showcase',
-    '/control/content/feeds', '/control/content/announcements', '/control/content/live',
-    '/control/utilities/ticket-configuration', '/control/utilities/notification-roles',
-    '/control/utilities/anonymous-questions', '/control/analytics',
-  ]) assert.equal(adapter.includes(route), false, `${route} must not be legacy-mounted`);
-});
-
 test('commands-only operations stay out of canonical feature page modules', () => {
   const community = read('docs-site/control-community.js');
   const content = read('docs-site/control-content.js');

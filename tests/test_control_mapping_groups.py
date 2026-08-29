@@ -11,7 +11,6 @@ from marwie_bot.features.configuration.provisioning import (
     AutoSetupPlan,
     DiscoveryAction,
     ResourceDiscovery,
-    SolvedTagDiscovery,
 )
 
 MODULE_PATH = Path("src/marwie_bot/features/control_plane/mappings.py")
@@ -41,9 +40,7 @@ def test_scoped_review_groups_real_channel_role_and_category_proposals() -> None
                 _discovery(ResourceKey.TICKET_PANEL, DiscoveryAction.BIND, 101),
                 _discovery(ResourceKey.BUILDER_ROLE, DiscoveryAction.BIND, 201),
                 _discovery(ResourceKey.TEMP_VOICE_CATEGORY, DiscoveryAction.CREATE),
-                _discovery(ResourceKey.BUILD_HELP_FORUM, DiscoveryAction.CREATE),
-            ),
-            SolvedTagDiscovery(DiscoveryAction.CREATE, None, None),
+            )
         )
     )
 
@@ -56,5 +53,3 @@ def test_scoped_review_groups_real_channel_role_and_category_proposals() -> None
         "roles": ["builder_role"],
         "categories": ["temp_voice_category"],
     }
-    assert "build_help_forum" not in {item["key"] for item in review["resources"]}
-    assert "solved_tag" not in {item["key"] for item in review["resources"]}

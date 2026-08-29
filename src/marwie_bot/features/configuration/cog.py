@@ -74,19 +74,6 @@ def _mutation_lines(plan: AutoSetupPlan) -> list[str]:
                 f"`{item.blueprint.key.value}`."
             )
 
-    solved = plan.solved_tag
-    if solved.action == DiscoveryAction.REMAP:
-        forum = (
-            solved.forum.mention if solved.forum is not None else "the selected build-help forum"
-        )
-        tag_name = solved.tag.name if solved.tag is not None else "Solved"
-        lines.append(f"- Connect `solved_tag` to existing `{tag_name}` in {forum}.")
-    elif solved.action == DiscoveryAction.CREATE:
-        forum = (
-            solved.forum.mention if solved.forum is not None else "the selected build-help forum"
-        )
-        lines.append(f"- Add a `Solved` tag to {forum}.")
-
     if _role_panel_should_refresh(plan):
         lines.append(
             "- Post or refresh the Live Notifications self-role panel in the selected roles channel."
@@ -99,13 +86,7 @@ def _connected_lines(plan: AutoSetupPlan) -> list[str]:
     for item in plan.resources:
         if item.action == DiscoveryAction.BIND:
             lines.append(f"- `{item.blueprint.key.value}` → {_display_resource(item.target)}")
-    if plan.solved_tag.action == DiscoveryAction.BIND and plan.solved_tag.tag is not None:
-        forum = (
-            plan.solved_tag.forum.mention
-            if plan.solved_tag.forum is not None
-            else "build-help forum"
-        )
-        lines.append(f"- `solved_tag` → `{plan.solved_tag.tag.name}` in {forum}")
+
     return lines
 
 
@@ -493,30 +474,6 @@ class ConfigurationCog(commands.Cog):
         role: discord.Role,
     ) -> None:
         await self._set_resource(interaction, key, ResourceType.ROLE, role.id, role.mention)
-
-    @setup_group.command(
-        name="solved-tag", description="Set the Solved tag from the build-help forum."
-    )
-    @app_commands.checks.has_permissions(administrator=True)
-    async def set_solved_tag(
-        self,
-        interaction: discord.Interaction,
-        forum: discord.ForumChannel,
-        tag_name: app_commands.Range[str, 1, 100],
-    ) -> None:
-        tag = next((item for item in forum.available_tags if item.name == str(tag_name)), None)
-        if tag is None:
-            await interaction.response.send_message(
-                f"No tag named `{tag_name}` exists in {forum.mention}.", ephemeral=True
-            )
-            return
-        await self._set_resource(
-            interaction,
-            ResourceKey.SOLVED_TAG,
-            ResourceType.FORUM_TAG,
-            tag.id,
-            f"`{tag.name}`",
-        )
 
     @setup_group.command(
         name="feature", description="Enable or disable a bot feature for this server."

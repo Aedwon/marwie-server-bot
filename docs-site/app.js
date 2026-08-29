@@ -217,7 +217,6 @@ const resources = [
   ['Announcements', '<code>announcements</code> → normal; <code>live_announcements</code> → live destination'],
   ['Live role', '<code>live_ping_role</code> → Live Notifications; <code>role_panel</code> → self-role channel'],
   ['AI updates', '<code>ai_updates</code> → feed destination'],
-  ['Build help', '<code>build_help_forum</code> → build-help/general-questions forum; <code>solved_tag</code> → Solved'],
   ['Quizzes', '<code>quiz_channel</code> → quiz destination'],
   ['Anonymous Q&A', '<code>anon_questions</code> → public destination'],
   ['Analytics', '<code>analytics</code> → staff reports'],

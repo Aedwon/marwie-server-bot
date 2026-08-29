@@ -5,7 +5,6 @@ from datetime import UTC, datetime, timedelta
 from marwie_bot.db.base import Base
 from marwie_bot.db.models import (
     AnonymousQuestion,
-    ForumSolution,
     ModerationCase,
     QuizAnswer,
     ReputationEvent,
@@ -168,15 +167,6 @@ async def test_weekly_analytics_uses_exact_utc_168_hour_window_and_only_v1_metri
                         actor_id=73,
                         created_at=just_before_start,
                     ),
-                    ForumSolution(
-                        guild_id=1,
-                        thread_id=400,
-                        answer_message_id=401,
-                        helper_id=80,
-                        solved_by=81,
-                        question_title="Build Help stays outside Analytics V1",
-                        created_at=start,
-                    ),
                 ]
             )
             await session.commit()
@@ -192,7 +182,6 @@ async def test_weekly_analytics_uses_exact_utc_168_hour_window_and_only_v1_metri
         assert report.quiz_accuracy == 0.5
         assert report.anonymous_questions == 1
         assert report.reputation_events == 1
-        assert not hasattr(report, "solutions")
         assert not hasattr(report, "quiz_correct")
 
         projection = report.to_snapshot()
@@ -214,8 +203,6 @@ async def test_weekly_analytics_uses_exact_utc_168_hour_window_and_only_v1_metri
             "question",
             "source_rows",
             "active_member",
-            "build_help",
-            "solutions",
         ):
             assert forbidden_key not in projection
     finally:

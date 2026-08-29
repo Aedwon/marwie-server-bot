@@ -56,12 +56,6 @@ def _blueprint_kind(key: ResourceKey) -> ProvisionKind | None:
 
 
 def _discord_resource(guild: discord.Guild, key: ResourceKey, discord_id: int) -> Any:
-    if key is ResourceKey.SOLVED_TAG:
-        for forum in guild.forums:
-            tag = next((item for item in forum.available_tags if item.id == discord_id), None)
-            if tag is not None:
-                return tag
-        return None
     kind = _blueprint_kind(key)
     if kind is ProvisionKind.ROLE:
         return guild.get_role(discord_id)
@@ -69,8 +63,6 @@ def _discord_resource(guild: discord.Guild, key: ResourceKey, discord_id: int) -
 
 
 def _resource_matches_key(key: ResourceKey, resource: Any) -> bool:
-    if key is ResourceKey.SOLVED_TAG:
-        return isinstance(resource, discord.ForumTag)
     kind = _blueprint_kind(key)
     if kind is ProvisionKind.ROLE:
         return isinstance(resource, discord.Role) and not resource.is_default()

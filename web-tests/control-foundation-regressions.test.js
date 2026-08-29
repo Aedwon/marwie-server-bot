@@ -20,14 +20,6 @@ const controlApp = readFileSync(
   'utf8',
 );
 
-const controlLive = readFileSync(
-  new URL('../docs-site/control-live.js', import.meta.url),
-  'utf8',
-);
-const controlRefine = readFileSync(
-  new URL('../docs-site/control-refine.js', import.meta.url),
-  'utf8',
-);
 
 class FakeTarget {
   constructor({ dataset = {}, hidden = false } = {}) {
@@ -139,115 +131,6 @@ test('invalid child URLs use the domain first child, never remembered child', ()
     { community: '/control/community/quizzes' },
   );
   assert.equal(resolveControlRoute(resolved.path).path, resolved.path);
-});
-
-test('canonical Community, Content and Utilities routes bypass the narrow internal live compatibility adapter', async () => {
-  const adapter = await import('../docs-site/control-page-adapter.js');
-
-  for (const path of [
-    '/control/community/reputation',
-    '/control/community/quizzes',
-    '/control/community/voice-coworking',
-    '/control/community/showcase',
-    '/control/content/feeds',
-    '/control/content/announcements',
-    '/control/content/live',
-    '/control/utilities/ticket-configuration',
-    '/control/utilities/notification-roles',
-    '/control/utilities/anonymous-questions',
-  ]) {
-    assert.equal(adapter.legacySectionForPath(path), null);
-    assert.equal(adapter.legacyMountPlanForPath(path), null);
-  }
-
-
-  // Do not map broad legacy sections that would re-expose removed ownership.
-  assert.equal(
-    adapter.legacySectionForPath('/control/mappings/channels'),
-    null,
-  );
-  assert.equal(
-    adapter.legacySectionForPath('/control/workflows/moderation'),
-    null,
-  );
-  assert.equal(adapter.legacySectionForPath('/control/commands'), null);
-  assert.equal(adapter.legacySectionForPath('/control/activity'), null);
-});
-
-test('browser-style mounting keeps Community, Content and Utilities canonical', async () => {
-  const { mountControlDestination } =
-    await import('../docs-site/control-page-adapter.js');
-
-  const tickets = { id: 'tickets', parentNode: null };
-  const legacyRoot = {
-    querySelector(selector) {
-      if (selector === '#tickets') return tickets;
-      return null;
-    },
-    append(node) {
-      node.parentNode = this;
-    },
-  };
-  tickets.parentNode = legacyRoot;
-  const main = {
-    currentNode: null,
-    innerHTML: '',
-    dataset: {},
-    replaceChildren(...nodes) {
-      this.currentNode = nodes[0] || null;
-      this.innerHTML = '';
-      if (this.currentNode) this.currentNode.parentNode = this;
-    },
-  };
-  const fallback = destination =>
-    `<section data-mounted="${destination.path}"><h1>${destination.label}</h1></section>`;
-
-  for (const [path, label] of [
-    ['/control/community/reputation', 'Reputation'],
-    ['/control/content/feeds', 'Feeds'],
-    ['/control/utilities/ticket-configuration', 'Ticket configuration'],
-  ]) {
-    mountControlDestination({ main, destination: resolveControlRoute(path), legacyRoot, renderFallback: fallback });
-    assert.equal(main.currentNode, null);
-    assert.match(main.innerHTML, new RegExp(label));
-    assert.equal(main.dataset.pageKey, path);
-  }
-
-  assert.equal(tickets.parentNode, legacyRoot);
-});
-
-test('signed-out state does not expose live compatibility editors', async () => {
-  const { mountControlDestination } =
-    await import('../docs-site/control-page-adapter.js');
-
-  const reputation = { id: 'reputation' };
-  const legacyRoot = {
-    querySelector() {
-      return reputation;
-    },
-    append() {},
-  };
-  const main = {
-    currentNode: null,
-    innerHTML: '',
-    dataset: {},
-    replaceChildren(...nodes) {
-      this.currentNode = nodes[0] || null;
-      this.innerHTML = '';
-    },
-  };
-
-  mountControlDestination({
-    main,
-    destination: resolveControlRoute('/control/community/reputation'),
-    legacyRoot,
-    allowLegacy: false,
-    renderFallback: destination =>
-      `<section><h1>${destination.label}</h1><p>Sign in with Discord</p></section>`,
-  });
-
-  assert.equal(main.currentNode, null);
-  assert.match(main.innerHTML, /Sign in with Discord/);
 });
 
 test('sidebar hierarchy is account, navigation, branding, then Appearance', () => {
@@ -438,12 +321,6 @@ test('authenticated account menu opens, closes with Escape and signs out', async
   remove();
 });
 
-test('the new shell retains live compatibility internally with no legacy route', () => {
-  assert.match(controlHtml, /id="controlLegacyHost"/);
-  assert.doesNotMatch(controlHtml, /href=["']\/control\/legacy/i);
-  assert.match(controlApp, /mountControlDestination/);
-});
-
 test('ordinary user-facing pages contain no Foundation or migration commentary', () => {
   for (const path of [
     '/control/analytics',
@@ -459,73 +336,6 @@ test('ordinary user-facing pages contain no Foundation or migration commentary',
     assert.doesNotMatch(
       markup,
       /Foundation|migration|intentionally deferred|final UI/i,
-    );
-  }
-});
-
-
-test('compatibility adapter has no migrated Stage 3 domain ownership', async () => {
-  const adapter = await import('../docs-site/control-page-adapter.js');
-
-  for (const path of [
-    '/control/community/reputation',
-    '/control/community/quizzes',
-    '/control/community/voice-coworking',
-    '/control/community/showcase',
-    '/control/content/feeds',
-    '/control/content/announcements',
-    '/control/content/live',
-    '/control/utilities/ticket-configuration',
-    '/control/utilities/notification-roles',
-    '/control/utilities/anonymous-questions',
-    '/control/analytics',
-    '/control/mappings/channels',
-    '/control/mappings/roles',
-    '/control/mappings/categories',
-    '/control/workflows/moderation',
-    '/control/workflows/ticket-handling',
-    '/control/workflows/events',
-    '/control/commands',
-    '/control/activity',
-  ]) {
-    assert.equal(adapter.legacySectionForPath(path), null, `${path} section ownership`);
-    assert.equal(adapter.legacyMountPlanForPath(path), null, `${path} mount ownership`);
-  }
-});
-
-test('canonical compatibility runtime cannot restore a stale legacy guild', () => {
-  assert.match(
-    controlLive,
-    /controlLegacyHost/,
-    'legacy runtime must detect the canonical compatibility host',
-  );
-  assert.match(
-    controlLive,
-    /canonicalHost[\s\S]{0,500}session\.guilds\[0\]/,
-    'canonical compatibility runtime must use the same first guild as the visible shell',
-  );
-  assert.match(
-    controlLive,
-    /controlGlobalStatus/,
-    'legacy action feedback must be visible in the canonical shell',
-  );
-});
-
-test('notification-role refinement is available before the live runtime boots', () => {
-  const refineIndex = controlHtml.indexOf('/control-refine.js');
-  const liveIndex = controlHtml.indexOf('/control-live.js');
-  const staticEditor = controlHtml.includes('notification-panel-editor');
-
-  assert.ok(
-    staticEditor || (refineIndex >= 0 && refineIndex < liveIndex),
-    'Notification roles must retain the existing live editor before control-live boots',
-  );
-
-  if (refineIndex >= 0) {
-    assert.doesNotMatch(
-      controlRefine,
-      /control-core\.js/,
-      'the refinement must not be blocked behind the missing control-core.js',
     );
   }
 });

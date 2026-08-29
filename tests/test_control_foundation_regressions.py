@@ -79,7 +79,7 @@ def test_read_only_workflows_do_not_receive_editable_page_revisions() -> None:
 
 
 def test_mappings_channels_rejects_removed_ownership_and_accepts_real_channels() -> None:
-    for key in ("bot_log", "build_help_forum", "solved_tag"):
+    for key in ("bot_log",):
         with pytest.raises(ValueError, match="not owned"):
             normalize(
                 "/control/mappings/channels",

@@ -28,9 +28,9 @@ test('Commands renders exactly the three approved Discord-admin references and c
   assert.doesNotMatch(markup, /adjust_reputation|refresh_ticket_panel|poll_ai_sources|enqueueControlAction/);
 });
 
-test('Commands reuses the synchronized 45-command canonical manual without duplicating its catalog', () => {
+test('Commands reuses the synchronized 43-command canonical manual without duplicating its catalog', () => {
   assert.equal(commandsManual, deployedCommandsManual);
-  assert.equal((commandsManual.match(/^##\s+`\/[^`]+`\s*$/gm) || []).length, 45);
+  assert.equal((commandsManual.match(/^##\s+`\/[^`]+`\s*$/gm) || []).length, 43);
   const markup = commandsPageMarkup();
   assert.equal((markup.match(/data-command-task=/g) || []).length, 3);
   assert.doesNotMatch(markup, /45 commands|command count|implementation|authentication architecture/i);

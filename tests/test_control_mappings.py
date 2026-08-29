@@ -13,7 +13,6 @@ from marwie_bot.features.configuration.provisioning import (
     AutoSetupPlan,
     DiscoveryAction,
     ResourceDiscovery,
-    SolvedTagDiscovery,
 )
 from marwie_bot.features.control_plane.domain import ControlActionType
 from marwie_bot.features.control_plane.executor import ActionRejected, ControlActionExecutor
@@ -54,8 +53,6 @@ APPROVED_KEYS = CHANNEL_KEYS | ROLE_KEYS | CATEGORY_KEYS
 EXCLUDED_KEYS = {
     ResourceKey.MESSAGE_LOG,
     ResourceKey.BOT_LOG,
-    ResourceKey.BUILD_HELP_FORUM,
-    ResourceKey.SOLVED_TAG,
 }
 MAPPINGS_MODULE = Path("src/marwie_bot/features/control_plane/mappings.py")
 
@@ -91,14 +88,8 @@ def _discovery(
     return ResourceDiscovery(_blueprint(key), action, target, current)
 
 
-def _plan(
-    *discoveries: ResourceDiscovery,
-    solved_action: DiscoveryAction = DiscoveryAction.CREATE,
-) -> AutoSetupPlan:
-    return AutoSetupPlan(
-        tuple(discoveries),
-        SolvedTagDiscovery(solved_action, None, None),
-    )
+def _plan(*discoveries: ResourceDiscovery) -> AutoSetupPlan:
+    return AutoSetupPlan(tuple(discoveries))
 
 
 def _review_plan() -> AutoSetupPlan:
@@ -138,7 +129,6 @@ def _review_plan() -> AutoSetupPlan:
             target=_resource(901, "bot-logs"),
         ),
         _discovery(ResourceKey.BOT_LOG, DiscoveryAction.CREATE),
-        _discovery(ResourceKey.BUILD_HELP_FORUM, DiscoveryAction.CREATE),
     )
 
 
@@ -230,11 +220,11 @@ def test_mapping_review_consequence_model_distinguishes_bind_remap_and_create() 
     assert set(review["required_confirmations"]) == {"announcements", "showcase_forum"}
 
 
-def test_mapping_review_hash_ignores_message_logging_build_help_and_solved_tag_changes() -> None:
+def test_mapping_review_hash_ignores_message_logging_changes() -> None:
     module = mappings_module()
     first = _review_plan()
     second = _plan(
-        *first.resources[:-3],
+        *first.resources[:-2],
         _discovery(
             ResourceKey.MESSAGE_LOG,
             DiscoveryAction.BIND,
@@ -245,12 +235,6 @@ def test_mapping_review_hash_ignores_message_logging_build_help_and_solved_tag_c
             DiscoveryAction.BIND,
             target=_resource(9992, "other-bot-logs"),
         ),
-        _discovery(
-            ResourceKey.BUILD_HELP_FORUM,
-            DiscoveryAction.BIND,
-            target=_resource(9993, "general-questions"),
-        ),
-        solved_action=DiscoveryAction.BIND,
     )
 
     assert (
@@ -259,15 +243,12 @@ def test_mapping_review_hash_ignores_message_logging_build_help_and_solved_tag_c
     )
 
 
-def test_scoped_mapping_plan_cannot_mutate_excluded_resources_or_solved_tag() -> None:
+def test_scoped_mapping_plan_cannot_mutate_excluded_resources() -> None:
     module = mappings_module()
     scoped = module.scoped_mapping_plan(_review_plan())
 
     assert {item.blueprint.key for item in scoped.resources} <= APPROVED_KEYS
     assert not {item.blueprint.key for item in scoped.resources} & EXCLUDED_KEYS
-    assert scoped.solved_tag.action is DiscoveryAction.KEEP
-    assert scoped.solved_tag.tag is None
-    assert scoped.solved_tag.forum is None
 
 
 def test_mapping_review_is_quiet_when_all_approved_mappings_are_kept() -> None:
@@ -361,8 +342,6 @@ async def test_scoped_apply_rediscovery_then_mutates_only_the_reviewed_approved_
     assert applied_keys <= APPROVED_KEYS
     assert not connected_keys & EXCLUDED_KEYS
     assert not applied_keys & EXCLUDED_KEYS
-    assert provisioner.connected_plan.solved_tag.action is DiscoveryAction.KEEP
-    assert provisioner.applied_plan.solved_tag.action is DiscoveryAction.KEEP
 
 
 @pytest.mark.asyncio
@@ -427,7 +406,7 @@ async def test_scoped_apply_rejects_review_scope_mismatch_before_mutation() -> N
 
 
 @pytest.mark.asyncio
-async def test_legacy_apply_auto_setup_remains_full_plan_compatible() -> None:
+async def test_apply_auto_setup_remains_full_current_plan_compatible() -> None:
     plan = _review_plan()
     provisioner = FakeProvisioner(plan)
     executor = _executor(provisioner)
@@ -442,11 +421,10 @@ async def test_legacy_apply_auto_setup_remains_full_plan_compatible() -> None:
     assert provisioner.connected_plan is plan
     assert provisioner.applied_plan is plan
     assert ResourceKey.MESSAGE_LOG in {item.blueprint.key for item in plan.resources}
-    assert ResourceKey.BUILD_HELP_FORUM in {item.blueprint.key for item in plan.resources}
 
 
-def test_mappings_page_save_rejects_message_logging_and_build_help_resources() -> None:
-    for key in ("message_log", "bot_log", "build_help_forum", "solved_tag"):
+def test_mappings_page_save_rejects_message_logging_resources() -> None:
+    for key in ("message_log", "bot_log"):
         with pytest.raises(ValueError, match="not owned"):
             normalize_page_save_payload(
                 {
@@ -467,8 +445,6 @@ def test_mappings_page_revision_ignores_excluded_resource_changes() -> None:
             {"key": "ticket_panel", "id": "100"},
             {"key": "message_log", "id": "900"},
             {"key": "bot_log", "id": "901"},
-            {"key": "build_help_forum", "id": "902"},
-            {"key": "solved_tag", "id": "903"},
         ]
     }
     changed = {
@@ -476,8 +452,6 @@ def test_mappings_page_revision_ignores_excluded_resource_changes() -> None:
             {"key": "ticket_panel", "id": "100"},
             {"key": "message_log", "id": "990"},
             {"key": "bot_log", "id": "991"},
-            {"key": "build_help_forum", "id": "992"},
-            {"key": "solved_tag", "id": "993"},
         ]
     }
 

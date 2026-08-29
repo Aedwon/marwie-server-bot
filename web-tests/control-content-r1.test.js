@@ -3,10 +3,6 @@ import test from 'node:test';
 
 import { registeredControlPage } from '../docs-site/control-page-registry.js';
 import { createControlStateStore } from '../docs-site/control-state.js';
-import {
-  legacyMountPlanForPath,
-  legacySectionForPath,
-} from '../docs-site/control-page-adapter.js';
 
 const PAGE_KEYS = {
   feeds: '/control/content/feeds',
@@ -51,16 +47,6 @@ function snapshot() {
 async function contentModule() {
   return import('../docs-site/control-content.js');
 }
-
-test('Content routes retire only their transitional legacy adapter ownership', () => {
-  for (const pageKey of Object.values(PAGE_KEYS)) {
-    assert.equal(legacySectionForPath(pageKey), null);
-    assert.equal(legacyMountPlanForPath(pageKey), null);
-  }
-
-  assert.equal(legacySectionForPath('/control/community/reputation'), null);
-  assert.equal(legacyMountPlanForPath('/control/community/reputation'), null);
-});
 
 test('three Content routes register as canonical pages', async () => {
   const { registerContentPages } = await contentModule();

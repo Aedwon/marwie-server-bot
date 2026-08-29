@@ -20,7 +20,6 @@ def snapshot() -> dict[str, Any]:
             {"key": "builder_role", "id": "1"},
             {"key": "announcements", "id": "2"},
             {"key": "ticket_category", "id": "3"},
-            {"key": "build_help_forum", "id": "4"},
         ],
         "ai_sources": [],
         "ticket_types": [],
@@ -40,15 +39,6 @@ def test_page_revisions_are_deterministic_and_page_scoped() -> None:
     after = build_page_revisions(second)
     assert before["/control/community/reputation"] == after["/control/community/reputation"]
     assert before["/control/community/quizzes"] != after["/control/community/quizzes"]
-
-
-def test_legacy_build_help_state_does_not_become_canonical_mappings_ownership() -> None:
-    first = snapshot()
-    second = deepcopy(first)
-    second["resources"][-1]["id"] = "99"
-    first_revision = build_page_revisions(first)["/control/mappings/channels"]
-    second_revision = build_page_revisions(second)["/control/mappings/channels"]
-    assert first_revision == second_revision
 
 
 def test_reputation_change_updates_only_own_revision_contract() -> None:

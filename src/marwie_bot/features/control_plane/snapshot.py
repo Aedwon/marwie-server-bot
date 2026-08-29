@@ -91,18 +91,6 @@ def _resource_value(guild: discord.Guild, key: ResourceKey, discord_id: int) -> 
             "exists": role is not None,
             "kind": "role",
         }
-    if key is ResourceKey.SOLVED_TAG:
-        for forum in guild.forums:
-            tag = next((item for item in forum.available_tags if item.id == discord_id), None)
-            if tag is not None:
-                return {
-                    "id": _id(discord_id),
-                    "name": tag.name,
-                    "exists": True,
-                    "kind": "forum_tag",
-                    "forum_id": _id(forum.id),
-                }
-        return {"id": _id(discord_id), "name": None, "exists": False, "kind": "forum_tag"}
     guild_channel = guild.get_channel(discord_id)
     return {
         "id": _id(discord_id),
@@ -139,21 +127,7 @@ def serialize_setup_plan(plan: AutoSetupPlan) -> dict[str, Any]:
             }
         )
 
-    solved = {
-        "action": plan.solved_tag.action.value,
-        "tag": (
-            {"id": _id(plan.solved_tag.tag.id), "name": plan.solved_tag.tag.name}
-            if plan.solved_tag.tag is not None
-            else None
-        ),
-        "forum_id": _id(plan.solved_tag.forum.id) if plan.solved_tag.forum is not None else None,
-    }
-    if plan.solved_tag.action in {DiscoveryAction.REMAP, DiscoveryAction.CREATE}:
-        counts["review"] += 1
-    elif plan.solved_tag.action is DiscoveryAction.BIND:
-        counts["matched"] += 1
-
-    canonical = {"resources": resources, "solved_tag": solved}
+    canonical = {"resources": resources}
     plan_hash = hashlib.sha256(
         json.dumps(canonical, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()

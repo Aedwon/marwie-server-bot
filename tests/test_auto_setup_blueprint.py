@@ -12,9 +12,9 @@ from marwie_bot.shared.confirmations import build_confirmation_prompt
 from marwie_bot.shared.errors import UserFacingCommandError, build_failure_message
 
 
-def test_auto_setup_blueprint_covers_every_non_tag_resource() -> None:
+def test_auto_setup_blueprint_covers_every_current_resource() -> None:
     configured_keys = {item.key for item in AUTO_SETUP_RESOURCES}
-    assert configured_keys == set(ResourceKey) - {ResourceKey.SOLVED_TAG}
+    assert configured_keys == set(ResourceKey)
 
 
 def test_auto_setup_reuses_bot_logs_for_both_log_resource_keys() -> None:
@@ -54,7 +54,6 @@ def test_auto_setup_matches_existing_server_aliases() -> None:
     assert resource_name_matches("Create VC", by_key[ResourceKey.CREATE_WORKSPACE_VOICE])
     assert resource_name_matches("Coworking", by_key[ResourceKey.COWORKING_LOUNGE])
     assert resource_name_matches("🎭-anonymous", by_key[ResourceKey.ANON_QUESTIONS])
-    assert resource_name_matches("general-questions", by_key[ResourceKey.BUILD_HELP_FORUM])
     assert resource_name_matches("🤖-ai-updates", by_key[ResourceKey.AI_UPDATES])
     assert resource_name_matches("🤝-collab-lfg", by_key[ResourceKey.COLLAB_LFG])
     assert resource_name_matches("📱-app-of-the-week", by_key[ResourceKey.APP_OF_WEEK])
@@ -64,7 +63,6 @@ def test_auto_setup_matches_existing_server_aliases() -> None:
 def test_auto_setup_does_not_semantically_guess_unlisted_names() -> None:
     by_key = {item.key: item for item in AUTO_SETUP_RESOURCES}
 
-    assert not resource_name_matches("support", by_key[ResourceKey.BUILD_HELP_FORUM])
     assert not resource_name_matches("updates", by_key[ResourceKey.ANNOUNCEMENTS])
     assert not resource_name_matches("stream-ping", by_key[ResourceKey.LIVE_PING_ROLE])
 

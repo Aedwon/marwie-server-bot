@@ -6,7 +6,6 @@ import {
   analyticsPageMarkup,
   createAnalyticsPageDefinition,
 } from '../docs-site/control-analytics.js';
-import { legacyMountPlanForPath } from '../docs-site/control-page-adapter.js';
 import { destinationForPath } from '../docs-site/control-router.js';
 import {
   WORKFLOW_PAGE_CONFIGS,
@@ -71,11 +70,10 @@ function assertPlainWorkflowMarkup(markup) {
   assert.doesNotMatch(markup, /data-mapping-key|mapping-editor/i);
 }
 
-test('Analytics is a direct canonical route, not a legacy-mounted feature section', () => {
+test('Analytics is a direct canonical route', () => {
   const destination = destinationForPath('/control/analytics');
   assert.equal(destination?.kind, 'primary-direct');
   assert.equal(destination?.path, '/control/analytics');
-  assert.equal(legacyMountPlanForPath('/control/analytics'), null);
 });
 
 test('Analytics page exposes exactly the V1 operational metrics and period', () => {
@@ -268,8 +266,7 @@ test('/analytics command documentation matches the V1 runtime contract', () => {
   assert.match(section, /member-level or raw activity data/i);
   assert.match(section, /private|ephemeral/i);
   assert.match(section, /weekly/i);
-  assert.match(section, /Build Help is not an Analytics V1 metric/i);
-  assert.match(section, /unanswered Build Help.*separate automation/is);
+  assert.doesNotMatch(section, /Build Help|build-help/i);
   assert.doesNotMatch(section, /quiz correct-answer count/i);
   assert.doesNotMatch(section, /solved Build Help threads/i);
 });
