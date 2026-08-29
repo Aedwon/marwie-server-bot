@@ -233,10 +233,10 @@ class _AfterPreflightMutationExecutor(PageSaveExecutor):
 def _notification_fixture(
     monkeypatch: Any,
     *,
-    channel_a: object,
+    channel_a: _TextChannel,
     channels: dict[int, object],
-    role: object,
-) -> tuple[object, _Resources, _Control, ControlActionExecutor, _Snapshots, list[int]]:
+    role: _Role,
+) -> tuple[Any, _Resources, _Control, ControlActionExecutor, Any, list[int]]:
     monkeypatch.setattr(page_save_executor_module.discord, "TextChannel", _TextChannel)
     monkeypatch.setattr(executor_module.discord, "TextChannel", _TextChannel)
     bot_member = SimpleNamespace(
