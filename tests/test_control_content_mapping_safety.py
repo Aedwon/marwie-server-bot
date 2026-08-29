@@ -133,7 +133,10 @@ async def send_announcement(
     guild: FakeGuild,
     payload: dict[str, Any],
 ) -> dict[str, Any]:
-    return await worker._send_announcement(cast(discord.Guild, guild), payload)
+    return cast(
+        dict[str, Any],
+        await worker._send_announcement(cast(discord.Guild, guild), payload),
+    )
 
 
 async def post_live(
@@ -142,7 +145,10 @@ async def post_live(
     payload: dict[str, Any],
 ) -> dict[str, Any]:
     actor = cast(discord.Member, SimpleNamespace(id=ACTOR_ID))
-    return await worker._post_live(cast(discord.Guild, guild), actor, payload)
+    return cast(
+        dict[str, Any],
+        await worker._post_live(cast(discord.Guild, guild), actor, payload),
+    )
 
 
 @pytest.fixture(autouse=True)
