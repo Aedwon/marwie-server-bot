@@ -14,7 +14,7 @@ export const WORKFLOW_PAGE_CONFIGS = Object.freeze({
     sections: Object.freeze([
       Object.freeze({
         title: 'Before taking action',
-        body: 'Confirm the report, choose the least severe appropriate response, and make sure the acting moderator has the Discord permission required by the command.',
+        body: 'Confirm which moderation command matches the action the team has decided to take, then make sure the acting moderator has the Discord permission required by that command.',
         links: Object.freeze([
           Object.freeze({ href: '/control/commands', label: 'Review moderation commands' }),
           Object.freeze({ href: '/control/mappings/channels', label: 'Check the moderation log mapping' }),
@@ -66,7 +66,7 @@ export const WORKFLOW_PAGE_CONFIGS = Object.freeze({
   }),
   '/control/workflows/events': Object.freeze({
     title: 'Events',
-    intro: 'A handbook for coordinated event announcements using the existing Announcements and Live owners without creating another configuration surface.',
+    intro: 'Guidance for coordinated event announcements using the existing Announcements and Live owners without creating another configuration surface.',
     sections: Object.freeze([
       Object.freeze({
         title: 'Prepare communication',
@@ -117,7 +117,6 @@ export function workflowPageMarkup(pageKey) {
   return `
     <article class="control-page workflow-page" data-page-key="${escapeHtml(pageKey)}">
       <header class="workflow-page-header">
-        <p class="control-eyebrow">Handbook</p>
         <h1>${escapeHtml(config.title)}</h1>
         <p>${escapeHtml(config.intro)}</p>
       </header>
