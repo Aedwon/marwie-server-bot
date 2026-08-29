@@ -215,9 +215,7 @@ async def test_notification_save_derives_mapped_destination_before_persisting(
     object.__setattr__(
         executor,
         "bot",
-        SimpleNamespace(
-            add_view=lambda view, message_id: added_views.append((view, message_id))
-        ),
+        SimpleNamespace(add_view=lambda view, message_id: added_views.append((view, message_id))),
     )
     payload = _normalize(_notification_save())["changes"][0]["payload"]
 
