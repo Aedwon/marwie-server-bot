@@ -58,15 +58,18 @@ async def test_quiz_repository_lists_updates_and_toggles_questions_per_guild() -
             "It returns an integer count.",
         )
         assert updated is not None and updated.prompt == "What does len() return?"
-        assert await repository.update_question(
-            2,
-            first.id,
-            "python",
-            "Wrong guild",
-            ("A", "B", "C", "D"),
-            0,
-            None,
-        ) is None
+        assert (
+            await repository.update_question(
+                2,
+                first.id,
+                "python",
+                "Wrong guild",
+                ("A", "B", "C", "D"),
+                0,
+                None,
+            )
+            is None
+        )
 
         disabled = await repository.set_question_active(1, first.id, False)
         assert disabled is not None and disabled.active is False
