@@ -153,7 +153,7 @@ test('Analytics owns only its feature flag and links report-channel ownership to
   assert.doesNotMatch(editMarkup, /analytics.*<select/is);
 });
 
-test('Analytics complete report with seven true zero values renders measured zeroes', () => {
+test('Analytics complete report with true zero values renders measured zeroes', () => {
   const definition = createAnalyticsPageDefinition();
   const snapshot = structuredClone(analyticsSnapshot);
   snapshot.analytics = {
@@ -169,7 +169,8 @@ test('Analytics complete report with seven true zero values renders measured zer
   };
 
   const markup = analyticsPageMarkup({ state: readState(definition), snapshot });
-  assert.equal((markup.match(/<dd\b[^>]*>\s*(?:<strong>)?0(?:<\/strong>)?\s*<\/dd>/g) || []).length, 7);
+  assert.equal((markup.match(/<dd\b[^>]*>\s*0\s*<\/dd>/g) || []).length, 6);
+  assert.match(markup, /<dt[^>]*>Quiz accuracy<\/dt>\s*<dd[^>]*>0%<\/dd>/);
   assert.doesNotMatch(markup, /Analytics data unavailable/i);
 });
 
