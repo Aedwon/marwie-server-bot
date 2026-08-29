@@ -148,6 +148,20 @@ class PageSaveExecutor:
             payload=cast(dict[str, Any], change["payload"]),
         )
         try:
+            if (
+                nested.action_type is ControlActionType.SAVE_NOTIFICATION_PANEL
+                and nested.payload.get("channel_id") is None
+            ):
+                guild = self.bot.get_guild(action.guild_id)
+                if guild is None:
+                    raise ActionRejected("Rob-bot is no longer connected to that server.")
+                actor = await self.executor._actor(guild, action.actor_id)
+                self.executor._require_actor_permission(actor, nested.action_type)
+                return await self.executor._save_notification_panel(
+                    guild,
+                    actor,
+                    nested.payload,
+                )
             return await self.executor.execute(nested)
         except (ActionRejected, ValueError) as error:
             raise _PageSaveMutationFailed(
