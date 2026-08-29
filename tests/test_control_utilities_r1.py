@@ -210,11 +210,15 @@ async def test_notification_save_derives_mapped_destination_before_persisting(
 
     monkeypatch.setattr(executor_module, "upsert_notification_panel", publish)
     executor = object.__new__(ControlActionExecutor)
-    executor.resources = resources  # type: ignore[attr-defined]
-    executor.control = control  # type: ignore[attr-defined]
-    executor.bot = SimpleNamespace(
-        add_view=lambda view, message_id: added_views.append((view, message_id))
-    )  # type: ignore[attr-defined]
+    object.__setattr__(executor, "resources", resources)
+    object.__setattr__(executor, "control", control)
+    object.__setattr__(
+        executor,
+        "bot",
+        SimpleNamespace(
+            add_view=lambda view, message_id: added_views.append((view, message_id))
+        ),
+    )
     payload = _normalize(_notification_save())["changes"][0]["payload"]
 
     result = await executor._save_notification_panel(
@@ -245,9 +249,13 @@ async def test_notification_publication_failure_happens_after_config_persistence
 
     monkeypatch.setattr(executor_module, "upsert_notification_panel", fail_publish)
     executor = object.__new__(ControlActionExecutor)
-    executor.resources = resources  # type: ignore[attr-defined]
-    executor.control = control  # type: ignore[attr-defined]
-    executor.bot = SimpleNamespace(add_view=lambda view, message_id: None)  # type: ignore[attr-defined]
+    object.__setattr__(executor, "resources", resources)
+    object.__setattr__(executor, "control", control)
+    object.__setattr__(
+        executor,
+        "bot",
+        SimpleNamespace(add_view=lambda view, message_id: None),
+    )
     payload = _normalize(_notification_save())["changes"][0]["payload"]
 
     with pytest.raises(RuntimeError, match="publication failure"):
