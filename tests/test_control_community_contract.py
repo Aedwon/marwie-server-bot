@@ -6,7 +6,9 @@ import pytest
 
 from marwie_bot.features.control_plane.domain import ControlActionType
 from marwie_bot.features.control_plane.page_revisions import page_revision
-from marwie_bot.features.control_plane.page_save_contract import PAGE_SAVE_ACTIONS_BY_PAGE
+from marwie_bot.features.control_plane.page_save_contract import (
+    PAGE_SAVE_ACTIONS_BY_PAGE,
+)
 from marwie_bot.features.control_plane.validation import validate_action_payload
 from marwie_bot.features.quizzes.service import QuizQuestionRecord, QuizService
 
@@ -61,7 +63,9 @@ class FakeQuestionRepository:
             True,
         )
 
-    async def list_questions(self, guild_id: int, *, active_only: bool = False) -> list[QuizQuestionRecord]:
+    async def list_questions(
+        self, guild_id: int, *, active_only: bool = False
+    ) -> list[QuizQuestionRecord]:
         assert guild_id == 1
         if active_only and not self.question.active:
             return []
