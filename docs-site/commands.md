@@ -30,7 +30,7 @@ Every slash command is intercepted by Rob-bot's global confirmation flow before 
 
 This also applies to read-only commands such as `/ping`, `/rank`, `/profile`, `/leaderboard`, and `/setup status`.
 
-`/setup auto` has an additional mutation confirmation. Its first approval allows discovery and safe binding of existing server resources. If Rob-bot proposes creating Discord resources, remapping an automatic-style binding, adding the `Solved` tag, or refreshing the self-role panel, it shows those exact changes in a second **Approve changes / Decline changes** prompt.
+`/setup auto` has an additional mutation confirmation. Its first approval allows discovery and safe binding of existing server resources. If Rob-bot proposes creating Discord resources, remapping an automatic-style binding, or refreshing the self-role panel, it shows those exact changes in a second **Approve changes / Decline changes** prompt.
 
 ### Permission terms
 

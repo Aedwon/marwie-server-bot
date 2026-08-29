@@ -36,7 +36,7 @@ _AUTO_SETUP_CONFIRMATION_DETAIL = (
     "Decorative emoji and separators are ignored when matching names, and known server aliases "
     "such as `live`, `Create VC`, and `Coworking` are recognized. Clear existing matches can be "
     "connected without changing the Discord objects. If anything needs to be created, remapped, "
-    "tagged, or refreshed, Rob-bot will show a second confirmation listing those exact changes "
+    "or refreshed, Rob-bot will show a second confirmation listing those exact changes "
     "before applying them. It will never delete, rename, move, or merge existing resources."
 )
 

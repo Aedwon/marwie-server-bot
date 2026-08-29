@@ -10,6 +10,9 @@ from marwie_bot.db.models import FeatureFlag, Guild, GuildResource
 from marwie_bot.db.session import Database
 from marwie_bot.features.configuration.service import FeatureConfigRecord, GuildResourceRecord
 
+_CURRENT_RESOURCE_KEYS = tuple(key.value for key in ResourceKey)
+_CURRENT_FEATURE_NAMES = tuple(feature.value for feature in FeatureName)
+
 
 async def _ensure_guild(session: Any, guild_id: int) -> None:
     if await session.get(Guild, guild_id) is None:
@@ -44,7 +47,10 @@ class SQLAlchemyResourceRepository:
         async with self.database.session() as session:
             statement = (
                 select(GuildResource)
-                .where(GuildResource.guild_id == guild_id)
+                .where(
+                    GuildResource.guild_id == guild_id,
+                    GuildResource.key.in_(_CURRENT_RESOURCE_KEYS),
+                )
                 .order_by(GuildResource.key)
             )
             models = (await session.execute(statement)).scalars().all()
@@ -129,7 +135,10 @@ class SQLAlchemyFeatureConfigRepository:
         async with self.database.session() as session:
             statement = (
                 select(FeatureFlag)
-                .where(FeatureFlag.guild_id == guild_id)
+                .where(
+                    FeatureFlag.guild_id == guild_id,
+                    FeatureFlag.feature.in_(_CURRENT_FEATURE_NAMES),
+                )
                 .order_by(FeatureFlag.feature)
             )
             models = (await session.execute(statement)).scalars().all()

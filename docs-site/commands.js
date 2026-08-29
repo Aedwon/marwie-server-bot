@@ -47,10 +47,10 @@ const WORKFLOWS = [
   },
   {
     id: 'workflow-reputation',
-    title: 'Reputation & build-help',
-    intro: 'Inspect reputation, tune milestones, make staff adjustments, and recognize solved build-help replies.',
-    path: ['Review reputation', 'Adjust only if needed', '`/solve` accepted replies'],
-    commands: ['/rank', '/profile', '/leaderboard', '/reputation award', '/reputation thresholds', '/solve'],
+    title: 'Reputation',
+    intro: 'Inspect reputation, tune milestones, and make staff adjustments.',
+    path: ['Review reputation', 'Adjust only if needed'],
+    commands: ['/rank', '/profile', '/leaderboard', '/reputation award', '/reputation thresholds'],
   },
   {
     id: 'workflow-learning',
@@ -79,7 +79,7 @@ const SOURCE_CONTEXT_WORKFLOW = new Map([
   ['System and setup', 'workflow-setup'],
   ['Moderation', 'workflow-moderation'],
   ['Tickets and announcements', 'workflow-tickets'],
-  ['Reputation and build-help', 'workflow-reputation'],
+  ['Reputation', 'workflow-reputation'],
   ['Quizzes and anonymous questions', 'workflow-learning'],
   ['Coworking and collaboration', 'workflow-collaboration'],
   ['AI updates, analytics, and showcase', 'workflow-operations'],

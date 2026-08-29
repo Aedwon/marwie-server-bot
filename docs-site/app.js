@@ -145,17 +145,15 @@ const playbooks = [
     id: 'playbook-community',
     audience: 'Community ops',
     title: 'Programs',
-    summary: 'Reputation, build-help, quizzes, anonymous Q&A, focus, and LFG.',
+    summary: 'Reputation, quizzes, anonymous Q&A, focus, and LFG.',
     steps: [
       'Use <code>/rank</code>, <code>/profile</code>, and <code>/leaderboard</code> to review reputation. Change thresholds or award points only by policy.',
-      'Use <code>/solve</code> for accepted build-help answers.',
       'Add quiz content with <code>/quiz add</code>; start manually or schedule it.',
       'Support <code>/anonask</code>, Pomodoro, and <code>/lfg</code>; send identity audits to moderation.',
     ],
     commands: [
       ['/reputation award', '/commands#command-reputation-award'],
       ['/reputation thresholds', '/commands#command-reputation-thresholds'],
-      ['/solve', '/commands#command-solve'],
       ['/quiz add', '/commands#command-quiz-add'],
       ['/quiz start', '/commands#command-quiz-start'],
       ['/quiz schedule', '/commands#command-quiz-schedule'],
@@ -193,7 +191,6 @@ const supportItems = [
   ['Anonymous Q&A', '<code>/anonask</code> hides the sender publicly. Authorized moderators can audit identity with <code>/anonwho</code>.'],
   ['Focus & LFG', 'Pomodoro supports 5–180 minutes. <code>/lfg</code> posts what a member is building and what help they need.'],
   ['Quizzes', 'Members answer active sessions with buttons; results are revealed when the session closes.'],
-  ['Solved replies', 'The thread owner or permitted staff can mark a build-help reply solved; the helper gets +10 reputation.'],
   ['Live Notifications', 'Members self-assign this role from the panel. Builder, Contributor, and Mentor are not self-roles.'],
 ];
 

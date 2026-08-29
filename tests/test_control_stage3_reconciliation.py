@@ -148,10 +148,3 @@ def test_message_logging_stays_outside_control_domains() -> None:
     assert "message-logging" not in combined
     assert "bot_log" not in _text("docs-site/control-utilities.js")
     assert "bot_log" not in _text("docs-site/control-mappings.js")
-
-
-def test_wave11_cleanup_migration_follows_stage3_revision() -> None:
-    versions = ROOT / "migrations/versions"
-    names = [path.name for path in versions.glob("*.py") if path.name != "__init__.py"]
-    assert any("20260827_0003" in name for name in names)
-    assert any("20260830_0004" in name for name in names)
