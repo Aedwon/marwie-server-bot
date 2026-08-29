@@ -1104,13 +1104,19 @@ If the ID is absent or belongs to another server, Rob-bot reports `Source not fo
 
 **Permission:** Manage Server.
 
-**What happens:** Immediately polls every enabled AI feed source for the current server and privately reports how many new items were posted. For each source, Rob-bot fetches the feed, parses it, considers up to the last 10 parsed items, deduplicates already stored items, and posts new ones to the configured `ai_updates` text channel.
+**What happens:** Uses the normal global command confirmation first. After confirmation, Rob-bot fetches every enabled AI feed source for the current server, parses each feed, considers up to the last 10 parsed items per source, removes candidates whose dedupe keys are already stored, and returns a private preview. Fetching the preview publishes nothing and does not mark candidates as posted or checked.
+
+The preview shows exactly the bounded candidate set eligible for that Post action. Candidates that do not fit in the current complete Discord review are left untouched for a later manual poll. Choose **Post** to publish exactly the displayed candidates, or **Cancel** to close the preview with no feed mutation. The preview expires after 60 seconds; an expired preview cannot be posted.
+
+Before **Post** publishes anything, Rob-bot rechecks Manage Server permission, the `ai_updates` feature, the current Mappings-owned `ai_updates` destination, Rob-bot's destination permissions, enabled-source state, the exact preview candidate identities, and dedupe state. If permission is lost, the feature is disabled, the destination changes or becomes unavailable, a source changes, the candidate set changes, or dedupe state changes after preview, the action fails closed and nothing new is published from that preview. Fetch a new preview before trying again.
+
+If an unexpected publication or service failure occurs, Rob-bot closes that preview, reports a sanitized private failure, logs server-side context, and requires a new preview. Do not blindly retry the old preview. Only the **Post** button can publish a manual preview.
+
+A feed fetch or parse failure contributes no candidates from that source to the manual preview and is logged server-side. It does not switch the command to the automatic polling path.
 
 **Parameters:** None.
 
-A source can contribute zero posts if there is nothing new, the feed cannot be fetched/parsed, the feature is disabled, the destination is unavailable, or an item has already been stored.
-
-With background tasks enabled, enabled sources are also polled automatically every 30 minutes.
+With background tasks enabled, enabled sources are still polled automatically every 30 minutes. Scheduled polling remains automatic and does not wait for a manual preview or a Post/Cancel choice.
 
 **Example usage:**
 

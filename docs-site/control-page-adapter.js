@@ -1,29 +1,8 @@
 const LEGACY_SECTION_BY_PATH = Object.freeze({
-  '/control/content/feeds': 'feeds',
-  '/control/content/announcements': 'publishing',
-  '/control/content/live': 'publishing',
   '/control/utilities/ticket-configuration': 'tickets',
 });
 
 const LEGACY_MOUNT_PLAN_BY_PATH = Object.freeze({
-  '/control/content/feeds': Object.freeze({
-    sections: Object.freeze(['features', 'feeds']),
-    featureKeys: Object.freeze(['ai_updates']),
-    commandsOnlyControls: Object.freeze([
-      Object.freeze({
-        controlSelector: '[data-prototype-action="Poll feeds"]',
-        ownerSelector: '.row-action',
-      }),
-    ]),
-  }),
-  '/control/content/announcements': Object.freeze({
-    sections: Object.freeze(['features', 'publishing']),
-    featureKeys: Object.freeze(['announcements']),
-  }),
-  '/control/content/live': Object.freeze({
-    sections: Object.freeze(['features', 'publishing']),
-    featureKeys: Object.freeze(['live_announcements']),
-  }),
   '/control/utilities/ticket-configuration': Object.freeze({
     sections: Object.freeze(['features', 'tickets']),
     featureKeys: Object.freeze(['tickets']),

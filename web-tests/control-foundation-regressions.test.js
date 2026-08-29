@@ -141,7 +141,7 @@ test('invalid child URLs use the domain first child, never remembered child', ()
   assert.equal(resolveControlRoute(resolved.path).path, resolved.path);
 });
 
-test('canonical Community routes bypass the narrow internal live compatibility adapter', async () => {
+test('canonical Community and Content routes bypass the narrow internal live compatibility adapter', async () => {
   const adapter = await import('../docs-site/control-page-adapter.js');
 
   for (const path of [
@@ -149,23 +149,14 @@ test('canonical Community routes bypass the narrow internal live compatibility a
     '/control/community/quizzes',
     '/control/community/voice-coworking',
     '/control/community/showcase',
+    '/control/content/feeds',
+    '/control/content/announcements',
+    '/control/content/live',
   ]) {
     assert.equal(adapter.legacySectionForPath(path), null);
     assert.equal(adapter.legacyMountPlanForPath(path), null);
   }
 
-  assert.equal(
-    adapter.legacySectionForPath('/control/content/feeds'),
-    'feeds',
-  );
-  assert.equal(
-    adapter.legacySectionForPath('/control/content/announcements'),
-    'publishing',
-  );
-  assert.equal(
-    adapter.legacySectionForPath('/control/content/live'),
-    'publishing',
-  );
   assert.equal(
     adapter.legacySectionForPath('/control/utilities/ticket-configuration'),
     'tickets',
@@ -184,16 +175,15 @@ test('canonical Community routes bypass the narrow internal live compatibility a
   assert.equal(adapter.legacySectionForPath('/control/activity'), null);
 });
 
-test('browser-style mounting covers canonical Community plus transitional Content, Commands and Activity', async () => {
+test('browser-style mounting keeps Community and Content canonical while transitional Utilities still mount live state', async () => {
   const { mountControlDestination } =
     await import('../docs-site/control-page-adapter.js');
 
-  const feeds = { id: 'feeds', parentNode: null };
+  const tickets = { id: 'tickets', parentNode: null };
   const returned = [];
-
   const legacyRoot = {
     querySelector(selector) {
-      if (selector === '#feeds') return feeds;
+      if (selector === '#tickets') return tickets;
       return null;
     },
     append(node) {
@@ -201,8 +191,7 @@ test('browser-style mounting covers canonical Community plus transitional Conten
       returned.push(node.id);
     },
   };
-  feeds.parentNode = legacyRoot;
-
+  tickets.parentNode = legacyRoot;
   const main = {
     currentNode: null,
     innerHTML: '',
@@ -213,29 +202,27 @@ test('browser-style mounting covers canonical Community plus transitional Conten
       if (this.currentNode) this.currentNode.parentNode = this;
     },
   };
-
   const fallback = destination =>
     `<section data-mounted="${destination.path}"><h1>${destination.label}</h1></section>`;
 
-  mountControlDestination({
-    main,
-    destination: resolveControlRoute('/control/community/reputation'),
-    legacyRoot,
-    renderFallback: fallback,
-  });
-  assert.equal(main.currentNode, null);
-  assert.match(main.innerHTML, /Reputation/);
-  assert.equal(main.dataset.pageKey, '/control/community/reputation');
+  for (const [path, label] of [
+    ['/control/community/reputation', 'Reputation'],
+    ['/control/content/feeds', 'Feeds'],
+  ]) {
+    mountControlDestination({ main, destination: resolveControlRoute(path), legacyRoot, renderFallback: fallback });
+    assert.equal(main.currentNode, null);
+    assert.match(main.innerHTML, new RegExp(label));
+    assert.equal(main.dataset.pageKey, path);
+  }
 
   mountControlDestination({
     main,
-    destination: resolveControlRoute('/control/content/feeds'),
+    destination: resolveControlRoute('/control/utilities/ticket-configuration'),
     legacyRoot,
     renderFallback: fallback,
   });
-  assert.equal(main.currentNode, feeds);
-  assert.equal(returned.includes('reputation'), false);
-  assert.equal(main.dataset.pageKey, '/control/content/feeds');
+  assert.equal(main.currentNode, tickets);
+  assert.equal(main.dataset.pageKey, '/control/utilities/ticket-configuration');
 
   mountControlDestination({
     main,
@@ -244,18 +231,9 @@ test('browser-style mounting covers canonical Community plus transitional Conten
     renderFallback: fallback,
   });
   assert.equal(main.currentNode, null);
+  assert.ok(returned.includes('tickets'));
   assert.match(main.innerHTML, /Commands/);
   assert.equal(main.dataset.pageKey, '/control/commands');
-
-  mountControlDestination({
-    main,
-    destination: resolveControlRoute('/control/activity'),
-    legacyRoot,
-    renderFallback: fallback,
-  });
-  assert.equal(main.currentNode, null);
-  assert.match(main.innerHTML, /Activity/);
-  assert.equal(main.dataset.pageKey, '/control/activity');
 });
 
 test('signed-out state does not expose live compatibility editors', async () => {
@@ -510,18 +488,6 @@ test('compatibility adapter preserves every still-live transitional capability',
   const adapter = await import('../docs-site/control-page-adapter.js');
 
   const expected = new Map([
-    ['/control/content/feeds', {
-      sections: ['features', 'feeds'],
-      featureKeys: ['ai_updates'],
-    }],
-    ['/control/content/announcements', {
-      sections: ['features', 'publishing'],
-      featureKeys: ['announcements'],
-    }],
-    ['/control/content/live', {
-      sections: ['features', 'publishing'],
-      featureKeys: ['live_announcements'],
-    }],
     ['/control/utilities/ticket-configuration', {
       sections: ['features', 'tickets'],
       featureKeys: ['tickets'],
@@ -554,6 +520,9 @@ test('compatibility adapter preserves every still-live transitional capability',
     '/control/community/quizzes',
     '/control/community/voice-coworking',
     '/control/community/showcase',
+    '/control/content/feeds',
+    '/control/content/announcements',
+    '/control/content/live',
     '/control/mappings/channels',
     '/control/mappings/roles',
     '/control/mappings/categories',

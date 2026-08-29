@@ -1,5 +1,6 @@
 import { identityMarkup, navigationMarkup, pageMarkup } from './control-components.js';
 import { installAccountMenu } from './control-account.js';
+import { registerContentPages } from './control-content.js';
 import { mountControlDestination } from './control-page-adapter.js';
 import { registerCommunityPages } from './control-community.js';
 import { registerMappingPages } from './control-mappings.js';
@@ -53,9 +54,11 @@ function installDomainStyles({ marker, href }) {
 }
 
 installDomainStyles({ marker: 'data-control-community-styles', href: '/control-community.css?v=1' });
+installDomainStyles({ marker: 'data-control-content-styles', href: '/control-content.css?v=1' });
 installDomainStyles({ marker: 'data-control-mappings-styles', href: '/control-mappings.css?v=1' });
 registerCommunityPages();
 registerMappingPages();
+registerContentPages();
 
 function readJson(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key) || '') || fallback; } catch { return fallback; }
@@ -119,6 +122,8 @@ function renderMain() {
       snapshot: guildState,
       onSave: requestRegisteredPageSave,
       onApplySuggestions: requestMappingSuggestions,
+      onAction: requestContentAction,
+      onConfirm: message => window.confirm(message),
       rerender: renderMain,
     });
   }
@@ -283,6 +288,31 @@ async function requestMappingSuggestions(payload) {
     snapshot?.page_revisions || guildState?.meta?.page_revisions || {},
   );
   return { snapshot };
+}
+
+async function requestContentAction(action) {
+  if (!session?.authenticated || !guild) {
+    throw new Error('Sign in and select a server before publishing content.');
+  }
+  const queued = await enqueueControlAction({
+    guildId: guild.id,
+    csrfToken: session.csrf_token,
+    actionType: action.actionType,
+    payload: action.payload,
+  });
+  const completed = await waitForAction(queued.action.id);
+  if (completed.status === 'failed' || completed.status === 'rejected') {
+    throw new Error(completed.error || 'The content action could not be completed.');
+  }
+
+  const data = await loadGuildState(guild.id);
+  guildState = data.state;
+  snapshot = data.snapshot;
+  hydrateControlPages(
+    guildState,
+    snapshot?.page_revisions || guildState?.meta?.page_revisions || {},
+  );
+  return completed.result || {};
 }
 
 window.addEventListener('popstate', () => {

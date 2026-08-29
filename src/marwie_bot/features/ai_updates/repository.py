@@ -120,6 +120,24 @@ class SQLAlchemyAIUpdatesRepository:
             models = (await session.execute(statement)).scalars().all()
             return [self._source(model) for model in models]
 
+    async def existing_dedupe_keys(
+        self,
+        guild_id: int,
+        dedupe_keys: list[str] | tuple[str, ...],
+    ) -> set[str]:
+        if not dedupe_keys:
+            return set()
+        async with self.database.session() as session:
+            rows = (
+                await session.execute(
+                    select(AIUpdateItem.dedupe_key).where(
+                        AIUpdateItem.guild_id == guild_id,
+                        AIUpdateItem.dedupe_key.in_(dedupe_keys),
+                    )
+                )
+            ).scalars()
+            return set(rows)
+
     async def disable_source(self, guild_id: int, source_id: int) -> bool:
         async with self.database.session() as session:
             model = await session.get(AIUpdateSource, source_id)
