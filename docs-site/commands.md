@@ -1106,7 +1106,7 @@ If the ID is absent or belongs to another server, Rob-bot reports `Source not fo
 
 **What happens:** Uses the normal global command confirmation first. After confirmation, Rob-bot fetches every enabled AI feed source for the current server, parses each feed, considers up to the last 10 parsed items per source, removes candidates whose dedupe keys are already stored, and returns a private preview. Fetching the preview publishes nothing and does not mark candidates as posted or checked.
 
-The preview shows exactly the bounded candidate set eligible for that Post action. Candidates that do not fit in the current complete Discord review are left untouched for a later manual poll. Choose **Post** to publish exactly the displayed candidates, or **Cancel** to close the preview with no feed mutation. The preview expires after 60 seconds; an expired preview cannot be posted.
+The preview shows exactly the bounded candidate set eligible for that Post action, with at most 20 displayed candidates. Candidates that do not fit in the current complete Discord review are left untouched for a later manual poll. Choose **Post** to publish exactly the displayed candidates, or **Cancel** to close the preview with no feed mutation. The preview expires after 60 seconds; an expired preview cannot be posted.
 
 Before **Post** publishes anything, Rob-bot rechecks Manage Server permission, the `ai_updates` feature, the current Mappings-owned `ai_updates` destination, Rob-bot's destination permissions, enabled-source state, the exact preview candidate identities, and dedupe state. If permission is lost, the feature is disabled, the destination changes or becomes unavailable, a source changes, the candidate set changes, or dedupe state changes after preview, the action fails closed and nothing new is published from that preview. Fetch a new preview before trying again.
 
@@ -1130,11 +1130,13 @@ With background tasks enabled, enabled sources are still polled automatically ev
 
 **Permission:** Manage Server.
 
-**What happens:** Privately builds an aggregate report for the previous 7 days. The report includes moderation cases, tickets opened, tickets closed, solved build-help threads, quiz answers and correct-answer count, anonymous questions, and reputation events.
+**What happens:** After approval, Rob-bot privately builds an aggregate report for the exact previous 168-hour UTC window `[period_start, period_end)`. The report includes moderation cases, tickets opened, tickets closed by `closed_at`, quiz answers, quiz accuracy, anonymous questions, and reputation events. If there are no quiz answers, quiz accuracy is shown as `No answers in this period`.
+
+The report is aggregate-only and does not include member-level or raw activity data. Build Help is not an Analytics V1 metric.
 
 **Parameters:** None.
 
-This command reads the report on demand. Separately, the background automation checks every 6 hours whether a weekly analytics post is due in the configured `analytics` channel and whether old unanswered build-help threads should be surfaced.
+This command reads the report on demand and replies privately. Separately, the background automation checks every 6 hours whether a weekly analytics post is due in the configured `analytics` channel. Unanswered Build Help surfacing remains a separate automation outside Analytics V1.
 
 **Example usage:**
 

@@ -213,3 +213,218 @@ async def test_notification_page_save_re_resolves_mapping_after_preflight(monkey
         (GUILD_ID, ResourceKey.ROLE_PANEL),
         (GUILD_ID, ResourceKey.ROLE_PANEL),
     ]
+
+
+class _AfterPreflightMutationExecutor(PageSaveExecutor):
+    def __init__(self, *, mutate_after_preflight: Any, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self._mutate_after_preflight = mutate_after_preflight
+
+    async def _preflight(
+        self,
+        guild: object,
+        actor: object,
+        changes: list[dict[str, Any]],
+    ) -> None:
+        await super()._preflight(guild, actor, changes)  # type: ignore[arg-type]
+        self._mutate_after_preflight()
+
+
+def _notification_fixture(
+    monkeypatch: Any,
+    *,
+    channel_a: object,
+    channels: dict[int, object],
+    role: object,
+) -> tuple[object, _Resources, _Control, ControlActionExecutor, _Snapshots, list[int]]:
+    monkeypatch.setattr(page_save_executor_module.discord, "TextChannel", _TextChannel)
+    monkeypatch.setattr(executor_module.discord, "TextChannel", _TextChannel)
+    bot_member = SimpleNamespace(
+        guild_permissions=SimpleNamespace(manage_roles=True),
+        top_role=_Rank(10),
+    )
+    actor = SimpleNamespace(
+        id=ACTOR_ID,
+        guild_permissions=SimpleNamespace(administrator=True, manage_guild=True),
+    )
+    guild = SimpleNamespace(
+        id=GUILD_ID,
+        me=bot_member,
+        get_channel=lambda channel_id: channels.get(channel_id),
+        get_role=lambda role_id: role if role_id == ROLE_ID else None,
+        get_member=lambda member_id: actor if member_id == ACTOR_ID else None,
+    )
+    resources = _Resources(int(channel_a.id))
+    control = _Control()
+    published_channel_ids: list[int] = []
+    bot = SimpleNamespace(
+        get_guild=lambda guild_id: guild if guild_id == GUILD_ID else None,
+        add_view=lambda view, message_id: None,
+    )
+    nested = object.__new__(ControlActionExecutor)
+    object.__setattr__(nested, "resources", resources)
+    object.__setattr__(nested, "control", control)
+    object.__setattr__(nested, "bot", bot)
+    snapshots = _Snapshots()
+    return bot, resources, control, nested, snapshots, published_channel_ids
+
+
+async def test_notification_page_save_fails_closed_when_mapping_removed_after_preflight(
+    monkeypatch: Any,
+) -> None:
+    channel_a = _TextChannel(789)
+    role = _Role(5)
+    bot, resources, control, nested, snapshots, published = _notification_fixture(
+        monkeypatch, channel_a=channel_a, channels={channel_a.id: channel_a}, role=role
+    )
+
+    async def publish(**kwargs: Any) -> tuple[object, object]:
+        published.append(kwargs["channel"].id)
+        return SimpleNamespace(id=991), object()
+
+    monkeypatch.setattr(executor_module, "upsert_notification_panel", publish)
+    executor = _AfterPreflightMutationExecutor(
+        bot=bot,
+        executor=nested,
+        snapshots=snapshots,
+        mutate_after_preflight=lambda: setattr(resources, "discord_id", None),
+    )
+    action = _page_save_action(
+        page_revision(await snapshots.build(bot.get_guild(GUILD_ID)), NOTIFICATION_PAGE)
+    )
+
+    result = await executor.execute(action)
+
+    assert result["outcome"] == "partial"
+    assert result["failed_indices"] == [0]
+    assert result["items"][0]["status"] == "failed"
+    assert "Mappings first" in result["items"][0]["error"]
+    assert control.saved is None
+    assert published == []
+    assert resources.calls == [
+        (GUILD_ID, ResourceKey.ROLE_PANEL),
+        (GUILD_ID, ResourceKey.ROLE_PANEL),
+    ]
+
+
+async def test_notification_page_save_rejects_current_invalid_mapping_after_preflight(
+    monkeypatch: Any,
+) -> None:
+    channel_a = _TextChannel(789)
+    invalid_b = SimpleNamespace(id=790)
+    role = _Role(5)
+    channels: dict[int, object] = {channel_a.id: channel_a, invalid_b.id: invalid_b}
+    bot, resources, control, nested, snapshots, published = _notification_fixture(
+        monkeypatch, channel_a=channel_a, channels=channels, role=role
+    )
+
+    async def publish(**kwargs: Any) -> tuple[object, object]:
+        published.append(kwargs["channel"].id)
+        return SimpleNamespace(id=992), object()
+
+    monkeypatch.setattr(executor_module, "upsert_notification_panel", publish)
+    executor = _AfterPreflightMutationExecutor(
+        bot=bot,
+        executor=nested,
+        snapshots=snapshots,
+        mutate_after_preflight=lambda: setattr(resources, "discord_id", invalid_b.id),
+    )
+    action = _page_save_action(
+        page_revision(await snapshots.build(bot.get_guild(GUILD_ID)), NOTIFICATION_PAGE)
+    )
+
+    result = await executor.execute(action)
+
+    assert result["outcome"] == "partial"
+    assert result["failed_indices"] == [0]
+    assert control.saved is None
+    assert published == []
+    assert resources.discord_id == invalid_b.id
+    assert resources.calls == [
+        (GUILD_ID, ResourceKey.ROLE_PANEL),
+        (GUILD_ID, ResourceKey.ROLE_PANEL),
+    ]
+
+
+async def test_notification_page_save_rejects_current_invalid_role_after_preflight(
+    monkeypatch: Any,
+) -> None:
+    channel_a = _TextChannel(789)
+    role = _Role(5)
+    bot, resources, control, nested, snapshots, published = _notification_fixture(
+        monkeypatch, channel_a=channel_a, channels={channel_a.id: channel_a}, role=role
+    )
+
+    async def publish(**kwargs: Any) -> tuple[object, object]:
+        published.append(kwargs["channel"].id)
+        return SimpleNamespace(id=993), object()
+
+    monkeypatch.setattr(executor_module, "upsert_notification_panel", publish)
+
+    def invalidate_role() -> None:
+        role.managed = True
+
+    executor = _AfterPreflightMutationExecutor(
+        bot=bot, executor=nested, snapshots=snapshots, mutate_after_preflight=invalidate_role
+    )
+    action = _page_save_action(
+        page_revision(await snapshots.build(bot.get_guild(GUILD_ID)), NOTIFICATION_PAGE)
+    )
+
+    result = await executor.execute(action)
+
+    assert result["outcome"] == "partial"
+    assert result["failed_indices"] == [0]
+    assert "cannot manage" in result["items"][0]["error"]
+    assert control.saved is None
+    assert published == []
+
+
+async def test_notification_page_save_retry_uses_current_mapping_after_publish_failure(
+    monkeypatch: Any,
+) -> None:
+    channel_a = _TextChannel(789)
+    channel_b = _TextChannel(790)
+    role = _Role(5)
+    bot, resources, control, nested, snapshots, published = _notification_fixture(
+        monkeypatch,
+        channel_a=channel_a,
+        channels={channel_a.id: channel_a, channel_b.id: channel_b},
+        role=role,
+    )
+    attempts = 0
+
+    async def publish(**kwargs: Any) -> tuple[object, object]:
+        nonlocal attempts
+        attempts += 1
+        channel = kwargs["channel"]
+        published.append(channel.id)
+        if attempts == 1:
+            raise RuntimeError("simulated Discord publication failure")
+        return SimpleNamespace(id=994), object()
+
+    monkeypatch.setattr(executor_module, "upsert_notification_panel", publish)
+    executor = PageSaveExecutor(bot=bot, executor=nested, snapshots=snapshots)
+    action = _page_save_action(
+        page_revision(await snapshots.build(bot.get_guild(GUILD_ID)), NOTIFICATION_PAGE)
+    )
+
+    first = await executor.execute(action)
+    assert first["outcome"] == "partial"
+    assert first["items"][0]["status"] == "failed"
+    assert first["items"][0]["error_reference"]
+    assert control.saved is not None
+    assert control.saved["channel_id"] == channel_a.id
+    assert published == [channel_a.id]
+    nested_payload = action.payload["changes"][0]["payload"]
+    assert "channel_id" not in nested_payload
+
+    resources.discord_id = channel_b.id
+    second = await executor.execute(action)
+
+    assert second["outcome"] == "saved"
+    assert control.saved is not None
+    assert control.saved["channel_id"] == channel_b.id
+    assert second["items"][0]["result"]["channel_id"] == channel_b.id
+    assert published == [channel_a.id, channel_b.id]
+    assert "channel_id" not in nested_payload
