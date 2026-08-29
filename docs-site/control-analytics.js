@@ -38,13 +38,12 @@ function formatPeriod(value) {
   });
 }
 
-function metricCard(label, value, detail = '') {
+function metricDefinition(label, value) {
   return `
-    <article class="analytics-metric">
-      <span class="analytics-metric-label">${escapeHtml(label)}</span>
-      <strong>${escapeHtml(value)}</strong>
-      ${detail ? `<span class="analytics-metric-detail">${escapeHtml(detail)}</span>` : ''}
-    </article>`;
+    <div class="analytics-stat">
+      <dt>${escapeHtml(label)}</dt>
+      <dd>${escapeHtml(value)}</dd>
+    </div>`;
 }
 
 function channelSummary(snapshot) {
@@ -52,6 +51,35 @@ function channelSummary(snapshot) {
   if (resource?.id && resource.exists) return resource.name || 'Connected text channel';
   if (resource?.id) return 'Previously connected channel is unavailable';
   return 'No report channel connected';
+}
+
+function analyticsReportMarkup(snapshot) {
+  const analytics = snapshot?.analytics;
+  if (!analytics) {
+    return `
+      <p class="analytics-unavailable" role="status">
+        Analytics data unavailable. Refresh server state to try again.
+      </p>`;
+  }
+
+  const accuracy = analytics.quiz_accuracy == null
+    ? 'No answers in this period'
+    : `${Math.round(Number(analytics.quiz_accuracy) * 100)}%`;
+
+  return `
+    <section class="analytics-period" aria-label="Analytics period">
+      <span><strong>From</strong> ${escapeHtml(formatPeriod(analytics.period_start))}</span>
+      <span><strong>To</strong> ${escapeHtml(formatPeriod(analytics.period_end))}</span>
+    </section>
+    <dl class="analytics-metrics" aria-label="Previous 7 days operational metrics">
+      ${metricDefinition('Moderation cases', analytics.moderation_cases ?? 0)}
+      ${metricDefinition('Tickets opened', analytics.tickets_opened ?? 0)}
+      ${metricDefinition('Tickets closed', analytics.tickets_closed ?? 0)}
+      ${metricDefinition('Quiz answers', analytics.quiz_answers ?? 0)}
+      ${metricDefinition('Quiz accuracy', accuracy)}
+      ${metricDefinition('Anonymous questions', analytics.anonymous_questions ?? 0)}
+      ${metricDefinition('Reputation events', analytics.reputation_events ?? 0)}
+    </dl>`;
 }
 
 export function createAnalyticsPageDefinition() {
@@ -111,10 +139,6 @@ export function analyticsPageMarkup({ state, snapshot } = {}) {
       </section>`;
   }
 
-  const analytics = snapshot?.analytics || {};
-  const accuracy = analytics.quiz_accuracy == null
-    ? 'No answers in this period'
-    : `${Math.round(Number(analytics.quiz_accuracy) * 100)}%`;
   const enabled = state.mode === 'edit'
     ? Boolean(state.draft?.enabled)
     : Boolean(state.persisted?.enabled);
@@ -159,26 +183,13 @@ export function analyticsPageMarkup({ state, snapshot } = {}) {
     <section class="control-page analytics-page" data-page-key="${ANALYTICS_PAGE_KEY}">
       <header class="analytics-page-header">
         <div>
-          <p class="control-eyebrow">Operations</p>
           <h1>Analytics</h1>
           <p>Previous 7 days · exact 168-hour UTC window.</p>
         </div>
         ${state.mode === 'edit' ? '' : '<button class="control-button control-button-primary" type="button" data-analytics-edit>Edit settings</button>'}
       </header>
       ${statusMarkup}
-      <section class="analytics-period" aria-label="Analytics period">
-        <span><strong>From</strong> ${escapeHtml(formatPeriod(analytics.period_start))}</span>
-        <span><strong>To</strong> ${escapeHtml(formatPeriod(analytics.period_end))}</span>
-      </section>
-      <div class="analytics-metrics" aria-label="Previous 7 days operational metrics">
-        ${metricCard('Moderation cases', analytics.moderation_cases ?? 0)}
-        ${metricCard('Tickets opened', analytics.tickets_opened ?? 0)}
-        ${metricCard('Tickets closed', analytics.tickets_closed ?? 0)}
-        ${metricCard('Quiz answers', analytics.quiz_answers ?? 0)}
-        ${metricCard('Quiz accuracy', accuracy)}
-        ${metricCard('Anonymous questions', analytics.anonymous_questions ?? 0)}
-        ${metricCard('Reputation events', analytics.reputation_events ?? 0)}
-      </div>
+      ${analyticsReportMarkup(snapshot)}
       ${settingsMarkup}
     </section>`;
 }
