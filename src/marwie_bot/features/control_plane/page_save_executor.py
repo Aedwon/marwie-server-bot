@@ -135,10 +135,6 @@ class PageSaveExecutor:
                         raise ActionRejected(
                             f"Rob-bot cannot manage the configured role for `{item['label']}`."
                         )
-                # The destination is injected only after all page-save ownership and
-                # Discord prerequisites have passed. The nested legacy action can then
-                # execute through its existing validated contract.
-                payload["channel_id"] = channel.id
 
     async def _execute_change(
         self,
