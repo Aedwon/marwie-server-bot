@@ -8,6 +8,7 @@ import pytest
 from marwie_bot.db.base import Base
 from marwie_bot.db.session import Database
 from marwie_bot.features.control_plane import snapshot as snapshot_module
+from marwie_bot.features.control_plane.cog import ControlPlaneCog
 from marwie_bot.features.control_plane.domain import (
     ControlActionRecord,
     ControlActionStatus,
@@ -205,6 +206,21 @@ async def test_control_executor_applies_quiz_question_update_and_enable_actions(
 def test_quiz_question_lifecycle_actions_remain_database_atomic() -> None:
     assert ControlActionType.UPDATE_QUIZ_QUESTION in _DB_ONLY_ACTIONS
     assert ControlActionType.SET_QUIZ_QUESTION_ENABLED in _DB_ONLY_ACTIONS
+
+
+def test_reenabling_quiz_question_wakes_scheduler_through_page_save() -> None:
+    action = _action(
+        ControlActionType.SAVE_PAGE,
+        {
+            "changes": [
+                {
+                    "action_type": ControlActionType.SET_QUIZ_QUESTION_ENABLED.value,
+                    "payload": {"question_id": 7, "enabled": True},
+                }
+            ]
+        },
+    )
+    assert ControlPlaneCog._affects_quiz_scheduler(action) is True
 
 
 def test_snapshot_serializer_exposes_full_quiz_question_state() -> None:
