@@ -1,8 +1,5 @@
 from pathlib import Path
 
-from alembic.config import Config
-from alembic.script import ScriptDirectory
-
 from marwie_bot.config.resources import FeatureName, ResourceKey, ResourceType
 from marwie_bot.db.base import Base
 from marwie_bot.db.models import FeatureFlag, Guild, GuildResource
@@ -88,15 +85,6 @@ async def test_feature_bulk_read_ignores_rows_outside_current_feature_enum() -> 
         assert analytics.config == {"last_reported_at": "2026-08-01T00:00:00+00:00"}
     finally:
         await database.close()
-
-
-def test_phase1_code_only_tip_has_pre_cleanup_alembic_head() -> None:
-    config = Config(str(ROOT / "alembic.ini"))
-    config.set_main_option("script_location", str(ROOT / "migrations"))
-    script = ScriptDirectory.from_config(config)
-
-    assert script.get_heads() == ["20260827_0003"]
-    assert not (ROOT / "migrations/versions/20260830_0004_remove_build_help.py").exists()
 
 
 def test_retired_build_help_tagging_copy_is_absent_from_live_manuals_and_confirmation() -> None:
