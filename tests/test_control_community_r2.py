@@ -296,7 +296,7 @@ async def _page_save_fixture() -> tuple[
     )
     snapshots = _QuizSnapshots(feature_repository, quiz_repository)
     page_save = PageSaveExecutor(
-        bot=bot,  # type: ignore[arg-type]
+        bot=bot,
         executor=nested,
         snapshots=snapshots,  # type: ignore[arg-type]
     )
