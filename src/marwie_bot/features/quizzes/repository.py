@@ -23,10 +23,15 @@ class SQLAlchemyQuizRepository:
             (model.option_a, model.option_b, model.option_c, model.option_d),
             model.correct_index,
             model.explanation,
+            model.active,
         )
 
     @staticmethod
-    def _session(model: QuizSession) -> QuizSessionRecord:
+    def _as_utc(value: datetime) -> datetime:
+        return value if value.tzinfo is not None else value.replace(tzinfo=UTC)
+
+    @classmethod
+    def _session(cls, model: QuizSession) -> QuizSessionRecord:
         return QuizSessionRecord(
             model.id,
             model.guild_id,
@@ -34,7 +39,7 @@ class SQLAlchemyQuizRepository:
             model.message_id,
             model.question_id,
             model.status,
-            model.closes_at,
+            cls._as_utc(model.closes_at),
         )
 
     async def add_question(
@@ -64,6 +69,87 @@ class SQLAlchemyQuizRepository:
             await session.refresh(model)
             return self._question(model)
 
+    async def list_questions(
+        self, guild_id: int, *, active_only: bool = False
+    ) -> list[QuizQuestionRecord]:
+        async with self.database.session() as session:
+            statement = select(QuizQuestion).where(QuizQuestion.guild_id == guild_id)
+            if active_only:
+                statement = statement.where(QuizQuestion.active.is_(True))
+            statement = statement.order_by(QuizQuestion.id)
+            models = (await session.execute(statement)).scalars().all()
+            return [self._question(model) for model in models]
+
+    async def update_question(
+        self,
+        guild_id: int,
+        question_id: int,
+        category: str,
+        prompt: str,
+        options: tuple[str, str, str, str],
+        correct_index: int,
+        explanation: str | None,
+    ) -> QuizQuestionRecord | None:
+        async with self.database.session() as session:
+            model = (
+                await session.execute(
+                    select(QuizQuestion)
+                    .where(
+                        QuizQuestion.id == question_id,
+                        QuizQuestion.guild_id == guild_id,
+                    )
+                    .with_for_update()
+                )
+            ).scalar_one_or_none()
+            if model is None:
+                return None
+            open_session_id = (
+                await session.execute(
+                    select(QuizSession.id)
+                    .where(
+                        QuizSession.guild_id == guild_id,
+                        QuizSession.question_id == question_id,
+                        QuizSession.status == "open",
+                    )
+                    .limit(1)
+                )
+            ).scalar_one_or_none()
+            if open_session_id is not None:
+                raise ValueError(
+                    "That question is currently being used by an open quiz. "
+                    "Edit it after the quiz closes."
+                )
+            model.category = category
+            model.prompt = prompt
+            model.option_a = options[0]
+            model.option_b = options[1]
+            model.option_c = options[2]
+            model.option_d = options[3]
+            model.correct_index = correct_index
+            model.explanation = explanation
+            await session.commit()
+            await session.refresh(model)
+            return self._question(model)
+
+    async def set_question_active(
+        self, guild_id: int, question_id: int, active: bool
+    ) -> QuizQuestionRecord | None:
+        async with self.database.session() as session:
+            model = (
+                await session.execute(
+                    select(QuizQuestion).where(
+                        QuizQuestion.id == question_id,
+                        QuizQuestion.guild_id == guild_id,
+                    )
+                )
+            ).scalar_one_or_none()
+            if model is None:
+                return None
+            model.active = active
+            await session.commit()
+            await session.refresh(model)
+            return self._question(model)
+
     async def random_question(self, guild_id: int) -> QuizQuestionRecord | None:
         async with self.database.session() as session:
             statement = (
@@ -82,6 +168,18 @@ class SQLAlchemyQuizRepository:
         self, guild_id: int, channel_id: int, question_id: int, closes_at: datetime
     ) -> QuizSessionRecord:
         async with self.database.session() as session:
+            question = (
+                await session.execute(
+                    select(QuizQuestion)
+                    .where(
+                        QuizQuestion.id == question_id,
+                        QuizQuestion.guild_id == guild_id,
+                    )
+                    .with_for_update()
+                )
+            ).scalar_one_or_none()
+            if question is None:
+                raise ValueError("That quiz question no longer exists in this server.")
             model = QuizSession(
                 guild_id=guild_id,
                 channel_id=channel_id,
@@ -173,7 +271,8 @@ class SQLAlchemyQuizRepository:
                 .order_by(QuizSession.closes_at)
                 .limit(1)
             )
-            return (await session.execute(statement)).scalar_one_or_none()
+            closes_at = (await session.execute(statement)).scalar_one_or_none()
+            return self._as_utc(closes_at) if closes_at is not None else None
 
     async def close_session(self, session_id: int) -> tuple[int, int]:
         async with self.database.session() as session:

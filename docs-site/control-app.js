@@ -1,6 +1,7 @@
 import { identityMarkup, navigationMarkup, pageMarkup } from './control-components.js';
 import { installAccountMenu } from './control-account.js';
 import { mountControlDestination } from './control-page-adapter.js';
+import { registerCommunityPages } from './control-community.js';
 import { registerMappingPages } from './control-mappings.js';
 import { installThemeControls } from './control-theme.js';
 import { createNavigationState, installDrawerController, navigationModel } from './control-navigation.js';
@@ -42,16 +43,18 @@ let snapshot = null;
 let removeAccountMenu = () => {};
 let removePageInteractions = () => {};
 
-function installMappingStyles() {
-  if (document.querySelector('link[data-control-mappings-styles]')) return;
+function installDomainStyles({ marker, href }) {
+  if (document.querySelector(`link[${marker}]`)) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = '/control-mappings.css?v=1';
-  link.dataset.controlMappingsStyles = 'true';
+  link.href = href;
+  link.setAttribute(marker, 'true');
   document.head.append(link);
 }
 
-installMappingStyles();
+installDomainStyles({ marker: 'data-control-community-styles', href: '/control-community.css?v=1' });
+installDomainStyles({ marker: 'data-control-mappings-styles', href: '/control-mappings.css?v=1' });
+registerCommunityPages();
 registerMappingPages();
 
 function readJson(key, fallback) {

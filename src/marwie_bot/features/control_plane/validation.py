@@ -160,6 +160,25 @@ def _mapping_confirmations(value: Any) -> list[str]:
     return result
 
 
+def _quiz_question_payload(data: dict[str, Any]) -> dict[str, Any]:
+    options_raw = data.get("options")
+    if not isinstance(options_raw, list) or len(options_raw) != 4:
+        raise ValueError("Quiz questions require exactly four options.")
+    options = [
+        _text(value, field=f"Option {index + 1}", max_length=300)
+        for index, value in enumerate(options_raw)
+    ]
+    return {
+        "category": _text(data.get("category"), field="Category", max_length=50),
+        "prompt": _text(data.get("prompt"), field="Prompt", max_length=2000),
+        "options": options,
+        "correct": _integer(data.get("correct"), field="Correct answer", minimum=1, maximum=4),
+        "explanation": _text(
+            data.get("explanation"), field="Explanation", max_length=2000, required=False
+        ),
+    }
+
+
 def validate_action_payload(
     action_type: ControlActionType,
     payload: dict[str, Any] | None,
@@ -298,21 +317,31 @@ def validate_action_payload(
         }
 
     if action_type is ControlActionType.ADD_QUIZ_QUESTION:
-        options_raw = data.get("options")
-        if not isinstance(options_raw, list) or len(options_raw) != 4:
-            raise ValueError("Quiz questions require exactly four options.")
-        options = [
-            _text(value, field=f"Option {index + 1}", max_length=300)
-            for index, value in enumerate(options_raw)
-        ]
+        return _quiz_question_payload(data)
+
+    if action_type is ControlActionType.UPDATE_QUIZ_QUESTION:
         return {
-            "category": _text(data.get("category"), field="Category", max_length=50),
-            "prompt": _text(data.get("prompt"), field="Prompt", max_length=2000),
-            "options": options,
-            "correct": _integer(data.get("correct"), field="Correct answer", minimum=1, maximum=4),
-            "explanation": _text(
-                data.get("explanation"), field="Explanation", max_length=2000, required=False
+            "question_id": _integer(
+                data.get("question_id"),
+                field="Question ID",
+                minimum=1,
+                maximum=2_147_483_647,
             ),
+            **_quiz_question_payload(data),
+        }
+
+    if action_type is ControlActionType.SET_QUIZ_QUESTION_ENABLED:
+        enabled = data.get("enabled")
+        if not isinstance(enabled, bool):
+            raise ValueError("Enabled must be true or false.")
+        return {
+            "question_id": _integer(
+                data.get("question_id"),
+                field="Question ID",
+                minimum=1,
+                maximum=2_147_483_647,
+            ),
+            "enabled": enabled,
         }
 
     if action_type is ControlActionType.UPSERT_AI_SOURCE:

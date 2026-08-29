@@ -181,7 +181,7 @@ class ControlActionExecutor:
                 return {"interval_hours": interval}
             case ControlActionType.ADD_QUIZ_QUESTION:
                 options = cast(list[str], payload["options"])
-                question_record = await self.quizzes.add_question(
+                created_question = await self.quizzes.add_question(
                     guild.id,
                     str(payload["category"]),
                     str(payload["prompt"]),
@@ -189,7 +189,30 @@ class ControlActionExecutor:
                     int(payload["correct"]) - 1,
                     str(payload["explanation"]) or None,
                 )
+                return {"question_id": created_question.id}
+            case ControlActionType.UPDATE_QUIZ_QUESTION:
+                options = cast(list[str], payload["options"])
+                question_record = await self.quizzes.update_question(
+                    guild.id,
+                    int(payload["question_id"]),
+                    str(payload["category"]),
+                    str(payload["prompt"]),
+                    (options[0], options[1], options[2], options[3]),
+                    int(payload["correct"]) - 1,
+                    str(payload["explanation"]) or None,
+                )
+                if question_record is None:
+                    raise ActionRejected("That quiz question no longer exists in this server.")
                 return {"question_id": question_record.id}
+            case ControlActionType.SET_QUIZ_QUESTION_ENABLED:
+                question_record = await self.quizzes.set_question_active(
+                    guild.id,
+                    int(payload["question_id"]),
+                    bool(payload["enabled"]),
+                )
+                if question_record is None:
+                    raise ActionRejected("That quiz question no longer exists in this server.")
+                return {"question_id": question_record.id, "enabled": question_record.active}
             case ControlActionType.UPSERT_AI_SOURCE:
                 source_id = payload.get("source_id")
                 if source_id is None:

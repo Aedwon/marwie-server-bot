@@ -42,6 +42,7 @@ _QUIZ_SCHEDULER_ACTIONS = {
     ControlActionType.SET_FEATURE,
     ControlActionType.SET_QUIZ_SCHEDULE,
     ControlActionType.ADD_QUIZ_QUESTION,
+    ControlActionType.SET_QUIZ_QUESTION_ENABLED,
 }
 
 
@@ -277,6 +278,7 @@ async def setup(bot: commands.Bot) -> None:
         control=control,
         provisioner=provisioner,
         settings=settings,
+        quizzes=quizzes,
     )
     await bot.add_cog(
         ControlPlaneCog(
