@@ -1,11 +1,6 @@
 const LEGACY_SECTION_BY_PATH = Object.freeze({});
 
-const LEGACY_MOUNT_PLAN_BY_PATH = Object.freeze({
-  '/control/analytics': Object.freeze({
-    sections: Object.freeze(['features']),
-    featureKeys: Object.freeze(['analytics']),
-  }),
-});
+const LEGACY_MOUNT_PLAN_BY_PATH = Object.freeze({});
 
 const mountedByMain = new WeakMap();
 

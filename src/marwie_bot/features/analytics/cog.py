@@ -44,9 +44,14 @@ class AnalyticsCog(commands.Cog):
         embed.add_field(name="Moderation cases", value=str(report.moderation_cases))
         embed.add_field(name="Tickets opened", value=str(report.tickets_opened))
         embed.add_field(name="Tickets closed", value=str(report.tickets_closed))
-        embed.add_field(name="Solved build-help", value=str(report.solutions))
+        embed.add_field(name="Quiz answers", value=str(report.quiz_answers))
         embed.add_field(
-            name="Quiz answers", value=f"{report.quiz_answers} ({report.quiz_correct} correct)"
+            name="Quiz accuracy",
+            value=(
+                f"{report.quiz_accuracy:.0%}"
+                if report.quiz_accuracy is not None
+                else "No answers in this period"
+            ),
         )
         embed.add_field(name="Anonymous questions", value=str(report.anonymous_questions))
         embed.add_field(name="Reputation events", value=str(report.reputation_events))

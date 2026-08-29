@@ -464,24 +464,8 @@ test('ordinary user-facing pages contain no Foundation or migration commentary',
 });
 
 
-test('compatibility adapter preserves every still-live transitional capability', async () => {
+test('compatibility adapter has no migrated Stage 3 domain ownership', async () => {
   const adapter = await import('../docs-site/control-page-adapter.js');
-
-  const expected = new Map([
-    ['/control/analytics', {
-      sections: ['features'],
-      featureKeys: ['analytics'],
-    }],
-  ]);
-
-  for (const [path, wanted] of expected) {
-    const plan = adapter.legacyMountPlanForPath(path);
-    assert.ok(plan, `${path} must retain its transitional live capability`);
-    assert.deepEqual(plan.sections, wanted.sections, `${path} section ownership`);
-    assert.deepEqual(plan.featureKeys || [], wanted.featureKeys || [], `${path} feature ownership`);
-    assert.deepEqual(plan.resourceKeys || [], wanted.resourceKeys || [], `${path} mapping ownership`);
-    assert.equal(plan.setupMode || null, wanted.setupMode || null, `${path} setup mode`);
-  }
 
   for (const path of [
     '/control/community/reputation',
@@ -494,6 +478,7 @@ test('compatibility adapter preserves every still-live transitional capability',
     '/control/utilities/ticket-configuration',
     '/control/utilities/notification-roles',
     '/control/utilities/anonymous-questions',
+    '/control/analytics',
     '/control/mappings/channels',
     '/control/mappings/roles',
     '/control/mappings/categories',
@@ -503,11 +488,8 @@ test('compatibility adapter preserves every still-live transitional capability',
     '/control/commands',
     '/control/activity',
   ]) {
-    assert.equal(
-      adapter.legacyMountPlanForPath(path),
-      null,
-      `${path} must not inherit mutable legacy ownership`,
-    );
+    assert.equal(adapter.legacySectionForPath(path), null, `${path} section ownership`);
+    assert.equal(adapter.legacyMountPlanForPath(path), null, `${path} mount ownership`);
   }
 });
 

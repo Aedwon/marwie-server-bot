@@ -1,6 +1,7 @@
 import { identityMarkup, navigationMarkup, pageMarkup } from './control-components.js';
 import { installAccountMenu } from './control-account.js';
 import { registerContentPages } from './control-content.js';
+import { registerAnalyticsPage } from './control-analytics.js';
 import { mountControlDestination } from './control-page-adapter.js';
 import { registerCommunityPages } from './control-community.js';
 import { registerMappingPages } from './control-mappings.js';
@@ -8,6 +9,7 @@ import { registerUtilitiesPages } from './control-utilities.js';
 import { installThemeControls } from './control-theme.js';
 import { createNavigationState, installDrawerController, navigationModel } from './control-navigation.js';
 import { resolveControlRoute } from './control-router.js';
+import { workflowPageMarkup } from './control-workflows.js';
 import {
   controlState,
   hydrateControlPages,
@@ -57,11 +59,14 @@ function installDomainStyles({ marker, href }) {
 installDomainStyles({ marker: 'data-control-community-styles', href: '/control-community.css?v=1' });
 installDomainStyles({ marker: 'data-control-content-styles', href: '/control-content.css?v=1' });
 installDomainStyles({ marker: 'data-control-utilities-styles', href: '/control-utilities.css?v=1' });
+installDomainStyles({ marker: 'data-control-analytics-workflows-styles', href: '/control-analytics-workflows.css?v=1' });
 installDomainStyles({ marker: 'data-control-mappings-styles', href: '/control-mappings.css?v=1' });
 registerCommunityPages();
 registerContentPages();
 registerUtilitiesPages();
+registerAnalyticsPage();
 registerMappingPages();
+registerAnalyticsPage();
 
 function readJson(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key) || '') || fallback; } catch { return fallback; }
@@ -107,17 +112,18 @@ function renderMain() {
   const registeredMarkup = session?.authenticated
     ? renderRegisteredControlPage(pageKey, { snapshot: guildState })
     : null;
+  const workflowMarkup = session?.authenticated ? workflowPageMarkup(pageKey) : '';
 
   mountControlDestination({
     main: shell.main,
     destination: navState.current,
     legacyRoot: shell.legacy,
     allowLegacy: Boolean(session?.authenticated),
-    renderFallback: destination => registeredMarkup ?? pageMarkup(destination, {
+    renderFallback: destination => registeredMarkup ?? (workflowMarkup || pageMarkup(destination, {
       authenticated: Boolean(session?.authenticated),
       state: guildState,
       snapshot,
-    }),
+    })),
   });
 
   if (registeredMarkup !== null) {
