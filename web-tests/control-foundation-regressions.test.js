@@ -141,17 +141,19 @@ test('invalid child URLs use the domain first child, never remembered child', ()
   assert.equal(resolveControlRoute(resolved.path).path, resolved.path);
 });
 
-test('canonical routes use a narrow internal live compatibility adapter', async () => {
+test('canonical Community routes bypass the narrow internal live compatibility adapter', async () => {
   const adapter = await import('../docs-site/control-page-adapter.js');
 
-  assert.equal(
-    adapter.legacySectionForPath('/control/community/reputation'),
-    'reputation',
-  );
-  assert.equal(
-    adapter.legacySectionForPath('/control/community/quizzes'),
-    'quizzes',
-  );
+  for (const path of [
+    '/control/community/reputation',
+    '/control/community/quizzes',
+    '/control/community/voice-coworking',
+    '/control/community/showcase',
+  ]) {
+    assert.equal(adapter.legacySectionForPath(path), null);
+    assert.equal(adapter.legacyMountPlanForPath(path), null);
+  }
+
   assert.equal(
     adapter.legacySectionForPath('/control/content/feeds'),
     'feeds',
@@ -182,17 +184,15 @@ test('canonical routes use a narrow internal live compatibility adapter', async 
   assert.equal(adapter.legacySectionForPath('/control/activity'), null);
 });
 
-test('browser-style mounting covers two domains plus Commands and Activity', async () => {
+test('browser-style mounting covers canonical Community plus transitional Content, Commands and Activity', async () => {
   const { mountControlDestination } =
     await import('../docs-site/control-page-adapter.js');
 
-  const reputation = { id: 'reputation', parentNode: null };
   const feeds = { id: 'feeds', parentNode: null };
   const returned = [];
 
   const legacyRoot = {
     querySelector(selector) {
-      if (selector === '#reputation') return reputation;
       if (selector === '#feeds') return feeds;
       return null;
     },
@@ -201,7 +201,6 @@ test('browser-style mounting covers two domains plus Commands and Activity', asy
       returned.push(node.id);
     },
   };
-  reputation.parentNode = legacyRoot;
   feeds.parentNode = legacyRoot;
 
   const main = {
@@ -224,7 +223,8 @@ test('browser-style mounting covers two domains plus Commands and Activity', asy
     legacyRoot,
     renderFallback: fallback,
   });
-  assert.equal(main.currentNode, reputation);
+  assert.equal(main.currentNode, null);
+  assert.match(main.innerHTML, /Reputation/);
   assert.equal(main.dataset.pageKey, '/control/community/reputation');
 
   mountControlDestination({
@@ -234,7 +234,7 @@ test('browser-style mounting covers two domains plus Commands and Activity', asy
     renderFallback: fallback,
   });
   assert.equal(main.currentNode, feeds);
-  assert.ok(returned.includes('reputation'));
+  assert.equal(returned.includes('reputation'), false);
   assert.equal(main.dataset.pageKey, '/control/content/feeds');
 
   mountControlDestination({
@@ -506,26 +506,10 @@ test('ordinary user-facing pages contain no Foundation or migration commentary',
 });
 
 
-test('compatibility adapter preserves every still-live canonical capability', async () => {
+test('compatibility adapter preserves every still-live transitional capability', async () => {
   const adapter = await import('../docs-site/control-page-adapter.js');
 
   const expected = new Map([
-    ['/control/community/reputation', {
-      sections: ['features', 'reputation'],
-      featureKeys: ['reputation'],
-    }],
-    ['/control/community/quizzes', {
-      sections: ['features', 'quizzes'],
-      featureKeys: ['quizzes'],
-    }],
-    ['/control/community/voice-coworking', {
-      sections: ['features'],
-      featureKeys: ['voice', 'coworking'],
-    }],
-    ['/control/community/showcase', {
-      sections: ['features'],
-      featureKeys: ['showcase'],
-    }],
     ['/control/content/feeds', {
       sections: ['features', 'feeds'],
       featureKeys: ['ai_updates'],
@@ -566,6 +550,10 @@ test('compatibility adapter preserves every still-live canonical capability', as
   }
 
   for (const path of [
+    '/control/community/reputation',
+    '/control/community/quizzes',
+    '/control/community/voice-coworking',
+    '/control/community/showcase',
     '/control/mappings/channels',
     '/control/mappings/roles',
     '/control/mappings/categories',
