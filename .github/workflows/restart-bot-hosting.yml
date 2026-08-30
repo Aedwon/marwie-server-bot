@@ -14,7 +14,7 @@ permissions:
 jobs:
   restart:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 4
     env:
       BOT_HOSTING_API_KEY: ${{ secrets.BOT_HOSTING_API_KEY }}
       BOT_HOSTING_DEPLOYMENT_ID: ${{ secrets.BOT_HOSTING_DEPLOYMENT_ID }}
@@ -51,3 +51,56 @@ jobs:
 
           printf '%s\n' "${response}"
           echo "Restart request accepted. Bot-Hosting Auto Pull should re-pull the linked branch during restart."
+
+      - name: Verify Bot-Hosting deployment health
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          deployment_json=""
+          state=""
+          for attempt in $(seq 1 12); do
+            deployment_json="$(
+              curl --fail-with-body --silent --show-error \
+                --header "Authorization: Bearer ${BOT_HOSTING_API_KEY}" \
+                "https://bot-hosting.net/api/v1/deployments/${BOT_HOSTING_DEPLOYMENT_ID}"
+            )"
+            state="$(printf '%s' "${deployment_json}" | jq -r '.state // "unknown"')"
+            if [[ "${state}" == "running" ]]; then
+              break
+            fi
+            sleep 5
+          done
+
+          if [[ "${state}" != "running" ]]; then
+            echo "::error::Bot-Hosting deployment did not reach running state; final state=${state}"
+            exit 1
+          fi
+
+          git_json="$(
+            curl --fail-with-body --silent --show-error \
+              --header "Authorization: Bearer ${BOT_HOSTING_API_KEY}" \
+              "https://bot-hosting.net/api/v1/deployments/${BOT_HOSTING_DEPLOYMENT_ID}/git"
+          )"
+          resources_json="$(
+            curl --fail-with-body --silent --show-error \
+              --header "Authorization: Bearer ${BOT_HOSTING_API_KEY}" \
+              "https://bot-hosting.net/api/v1/deployments/${BOT_HOSTING_DEPLOYMENT_ID}/resources"
+          )"
+
+          linked="$(printf '%s' "${git_json}" | jq -r '.linked // false')"
+          branch="$(printf '%s' "${git_json}" | jq -r '.branch // ""')"
+          auto_pull="$(printf '%s' "${git_json}" | jq -r '.autoPull // false')"
+          resource_state="$(printf '%s' "${resources_json}" | jq -r '.state // "unknown"')"
+          uptime_ms="$(printf '%s' "${resources_json}" | jq -r '.uptimeMs // 0')"
+
+          if [[ "${linked}" != "true" || "${branch}" != "main" || "${auto_pull}" != "true" ]]; then
+            echo "::error::Unexpected git linkage: linked=${linked} branch=${branch} autoPull=${auto_pull}"
+            exit 1
+          fi
+          if [[ "${resource_state}" != "running" ]]; then
+            echo "::error::Resource state is not running: ${resource_state}"
+            exit 1
+          fi
+
+          echo "Bot-Hosting health verified: state=${state} resource_state=${resource_state} linked=${linked} branch=${branch} autoPull=${auto_pull} uptimeMs=${uptime_ms}"
