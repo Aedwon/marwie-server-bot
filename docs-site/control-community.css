@@ -65,9 +65,9 @@
 .community-question-card,
 .community-mapping-card {
   min-width: 0;
-  border: 1px solid var(--line, rgba(255, 255, 255, 0.12));
   border-radius: 14px;
   background: var(--panel, rgba(255, 255, 255, 0.035));
+  box-shadow: var(--control-card-shadow);
 }
 
 .community-summary-card,

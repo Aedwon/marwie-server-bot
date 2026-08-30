@@ -177,8 +177,8 @@
   min-width: 0;
   margin: 0 0 14px;
   padding: 16px;
-  border: 1px solid var(--control-border, var(--line, #d2d2d7));
   border-radius: 12px;
+  box-shadow: var(--control-card-shadow);
 }
 
 .utility-editor-row legend {
@@ -288,7 +288,6 @@
   bottom: 14px;
   margin-top: 28px;
   padding: 12px 14px;
-  border: 1px solid var(--control-border, var(--line, #d2d2d7));
   border-radius: 12px;
   background: color-mix(in srgb, var(--page-surface, #fff) 94%, transparent);
   box-shadow: 0 10px 28px rgb(0 0 0 / 0.09);

@@ -91,9 +91,9 @@
   min-width: 0;
   margin-top: 24px;
   padding: 18px;
-  border: 1px solid var(--control-border);
   border-radius: 14px;
   background: var(--page-surface, #fff);
+  box-shadow: var(--control-card-shadow);
 }
 
 .analytics-settings p {

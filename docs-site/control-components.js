@@ -11,21 +11,18 @@ export function escapeHtml(value) {
 
 export function navigationMarkup(model) {
   const primary = model.primary.map(domain => {
-    if (domain.direct) {
-      return `<a class="control-nav-direct" href="${domain.path}"${domain.current ? ' aria-current="page"' : ''}>${escapeHtml(domain.label)}</a>`;
-    }
     const children = domain.children.map(child => `
-      <a href="${child.path}"${child.current ? ' aria-current="page"' : ''}>${escapeHtml(child.label)}</a>`).join('');
-    return `<section class="control-nav-domain" data-domain="${domain.key}">
+      <a href="${child.path}" data-nav-path="${child.path}"${child.current ? ' aria-current="page"' : ''}>${escapeHtml(child.label)}</a>`).join('');
+    return `<section class="control-nav-domain${domain.expanded ? ' control-nav-domain-open' : ''}${domain.current ? ' control-nav-domain-current' : ''}" data-domain="${domain.key}">
       <button type="button" data-domain-select="${domain.key}" aria-expanded="${domain.expanded ? 'true' : 'false'}">
-        <span>${escapeHtml(domain.label)}</span><span aria-hidden="true">⌄</span>
+        ${domain.current ? '<span class="control-nav-marker" aria-hidden="true"></span>' : ''}<span>${escapeHtml(domain.label)}</span>
       </button>
       <div class="control-nav-children"${domain.expanded ? '' : ' hidden'}>${children}</div>
     </section>`;
   }).join('');
 
   const secondary = model.secondary.map(item => `
-    <a href="${item.path}"${item.current ? ' aria-current="page"' : ''}>${escapeHtml(item.label)}</a>`).join('');
+    <a href="${item.path}" data-nav-path="${item.path}"${item.current ? ' aria-current="page"' : ''}>${escapeHtml(item.label)}</a>`).join('');
 
   return `<nav class="control-primary-nav" aria-label="Control destinations">${primary}</nav>
     <nav class="control-secondary-nav" aria-label="Control reference and history">${secondary}</nav>`;

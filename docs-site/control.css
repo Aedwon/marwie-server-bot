@@ -198,3 +198,153 @@
     margin-top: 6px;
   }
 }
+
+
+/* Sidebar polish R1 --------------------------------------------------------- */
+:root {
+  --control-card-shadow: 0 10px 30px rgb(0 0 0 / .07), 0 2px 8px rgb(0 0 0 / .035);
+}
+
+.control-brand {
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.control-brand span {
+  display: block;
+  line-height: 1.2;
+  font-size: 13px;
+}
+
+.control-primary-nav a,
+.control-secondary-nav a,
+.control-nav-domain > button {
+  transition: background 120ms ease, color 110ms ease, transform 90ms ease;
+}
+
+.control-primary-nav a:hover,
+.control-secondary-nav a:hover,
+.control-nav-domain > button:hover {
+  background: color-mix(in srgb, currentColor 9%, transparent);
+}
+
+.control-primary-nav a:active,
+.control-secondary-nav a:active,
+.control-nav-domain > button:active {
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  transform: scale(.985);
+}
+
+.control-nav-domain > button {
+  justify-content: flex-start;
+}
+
+.control-nav-domain-open > button {
+  background: color-mix(in srgb, currentColor 5.5%, transparent);
+}
+
+.control-nav-marker {
+  width: 3px;
+  height: 20px;
+  flex: 0 0 auto;
+  margin-right: 1px;
+  border-radius: 999px;
+  background: currentColor;
+  animation: control-nav-fade 120ms ease-out both;
+}
+
+.control-nav-reflow {
+  transition: transform 190ms cubic-bezier(.2, .8, .2, 1);
+}
+
+.control-nav-children-reveal {
+  animation: control-nav-fade 120ms ease-out both;
+}
+
+@keyframes control-nav-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.control-nav-children a {
+  transition: background 110ms ease, color 110ms ease, transform 90ms ease;
+}
+
+.control-nav-children a:hover {
+  background: color-mix(in srgb, currentColor 7.5%, transparent);
+  color: inherit;
+}
+
+.control-nav-children a:active {
+  background: color-mix(in srgb, currentColor 13%, transparent);
+  transform: scale(.985);
+}
+
+.control-nav-children a[aria-current="page"] {
+  background: color-mix(in srgb, currentColor 13%, transparent);
+  color: inherit;
+  font-weight: 650;
+}
+
+.control-appearance {
+  display: flex;
+  grid-template-columns: none;
+  gap: 9px;
+}
+
+.control-appearance button {
+  width: 42px;
+  height: 42px;
+  min-height: 42px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  cursor: pointer;
+  transition: background 120ms ease, transform 90ms ease, box-shadow 120ms ease;
+}
+
+.control-appearance button svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.control-appearance button:hover {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  box-shadow: 0 4px 14px rgb(0 0 0 / .18);
+}
+
+.control-appearance button:active {
+  background: color-mix(in srgb, currentColor 17%, transparent);
+  transform: scale(.92);
+}
+
+.control-appearance button[aria-pressed="true"] {
+  background: color-mix(in srgb, currentColor 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 8%, transparent);
+}
+
+:is(.control-primary-button, .control-login, .control-button, .control-secondary-button) {
+  cursor: pointer;
+  transition: transform 90ms ease, filter 110ms ease, box-shadow 120ms ease, background 120ms ease;
+}
+
+:is(.control-primary-button, .control-login, .control-button, .control-secondary-button):not(:disabled):hover {
+  filter: brightness(.96);
+}
+
+:is(.control-primary-button, .control-login, .control-button, .control-secondary-button):not(:disabled):active {
+  transform: scale(.97);
+  filter: brightness(.9);
+}
+
+:is(.control-primary-button, .control-login, .control-button, .control-secondary-button):disabled {
+  cursor: not-allowed;
+}

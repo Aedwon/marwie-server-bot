@@ -21,38 +21,48 @@ export function createNavigationState({ currentPath, lastByDomain = {}, expanded
     get current() { return current; },
     get expandedDomain() { return expanded; },
     get lastByDomain() { return { ...memory }; },
+    revealDomain(domainKey) {
+      if (!EXPANDABLE_DOMAINS.has(domainKey)) return current;
+      expanded = domainKey;
+      return current;
+    },
     select(path) {
       const next = destinationForPath(path);
       if (!next) return current;
       current = next;
       if (next.domain && EXPANDABLE_DOMAINS.has(next.domain)) {
-        expanded = next.domain;
         memory[next.domain] = next.path;
       }
       return current;
-    },
-    selectDomain(domainKey) {
-      const next = destinationForDomain(domainKey, memory);
-      if (!next) return current;
-      if (EXPANDABLE_DOMAINS.has(domainKey)) expanded = domainKey;
-      return this.select(next.path);
     },
   };
 }
 
 export function navigationModel(current, expandedDomain = 'community') {
   const expanded = EXPANDABLE_DOMAINS.has(expandedDomain) ? expandedDomain : 'community';
+  const primaryDomains = CONTROL_DOMAINS.filter(domain => !domain.direct);
+  const directDomains = CONTROL_DOMAINS.filter(domain => domain.direct);
   return {
-    primary: CONTROL_DOMAINS.map(domain => ({
+    primary: primaryDomains.map(domain => ({
       key: domain.key,
       label: domain.label,
       path: domain.path,
-      direct: domain.direct,
-      expanded: !domain.direct && domain.key === expanded,
+      direct: false,
+      expanded: domain.key === expanded,
       current: current?.domain === domain.key,
       children: domain.children.map(child => ({ ...child, current: current?.path === child.path })),
     })),
-    secondary: SECONDARY_DESTINATIONS.map(item => ({ ...item, current: current?.path === item.path })),
+    secondary: [
+      ...directDomains.map(domain => ({
+        key: domain.key,
+        label: domain.label,
+        path: domain.path,
+        domain: domain.key,
+        kind: 'secondary',
+        current: current?.path === domain.path,
+      })),
+      ...SECONDARY_DESTINATIONS.map(item => ({ ...item, current: current?.path === item.path })),
+    ],
   };
 }
 

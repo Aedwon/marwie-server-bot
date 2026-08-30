@@ -17,7 +17,7 @@
     })();
   </script>
   <link rel="stylesheet" href="/styles.css?v=14">
-  <link rel="stylesheet" href="/control.css?v=5">
+  <link rel="stylesheet" href="/control.css?v=6">
 </head>
 <body class="control-page">
   <a class="skip" href="#controlMain">Skip to active Control page</a>
@@ -33,11 +33,17 @@
         <button id="controlNavClose" class="control-nav-close" type="button" aria-label="Close Control navigation">Close</button>
       </div>
       <div id="controlNavContent"></div>
-      <a class="control-brand" href="/"><img src="/rob-robin.jpg?v=1" alt=""><span>Rob-bot<small>Control</small></span></a>
+      <a class="control-brand" href="/"><img src="/rob-robin.jpg?v=1" alt=""><span>Rob-bot Control Panel</span></a>
       <div class="control-appearance" role="group" aria-label="Appearance">
-        <button type="button" data-theme-choice="dark" aria-pressed="true">Dark</button>
-        <button type="button" data-theme-choice="light" aria-pressed="false">Light</button>
-        <button type="button" data-theme-choice="system" aria-pressed="false">System</button>
+        <button type="button" data-theme-choice="dark" aria-pressed="true" aria-label="Dark theme" title="Dark">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 15.3A8.5 8.5 0 0 1 8.7 4a8.5 8.5 0 1 0 11.3 11.3Z"/></svg>
+        </button>
+        <button type="button" data-theme-choice="light" aria-pressed="false" aria-label="Light theme" title="Light">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        </button>
+        <button type="button" data-theme-choice="system" aria-pressed="false" aria-label="Follow system theme" title="System">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        </button>
       </div>
     </aside>
 
@@ -47,6 +53,6 @@
     </div>
   </div>
 
-  <script type="module" src="/control-app.js?v=3"></script>
+  <script type="module" src="/control-app.js?v=4"></script>
 </body>
 </html>

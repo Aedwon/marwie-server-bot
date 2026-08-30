@@ -89,6 +89,77 @@ function persistNavigation() {
   localStorage.setItem(EXPANDED_KEY, navState.expandedDomain);
 }
 
+function navigationDomainSections() {
+  return [...shell.nav.querySelectorAll('.control-nav-domain')];
+}
+
+function syncNavigationCurrentState() {
+  shell.nav.querySelectorAll('[data-nav-path]').forEach(link => {
+    if (link.dataset.navPath === navState.current.path) link.setAttribute('aria-current', 'page');
+    else link.removeAttribute('aria-current');
+  });
+
+  navigationDomainSections().forEach(section => {
+    const current = section.dataset.domain === navState.current.domain;
+    section.classList.toggle('control-nav-domain-current', current);
+    const button = section.querySelector('[data-domain-select]');
+    const existingMarker = button?.querySelector('.control-nav-marker');
+    if (current && button && !existingMarker) {
+      const marker = document.createElement('span');
+      marker.className = 'control-nav-marker';
+      marker.setAttribute('aria-hidden', 'true');
+      button.prepend(marker);
+    } else if (!current) {
+      existingMarker?.remove();
+    }
+  });
+}
+
+function revealNavigationDomain(domainKey) {
+  if (!domainKey || domainKey === navState.expandedDomain) return;
+  const sections = navigationDomainSections();
+  const before = new Map(sections.map(section => [
+    section.dataset.domain,
+    section.getBoundingClientRect(),
+  ]));
+
+  navState.revealDomain(domainKey);
+  persistNavigation();
+
+  sections.forEach(section => {
+    const open = section.dataset.domain === navState.expandedDomain;
+    section.classList.toggle('control-nav-domain-open', open);
+    const button = section.querySelector('[data-domain-select]');
+    const children = section.querySelector('.control-nav-children');
+    button?.setAttribute('aria-expanded', String(open));
+    if (!children) return;
+    children.hidden = !open;
+    if (open) {
+      children.classList.remove('control-nav-children-reveal');
+      void children.offsetWidth;
+      children.classList.add('control-nav-children-reveal');
+      setTimeout(() => children.classList.remove('control-nav-children-reveal'), 180);
+    }
+  });
+
+  requestAnimationFrame(() => {
+    sections.forEach(section => {
+      const previous = before.get(section.dataset.domain);
+      if (!previous) return;
+      const deltaY = previous.top - section.getBoundingClientRect().top;
+      if (Math.abs(deltaY) < 1) return;
+      section.style.transition = 'none';
+      section.style.transform = `translateY(${deltaY}px)`;
+      requestAnimationFrame(() => {
+        section.classList.add('control-nav-reflow');
+        section.style.transition = '';
+        section.style.transform = '';
+        setTimeout(() => section.classList.remove('control-nav-reflow'), 240);
+      });
+    });
+  });
+}
+
 function renderNavigation() {
   shell.nav.innerHTML = navigationMarkup(navigationModel(navState.current, navState.expandedDomain));
   shell.nav.querySelectorAll('a[href^="/control/"]').forEach(link => {
@@ -100,8 +171,7 @@ function renderNavigation() {
   });
   shell.nav.querySelectorAll('[data-domain-select]').forEach(button => {
     button.addEventListener('click', () => {
-      const destination = navState.selectDomain(button.dataset.domainSelect);
-      navigate(destination.path);
+      revealNavigationDomain(button.dataset.domainSelect);
     });
   });
 }
@@ -171,7 +241,7 @@ function navigate(path, { replace = false } = {}) {
   if (location.pathname !== navState.current.path) {
     history[replace ? 'replaceState' : 'pushState']({ control: true }, '', navState.current.path);
   }
-  renderNavigation();
+  syncNavigationCurrentState();
   renderMain();
   if (matchMedia(NARROW_QUERY).matches) shell.close.click();
 }
@@ -356,7 +426,7 @@ window.addEventListener('popstate', () => {
   const destination = resolveControlRoute(location.pathname, navState.current.path, navState.lastByDomain);
   navState.select(destination.path);
   persistNavigation();
-  renderNavigation();
+  syncNavigationCurrentState();
   renderMain();
 });
 

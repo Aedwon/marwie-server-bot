@@ -31,9 +31,9 @@
   display: grid;
   gap: 16px;
   padding: 20px;
-  border: 1px solid var(--line);
   border-radius: 16px;
   background: var(--panel);
+  box-shadow: var(--control-card-shadow);
 }
 
 .content-message {
