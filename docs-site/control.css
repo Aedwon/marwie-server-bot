@@ -1,6 +1,10 @@
 :root {
   --control-rail-width: 248px;
   --control-page-max: 840px;
+  --page-surface: var(--surface);
+  --page-surface-strong: var(--surface);
+  --panel: var(--surface);
+  --line: var(--border);
   --control-border: color-mix(in srgb, var(--border, #d2d2d7) 72%, transparent);
   --control-muted: var(--muted, #6e6e73);
   --control-focus: #0a84ff;
