@@ -62,7 +62,8 @@
 }
 
 .analytics-stat dt {
-  font-size: 0.8rem;
+  font-size: 13px;
+  line-height: 18px;
 }
 
 .analytics-stat dd {
@@ -80,7 +81,8 @@
 }
 
 .analytics-channel-label {
-  font-size: 0.8rem;
+  font-size: 13px;
+  line-height: 18px;
 }
 
 .analytics-settings {

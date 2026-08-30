@@ -64,7 +64,8 @@
   padding: 0 4px 8px;
   border-bottom: 1px solid var(--line);
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
+  line-height: 18px;
   font-weight: 700;
 }
 
@@ -103,7 +104,7 @@
 .content-builder label {
   display: grid;
   gap: 6px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 650;
 }
 
@@ -132,7 +133,8 @@
 
 .content-field-error {
   color: #c74444 !important;
-  font-size: 12px;
+  font-size: 13px;
+  line-height: 18px;
 }
 
 .content-note,
