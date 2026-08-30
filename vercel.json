@@ -9,11 +9,7 @@
   "rewrites": [
     {
       "source": "/",
-      "destination": "/docs-site/index"
-    },
-    {
-      "source": "/commands",
-      "destination": "/docs-site/commands"
+      "destination": "/docs-site/control"
     },
     {
       "source": "/control",
@@ -22,6 +18,14 @@
     {
       "source": "/control/(.*)",
       "destination": "/docs-site/control"
+    },
+    {
+      "source": "/commands",
+      "destination": "/docs-site/commands"
+    },
+    {
+      "source": "/handbook",
+      "destination": "/docs-site/index"
     },
     {
       "source": "/(.*)",
