@@ -1,3 +1,6 @@
+import { installDrawerController } from './control-navigation.js';
+import { installThemeControls } from './control-theme.js';
+
 const root = document.documentElement;
 const themeButtons = [...document.querySelectorAll('[data-theme-choice]')];
 const themeColor = document.querySelector('#themeColor');
@@ -19,7 +22,6 @@ const WORKFLOWS = [
       '/setup forum',
       '/setup category',
       '/setup role',
-      '/setup solved-tag',
       '/setup feature',
       '/setup log-ignore',
     ],
@@ -85,42 +87,30 @@ const SOURCE_CONTEXT_WORKFLOW = new Map([
   ['AI updates, analytics, and showcase', 'workflow-operations'],
 ]);
 
-function applyTheme(pref) {
-  const actual = pref === 'system' ? (scheme.matches ? 'dark' : 'light') : pref;
-  root.dataset.preference = pref;
-  root.dataset.theme = actual;
-  themeButtons.forEach(button => {
-    button.setAttribute('aria-pressed', String(button.dataset.themeChoice === pref));
-  });
-  localStorage.setItem('rob-doc-theme', pref);
-  if (themeColor) themeColor.content = actual === 'dark' ? '#171719' : '#ffffff';
-}
+installThemeControls({
+  root,
+  buttons: themeButtons,
+  media: scheme,
+  storage: localStorage,
+  themeColor,
+});
 
-themeButtons.forEach(button => {
-  button.addEventListener('click', () => applyTheme(button.dataset.themeChoice));
-});
-scheme.addEventListener?.('change', () => {
-  if (root.dataset.preference === 'system') applyTheme('system');
-});
-applyTheme(root.dataset.preference || 'system');
+const commandDrawer = document.querySelector('#commandsNavDrawer');
+const commandMenuButton = document.querySelector('#commandsMenuButton');
+const commandNavClose = document.querySelector('#commandsNavClose');
+const commandNarrow = matchMedia('(max-width: 944px)');
 
-const side = document.querySelector('#sidebar');
-const menuBtn = document.querySelector('#menuBtn');
-function closeMenu() {
-  side?.classList.remove('open');
-  menuBtn?.setAttribute('aria-expanded', 'false');
-}
-menuBtn?.addEventListener('click', () => {
-  const open = side?.classList.toggle('open') || false;
-  menuBtn.setAttribute('aria-expanded', String(open));
+installDrawerController({
+  drawer: commandDrawer,
+  trigger: commandMenuButton,
+  closeButton: commandNavClose,
+  mediaQuery: commandNarrow,
 });
-side?.querySelectorAll('a').forEach(link => {
+
+commandDrawer?.querySelectorAll('a[href^="#"]').forEach(link => {
   link.addEventListener('click', () => {
-    if (innerWidth <= 900) closeMenu();
+    if (commandNarrow.matches) commandNavClose?.click();
   });
-});
-addEventListener('keydown', event => {
-  if (event.key === 'Escape') closeMenu();
 });
 
 const escapeHtml = value => value
@@ -623,8 +613,9 @@ async function loadManual() {
     const result = regroupByWorkflow(container);
     const cards = structureCommandCards(container);
     const renderedCount = cards.length;
-    if (result.sourceCount !== 45 || result.assignedCount !== 45 || renderedCount !== 45 || result.unassigned.length) {
-      console.warn(`Expected 45 workflow-assigned slash commands. Source=${result.sourceCount}, assigned=${result.assignedCount}, rendered=${renderedCount}, unassigned=${result.unassigned.length}.`);
+    const expectedCount = new Set(WORKFLOWS.flatMap(workflow => workflow.commands)).size;
+    if (result.sourceCount !== expectedCount || result.assignedCount !== expectedCount || renderedCount !== expectedCount || result.unassigned.length) {
+      console.warn(`Expected ${expectedCount} workflow-assigned slash commands. Source=${result.sourceCount}, assigned=${result.assignedCount}, rendered=${renderedCount}, unassigned=${result.unassigned.length}.`);
     }
 
     setupManualNavigation();
