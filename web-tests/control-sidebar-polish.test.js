@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-import { navigationMarkup } from '../docs-site/control-components.js';
+import { identityMarkup, navigationMarkup } from '../docs-site/control-components.js';
 import { createNavigationState, navigationModel } from '../docs-site/control-navigation.js';
 import { destinationForPath } from '../docs-site/control-router.js';
 
@@ -139,6 +139,23 @@ test('approved card-like Control surfaces are borderless and elevated', () => {
     assert.doesNotMatch(rule, /border\s*:/, `${selector} keeps a decorative border`);
     assert.match(rule, /box-shadow\s*:/, `${selector} lacks restrained elevation`);
   }
+});
+
+test('signed-out Discord login is a centered branded CTA with an inline logo', () => {
+  const markup = identityMarkup({ authenticated: false }, null);
+  assert.match(markup, /class="control-login"/);
+  assert.match(markup, /<svg[^>]*viewBox="0 0 24 24"[^>]*aria-hidden="true"/);
+  assert.match(markup, /Sign in with Discord/);
+
+  const loginRule = cssRule(controlCss, '.control-identity > .control-login');
+  assert.match(loginRule, /width:\s*100%/);
+  assert.match(loginRule, /justify-content:\s*center/);
+  assert.match(loginRule, /background:\s*#5865f2/i);
+  assert.match(loginRule, /font-weight:\s*700/);
+  assert.doesNotMatch(loginRule, /border\s*:/);
+
+  const iconRule = cssRule(controlCss, '.control-login svg');
+  assert.match(iconRule, /fill:\s*currentColor/);
 });
 
 test('navigation, theme, and action controls expose hover pressed focus and reduced-motion feedback', () => {

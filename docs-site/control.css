@@ -205,6 +205,38 @@
   --control-card-shadow: 0 10px 30px rgb(0 0 0 / .07), 0 2px 8px rgb(0 0 0 / .035);
 }
 
+.control-identity > .control-login {
+  width: 100%;
+  min-height: 48px;
+  box-sizing: border-box;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 16px;
+  border-radius: 12px;
+  background: #5865f2;
+  color: #fff;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: 0 8px 22px rgb(88 101 242 / .28);
+}
+
+.control-login svg {
+  width: 21px;
+  height: 21px;
+  flex: 0 0 auto;
+  fill: currentColor;
+}
+
+.control-login:hover {
+  background: #4752c4;
+  box-shadow: 0 10px 26px rgb(88 101 242 / .34);
+}
+
+.control-login:active {
+  background: #3c45a5;
+}
+
 .control-brand {
   gap: 10px;
   white-space: nowrap;
