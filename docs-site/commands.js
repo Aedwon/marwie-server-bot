@@ -18,17 +18,17 @@ const WORKFLOWS = [
 ];
 
 const COMMAND_PREVIEWS = Object.freeze({
-  '/ping': Object.freeze({ permission: 'Anyone', description: 'Check whether Rob-bot is responding and view current gateway latency.' }),
-  '/setup auto': Object.freeze({ permission: 'Administrator', description: 'Discover compatible Discord resources and bind clear existing matches automatically.' }),
+  '/ping': Object.freeze({ permission: 'Anyone', description: 'Check whether Rob-bot is online and see how quickly it responds.' }),
+  '/setup auto': Object.freeze({ permission: 'Administrator', description: 'Find existing server channels and roles, then connect clear matches automatically.' }),
   '/setup role-panel': Object.freeze({ permission: 'Administrator', description: 'Post or refresh the Live Notifications self-role panel for members.' }),
-  '/setup text-channel': Object.freeze({ permission: 'Administrator', description: 'Bind a Control text-channel resource to an existing Discord text channel.' }),
-  '/setup voice-channel': Object.freeze({ permission: 'Administrator', description: 'Bind a Control voice-channel resource to an existing Discord voice channel.' }),
-  '/setup forum': Object.freeze({ permission: 'Administrator', description: 'Bind a forum-backed Control resource to an existing Discord Forum Channel.' }),
-  '/setup category': Object.freeze({ permission: 'Administrator', description: 'Bind a Control category resource to an existing Discord category.' }),
-  '/setup role': Object.freeze({ permission: 'Administrator', description: 'Bind a Control role resource to an existing Discord role.' }),
+  '/setup text-channel': Object.freeze({ permission: 'Administrator', description: 'Connect a Rob-bot destination to an existing Discord text channel.' }),
+  '/setup voice-channel': Object.freeze({ permission: 'Administrator', description: 'Connect a Rob-bot destination to an existing Discord voice channel.' }),
+  '/setup forum': Object.freeze({ permission: 'Administrator', description: 'Connect a Rob-bot destination to an existing Discord forum.' }),
+  '/setup category': Object.freeze({ permission: 'Administrator', description: 'Connect a Rob-bot destination to an existing Discord category.' }),
+  '/setup role': Object.freeze({ permission: 'Administrator', description: 'Connect a Rob-bot function to an existing Discord role.' }),
   '/setup feature': Object.freeze({ permission: 'Administrator', description: 'Enable or disable one Rob-bot feature for this server.' }),
   '/setup log-ignore': Object.freeze({ permission: 'Administrator', description: 'Include or exclude a channel from message edit and delete logging.' }),
-  '/setup status': Object.freeze({ permission: 'Administrator', description: 'Review current feature switches and Discord resource mappings.' }),
+  '/setup status': Object.freeze({ permission: 'Administrator', description: 'Review which Rob-bot features are on and where server destinations are connected.' }),
   '/warn': Object.freeze({ permission: 'Moderate Members', description: 'Record a moderation warning for a member and attempt to notify them.' }),
   '/timeout': Object.freeze({ permission: 'Moderate Members', description: 'Apply a Discord timeout to a member for the requested duration and record the case.' }),
   '/kick': Object.freeze({ permission: 'Kick Members', description: 'Remove a member from the server and record the moderation action.' }),
@@ -238,7 +238,7 @@ function renderMarkdown(markdown) {
       }
       const head = headers.map(cell => `<th scope="col">${inlineMarkdown(cell)}</th>`).join('');
       const body = rows.map(row => `<tr>${headers.map((_, index) => `<td>${inlineMarkdown(row[index] || '')}</td>`).join('')}</tr>`).join('');
-      output.push(`<div class="table-wrap"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`);
+      output.push(`<div class="control-summary-table-wrap command-detail-table-wrap"><table class="control-summary-table command-detail-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`);
       continue;
     }
 
@@ -322,8 +322,11 @@ function regroupByWorkflow(container) {
     section.id = workflow.id;
     section.innerHTML = `<div class="workflow-header"><h2>${escapeHtml(workflow.title)}</h2><p>${escapeHtml(workflow.intro)}</p></div>`;
 
-    const list = document.createElement('div');
-    list.className = 'workflow-command-list';
+    const tableWrap = document.createElement('div');
+    tableWrap.className = 'workflow-command-table-wrap';
+    tableWrap.innerHTML = '<table class="workflow-command-table"><colgroup><col class="command-column"><col class="description-column"><col class="access-column"></colgroup><thead><tr><th scope="col">Command</th><th scope="col">Description</th><th scope="col">Access</th></tr></thead><tbody></tbody></table>';
+    const table = tableWrap.querySelector('table');
+    const body = table.querySelector('tbody');
     for (const command of workflow.commands) {
       if (assigned.has(command)) continue;
       const nodes = commands.get(command);
@@ -333,6 +336,10 @@ function regroupByWorkflow(container) {
         continue;
       }
       const heading = nodes[0];
+      const row = document.createElement('tr');
+      row.dataset.commandRow = command;
+      row.tabIndex = 0;
+      row.setAttribute('aria-label', `Open ${command} details`);
       const card = document.createElement('button');
       card.type = 'button';
       card.className = 'command-card';
@@ -340,17 +347,17 @@ function regroupByWorkflow(container) {
       card.dataset.command = command;
       card.dataset.search = `${command} ${preview.permission} ${preview.description}`.toLowerCase();
       card.innerHTML = `
-        <span class="command-card-topline">
-          <span class="command-name"><code>${escapeHtml(command)}</code></span>
-          <span class="permission-badge">${escapeHtml(preview.permission)}</span>
-        </span>
-        <span class="command-description">${escapeHtml(preview.description)}</span>`;
-      list.append(card);
+        <span class="command-name"><code>${escapeHtml(command)}</code></span>`;
+      row.innerHTML = `<th scope="row"></th><td class="command-description">${escapeHtml(preview.description)}</td><td class="permission-badge">${escapeHtml(preview.permission)}</td>`;
+      row.firstElementChild.append(card);
+      body.append(row);
       cards.push(card);
-      details.set(command, nodes.slice(1).map(node => node.cloneNode(true)));
+      const detailNodes = nodes.slice(1).map(node => node.cloneNode(true));
+      while (detailNodes.at(-1)?.matches?.('hr')) detailNodes.pop();
+      details.set(command, detailNodes);
       assigned.add(command);
     }
-    section.append(list);
+    section.append(tableWrap);
     container.append(section);
   }
 
@@ -436,7 +443,19 @@ function setupCommandDialog(cards, details) {
     restore?.focus();
   });
 
-  cards.forEach(card => card.addEventListener('click', () => openCommand(card)));
+  cards.forEach(card => {
+    card.addEventListener('click', () => openCommand(card));
+    const row = card.closest('[data-command-row]');
+    row?.addEventListener('click', event => {
+      if (event.target.closest('button, a, input, select, textarea')) return;
+      openCommand(card);
+    });
+    row?.addEventListener('keydown', event => {
+      if (event.target !== row || !['Enter', ' '].includes(event.key)) return;
+      event.preventDefault();
+      openCommand(card);
+    });
+  });
 
   function openHashTarget() {
     const id = location.hash.slice(1);
@@ -472,10 +491,10 @@ function setupCommandSearch(container, cards, dialog) {
     for (const card of cards) {
       const haystack = `${card.dataset.command || ''} ${card.dataset.search || ''}`;
       const match = terms.every(term => haystack.includes(term));
-      card.hidden = !match;
+      card.closest('[data-command-row]')?.toggleAttribute('hidden', !match);
       if (match) visible += 1;
     }
-    for (const workflow of workflows) workflow.hidden = !workflow.querySelector('.command-card:not([hidden])');
+    for (const workflow of workflows) workflow.hidden = !workflow.querySelector('[data-command-row]:not([hidden])');
     if (clear) clear.hidden = !query;
     if (count) count.textContent = `${visible} command${visible === 1 ? '' : 's'}`;
     empty.hidden = visible !== 0;

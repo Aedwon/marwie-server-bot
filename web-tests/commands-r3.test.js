@@ -29,6 +29,8 @@ test('public Commands workflow previews have no PATH rows or implementation cont
   assert.doesNotMatch(source, /workflow-path|Typical path|<strong>Path<\/strong>/);
   assert.doesNotMatch(styles, /\.workflow-path\b/);
   assert.doesNotMatch(source, /className = 'workflow-context'|class="workflow-context"/);
+  assert.match(source, /workflow-command-table/);
+  assert.match(source, /Command<\/th><th scope="col">Description<\/th><th scope="col">Access/);
 });
 
 test('every canonical command has one explicit concise preview metadata entry', () => {
@@ -38,7 +40,7 @@ test('every canonical command has one explicit concise preview metadata entry', 
   assert.equal(previews.length, canonical.length);
   assert.equal(new Set(previews).size, previews.length);
   assert.deepEqual([...previews].sort(), [...canonical].sort());
-  assert.doesNotMatch(source, /role_panel/);
+  assert.doesNotMatch(source, /role_panel|Control resource|forum-backed Control resource|Discord resource mappings|gateway latency|bind clear existing matches/i);
 });
 
 test('command cards do not expand inline and a focused dialog owns complete details', () => {
@@ -67,4 +69,6 @@ test('Commands CSS has modal overlay styling and no open-card expansion contract
   assert.match(styles, /\.command-dialog\b/);
   assert.match(styles, /::backdrop/);
   assert.doesNotMatch(styles, /\.command-card\[open\]/);
+  assert.match(styles, /\.workflow-command-table-wrap/);
+  assert.match(styles, /\.command-detail-table-wrap/);
 });

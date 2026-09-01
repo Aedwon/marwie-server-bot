@@ -177,8 +177,8 @@ function analyticsChartMarkup(projection, selectedRange) {
     <section class="analytics-chart-section" aria-labelledby="analytics-chart-title">
       <div class="analytics-section-heading"><h2 id="analytics-chart-title">Activity over time</h2></div>
       <figure class="analytics-chart">
-        <p class="control-visually-hidden" id="analytics-line-chart-summary">${escapeHtml(summary)}</p>
         <svg class="analytics-line-chart" viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="analytics-chart-title analytics-line-chart-summary" preserveAspectRatio="xMidYMid meet">
+          <desc id="analytics-line-chart-summary">${escapeHtml(summary)}</desc>
           <g class="analytics-axis analytics-axis-y" aria-hidden="true">
             <line x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${margin.top + plotHeight}"></line>
             ${yTicks.map(tick => `<g class="analytics-axis-tick"><line x1="${margin.left - 5}" y1="${tick.y.toFixed(2)}" x2="${margin.left}" y2="${tick.y.toFixed(2)}"></line><text x="${margin.left - 9}" y="${(tick.y + 4).toFixed(2)}" text-anchor="end">${escapeHtml(tick.label)}</text></g>`).join('')}

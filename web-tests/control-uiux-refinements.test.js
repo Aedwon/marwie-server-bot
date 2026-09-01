@@ -57,14 +57,14 @@ test('Control shell mounts one floating tray instead of the old workspace status
   assert.equal(css.includes('cubic-bezier'), true);
 });
 
-test('shared feature header keeps feature state and Edit settings together without a Feature status label', async () => {
+test('shared feature header shows Edit settings alone in read mode and the feature toggle in edit mode', async () => {
   const { featureHeaderActionsMarkup } = await import('../docs-site/control-components.js');
   const read = featureHeaderActionsMarkup({
     label: 'Announcements', enabled: true, editing: false, editAttribute: 'data-content-edit', toggleAttribute: 'data-content-feature-toggle',
   });
-  assert.equal(read.includes('type=\"checkbox\"'), true);
-  assert.equal(read.includes('disabled'), true);
-  assert.equal(read.includes('aria-label=\"Announcements enabled\"'), true);
+  assert.equal(read.includes('type=\"checkbox\"'), false);
+  assert.equal(read.includes('disabled'), false);
+  assert.equal(read.includes('aria-label=\"Announcements enabled\"'), false);
   assert.equal(read.includes('data-content-edit'), true);
   assert.equal(read.includes('>Edit settings<'), true);
   assert.equal(read.includes('Feature status'), false);

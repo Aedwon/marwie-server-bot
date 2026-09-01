@@ -310,7 +310,7 @@ function editRow(key, persisted, selected, snapshot, error) {
   return `
     <div class="mapping-editor-row" data-mapping-key="${escapeHtml(key)}">
       <label for="mapping-${escapeHtml(key)}">${escapeHtml(definition.label)}</label>
-      <select id="mapping-${escapeHtml(key)}" data-mapping-key="${escapeHtml(key)}" aria-describedby="mapping-${escapeHtml(key)}-help${error ? ` mapping-${escapeHtml(key)}-error` : ''}">
+      <select id="mapping-${escapeHtml(key)}" data-mapping-key="${escapeHtml(key)}"${error ? ` aria-describedby="mapping-${escapeHtml(key)}-error"` : ''}>
         <option value=""${selectedId === '' ? ' selected' : ''}>Not connected</option>
         ${staleSelected ? `<option value="${escapeHtml(selectedId)}" disabled selected>Unavailable current mapping</option>` : ''}
         ${optionMarkup}

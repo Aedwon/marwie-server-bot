@@ -124,18 +124,53 @@
   line-height: 19px;
 }
 
-.workflow-command-list {
-  display: grid;
-  border-top: 1px solid var(--control-border);
+.workflow-command-table-wrap {
+  min-width: 0;
+  overflow-x: auto;
+  border: 1px solid var(--control-border);
+  border-radius: 14px;
+  background: var(--page-surface, var(--surface));
 }
+
+.workflow-command-table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.workflow-command-table .command-column { width: 25%; }
+.workflow-command-table .description-column { width: 55%; }
+.workflow-command-table .access-column { width: 20%; }
+
+.workflow-command-table :is(th, td) {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--control-border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.workflow-command-table thead th {
+  color: var(--control-muted);
+  font-size: 13px;
+  font-weight: 650;
+  background: color-mix(in srgb, currentColor 3.5%, transparent);
+}
+
+.workflow-command-table tbody tr:last-child > * { border-bottom: 0; }
+.workflow-command-table tbody tr { cursor: pointer; }
+.workflow-command-table tbody tr:hover { background: color-mix(in srgb, currentColor 3%, transparent); }
+.workflow-command-table tbody tr:focus-visible { outline: 2px solid currentColor; outline-offset: -2px; }
 
 .command-card {
   appearance: none;
+  display: block;
   width: 100%;
   min-width: 0;
-  padding: 15px 0;
+  padding: 0;
   border: 0;
-  border-bottom: 1px solid var(--control-border);
   border-radius: 0;
   background: transparent;
   color: inherit;
@@ -144,20 +179,11 @@
   cursor: pointer;
 }
 
-.command-card:last-child { border-bottom: 0; }
 .command-card:hover { opacity: .72; }
 .command-card:focus-visible {
   outline: 2px solid currentColor;
-  outline-offset: 3px;
+  outline-offset: 2px;
   border-radius: 6px;
-}
-
-.command-card-topline {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px 16px;
-  flex-wrap: wrap;
 }
 
 .command-name code {
@@ -173,9 +199,7 @@
 }
 
 .command-description {
-  display: block;
   max-width: 760px;
-  margin-top: 6px;
   color: var(--control-muted);
   font-size: 13px;
   line-height: 19px;
@@ -187,8 +211,8 @@
   padding: 0;
   border: 1px solid var(--control-border);
   border-radius: 16px;
-  background: var(--control-surface);
-  color: var(--control-text);
+  background: var(--page-surface, var(--surface, #fff));
+  color: var(--text, #1d1d1f);
   box-shadow: 0 18px 60px rgba(0, 0, 0, .28);
 }
 
@@ -204,7 +228,7 @@
   gap: 14px;
   padding: 18px 20px;
   border-bottom: 1px solid var(--control-border);
-  background: var(--control-surface);
+  background: var(--page-surface, var(--surface, #fff));
 }
 .command-dialog-header h2 {
   min-width: 0;
@@ -230,15 +254,8 @@
   border: 1px solid var(--control-border);
   border-radius: 10px;
 }
-.table-wrap {
-  max-width: 100%;
-  overflow-x: auto;
-  border: 1px solid var(--control-border);
-  border-radius: 12px;
-}
-.table-wrap table { width: 100%; min-width: 620px; border-collapse: collapse; }
-.table-wrap th, .table-wrap td { padding: 9px 11px; border-bottom: 1px solid var(--control-border); text-align: left; vertical-align: top; }
-.table-wrap tr:last-child td { border-bottom: 0; }
+.command-detail-table-wrap { max-width: 100%; }
+.command-detail-table { min-width: 620px; }
 .heading-link { display: none; }
 
 .commands-note, .commands-footer {
@@ -262,7 +279,7 @@
   .command-search-row { align-items: stretch; }
   .command-search-field { min-width: 0; }
   .command-search-field kbd, .search-status span:last-child { display: none; }
-  .command-card-topline { align-items: flex-start; flex-direction: column; gap: 4px; }
+  .workflow-command-table-wrap { margin-right: -2px; }
   .command-dialog { width: calc(100vw - 20px); max-height: calc(100vh - 20px); border-radius: 14px; }
   .command-dialog-header { padding: 14px; }
   .command-dialog-body { padding: 16px 14px; }

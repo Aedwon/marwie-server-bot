@@ -82,6 +82,27 @@ function hsvToHex(hue, saturation, value) {
   return rgb.map(channel => Math.round((channel + m) * 255).toString(16).padStart(2, '0')).join('').toUpperCase();
 }
 
+function hexToRgb(value) {
+  const hex = normalizeHex(value);
+  return {
+    r: parseInt(hex.slice(0, 2), 16),
+    g: parseInt(hex.slice(2, 4), 16),
+    b: parseInt(hex.slice(4, 6), 16),
+  };
+}
+
+function rgbToHex(red, green, blue) {
+  return [red, green, blue]
+    .map(channel => clamp(channel, 0, 255).toString(16).padStart(2, '0'))
+    .join('')
+    .toUpperCase();
+}
+
+const COLOR_PRESETS = Object.freeze([
+  '14B8A6', '22C55E', '3B82F6', 'A855F7', 'E11D48', 'FACC15', 'F97316', 'EF4444',
+  '94A3B8', '64748B', '27272A', 'FFFFFF',
+]);
+
 function escapeHtml(value) {
   return String(value ?? '')
     .replaceAll('&', '&amp;')
@@ -482,13 +503,13 @@ function announcementMarkup(config, state, snapshot) {
           <label>Body<textarea maxlength="4096" rows="7" data-announcement-body>${escapeHtml(composer.body)}</textarea><span class="content-field-counter" data-announcement-counter="body">${announcementRemaining(composer.body, 4096)}</span></label>
           <div class="content-field-grid">
             <label>Footer<input type="text" maxlength="2048" data-announcement-footer value="${escapeHtml(composer.footer)}"><span class="content-field-counter" data-announcement-counter="footer">${announcementRemaining(composer.footer, 2048)}</span></label>
-            <div class="content-color-field"><span>Embed color</span><button class="content-color-swatch" type="button" data-announcement-color-swatch aria-haspopup="dialog" aria-expanded="false" style="--swatch:#${escapeHtml(composer.color)}"><span aria-hidden="true"></span><strong>#${escapeHtml(composer.color)}</strong></button><div class="content-color-popover" data-announcement-color-popover role="dialog" aria-label="Embed color picker" hidden><div class="content-color-popover-heading"><strong>Embed color</strong><button type="button" data-announcement-color-close aria-label="Close color picker">Close</button></div><div class="content-color-selected-row"><span class="content-color-selected" data-announcement-color-preview style="--swatch:#${escapeHtml(composer.color)}" aria-hidden="true"></span><output data-announcement-color-output>#${escapeHtml(composer.color)}</output></div><label>Hue<input type="range" min="0" max="359" step="1" value="${picker.h}" data-announcement-color-hue aria-label="Hue"></label><div class="content-color-plane" data-announcement-color-plane role="slider" tabindex="0" aria-label="Saturation and brightness" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${picker.s}" aria-valuetext="Saturation ${picker.s}%, brightness ${picker.v}%" data-saturation="${picker.s}" data-value="${picker.v}" style="--picker-hue:${picker.h};--picker-saturation:${picker.s}%;--picker-value:${picker.v}%"><span aria-hidden="true"></span></div><label>Hex<input type="text" maxlength="7" inputmode="text" autocomplete="off" spellcheck="false" data-announcement-color value="#${escapeHtml(composer.color)}" aria-label="Hex color"></label></div></div>
+            <div class="content-color-field"><span>Embed color</span><button class="content-color-swatch" type="button" data-announcement-color-swatch aria-haspopup="dialog" aria-expanded="false" style="--swatch:#${escapeHtml(composer.color)}"><span aria-hidden="true"></span><strong>#${escapeHtml(composer.color)}</strong></button><div class="content-color-popover" data-announcement-color-popover role="dialog" aria-label="Embed color picker" hidden><div class="content-color-popover-heading"><strong>Embed color</strong><button type="button" data-announcement-color-close aria-label="Close color picker">Close</button></div><div class="content-color-selected-row"><span class="content-color-selected" data-announcement-color-preview style="--swatch:#${escapeHtml(composer.color)}" aria-hidden="true"></span><output data-announcement-color-output>#${escapeHtml(composer.color)}</output></div><div class="content-color-plane" data-announcement-color-plane role="slider" tabindex="0" aria-label="Saturation and brightness" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${picker.s}" aria-valuetext="Saturation ${picker.s}%, brightness ${picker.v}%" data-saturation="${picker.s}" data-value="${picker.v}" style="--picker-hue:${picker.h};--picker-saturation:${picker.s}%;--picker-value:${picker.v}%"><span aria-hidden="true"></span></div><label class="content-color-hue-field">Hue<input type="range" min="0" max="359" step="1" value="${picker.h}" data-announcement-color-hue aria-label="Hue"></label><div class="content-color-values"><label>Hex<input type="text" maxlength="7" inputmode="text" autocomplete="off" spellcheck="false" data-announcement-color value="#${escapeHtml(composer.color)}" aria-label="Hex color"></label>${['r', 'g', 'b'].map(channel => `<label>${channel.toUpperCase()}<input type="number" min="0" max="255" step="1" inputmode="numeric" data-announcement-color-${channel} aria-label="${channel.toUpperCase()} value"></label>`).join('')}</div><div class="content-color-presets" role="group" aria-label="Color presets">${COLOR_PRESETS.map(color => `<button type="button" data-announcement-color-preset="${color}" aria-label="Use ${color} preset" style="--swatch:#${color}"><span aria-hidden="true"></span></button>`).join('')}</div><button type="button" class="content-color-reset" data-announcement-color-reset>Reset</button></div></div>
           </div>
           <label>Image URL <span class="content-field-meta">1 max</span><input type="url" maxlength="1000" data-announcement-image value="${escapeHtml(composer.imageUrl)}" placeholder="https://example.com/image.png"></label>
           <p class="content-note">Message alone is postable. An embed is created only when Title and/or Body has content. Footer, color, and image apply only to that embed.</p>
         </section>
         <section class="content-admin-surface content-announcement-preview-card">
-          <div class="content-preview-heading"><div><h2>Preview</h2><p>Final Discord rendering before publish.</p></div><button class="control-button control-button-primary content-announcement-post" type="button" data-announcement-send${canPost ? '' : ' disabled'}>Post announcement</button></div>
+          <div class="content-preview-heading"><div><h2>Preview</h2><p>Final Discord rendering before publish.</p></div><button class="control-button control-button-primary content-announcement-post" type="button" data-announcement-send${canPost ? '' : ' disabled'}>Post</button></div>
           <div class="discord-preview-shell" data-announcement-preview>${announcementPreviewMarkup(snapshot, composer)}</div>
         </section>
       </div>
@@ -511,7 +532,6 @@ function liveMarkup(config, state, snapshot) {
           <li><span class="content-dispatch-number">1</span><div><strong>Destination</strong><p>${escapeHtml(destination)}</p></div></li>
           <li><span class="content-dispatch-number">2</span><label>Topic<input type="text" maxlength="200" data-live-topic placeholder="Optional stream topic"><small>Optional. Included with the configured live-host notice.</small></label></li>
           <li><span class="content-dispatch-number">3</span><label class="content-switch"><input type="checkbox" data-live-ping${pingAvailable ? '' : ' disabled'}><span>${pingAvailable ? `Ping ${escapeHtml(pingRole.name || 'configured Live role')}` : 'No Live ping role is connected in Mappings'}</span></label></li>
-          <li><span class="content-dispatch-number">4</span><div><strong>Consequence</strong><p>${pingAvailable ? 'Selecting the notification ping requires consequence confirmation before the post is sent.' : 'No notification role will be pinged unless a configured role becomes available.'}</p></div></li>
         </ol>
         <div class="content-dispatch-actions"><button class="control-button control-button-primary" type="button" data-live-send${fallback && state.persisted.enabled ? '' : ' disabled'}>Post Live notice</button></div>
       </section>
@@ -731,6 +751,11 @@ export function installContentPageInteractions({
     if (colorOutput) colorOutput.textContent = `#${composer.color}`;
     const colorText = root.querySelector('[data-announcement-color]');
     if (colorText && globalThis.document?.activeElement !== colorText && colorText.value.toUpperCase() !== `#${composer.color}`) colorText.value = `#${composer.color}`;
+    const rgb = hexToRgb(composer.color);
+    for (const channel of ['r', 'g', 'b']) {
+      const field = root.querySelector(`[data-announcement-color-${channel}]`);
+      if (field && globalThis.document?.activeElement !== field) field.value = String(rgb[channel]);
+    }
 
   };
 
@@ -759,6 +784,13 @@ export function installContentPageInteractions({
     syncAnnouncement();
   };
 
+  const setColorFromRgbFields = () => {
+    const channels = ['r', 'g', 'b'].map(channel => Number(root.querySelector(`[data-announcement-color-${channel}]`)?.value || 0));
+    const text = root.querySelector('[data-announcement-color]');
+    if (text) text.value = `#${rgbToHex(...channels)}`;
+    syncAnnouncement();
+  };
+
   const setPlaneFromPointer = event => {
     const plane = event.target?.closest?.('[data-announcement-color-plane]');
     if (!plane) return false;
@@ -781,6 +813,9 @@ export function installContentPageInteractions({
     const colorButton = event.target?.closest?.('[data-announcement-color-swatch]');
     if (colorButton) { const popover = root.querySelector('[data-announcement-color-popover]'); if (popover?.hidden) openColorPopover(colorButton); else closeColorPopover(); return; }
     if (event.target?.closest?.('[data-announcement-color-close]')) { closeColorPopover(); return; }
+    const preset = event.target?.closest?.('[data-announcement-color-preset]');
+    if (preset) { const text = root.querySelector('[data-announcement-color]'); if (text) text.value = `#${normalizeHex(preset.dataset.announcementColorPreset)}`; syncAnnouncement(); return; }
+    if (event.target?.closest?.('[data-announcement-color-reset]')) { const text = root.querySelector('[data-announcement-color]'); if (text) text.value = `#${DEFAULT_ANNOUNCEMENT_COLOR}`; syncAnnouncement(); return; }
     if (setPlaneFromPointer(event)) return;
     if (event.target?.closest?.('[data-announcement-clear]')) {
       announcementComposerState = clearAnnouncementComposer(readComposer());
@@ -814,6 +849,7 @@ export function installContentPageInteractions({
     if (hue) { const plane = root.querySelector('[data-announcement-color-plane]'); setColorFromHsv(Number(hue.value), Number(plane?.dataset?.saturation || 0), Number(plane?.dataset?.value || 0)); return; }
     const hex = event.target?.closest?.('[data-announcement-color]');
     if (hex) { announcementComposerState.color = normalizeHex(hex.value, announcementComposerState.color); hex.value = `#${announcementComposerState.color}`; syncAnnouncement(); }
+    if (event.target?.closest?.('[data-announcement-color-r], [data-announcement-color-g], [data-announcement-color-b]')) setColorFromRgbFields();
 
   };
 
@@ -823,6 +859,7 @@ export function installContentPageInteractions({
       setColorFromHsv(Number(event.target.value), Number(plane?.dataset?.saturation || 0), Number(plane?.dataset?.value || 0));
       return;
     }
+    if (event.target?.closest?.('[data-announcement-color-r], [data-announcement-color-g], [data-announcement-color-b]')) { setColorFromRgbFields(); return; }
     if (event.target?.closest?.('[data-announcement-message], [data-announcement-title], [data-announcement-body], [data-announcement-footer], [data-announcement-image], [data-announcement-color]')) syncAnnouncement();
   };
   const onKeydown = event => {

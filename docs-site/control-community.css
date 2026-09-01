@@ -292,17 +292,26 @@
 /* R3 form refinements */
 .community-tier-editor {
   display: grid;
-  gap: 14px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
 }
 
-.community-threshold-field {
+.community-tier-editor .community-threshold-field {
   display: grid;
   grid-template-columns: minmax(120px, 1fr) minmax(140px, 220px);
   align-items: center;
   gap: 16px;
-  padding: 0;
+  padding: 12px 0;
   border: 0;
   background: transparent;
+}
+
+.community-tier-editor .community-threshold-field + .community-threshold-field {
+  border-top: 1px solid var(--control-border);
+  border-left: 0;
 }
 
 .community-threshold-label {
@@ -317,8 +326,8 @@
   padding: 9px 12px;
   border: 1px solid var(--control-border);
   border-radius: 10px;
-  background: var(--control-surface);
-  color: var(--control-text);
+  background: var(--page-surface, var(--surface));
+  color: var(--text);
   font: inherit;
   font-size: 13px;
   line-height: 18px;
@@ -342,7 +351,7 @@
 .community-tier-step { grid-template-columns: minmax(0, 1fr) auto; }
 
 @media (max-width: 560px) {
-  .community-threshold-field {
+  .community-tier-editor .community-threshold-field {
     grid-template-columns: 1fr;
     gap: 8px;
   }

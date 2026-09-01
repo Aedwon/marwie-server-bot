@@ -5,6 +5,8 @@ import test from 'node:test';
 import { analyticsPageMarkup } from '../docs-site/control-analytics.js';
 import { createCommunityPageDefinition } from '../docs-site/control-community.js';
 import { featureHeaderActionsMarkup } from '../docs-site/control-components.js';
+import { createContentPageDefinition } from '../docs-site/control-content.js';
+import { createMappingPageDefinition } from '../docs-site/control-mappings.js';
 
 function pageState(persisted, mode = 'read', draft = structuredClone(persisted)) {
   return { mode, status: 'clean', persisted, draft, dirty: mode === 'edit', errors: {}, saveError: null };
@@ -45,6 +47,8 @@ test('Analytics range row renders a real-series line graph without bars or a vis
   assert.match(markup, /<svg[^>]*class="analytics-line-chart"/);
   assert.match(markup, /class="analytics-axis analytics-axis-x"/);
   assert.match(markup, /class="analytics-axis analytics-axis-y"/);
+  assert.match(markup, /<desc id="analytics-line-chart-summary">3 real UTC buckets/);
+  assert.doesNotMatch(markup, /control-visually-hidden/);
   assert.equal((markup.match(/class="analytics-line-point"/g) || []).length, 3);
   assert.doesNotMatch(markup, /analytics-chart-bars|analytics-chart-bar|View chart data|analytics-series-table|<details/);
   assert.doesNotMatch(markup, /Recorded operational events in each UTC bucket/);
@@ -79,10 +83,37 @@ test('quiz question toggle remains question-level rotation inclusion', () => {
 });
 
 test('Mappings removes generic type helper copy while retaining validation surfaces', () => {
-  const source = readFileSync(new URL('../docs-site/control-mappings.js', import.meta.url), 'utf8');
-  assert.doesNotMatch(source, /Choose an available \$\{escapeHtml\(kindLabel\(definition\.kind\)\)\}/);
-  assert.doesNotMatch(source, /Choose an available text channel|Choose an available role|Choose an available category|Choose an available forum channel|Choose an available voice channel/i);
-  assert.match(source, /mapping-error|mapping-status|expectedKind|compatibleOptions/);
+  const definition = createMappingPageDefinition('/control/mappings/channels');
+  const snapshot = {
+    resources: [],
+    channels: [{ id: '10', name: 'general', kind: 'text', category_id: null }],
+    mappings_review: { plan_hash: 'a'.repeat(64), quiet: true, proposed: [] },
+  };
+  const persisted = definition.selectPersisted(snapshot);
+  const draft = definition.cloneDraft(persisted);
+  const markup = definition.render({ state: pageState(persisted, 'edit', draft), snapshot });
+  assert.doesNotMatch(markup, /Choose an available text channel|Choose an available role|Choose an available category|Choose an available forum channel|Choose an available voice channel/i);
+  assert.doesNotMatch(markup, /aria-describedby="mapping-[^"]+-help/);
+  assert.match(markup, /data-mapping-key="moderation_log"/);
+  assert.match(markup, /<label[^>]+for="mapping-moderation_log"/);
+});
+
+test('Content keeps the color picker functional and the Live flow focused', () => {
+  const announcement = createContentPageDefinition('/control/content/announcements');
+  const snapshot = { features: [{ name: 'announcements', enabled: true }], channels: [{ id: '10', name: 'announcements', kind: 'text', embed_links: true }], resources: [] };
+  const announcementMarkup = announcement.render({ state: pageState({ enabled: true }), snapshot });
+  assert.match(announcementMarkup, /content-color-plane/);
+  assert.match(announcementMarkup, /data-announcement-color-r/);
+  assert.match(announcementMarkup, /data-announcement-color-g/);
+  assert.match(announcementMarkup, /data-announcement-color-b/);
+  assert.match(announcementMarkup, /data-announcement-color-preset/);
+  assert.match(announcementMarkup, /data-announcement-color-reset/);
+  assert.match(announcementMarkup, />Post<\/button>/);
+
+  const live = createContentPageDefinition('/control/content/live');
+  const liveMarkup = live.render({ state: pageState({ enabled: true }), snapshot: { features: [{ name: 'live_announcements', enabled: true }], resources: [{ key: 'live_announcements', id: '10', name: 'live', exists: true }, { key: 'live_ping_role', id: '20', name: 'Live Notifications', exists: true }] } });
+  assert.equal((liveMarkup.match(/content-dispatch-number/g) || []).length, 3);
+  assert.doesNotMatch(liveMarkup, /Consequence|content-dispatch-number[^]*4/);
 });
 
 test('R3 records preserved ownership and real-data-only constraints before implementation', () => {

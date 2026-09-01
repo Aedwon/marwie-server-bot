@@ -276,11 +276,11 @@
 
 .analytics-axis text {
   fill: var(--control-muted);
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .analytics-axis-label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 650;
 }
 
@@ -317,5 +317,5 @@
   }
 
   .analytics-line-chart { min-height: 210px; }
-  .analytics-axis text { font-size: 10px; }
+  .analytics-axis text { font-size: 13px; }
 }

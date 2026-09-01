@@ -60,7 +60,7 @@ function installDomainStyles({ marker, href }) {
 }
 
 installDomainStyles({ marker: 'data-control-community-styles', href: '/control-community.css?v=1' });
-installDomainStyles({ marker: 'data-control-content-styles', href: '/control-content.css?v=1' });
+installDomainStyles({ marker: 'data-control-content-styles', href: '/control-content.css?v=2' });
 installDomainStyles({ marker: 'data-control-utilities-styles', href: '/control-utilities.css?v=1' });
 installDomainStyles({ marker: 'data-control-analytics-workflows-styles', href: '/control-analytics-workflows.css?v=1' });
 installDomainStyles({ marker: 'data-control-mappings-styles', href: '/control-mappings.css?v=1' });
