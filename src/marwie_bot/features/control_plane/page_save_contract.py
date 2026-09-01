@@ -40,7 +40,7 @@ PAGE_SAVE_ACTIONS_BY_PAGE: dict[str, frozenset[str]] = {
 FEATURE_OWNER: dict[str, frozenset[str]] = {
     "/control/community/reputation": frozenset({"reputation"}),
     "/control/community/quizzes": frozenset({"quizzes"}),
-    "/control/community/voice-coworking": frozenset({"voice", "coworking"}),
+    "/control/community/voice-coworking": frozenset({"voice"}),
     "/control/community/showcase": frozenset({"showcase"}),
     "/control/content/feeds": frozenset({"ai_updates"}),
     "/control/content/announcements": frozenset({"announcements"}),

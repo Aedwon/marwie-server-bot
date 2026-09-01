@@ -24,7 +24,7 @@ export const PAGE_SAVE_ACTIONS_BY_PAGE = Object.freeze({
 const FEATURE_OWNER = Object.freeze({
   '/control/community/reputation': new Set(['reputation']),
   '/control/community/quizzes': new Set(['quizzes']),
-  '/control/community/voice-coworking': new Set(['voice', 'coworking']),
+  '/control/community/voice-coworking': new Set(['voice']),
   '/control/community/showcase': new Set(['showcase']),
   '/control/content/feeds': new Set(['ai_updates']),
   '/control/content/announcements': new Set(['announcements']),

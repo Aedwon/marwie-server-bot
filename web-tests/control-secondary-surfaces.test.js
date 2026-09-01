@@ -20,9 +20,12 @@ test('Commands renders exactly the three approved Discord-admin references and c
   const markup = commandsPageMarkup();
   assert.match(markup, /<h1>Commands<\/h1>/);
   assert.equal((markup.match(/data-command-task=/g) || []).length, 3);
-  assert.match(markup, /href="\/commands#command-reputation-award"[^>]*>\/reputation award<\/a>/);
-  assert.match(markup, /href="\/commands#command-ticket-panel-post"[^>]*>\/ticket-panel post<\/a>/);
-  assert.match(markup, /href="\/commands#command-ai-source-poll"[^>]*>\/ai-source poll<\/a>/);
+  assert.match(markup, /<code class="control-command-chip">\/reputation award<\/code>/);
+  assert.match(markup, /href="\/commands#command-reputation-award"[^>]*>Open guide<\/a>/);
+  assert.match(markup, /<code class="control-command-chip">\/ticket-panel post<\/code>/);
+  assert.match(markup, /href="\/commands#command-ticket-panel-post"[^>]*>Open guide<\/a>/);
+  assert.match(markup, /<code class="control-command-chip">\/ai-source poll<\/code>/);
+  assert.match(markup, /href="\/commands#command-ai-source-poll"[^>]*>Open guide<\/a>/);
   assert.match(markup, /href="\/commands"[^>]*>Open the full Commands manual<\/a>/);
   assert.doesNotMatch(markup, /<(?:form|button|input|select|textarea)\b/i);
   assert.doesNotMatch(markup, /adjust_reputation|refresh_ticket_panel|poll_ai_sources|enqueueControlAction/);

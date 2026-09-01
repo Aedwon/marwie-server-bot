@@ -54,18 +54,18 @@ function resourceState(row) {
   return { label: 'Not connected', tone: 'neutral' };
 }
 
-function resourceSummaryMarkup(snapshot, items) {
+function resourceSummaryMarkup(snapshot, items, manageHref = '/control/mappings/channels') {
   return `
-    <section class="utility-section" aria-labelledby="utility-mappings-heading">
-      <div class="utility-section-heading"><div><h2 id="utility-mappings-heading">Discord mappings</h2><p>Mappings owns these resource connections. They are read-only here.</p></div></div>
-      <div class="utility-resource-table-wrap">
-        <table class="utility-resource-table">
-          <thead><tr><th>Resource</th><th>Current</th><th>Status</th><th><span class="sr-only">Action</span></th></tr></thead>
+    <section class="utility-section utility-mapping-section" aria-labelledby="utility-mappings-heading">
+      <div class="utility-section-heading"><div><h2 id="utility-mappings-heading">Discord mappings</h2><p>Mappings owns these resource connections. They are read-only here.</p></div><a class="control-inline-action" href="${escapeHtml(manageHref)}">Manage mappings</a></div>
+      <div class="control-summary-table-wrap">
+        <table class="control-summary-table utility-resource-table">
+          <thead><tr><th>Resource</th><th>Current</th><th>Status</th></tr></thead>
           <tbody>${items.map(item => {
             const row = resourceFor(snapshot, item.key);
             const state = resourceState(row);
             const current = row?.id && row.exists ? (row.name || 'Connected Discord resource') : row?.id ? 'Previously connected resource is unavailable' : 'No resource connected';
-            return `<tr><th scope="row">${escapeHtml(item.label)}</th><td>${escapeHtml(current)}</td><td class="utility-resource-status" data-tone="${state.tone}">${escapeHtml(state.label.replace(' / stale', ''))}</td><td><a href="${escapeHtml(item.href)}">Manage mapping</a></td></tr>`;
+            return `<tr><th scope="row">${escapeHtml(item.label)}</th><td>${escapeHtml(current)}</td><td class="control-status-text" data-tone="${state.tone}">${escapeHtml(state.label.replace(' / stale', ''))}</td></tr>`;
           }).join('')}</tbody>
         </table>
       </div>
@@ -399,15 +399,12 @@ function toggleMarkup({ id, checked, label, help }) {
 function ticketReadRows(types) {
   if (!types.length) return '<p class="utility-empty">No ticket types are configured.</p>';
   return `
-    <div class="utility-data-list">
-      ${types.map(item => `
-        <div class="utility-data-row">
-          <div>
-            <strong>${escapeHtml(item.label)}</strong>
-            <span><code>${escapeHtml(item.key)}</code> · ${escapeHtml(item.description)}</span>
-          </div>
-          <span class="utility-health" data-tone="${item.enabled ? 'good' : 'neutral'}">${item.enabled ? 'Active' : 'Disabled'}</span>
-        </div>`).join('')}
+    <div class="control-summary-table-wrap">
+      <table class="control-summary-table utility-ticket-table">
+        <thead><tr><th>Ticket type</th><th>Key</th><th>Description</th><th>Status</th></tr></thead>
+        <tbody>${types.map(item => `
+          <tr><th scope="row">${escapeHtml(item.label)}</th><td><code>${escapeHtml(item.key)}</code></td><td>${escapeHtml(item.description)}</td><td class="control-status-text" data-tone="${item.enabled ? 'good' : 'neutral'}">${item.enabled ? 'Active' : 'Disabled'}</td></tr>`).join('')}</tbody>
+      </table>
     </div>`;
 }
 
@@ -474,9 +471,9 @@ function ticketPageMarkup({ state, snapshot } = {}) {
         ${editing ? ticketEditRows(state) : ticketReadRows(state.persisted.ticket_types)}
       </section>
       ${resourceSummaryMarkup(snapshot, [
-        { key: 'ticket_panel', label: 'Ticket panel', href: '/control/mappings/channels' },
-        { key: 'ticket_category', label: 'Ticket category', href: '/control/mappings/categories' },
-        { key: 'ticket_logs', label: 'Ticket logs', href: '/control/mappings/channels' },
+        { key: 'ticket_panel', label: 'Ticket panel' },
+        { key: 'ticket_category', label: 'Ticket category' },
+        { key: 'ticket_logs', label: 'Ticket logs' },
       ])}
       ${editing ? saveActions(state) : ''}
     </section>`;
@@ -499,25 +496,20 @@ function roleOptions(snapshot, selected) {
     ${options.map(role => `<option value="${escapeHtml(role.id)}"${String(role.id) === selectedId ? ' selected' : ''}>${escapeHtml(role.name)}</option>`).join('')}`;
 }
 
-function notificationRead(state) {
+function notificationRead(state, snapshot) {
   const panel = state.persisted;
   if (!panel.title && !panel.description && !panel.buttons.length) {
     return '<p class="utility-empty">No notification role panel is configured.</p>';
   }
+  const roles = new Map((snapshot?.roles || []).map(role => [String(role.id), role]));
   return `
-    <dl class="utility-summary">
-      <div><dt>Title</dt><dd>${escapeHtml(panel.title || 'Not configured')}</dd></div>
-      <div><dt>Description</dt><dd>${escapeHtml(panel.description || 'Not configured')}</dd></div>
-      <div><dt>Buttons</dt><dd>${panel.buttons.length}</dd></div>
-    </dl>
-    ${panel.buttons.length ? `
-      <div class="utility-data-list">
-        ${panel.buttons.map(item => `
-          <div class="utility-data-row">
-            <div><strong>${escapeHtml(item.label)}</strong><span>Role ID ${escapeHtml(item.role_id)} · ${escapeHtml(item.style)}</span></div>
-            <span>${escapeHtml(item.emoji || '')}</span>
-          </div>`).join('')}
-      </div>` : ''}`;
+    <div class="control-summary-table-wrap utility-panel-summary-wrap">
+      <table class="control-summary-table utility-panel-summary">
+        <thead><tr><th>Panel field</th><th>Configuration</th></tr></thead>
+        <tbody><tr><th scope="row">Title</th><td>${escapeHtml(panel.title || 'Not configured')}</td></tr><tr><th scope="row">Description</th><td>${escapeHtml(panel.description || 'Not configured')}</td></tr></tbody>
+      </table>
+    </div>
+    ${panel.buttons.length ? `<div class="utility-subheading"><h3>Buttons</h3><p>${panel.buttons.length} configured self-role button${panel.buttons.length === 1 ? '' : 's'}.</p></div><div class="control-summary-table-wrap"><table class="control-summary-table utility-button-summary"><thead><tr><th>Label</th><th>Role</th><th>Emoji</th><th>Style</th></tr></thead><tbody>${panel.buttons.map(item => { const role = roles.get(String(item.role_id)); return `<tr><th scope="row">${escapeHtml(item.label)}</th><td>${escapeHtml(role?.name || `Role ${item.role_id}`)}</td><td>${escapeHtml(item.emoji || 'None')}</td><td>${escapeHtml(item.style)}</td></tr>`; }).join('')}</tbody></table></div>` : ''}`;
 }
 
 function notificationButtonRows(state, snapshot) {
@@ -597,10 +589,10 @@ function notificationPageMarkup({ state, snapshot } = {}) {
           </div>
           ${buttonError ? `<p class="utility-field-error" role="alert">${escapeHtml(buttonError)}</p>` : ''}
           ${notificationButtonRows(state, snapshot)}
-        ` : notificationRead(state)}
+        ` : notificationRead(state, snapshot)}
       </section>
       ${resourceSummaryMarkup(snapshot, [
-        { key: 'role_panel', label: 'Role panel destination', href: '/control/mappings/channels' },
+        { key: 'role_panel', label: 'Role panel destination' },
       ])}
       ${editing ? saveActions(state) : ''}
     </section>`;
@@ -615,7 +607,7 @@ function anonymousPageMarkup({ state, snapshot } = {}) {
       ${pageHeader('Anonymous Questions', 'Manage anonymous question intake without exposing submitter identity.', state, { label: 'Anonymous Questions', enabled, toggleAttribute: 'data-utility-feature="anonymous_questions"' })}
       <p class="utility-note">Submitter identity remains outside Control and is not rendered on this page.</p>
       ${resourceSummaryMarkup(snapshot, [
-        { key: 'anon_questions', label: 'Anonymous questions destination', href: '/control/mappings/channels' },
+        { key: 'anon_questions', label: 'Anonymous questions destination' },
       ])}
       ${editing ? saveActions(state) : ''}
     </section>`;

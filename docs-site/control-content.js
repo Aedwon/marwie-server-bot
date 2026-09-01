@@ -35,6 +35,53 @@ let announcementComposerState = {
   imageUrl: '',
 };
 
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, Number(value) || 0));
+}
+
+function normalizeHex(value, fallback = DEFAULT_ANNOUNCEMENT_COLOR) {
+  const raw = String(value || '').trim().replace('#', '').toUpperCase();
+  if (/^[0-9A-F]{6}$/.test(raw)) return raw;
+  if (/^[0-9A-F]{3}$/.test(raw)) return raw.split('').map(char => char + char).join('');
+  return fallback;
+}
+
+function hexToHsv(value) {
+  const hex = normalizeHex(value);
+  const r = parseInt(hex.slice(0, 2), 16) / 255;
+  const g = parseInt(hex.slice(2, 4), 16) / 255;
+  const b = parseInt(hex.slice(4, 6), 16) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const delta = max - min;
+  let h = 0;
+  if (delta) {
+    if (max === r) h = 60 * (((g - b) / delta) % 6);
+    else if (max === g) h = 60 * (((b - r) / delta) + 2);
+    else h = 60 * (((r - g) / delta) + 4);
+  }
+  if (h < 0) h += 360;
+  const sat = max === 0 ? 0 : delta / max;
+  return { h: Math.round(h), s: Math.round(sat * 100), v: Math.round(max * 100) };
+}
+
+function hsvToHex(hue, saturation, value) {
+  const h = ((Number(hue) % 360) + 360) % 360;
+  const saturationRatio = clamp(saturation, 0, 100) / 100;
+  const valueRatio = clamp(value, 0, 100) / 100;
+  const c = valueRatio * saturationRatio;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = valueRatio - c;
+  let rgb = [0, 0, 0];
+  if (h < 60) rgb = [c, x, 0];
+  else if (h < 120) rgb = [x, c, 0];
+  else if (h < 180) rgb = [0, c, x];
+  else if (h < 240) rgb = [0, x, c];
+  else if (h < 300) rgb = [x, 0, c];
+  else rgb = [c, 0, x];
+  return rgb.map(channel => Math.round((channel + m) * 255).toString(16).padStart(2, '0')).join('').toUpperCase();
+}
+
 function escapeHtml(value) {
   return String(value ?? '')
     .replaceAll('&', '&amp;')
@@ -261,12 +308,12 @@ function feedRowRead(source) {
     ? new Date(source.last_checked_at).toLocaleString()
     : 'Never';
   return `
-    <article class="content-feed-row">
-      <div><strong>${escapeHtml(source.name)}</strong><span>${escapeHtml(source.category)}</span></div>
-      <a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.url)}</a>
-      <span>${escapeHtml(checked)}</span>
-      <span class="content-state" data-enabled="${String(source.enabled)}">${source.enabled ? 'Enabled' : 'Disabled'}</span>
-    </article>`;
+    <tr class="content-feed-row">
+      <th scope="row"><strong>${escapeHtml(source.name)}</strong><span>${escapeHtml(source.category)}</span></th>
+      <td><a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.url)}</a></td>
+      <td>${escapeHtml(checked)}</td>
+      <td class="content-state" data-enabled="${String(source.enabled)}">${source.enabled ? 'Enabled' : 'Disabled'}</td>
+    </tr>`;
 }
 
 function feedRowEdit(source, state) {
@@ -300,20 +347,19 @@ function feedsMarkup(config, state, snapshot) {
   const mapping = mappedResourceLabel(snapshot, 'ai_updates', 'AI updates');
   const sources = state.mode === 'edit' ? state.draft.sources : state.persisted.sources;
   return `
-    <section class="control-page content-page" data-page-key="/control/content/feeds">
+    <section class="control-page content-page content-page-compact" data-page-key="/control/content/feeds">
       ${contentHeaderMarkup(config, state, 'Manage authoritative RSS and Atom sources. Automatic polling remains scheduled by Rob-bot.')}
       ${statusMarkup(state)}
-      <section class="content-card">
+      <section class="content-admin-surface">
         <div class="content-card-heading">
           <div><h2>Sources</h2><p>Destination: ${escapeHtml(mapping)}. Change the destination in Mappings.</p></div>
           ${state.mode === 'edit' ? '<button class="control-button control-button-secondary" type="button" data-source-add>Add source</button>' : ''}
         </div>
-        <div class="content-feed-head"><span>Source</span><span>URL</span><span>Last checked</span><span>State</span></div>
-        <div class="content-feed-list">
-          ${sources.length
-    ? sources.map(source => state.mode === 'edit' ? feedRowEdit(source, state) : feedRowRead(source)).join('')
-    : '<p class="content-empty">No feed sources are configured.</p>'}
-        </div>
+        ${state.mode === 'edit'
+    ? `<div class="content-feed-edit-list">${sources.length ? sources.map(source => feedRowEdit(source, state)).join('') : '<p class="content-empty">No feed sources are configured.</p>'}</div>`
+    : sources.length
+      ? `<div class="control-summary-table-wrap"><table class="control-summary-table content-feed-table"><thead><tr><th>Source</th><th>URL</th><th>Last checked</th><th>State</th></tr></thead><tbody>${sources.map(feedRowRead).join('')}</tbody></table></div>`
+      : '<p class="content-empty">No feed sources are configured.</p>'}
         <p class="content-note">Manual feed polling is available through <code>/ai-source poll</code>, where fetched candidates are previewed before Post or Cancel. This Control page never polls or publishes feeds.</p>
       </section>
       ${settingsActionsMarkup(state)}
@@ -421,13 +467,14 @@ function announcementMarkup(config, state, snapshot) {
   const enabled = state.mode === 'edit' ? state.draft.enabled : state.persisted.enabled;
   const canPost = announcementCanPost(snapshot, composer, enabled);
   const destinationOptions = destinations.map(channel => `<option value="${escapeHtml(channel.id)}"${String(channel.id) === String(composer.destinationId) ? ' selected' : ''}>#${escapeHtml(channel.name)}</option>`).join('');
+  const picker = hexToHsv(composer.color);
   return `
-    <section class="control-page content-page" data-page-key="/control/content/announcements">
+    <section class="control-page content-page content-page-compact" data-page-key="/control/content/announcements">
       ${contentHeaderMarkup(config, state, 'Build a one-off server announcement and preview exactly what Rob-bot will post.')}
       ${statusMarkup(state)}
       ${settingsActionsMarkup(state)}
       <div class="content-announcement-layout">
-        <section class="content-card content-announcement-composer">
+        <section class="content-admin-surface content-announcement-composer">
           <div class="content-card-heading"><div><h2>Announcement builder</h2><p>Composer values are local until you post.</p></div><button class="content-clear-action" type="button" data-announcement-clear>Clear all</button></div>
           <label>Destination channel<select data-announcement-destination>${destinationOptions || '<option value="">No permitted text channels</option>'}</select></label>
           <label>Message / mentions<textarea maxlength="2000" rows="4" data-announcement-message placeholder="Literal Discord syntax: <@123>, <@&456>, <#789>, @everyone, @here">${escapeHtml(composer.message)}</textarea><span class="content-field-counter" data-announcement-counter="message">${announcementRemaining(composer.message, 2000)}</span></label>
@@ -435,13 +482,13 @@ function announcementMarkup(config, state, snapshot) {
           <label>Body<textarea maxlength="4096" rows="7" data-announcement-body>${escapeHtml(composer.body)}</textarea><span class="content-field-counter" data-announcement-counter="body">${announcementRemaining(composer.body, 4096)}</span></label>
           <div class="content-field-grid">
             <label>Footer<input type="text" maxlength="2048" data-announcement-footer value="${escapeHtml(composer.footer)}"><span class="content-field-counter" data-announcement-counter="footer">${announcementRemaining(composer.footer, 2048)}</span></label>
-            <div class="content-color-field"><span>Embed color</span><button class="content-color-swatch" type="button" data-announcement-color-swatch aria-haspopup="dialog" aria-expanded="false" style="--swatch:#${escapeHtml(composer.color)}"><span aria-hidden="true"></span><strong>#${escapeHtml(composer.color)}</strong></button><div class="content-color-popover" data-announcement-color-popover role="dialog" aria-label="Embed color" hidden><label>Color<input type="color" data-announcement-color-native value="#${escapeHtml(composer.color)}"></label><label>Hex<input type="text" maxlength="7" data-announcement-color value="${escapeHtml(composer.color)}"></label></div></div>
+            <div class="content-color-field"><span>Embed color</span><button class="content-color-swatch" type="button" data-announcement-color-swatch aria-haspopup="dialog" aria-expanded="false" style="--swatch:#${escapeHtml(composer.color)}"><span aria-hidden="true"></span><strong>#${escapeHtml(composer.color)}</strong></button><div class="content-color-popover" data-announcement-color-popover role="dialog" aria-label="Embed color picker" hidden><div class="content-color-popover-heading"><strong>Embed color</strong><button type="button" data-announcement-color-close aria-label="Close color picker">Close</button></div><div class="content-color-selected-row"><span class="content-color-selected" data-announcement-color-preview style="--swatch:#${escapeHtml(composer.color)}" aria-hidden="true"></span><output data-announcement-color-output>#${escapeHtml(composer.color)}</output></div><label>Hue<input type="range" min="0" max="359" step="1" value="${picker.h}" data-announcement-color-hue aria-label="Hue"></label><div class="content-color-plane" data-announcement-color-plane role="slider" tabindex="0" aria-label="Saturation and brightness" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${picker.s}" aria-valuetext="Saturation ${picker.s}%, brightness ${picker.v}%" data-saturation="${picker.s}" data-value="${picker.v}" style="--picker-hue:${picker.h};--picker-saturation:${picker.s}%;--picker-value:${picker.v}%"><span aria-hidden="true"></span></div><label>Hex<input type="text" maxlength="7" inputmode="text" autocomplete="off" spellcheck="false" data-announcement-color value="#${escapeHtml(composer.color)}" aria-label="Hex color"></label></div></div>
           </div>
           <label>Image URL <span class="content-field-meta">1 max</span><input type="url" maxlength="1000" data-announcement-image value="${escapeHtml(composer.imageUrl)}" placeholder="https://example.com/image.png"></label>
           <p class="content-note">Message alone is postable. An embed is created only when Title and/or Body has content. Footer, color, and image apply only to that embed.</p>
         </section>
-        <section class="content-announcement-preview-card">
-          <button class="control-button content-announcement-post" type="button" data-announcement-send${canPost ? '' : ' disabled'}>Post announcement</button>
+        <section class="content-admin-surface content-announcement-preview-card">
+          <div class="content-preview-heading"><div><h2>Preview</h2><p>Final Discord rendering before publish.</p></div><button class="control-button control-button-primary content-announcement-post" type="button" data-announcement-send${canPost ? '' : ' disabled'}>Post announcement</button></div>
           <div class="discord-preview-shell" data-announcement-preview>${announcementPreviewMarkup(snapshot, composer)}</div>
         </section>
       </div>
@@ -454,19 +501,19 @@ function liveMarkup(config, state, snapshot) {
   const pingRole = resource(snapshot, 'live_ping_role');
   const pingAvailable = Boolean(pingRole?.id && pingRole.exists);
   return `
-    <section class="control-page content-page" data-page-key="/control/content/live">
+    <section class="control-page content-page content-page-compact" data-page-key="/control/content/live">
       ${contentHeaderMarkup(config, state, 'Post the configured live-host notice to the mapped Live destination.')}
       ${statusMarkup(state)}
       ${settingsActionsMarkup(state)}
-      <section class="content-card content-builder">
-        <div class="content-card-heading"><div><h2>Live notice</h2><p>Destination: ${escapeHtml(destination)}</p></div></div>
-        <label>Topic<input type="text" maxlength="200" data-live-topic placeholder="Optional stream topic"></label>
-        <label class="content-switch">
-          <input type="checkbox" data-live-ping${pingAvailable ? '' : ' disabled'}>
-          <span>${pingAvailable ? `Ping ${escapeHtml(pingRole.name || 'configured Live role')}` : 'No Live ping role is connected in Mappings'}</span>
-        </label>
-        <p class="content-note">A role ping requires consequence confirmation. Posting without a ping does not add an extra confirmation.</p>
-        <button class="control-button control-button-primary" type="button" data-live-send${fallback && state.persisted.enabled ? '' : ' disabled'}>Post Live notice</button>
+      <section class="content-admin-surface content-live-dispatch" aria-labelledby="live-dispatch-heading">
+        <div class="content-card-heading"><div><h2 id="live-dispatch-heading">Live notice</h2><p>Review each dispatch step before publishing.</p></div></div>
+        <ol class="content-dispatch-flow">
+          <li><span class="content-dispatch-number">1</span><div><strong>Destination</strong><p>${escapeHtml(destination)}</p></div></li>
+          <li><span class="content-dispatch-number">2</span><label>Topic<input type="text" maxlength="200" data-live-topic placeholder="Optional stream topic"><small>Optional. Included with the configured live-host notice.</small></label></li>
+          <li><span class="content-dispatch-number">3</span><label class="content-switch"><input type="checkbox" data-live-ping${pingAvailable ? '' : ' disabled'}><span>${pingAvailable ? `Ping ${escapeHtml(pingRole.name || 'configured Live role')}` : 'No Live ping role is connected in Mappings'}</span></label></li>
+          <li><span class="content-dispatch-number">4</span><div><strong>Consequence</strong><p>${pingAvailable ? 'Selecting the notification ping requires consequence confirmation before the post is sent.' : 'No notification role will be pinged unless a configured role becomes available.'}</p></div></li>
+        </ol>
+        <div class="content-dispatch-actions"><button class="control-button control-button-primary" type="button" data-live-send${fallback && state.persisted.enabled ? '' : ' disabled'}>Post Live notice</button></div>
       </section>
     </section>`;
 }
@@ -655,7 +702,7 @@ export function installContentPageInteractions({
     ];
     for (const [key, selector] of fields) { const node = root.querySelector(selector); if (node) announcementComposerState[key] = node.value || ''; }
     const color = root.querySelector('[data-announcement-color]');
-    if (color) announcementComposerState.color = String(color.value || DEFAULT_ANNOUNCEMENT_COLOR).replace('#', '').toUpperCase();
+    if (color) { const raw = String(color.value || '').replace('#', '').toUpperCase(); if (/^[0-9A-F]{6}$/.test(raw)) announcementComposerState.color = raw; }
     return announcementComposerState;
   };
 
@@ -673,8 +720,18 @@ export function installContentPageInteractions({
     if (send) send.disabled = !announcementCanPost(snapshot, composer, Boolean(enabled));
     const swatch = root.querySelector('[data-announcement-color-swatch]');
     if (swatch) { swatch.style.setProperty('--swatch', `#${composer.color}`); const copy = swatch.querySelector('strong'); if (copy) copy.textContent = `#${composer.color}`; }
-    const native = root.querySelector('[data-announcement-color-native]');
-    if (native && native.value.toUpperCase() !== `#${composer.color}`) native.value = `#${composer.color}`;
+    const hsv = hexToHsv(composer.color);
+    const hue = root.querySelector('[data-announcement-color-hue]');
+    if (hue && String(hue.value) !== String(hsv.h)) hue.value = String(hsv.h);
+    const plane = root.querySelector('[data-announcement-color-plane]');
+    if (plane) { plane.dataset.saturation = String(hsv.s); plane.dataset.value = String(hsv.v); plane.style.setProperty('--picker-hue', String(hsv.h)); plane.style.setProperty('--picker-saturation', `${hsv.s}%`); plane.style.setProperty('--picker-value', `${hsv.v}%`); plane.setAttribute('aria-valuenow', String(hsv.s)); plane.setAttribute('aria-valuetext', `Saturation ${hsv.s}%, brightness ${hsv.v}%`); }
+    const colorPreview = root.querySelector('[data-announcement-color-preview]');
+    if (colorPreview) colorPreview.style.setProperty('--swatch', `#${composer.color}`);
+    const colorOutput = root.querySelector('[data-announcement-color-output]');
+    if (colorOutput) colorOutput.textContent = `#${composer.color}`;
+    const colorText = root.querySelector('[data-announcement-color]');
+    if (colorText && globalThis.document?.activeElement !== colorText && colorText.value.toUpperCase() !== `#${composer.color}`) colorText.value = `#${composer.color}`;
+
   };
 
   const closeColorPopover = () => {
@@ -687,13 +744,31 @@ export function installContentPageInteractions({
     const popover = root.querySelector('[data-announcement-color-popover]');
     if (!popover) return;
     colorTrigger = trigger;
-    popover.hidden = false; trigger.setAttribute('aria-expanded', 'true');
+    popover.hidden = false; trigger.setAttribute('aria-expanded', 'true'); syncAnnouncement();
     const rect = trigger.getBoundingClientRect();
-    const width = popover.offsetWidth || 230; const height = popover.offsetHeight || 132; const margin = 12;
+    const width = popover.offsetWidth || 290; const height = popover.offsetHeight || 330; const margin = 12;
     popover.style.position = 'fixed';
     popover.style.left = `${Math.max(margin, Math.min(globalThis.innerWidth - width - margin, rect.right - width))}px`;
     popover.style.top = `${Math.max(margin, Math.min(globalThis.innerHeight - height - margin, rect.bottom + 8))}px`;
-    popover.querySelector('input')?.focus?.();
+    popover.querySelector('[data-announcement-color-hue]')?.focus?.();
+  };
+
+  const setColorFromHsv = (hue, saturation, value) => {
+    const text = root.querySelector('[data-announcement-color]');
+    if (text) text.value = `#${hsvToHex(hue, saturation, value)}`;
+    syncAnnouncement();
+  };
+
+  const setPlaneFromPointer = event => {
+    const plane = event.target?.closest?.('[data-announcement-color-plane]');
+    if (!plane) return false;
+    const rect = plane.getBoundingClientRect();
+    if (!rect.width || !rect.height) return true;
+    const saturation = clamp(((event.clientX - rect.left) / rect.width) * 100, 0, 100);
+    const value = clamp(100 - (((event.clientY - rect.top) / rect.height) * 100), 0, 100);
+    const hue = Number(root.querySelector('[data-announcement-color-hue]')?.value || 0);
+    setColorFromHsv(hue, saturation, value);
+    return true;
   };
 
   const onClick = async event => {
@@ -705,6 +780,8 @@ export function installContentPageInteractions({
     if (remove) { const row = remove.closest?.('[data-source-row]'); if (row?.dataset?.sourceRow) { store.updateDraft(pageKey, draft => { draft.sources = draft.sources.filter(item => sourceIdentity(item) !== row.dataset.sourceRow); }); rerender(); } return; }
     const colorButton = event.target?.closest?.('[data-announcement-color-swatch]');
     if (colorButton) { const popover = root.querySelector('[data-announcement-color-popover]'); if (popover?.hidden) openColorPopover(colorButton); else closeColorPopover(); return; }
+    if (event.target?.closest?.('[data-announcement-color-close]')) { closeColorPopover(); return; }
+    if (setPlaneFromPointer(event)) return;
     if (event.target?.closest?.('[data-announcement-clear]')) {
       announcementComposerState = clearAnnouncementComposer(readComposer());
       const values = { '[data-announcement-message]': '', '[data-announcement-title]': '', '[data-announcement-body]': '', '[data-announcement-footer]': '', '[data-announcement-image]': '', '[data-announcement-color]': DEFAULT_ANNOUNCEMENT_COLOR };
@@ -733,12 +810,37 @@ export function installContentPageInteractions({
     const field = event.target?.closest?.('[data-source-field]');
     if (field?.dataset?.sourceKey && field.dataset.sourceField) { store.updateDraft(pageKey, draft => { const source = sourceForKey(draft, field.dataset.sourceKey); if (!source) return; if (field.dataset.sourceField === 'enabled') source.enabled = Boolean(field.checked); else source[field.dataset.sourceField] = field.value; }); rerender(); return; }
     if (event.target?.closest?.('[data-announcement-destination]')) { syncAnnouncement(); return; }
-    const native = event.target?.closest?.('[data-announcement-color-native]');
-    if (native) { const text = root.querySelector('[data-announcement-color]'); if (text) text.value = String(native.value || '').replace('#', '').toUpperCase(); syncAnnouncement(); }
+    const hue = event.target?.closest?.('[data-announcement-color-hue]');
+    if (hue) { const plane = root.querySelector('[data-announcement-color-plane]'); setColorFromHsv(Number(hue.value), Number(plane?.dataset?.saturation || 0), Number(plane?.dataset?.value || 0)); return; }
+    const hex = event.target?.closest?.('[data-announcement-color]');
+    if (hex) { announcementComposerState.color = normalizeHex(hex.value, announcementComposerState.color); hex.value = `#${announcementComposerState.color}`; syncAnnouncement(); }
+
   };
 
-  const onInput = event => { if (event.target?.closest?.('[data-announcement-message], [data-announcement-title], [data-announcement-body], [data-announcement-footer], [data-announcement-image], [data-announcement-color]')) syncAnnouncement(); };
-  const onKeydown = event => { if (event.key === 'Escape') closeColorPopover(); };
+  const onInput = event => {
+    if (event.target?.closest?.('[data-announcement-color-hue]')) {
+      const plane = root.querySelector('[data-announcement-color-plane]');
+      setColorFromHsv(Number(event.target.value), Number(plane?.dataset?.saturation || 0), Number(plane?.dataset?.value || 0));
+      return;
+    }
+    if (event.target?.closest?.('[data-announcement-message], [data-announcement-title], [data-announcement-body], [data-announcement-footer], [data-announcement-image], [data-announcement-color]')) syncAnnouncement();
+  };
+  const onKeydown = event => {
+    if (event.key === 'Escape') { closeColorPopover(); return; }
+    const plane = event.target?.closest?.('[data-announcement-color-plane]');
+    if (!plane || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+    event.preventDefault();
+    const step = event.shiftKey ? 5 : 1;
+    let saturation = Number(plane.dataset.saturation || 0);
+    let value = Number(plane.dataset.value || 0);
+    if (event.key === 'ArrowLeft') saturation -= step;
+    if (event.key === 'ArrowRight') saturation += step;
+    if (event.key === 'ArrowUp') value += step;
+    if (event.key === 'ArrowDown') value -= step;
+    const hue = Number(root.querySelector('[data-announcement-color-hue]')?.value || 0);
+    setColorFromHsv(hue, clamp(saturation, 0, 100), clamp(value, 0, 100));
+  };
+
 
   root.addEventListener('click', onClick); root.addEventListener('change', onChange); root.addEventListener('input', onInput); root.addEventListener('keydown', onKeydown);
   if (pageKey === '/control/content/announcements') { ensureAnnouncementComposer(snapshot); syncAnnouncement(); }

@@ -86,7 +86,7 @@ class ControlPlaneCog(commands.Cog):
             return
         snapshot = await self.snapshots.build(guild)
         snapshot = dict(snapshot)
-        snapshot["analytics"] = (await self.analytics.weekly(guild.id)).to_snapshot()
+        snapshot["analytics"] = (await self.analytics.dashboard(guild.id)).to_snapshot()
         snapshot["meta"] = {
             **dict(snapshot.get("meta") or {}),
             "page_revisions": build_page_revisions(snapshot),

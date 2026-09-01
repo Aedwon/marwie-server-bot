@@ -3,112 +3,165 @@ function escapeHtml(value) {
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
+    .replaceAll('\"', '&quot;')
     .replaceAll("'", '&#39;');
 }
 
 export const WORKFLOW_PAGE_CONFIGS = Object.freeze({
   '/control/workflows/moderation': Object.freeze({
     title: 'Moderation',
-    intro: 'A practical reference for handling member issues with Rob-bot while keeping policy decisions with moderators.',
-    sections: Object.freeze([
+    intro: 'A staff operating guide for preparing, executing, verifying, and reviewing Rob-bot moderation actions.',
+    stages: Object.freeze([
       Object.freeze({
-        title: 'Before taking action',
-        body: 'Confirm which moderation command matches the action the team has decided to take, then make sure the acting moderator has the Discord permission required by that command.',
+        title: 'Prepare',
+        body: 'Choose the action the moderation team has already decided to take and verify the command prerequisites before opening it in Discord.',
+        points: Object.freeze([
+          'Warn and timeout require Moderate Members; kick requires Kick Members; ban requires Ban Members.',
+          'Warn, timeout, kick, and ban require the moderation feature and apply the shared target hierarchy checks.',
+        ]),
         links: Object.freeze([
           Object.freeze({ href: '/control/commands', label: 'Review moderation commands' }),
-          Object.freeze({ href: '/control/mappings/channels', label: 'Check the moderation log mapping' }),
+          Object.freeze({ href: '/control/mappings/channels', label: 'Check moderation log mapping' }),
         ]),
       }),
       Object.freeze({
-        title: 'Standard flow',
-        steps: Object.freeze([
-          'Use the relevant moderation command and review its private confirmation before approval.',
-          'Rob-bot checks moderator permissions and role hierarchy before applying the Discord action.',
-          'A moderation case is recorded for warnings, timeouts, kicks, and bans.',
-          'When configured, Rob-bot mirrors the case to the moderation log and attempts the member notification where supported.',
+        title: 'Execute',
+        body: 'Use the matching slash command, review its private confirmation, and approve only after the target and reason are correct.',
+        points: Object.freeze([
+          'Rob-bot validates the moderator and bot role hierarchy before the Discord action runs.',
+          'Warnings, timeouts, kicks, bans, and unbans create moderation cases after their documented action path succeeds.',
         ]),
       }),
       Object.freeze({
-        title: 'Follow-up',
-        body: 'Use the command history view when staff need context on earlier cases. Keep policy interpretation and escalation decisions with the moderation team.',
+        title: 'Verify',
+        body: 'Confirm the Discord action and use Rob-bot records when staff need an auditable follow-up.',
+        points: Object.freeze([
+          'Recorded cases are also sent to the configured moderation log when that destination is available.',
+          '/history privately shows up to the 10 most recent cases for a current server member.',
+        ]),
+      }),
+      Object.freeze({
+        title: 'Exceptions',
+        body: 'Keep runtime failures separate from policy decisions so staff can tell whether the action failed or only a secondary notification did.',
+        points: Object.freeze([
+          'A missing moderation-log destination does not erase a database case.',
+          'Documented member-DM failures do not cancel warn, kick, or ban actions.',
+          '/history is read-only and currently remains available when the moderation feature is disabled.',
+        ]),
       }),
     ]),
   }),
   '/control/workflows/ticket-handling': Object.freeze({
     title: 'Ticket handling',
-    intro: 'A reference for the member-to-staff support path, from ticket configuration through closure and transcript logging.',
-    sections: Object.freeze([
+    intro: 'A staff operating guide for ticket readiness, intake, handling, closure, and recovery.',
+    stages: Object.freeze([
       Object.freeze({
-        title: 'Prepare the support path',
-        body: 'Keep ticket types in their owning Control page and Discord destinations in Mappings. The ticket panel itself is posted with the matching command.',
+        title: 'Prepare',
+        body: 'Keep ticket types in Ticket configuration and Discord destinations in Mappings before publishing the member entry point.',
+        points: Object.freeze([
+          'The ticket panel needs an existing ticket_panel text channel and at least one enabled ticket type.',
+          'Each /ticket-panel post invocation sends a new panel message; it does not edit an older one.',
+        ]),
         links: Object.freeze([
           Object.freeze({ href: '/control/utilities/ticket-configuration', label: 'Review ticket configuration' }),
           Object.freeze({ href: '/control/mappings/channels', label: 'Check ticket channel mappings' }),
-          Object.freeze({ href: '/control/mappings/categories', label: 'Check the ticket category mapping' }),
+          Object.freeze({ href: '/control/mappings/categories', label: 'Check ticket category mapping' }),
           Object.freeze({ href: '/control/commands', label: 'Review ticket commands' }),
         ]),
       }),
       Object.freeze({
-        title: 'Member and staff flow',
-        steps: Object.freeze([
-          'A member opens the posted ticket panel and chooses an available ticket type.',
-          'Rob-bot creates the private ticket channel under the configured category and grants the opener access.',
-          'Staff can claim the ticket, resolve the request, and close it with a reason.',
-          'On closure, Rob-bot hides the channel from the opener, marks the ticket closed, and sends the transcript to the configured ticket log when available.',
+        title: 'Intake',
+        body: 'Members enter through the persistent Open ticket control and choose from the currently enabled ticket types.',
+        points: Object.freeze([
+          'The type selector is ephemeral and remains available for 120 seconds.',
+          'A member can have only one active open or claimed ticket at a time.',
+          'Choosing a type creates a private ticket channel under the configured category and grants the opener access.',
+        ]),
+      }),
+      Object.freeze({
+        title: 'Handle and verify',
+        body: 'Staff can claim, close, and reopen tickets with the documented ticket controls.',
+        points: Object.freeze([
+          'Claim, Close, and Reopen require Manage Channels or Moderate Members.',
+          'Closing hides the channel from the opener, records the closure, prefixes the channel name when possible, and attempts a transcript of up to 500 messages to ticket_logs.',
+          'Reopen restores opener access and removes the closed- prefix when possible.',
         ]),
       }),
       Object.freeze({
         title: 'Exceptions',
-        body: 'If a ticket channel disappears manually, Rob-bot marks the stored ticket deleted and reports that event to the ticket log when the destination is available.',
+        body: 'Use the stored ticket state and log destination to distinguish a normal closure from a Discord-resource problem.',
+        points: Object.freeze([
+          'Disabled ticket types stop appearing for new intake but do not delete past tickets that used them.',
+          'A missing ticket-log destination can prevent transcript delivery without changing the ticket closure itself.',
+        ]),
       }),
     ]),
   }),
   '/control/workflows/events': Object.freeze({
     title: 'Events',
-    intro: 'Guidance for coordinated event announcements using the existing Announcements and Live owners without creating another configuration surface.',
-    sections: Object.freeze([
+    intro: 'A publishing guide for event announcements and live alerts using the existing Announcements, Live, and Mappings owners.',
+    stages: Object.freeze([
       Object.freeze({
-        title: 'Prepare communication',
-        body: 'Confirm the destination mappings and feature state in the Control pages that already own them.',
+        title: 'Prepare',
+        body: 'Verify the feature state and destination before drafting the event communication.',
+        points: Object.freeze([
+          'Announcements and Live keep their own feature state; Discord destinations stay in Mappings.',
+          'Live needs live_announcements or the fallback announcements mapping and permission to send messages and embeds.',
+        ]),
         links: Object.freeze([
-          Object.freeze({ href: '/control/content/announcements', label: 'Review Announcements' }),
-          Object.freeze({ href: '/control/content/live', label: 'Review Live' }),
+          Object.freeze({ href: '/control/content/announcements', label: 'Open Announcements' }),
+          Object.freeze({ href: '/control/content/live', label: 'Open Live' }),
           Object.freeze({ href: '/control/mappings/channels', label: 'Check destination mappings' }),
+        ]),
+      }),
+      Object.freeze({
+        title: 'Compose',
+        body: 'Build the copy in the owning Control surface or use the documented Discord command path, then review the preview and destination.',
+        points: Object.freeze([
+          'The Control Announcement builder keeps its composer values local until Post announcement is used.',
+          'The Discord /announce path provides an ephemeral preview with Send, Edit, and Cancel controls for the original author.',
+        ]),
+        links: Object.freeze([
           Object.freeze({ href: '/control/commands', label: 'Review publishing commands' }),
         ]),
       }),
       Object.freeze({
-        title: 'Announcement flow',
-        steps: Object.freeze([
-          'Draft the event copy and verify the intended audience before using the publishing command.',
-          'Review the private command confirmation, including any role mention consequence, before approval.',
-          'Verify the message in the configured destination after Rob-bot posts it.',
-          'Use the owning Announcements or Live page for feature changes, and Mappings for destination changes.',
+        title: 'Publish and verify',
+        body: 'Use the owning publish action, complete any required consequence confirmation, and verify the resulting message in Discord.',
+        points: Object.freeze([
+          'Live uses the configured live destination and falls back to announcements when the live mapping is unavailable.',
+          'Rob-bot never uses @everyone or @here for the /live command.',
         ]),
       }),
       Object.freeze({
-        title: 'Operational note',
-        body: 'This page documents the staff process only. It does not own feature flags, Discord resources, or publishing actions.',
+        title: 'Exceptions',
+        body: 'A missing optional live-link or notification ping should not be confused with a failed live post.',
+        points: Object.freeze([
+          'If MAR_WIE_TIKTOK_URL is not configured, the live announcement can still post without a link button.',
+          'If the configured Live Notifications role cannot be mentioned, the live announcement still posts and the invoker is told the ping was skipped.',
+        ]),
       }),
     ]),
   }),
 });
 
-function sectionMarkup(section) {
-  const links = (section.links || []).length
-    ? `<div class="workflow-links">${section.links.map(link => `<a href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>`).join('')}</div>`
+function stageMarkup(stage, index) {
+  const links = (stage.links || []).length
+    ? `<div class="workflow-links">${stage.links.map(link => `<a class="control-inline-action" href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>`).join('')}</div>`
     : '';
-  const steps = (section.steps || []).length
-    ? `<ol>${section.steps.map(step => `<li>${escapeHtml(step)}</li>`).join('')}</ol>`
+  const points = (stage.points || []).length
+    ? `<ul>${stage.points.map(point => `<li>${escapeHtml(point)}</li>`).join('')}</ul>`
     : '';
   return `
-    <section class="workflow-section">
-      <h2>${escapeHtml(section.title)}</h2>
-      ${section.body ? `<p>${escapeHtml(section.body)}</p>` : ''}
-      ${steps}
-      ${links}
-    </section>`;
+    <li class="workflow-stage">
+      <span class="workflow-stage-number" aria-hidden="true">${String(index + 1).padStart(2, '0')}</span>
+      <div class="workflow-stage-content">
+        <h2>${escapeHtml(stage.title)}</h2>
+        <p>${escapeHtml(stage.body)}</p>
+        ${points}
+        ${links}
+      </div>
+    </li>`;
 }
 
 export function workflowPageMarkup(pageKey) {
@@ -120,8 +173,8 @@ export function workflowPageMarkup(pageKey) {
         <h1>${escapeHtml(config.title)}</h1>
         <p>${escapeHtml(config.intro)}</p>
       </header>
-      <div class="workflow-sections">
-        ${config.sections.map(sectionMarkup).join('')}
-      </div>
+      <ol class="workflow-timeline">
+        ${config.stages.map(stageMarkup).join('')}
+      </ol>
     </article>`;
 }

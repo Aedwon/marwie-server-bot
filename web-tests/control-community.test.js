@@ -170,30 +170,41 @@ test('Quizzes owns schedule and full question lifecycle while quiz channel stays
     },
     snapshot: quizSnapshot(),
   });
-  assert.match(markup, /1 question/);
+  assert.match(markup, /Operational snapshot/);
+  assert.match(markup, /<dt>Questions<\/dt><dd>1<\/dd>/);
+  assert.match(markup, /Aug 28, 2026, 12:00 AM UTC/);
+  assert.doesNotMatch(markup, /2026-08-28T00:00:00\+00:00/);
   assert.match(markup, /mappings/i);
   assert.doesNotMatch(markup, /data-resource-key|set_resource|clear_resource/i);
 });
 
-test('Voice & Coworking retains independent local feature switches', async () => {
+test('Voice & Coworking exposes only Temporary voice and preserves coworking outside this page', async () => {
   const { createCommunityPageDefinition } = await communityModule();
   const definition = createCommunityPageDefinition(VOICE_COWORKING);
   const snapshot = {
     features: [feature('voice', true), feature('coworking', false)],
     resources: [
       { key: 'create_workspace_voice', id: '1', name: 'Create Workspace', exists: true },
-      { key: 'temp_voice_category', id: '2', name: 'Coworking', exists: true },
+      { key: 'temp_voice_category', id: '2', name: 'Temporary voice', exists: true },
       { key: 'coworking_lounge', id: '3', name: 'Lounge', exists: true },
     ],
   };
   const persisted = definition.selectPersisted(snapshot);
+  assert.deepEqual(persisted, { voiceEnabled: true });
   const draft = definition.cloneDraft(persisted);
   draft.voiceEnabled = false;
   draft.coworkingEnabled = true;
   assert.deepEqual(definition.diffDraft(persisted, draft), [
     { action_type: 'set_feature', payload: { feature: 'voice', enabled: false } },
-    { action_type: 'set_feature', payload: { feature: 'coworking', enabled: true } },
   ]);
+
+  const markup = definition.render({
+    state: { mode: 'read', status: 'clean', persisted, draft, errors: {}, dirty: false, saveError: null },
+    snapshot,
+  });
+  assert.match(markup, /Temporary voice/);
+  assert.match(markup, /Temporary voice category/);
+  assert.doesNotMatch(markup, /Voice channels|coworking_lounge|create_workspace_voice/);
 });
 
 test('Showcase exposes only feature-local state and Mappings summary', async () => {

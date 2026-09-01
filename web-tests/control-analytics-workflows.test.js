@@ -76,7 +76,7 @@ test('Analytics is a direct canonical route', () => {
   assert.equal(destination?.path, '/control/analytics');
 });
 
-test('Analytics page exposes exactly the V1 operational metrics and period', () => {
+test('Analytics page preserves operational metrics and exposes the R2 range controls', () => {
   const definition = createAnalyticsPageDefinition();
   const markup = analyticsPageMarkup({
     state: readState(definition),
@@ -88,7 +88,9 @@ test('Analytics page exposes exactly the V1 operational metrics and period', () 
   assert.doesNotMatch(markup, /control-eyebrow/);
   assert.doesNotMatch(markup, />\s*(?:Operations|Handbook|Workflow|Control|Configuration)\s*</i);
   assert.doesNotMatch(markup, /Bot status|System status|Global health|Connectivity status/i);
-  assert.match(markup, /Previous 7 days/i);
+  assert.match(markup, /Operational activity from persisted server data/i);
+  assert.match(markup, /data-analytics-range="7d"/);
+  assert.doesNotMatch(markup, /Previous 7 days · exact 168-hour UTC window/i);
   assert.match(markup, /Moderation cases/);
   assert.match(markup, /Tickets opened/);
   assert.match(markup, /Tickets closed/);
@@ -193,7 +195,7 @@ test('Analytics zero-answer accuracy is rendered as unavailable, not zero percen
   snapshot.analytics.quiz_accuracy = null;
   const markup = analyticsPageMarkup({ state: readState(definition), snapshot });
   assert.match(markup, /Quiz accuracy/);
-  assert.match(markup, /No answers in this period/i);
+  assert.match(markup, /No answers/i);
   assert.doesNotMatch(markup, /0%/);
 });
 
@@ -215,17 +217,17 @@ test('all three Workflow pages are handbook-only semantic pages without redundan
   }
 });
 
-test('Workflow sections are plain document sections instead of decorative card tiles', () => {
+test('Workflow pages use one consistent numbered operational timeline', () => {
   const styles = readFileSync(new URL('../docs-site/control-analytics-workflows.css', import.meta.url), 'utf8');
-  assert.doesNotMatch(
-    styles,
-    /[^{}]*\.workflow-section[^{}]*\{[^{}]*(?:border(?:-radius)?\s*:|background\s*:)/s,
-  );
+  assert.match(styles, /\.workflow-timeline/);
+  assert.match(styles, /\.workflow-stage-number/);
 
   for (const pageKey of Object.keys(WORKFLOW_PAGE_CONFIGS)) {
     const markup = workflowPageMarkup(pageKey);
-    assert.match(markup, /<section class="workflow-section">/);
-    assert.match(markup, /<h2>/);
+    assert.match(markup, /<ol class="workflow-timeline">/);
+    assert.equal((markup.match(/class="workflow-stage"/g) || []).length, 4);
+    assert.match(markup, /class="workflow-stage-number"/);
+    assert.match(markup, /Exceptions/);
   }
 });
 

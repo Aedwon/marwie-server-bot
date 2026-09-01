@@ -27,6 +27,21 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
+function timestampLabel(value) {
+  const raw = String(value || '');
+  const date = new Date(raw);
+  if (!raw || !Number.isFinite(date.getTime())) return raw || 'No recorded post yet';
+  try {
+    return `${new Intl.DateTimeFormat('en-US', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      timeZone: 'UTC',
+    }).format(date)} UTC`;
+  } catch {
+    return raw;
+  }
+}
+
 function clone(value) {
   return structuredClone(value);
 }
@@ -81,24 +96,24 @@ function sameQuestionContent(left, right) {
 function mappingSummary(snapshot, groups) {
   const rows = resourcesByKey(snapshot);
   return groups.map(group => `
-    <article class="community-mapping-card community-mapping-table-card">
+    <div class="community-mapping-group">
       <div class="community-mapping-heading">
         <strong>${escapeHtml(group.label)}</strong>
-        <a class="control-button control-button-secondary" href="${escapeHtml(group.href)}">Manage mappings</a>
+        <a class="control-inline-action" href="${escapeHtml(group.href)}">Manage mappings</a>
       </div>
-      <div class="community-mapping-table-wrap">
-        <table class="community-mapping-table">
+      <div class="control-summary-table-wrap">
+        <table class="control-summary-table">
           <thead><tr><th>Resource</th><th>Current</th><th>Status</th></tr></thead>
           <tbody>${group.keys.map(key => {
             const row = rows.get(key);
             const current = row?.id && row?.exists ? row.name || 'Connected Discord resource' : row?.id ? 'Previously connected resource is unavailable' : 'No resource connected';
             const status = row?.id && row?.exists ? 'Connected' : row?.id ? 'Unavailable' : 'Not connected';
             const tone = row?.id && row?.exists ? 'good' : row?.id ? 'bad' : 'neutral';
-            return `<tr><th scope="row">${escapeHtml(key.replaceAll('_', ' '))}</th><td>${escapeHtml(current)}</td><td class="community-mapping-status" data-tone="${tone}">${escapeHtml(status)}</td></tr>`;
+            return `<tr><th scope="row">${escapeHtml(key.replaceAll('_', ' '))}</th><td>${escapeHtml(current)}</td><td class="control-status-text" data-tone="${tone}">${escapeHtml(status)}</td></tr>`;
           }).join('')}</tbody>
         </table>
       </div>
-    </article>`).join('');
+    </div>`).join('');
 }
 
 function statusMarkup(state) {
@@ -143,13 +158,13 @@ function reputationMarkup(state, snapshot) {
     const error = state.errors?.thresholds;
     return `<section class="control-page community-page" data-page-key="${REPUTATION}">
       ${header}${statusMarkup(state)}
-      <div class="community-section-grid"><fieldset class="community-fieldset"><legend>Tier thresholds</legend><p>Use strictly increasing values from 1 to 100000.</p>
-        <div class="community-three-column">${['builder', 'contributor', 'mentor'].map(key => `<label>${escapeHtml(key[0].toUpperCase() + key.slice(1))}<input type="number" min="1" max="100000" step="1" data-community-threshold="${key}" value="${escapeHtml(value.thresholds[key])}"></label>`).join('')}</div>
+      <fieldset class="community-fieldset community-tier-fieldset"><legend>Tier thresholds</legend><p>Use strictly increasing values from 1 to 100000.</p>
+        <div class="community-tier-editor">${['builder', 'contributor', 'mentor'].map((key, index) => `<label><span class="community-tier-rank">0${index + 1}</span><strong>${escapeHtml(key[0].toUpperCase() + key.slice(1))}</strong><input type="number" min="1" max="100000" step="1" data-community-threshold="${key}" value="${escapeHtml(value.thresholds[key])}"></label>`).join('')}</div>
         ${error ? `<p class="community-field-error" role="alert">${escapeHtml(error)}</p>` : ''}
-      </fieldset></div>${saveBar(state)}<section class="community-mappings"><h2>Discord mappings</h2>${mappings}</section></section>`;
+      </fieldset>${saveBar(state)}<section class="community-mappings"><h2>Discord mappings</h2>${mappings}</section></section>`;
   }
   return `<section class="control-page community-page" data-page-key="${REPUTATION}">${header}${statusMarkup(state)}
-    <div class="community-read-grid"><article class="community-summary-card"><strong>Tier thresholds</strong><dl><div><dt>Builder</dt><dd>${escapeHtml(value.thresholds.builder)}</dd></div><div><dt>Contributor</dt><dd>${escapeHtml(value.thresholds.contributor)}</dd></div><div><dt>Mentor</dt><dd>${escapeHtml(value.thresholds.mentor)}</dd></div></dl></article></div>
+    <section class="community-tier-section" aria-labelledby="reputation-tier-heading"><div class="community-section-heading"><div><h2 id="reputation-tier-heading">Tier progression</h2><p>Reputation thresholds increase from Builder through Mentor.</p></div></div><div class="community-tier-progression" role="list">${[['Builder', value.thresholds.builder], ['Contributor', value.thresholds.contributor], ['Mentor', value.thresholds.mentor]].map(([label, threshold], index) => `<div class="community-tier-step" role="listitem"><span class="community-tier-rank">0${index + 1}</span><strong>${escapeHtml(label)}</strong><span class="community-tier-value">${escapeHtml(threshold)} pts</span></div>`).join('')}</div></section>
     <section class="community-mappings"><h2>Discord mappings</h2>${mappings}</section></section>`;
 }
 
@@ -183,24 +198,20 @@ function quizzesMarkup(state, snapshot) {
   }
   const enabledCount = value.questions.filter(question => question.enabled).length;
   return `<section class="control-page community-page" data-page-key="${QUIZZES}">${header}${statusMarkup(state)}
-    <div class="community-read-grid"><article class="community-summary-card"><strong>Schedule</strong><span>${value.intervalHours == null ? 'Not configured' : `Every ${escapeHtml(value.intervalHours)} hours`}</span><small>${value.lastPostedAt ? `Last posted ${escapeHtml(value.lastPostedAt)}` : 'No recorded post yet'}</small></article><article class="community-summary-card"><strong>Question bank</strong><span>${count} question${count === 1 ? '' : 's'}</span><small>${enabledCount} enabled</small></article></div>
+    <section class="community-ops-section" aria-labelledby="quiz-snapshot-heading"><div class="community-section-heading"><div><h2 id="quiz-snapshot-heading">Operational snapshot</h2><p>Current quiz cadence and question-bank readiness.</p></div></div><dl class="community-ops-snapshot"><div><dt>Schedule</dt><dd>${value.intervalHours == null ? 'Not configured' : `Every ${escapeHtml(value.intervalHours)} hours`}</dd></div><div><dt>Last posted</dt><dd>${escapeHtml(timestampLabel(value.lastPostedAt))}</dd></div><div><dt>Questions</dt><dd>${count}</dd></div><div><dt>Enabled</dt><dd>${enabledCount}</dd></div></dl></section>
     <section class="community-mappings"><h2>Discord mappings</h2>${mappings}</section></section>`;
 }
 
 function voiceCoworkingMarkup(state, snapshot) {
   const value = state.mode === 'edit' ? state.draft : state.persisted;
   const mappings = mappingSummary(snapshot, [
-    { label: 'Voice channels', href: '/control/mappings/channels', keys: ['create_workspace_voice', 'coworking_lounge'] },
     { label: 'Temporary voice category', href: '/control/mappings/categories', keys: ['temp_voice_category'] },
   ]);
   const header = pageHeader(
     'Voice & Coworking',
-    state.mode === 'edit' ? 'Manage the two related features independently. Their Discord resources stay in Mappings.' : 'Current feature state and Discord wiring health.',
+    state.mode === 'edit' ? 'Manage Temporary voice. Other voice and coworking resources stay in Mappings.' : 'Current Temporary voice state and category mapping.',
     state,
-    [
-      { label: 'Temporary voice workspaces', enabled: value.voiceEnabled, toggleAttribute: 'data-community-field="voiceEnabled"' },
-      { label: 'Coworking', enabled: value.coworkingEnabled, toggleAttribute: 'data-community-field="coworkingEnabled"' },
-    ],
+    [{ label: 'Temporary voice', enabled: value.voiceEnabled, toggleAttribute: 'data-community-field="voiceEnabled"' }],
   );
   return `<section class="control-page community-page" data-page-key="${VOICE_COWORKING}">${header}${statusMarkup(state)}${state.mode === 'edit' ? saveBar(state) : ''}<section class="community-mappings"><h2>Discord mappings</h2>${mappings}</section></section>`;
 }
@@ -257,7 +268,7 @@ export function createCommunityPageDefinition(pageKey) {
           questions: (snapshot?.quiz?.questions || []).map(normalizeQuestion),
         };
       }
-      if (pageKey === VOICE_COWORKING) return { voiceEnabled: featureEnabled(snapshot, 'voice'), coworkingEnabled: featureEnabled(snapshot, 'coworking') };
+      if (pageKey === VOICE_COWORKING) return { voiceEnabled: featureEnabled(snapshot, 'voice') };
       return { enabled: featureEnabled(snapshot, 'showcase') };
     },
     cloneDraft: clone,
@@ -310,7 +321,6 @@ export function createCommunityPageDefinition(pageKey) {
       }
       if (pageKey === VOICE_COWORKING) {
         if (persisted.voiceEnabled !== draft.voiceEnabled) changes.push({ action_type: 'set_feature', payload: { feature: 'voice', enabled: draft.voiceEnabled } });
-        if (persisted.coworkingEnabled !== draft.coworkingEnabled) changes.push({ action_type: 'set_feature', payload: { feature: 'coworking', enabled: draft.coworkingEnabled } });
         return changes;
       }
       if (persisted.enabled !== draft.enabled) changes.push({ action_type: 'set_feature', payload: { feature: 'showcase', enabled: draft.enabled } });

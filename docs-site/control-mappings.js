@@ -425,7 +425,7 @@ function suggestionMarkup(pageKey, snapshot) {
           <h2>Suggested mappings</h2>
           <p>Review only the resources owned by Mappings. Nothing is changed until you apply the reviewed plan.</p>
         </div>
-        <button class="control-button control-button-secondary" type="button" data-mapping-review>${open ? 'Close review' : 'Review suggested mappings'}</button>
+        <button class="control-button control-button-primary" type="button" data-mapping-review>${open ? 'Close review' : 'Review suggested mappings'}</button>
       </div>
       ${operationMarkup}
       ${reviewMarkup}

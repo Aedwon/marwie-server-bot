@@ -120,3 +120,19 @@
     margin: 4px 0 0;
   }
 }
+
+
+/* Commands R2 refinement */
+.control-command-table { margin-top:24px; overflow:hidden; border:1px solid var(--control-border); border-radius:14px; }
+.control-command-table-head,.control-command-item { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(170px,.8fr) minmax(100px,.45fr); gap:16px; align-items:center; }
+.control-command-table-head { padding:10px 14px; border-bottom:1px solid var(--control-border); color:var(--control-muted); background:color-mix(in srgb,currentColor 3.5%,transparent); font-size:13px; line-height:18px; font-weight:650; }
+.control-command-list { margin:0; border-top:0; }
+.control-command-item { padding:14px; }
+.control-command-item:last-child { border-bottom:0; }
+.control-command-goal { min-width:0; }
+.control-command-kicker { display:block; margin-bottom:3px; color:var(--control-muted); font-size:13px; line-height:18px; font-weight:650; }
+.control-command-item h2 { margin:0; font-size:16px; line-height:1.3; }
+.control-command-item p { margin:5px 0 0; color:var(--control-muted); font-size:13px; line-height:18px; }
+.control-command-chip { width:fit-content; max-width:100%; padding:6px 9px; border:1px solid var(--control-border); border-radius:8px; background:color-mix(in srgb,currentColor 5%,transparent); color:inherit; font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; font-size:13px; line-height:18px; overflow-wrap:anywhere; }
+.control-command-action { justify-self:start; }
+@media(max-width:700px){.control-command-table-head{display:none}.control-command-item{grid-template-columns:1fr;gap:10px}.control-command-chip{margin-top:2px}}

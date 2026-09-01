@@ -33,7 +33,7 @@ export function featureHeaderActionsMarkup({
     </label>`;
   }).join('');
   const edit = editing ? '' : `<button class="control-button control-button-primary" type="button"${editAttribute ? ` ${editAttribute}` : ''}>Edit settings</button>`;
-  return `<div class="control-feature-header-actions">${toggles}${edit}</div>`;
+  return `<div class="control-feature-header-actions">${edit}${toggles}</div>`;
 }
 
 export function navigationMarkup(model) {

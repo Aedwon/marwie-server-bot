@@ -61,17 +61,16 @@ function timestampLabel(value) {
 export function commandsPageMarkup() {
   const items = COMMAND_TASKS.map(task => `
     <li class="control-command-item" data-command-task="${task.key}">
-      <h2>${escapeHtml(task.title)}</h2>
-      <p>${escapeHtml(task.description)}</p>
-      <p><a class="control-command-link" href="${task.href}">${escapeHtml(task.command)}</a></p>
+      <div class="control-command-goal"><span class="control-command-kicker">Task</span><h2>${escapeHtml(task.title)}</h2><p>${escapeHtml(task.description)}</p></div>
+      <code class="control-command-chip">${escapeHtml(task.command)}</code>
+      <a class="control-inline-action control-command-action" href="${task.href}">Open guide</a>
     </li>`).join('');
 
   return `<section class="control-page-section control-commands-page">
     <h1>Commands</h1>
-    <p class="control-page-intro">These administrative tasks are run through Discord slash commands.</p>
-    <ul class="control-command-list">${items}
-    </ul>
-    <p class="control-secondary-footer"><a href="/commands">Open the full Commands manual</a></p>
+    <p class="control-page-intro">Administrative tasks that stay in Discord, organized by the outcome staff are trying to achieve.</p>
+    <div class="control-command-table"><div class="control-command-table-head" aria-hidden="true"><span>Goal</span><span>Discord command</span><span>Reference</span></div><ul class="control-command-list">${items}</ul></div>
+    <p class="control-secondary-footer"><a class="control-inline-action" href="/commands">Open the full Commands manual</a></p>
   </section>`;
 }
 

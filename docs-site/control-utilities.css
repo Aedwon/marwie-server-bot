@@ -409,3 +409,20 @@
 .utility-resource-status[data-tone="neutral"] { color: var(--muted); }
 [data-theme="dark"] .utility-resource-status[data-tone="good"] { color: #30d158; }
 [data-theme="dark"] .utility-resource-status[data-tone="bad"] { color: #ff453a; }
+
+
+/* Utilities R2 refinement */
+.utility-page-header { margin-bottom: 20px; }
+.utility-section { padding: 22px 0; }
+.utility-section-heading .control-inline-action { flex:0 0 auto; }
+.utility-ticket-table { min-width: 760px; }
+.utility-ticket-table td:nth-child(3) { min-width: 260px; }
+.utility-panel-summary { min-width: 540px; }
+.utility-button-summary { min-width: 650px; }
+.utility-panel-summary-wrap { margin-bottom: 18px; }
+.utility-subheading h3 { margin:0; }
+.utility-subheading p { margin:5px 0 0; }
+.utility-editor-row { box-shadow:none; border:1px solid var(--control-border); background:var(--page-surface,var(--surface)); }
+.utility-mapping-section .control-summary-table-wrap { margin-top:2px; }
+.utility-resource-table { min-width:620px; }
+@media(max-width:560px){.utility-section-heading .control-inline-action{align-self:flex-start}}

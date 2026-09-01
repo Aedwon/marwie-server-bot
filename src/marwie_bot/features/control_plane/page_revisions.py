@@ -132,7 +132,7 @@ def _material(snapshot: dict[str, Any], page_key: str) -> Any:
             "questions": _quiz_questions(snapshot),
         }
     if page_key == "/control/community/voice-coworking":
-        return {"features": _features_enabled(snapshot, "voice", "coworking")}
+        return {"features": _features_enabled(snapshot, "voice")}
     if page_key == "/control/community/showcase":
         return {"feature": _feature_enabled(snapshot, "showcase")}
     if page_key == "/control/content/feeds":

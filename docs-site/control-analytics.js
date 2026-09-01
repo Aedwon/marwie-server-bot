@@ -7,6 +7,15 @@ import { featureHeaderActionsMarkup } from './control-components.js';
 
 export const ANALYTICS_PAGE_KEY = '/control/analytics';
 
+const RANGE_OPTIONS = Object.freeze([
+  Object.freeze({ key: '1d', label: '1d' }),
+  Object.freeze({ key: '3d', label: '3d' }),
+  Object.freeze({ key: '7d', label: '7d' }),
+  Object.freeze({ key: '2w', label: '2w' }),
+  Object.freeze({ key: '1m', label: '1m' }),
+  Object.freeze({ key: 'all', label: 'All time' }),
+]);
+
 function escapeHtml(value) {
   return String(value ?? '')
     .replaceAll('&', '&amp;')
@@ -27,7 +36,7 @@ function analyticsResource(snapshot) {
 function formatPeriod(value) {
   if (!value) return 'Unavailable';
   const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return escapeHtml(value);
+  if (Number.isNaN(parsed.getTime())) return String(value);
   return parsed.toLocaleString(undefined, {
     year: 'numeric',
     month: 'short',
@@ -39,6 +48,14 @@ function formatPeriod(value) {
   });
 }
 
+function formatBucketPeriod(bucket) {
+  return `${formatPeriod(bucket?.period_start)} – ${formatPeriod(bucket?.period_end)}`;
+}
+
+function formatAccuracy(value) {
+  return value == null ? 'No answers' : `${Math.round(Number(value) * 100)}%`;
+}
+
 function metricDefinition(label, value) {
   return `
     <div class="analytics-stat">
@@ -47,48 +64,145 @@ function metricDefinition(label, value) {
     </div>`;
 }
 
-function channelSummary(snapshot) {
+function channelHealth(snapshot) {
   const resource = analyticsResource(snapshot);
-  if (resource?.id && resource.exists) return resource.name || 'Connected text channel';
-  if (resource?.id) return 'Previously connected channel is unavailable';
-  return 'No report channel connected';
+  if (resource?.id && resource.exists) {
+    return { current: resource.name || 'Connected text channel', status: 'Connected', tone: 'good' };
+  }
+  if (resource?.id) {
+    return {
+      current: 'Previously connected channel is unavailable',
+      status: 'Unavailable',
+      tone: 'bad',
+    };
+  }
+  return { current: 'No report channel connected', status: 'Not connected', tone: 'neutral' };
 }
 
-function analyticsReportMarkup(snapshot) {
+function rangeProjection(snapshot, requestedRange) {
   const analytics = snapshot?.analytics;
-  if (!analytics) {
+  if (!analytics) return { selectedRange: '7d', projection: null };
+  const ranges = analytics.ranges && typeof analytics.ranges === 'object' ? analytics.ranges : null;
+  if (!ranges) return { selectedRange: '7d', projection: analytics };
+  const fallback = String(analytics.default_range || '7d');
+  const selectedRange = ranges[requestedRange]
+    ? requestedRange
+    : ranges[fallback]
+      ? fallback
+      : Object.keys(ranges)[0];
+  return { selectedRange, projection: ranges[selectedRange] || null };
+}
+
+function rangeControlsMarkup(snapshot, selectedRange) {
+  const ranges = snapshot?.analytics?.ranges || {};
+  return `
+    <div class="analytics-range-controls" role="group" aria-label="Analytics period">
+      ${RANGE_OPTIONS.map(option => {
+    const available = Boolean(ranges[option.key]);
+    const selected = option.key === selectedRange;
+    return `<button type="button" class="analytics-range-button" data-analytics-range="${option.key}" data-selected="${String(selected)}" aria-pressed="${String(selected)}"${available ? '' : ' disabled'}>${escapeHtml(option.label)}</button>`;
+  }).join('')}
+    </div>`;
+}
+
+function activityTotal(bucket) {
+  return Number(bucket?.moderation_cases || 0)
+    + Number(bucket?.tickets_opened || 0)
+    + Number(bucket?.tickets_closed || 0)
+    + Number(bucket?.quiz_answers || 0)
+    + Number(bucket?.anonymous_questions || 0)
+    + Number(bucket?.reputation_events || 0);
+}
+
+function analyticsChartMarkup(projection) {
+  const series = Array.isArray(projection?.series) ? projection.series : [];
+  if (!series.length) return '';
+  const totals = series.map(activityTotal);
+  const maximum = Math.max(1, ...totals);
+  return `
+    <section class="analytics-chart-section" aria-labelledby="analytics-chart-title">
+      <div class="analytics-section-heading">
+        <div><h2 id="analytics-chart-title">Activity over time</h2><p>Recorded operational events in each UTC bucket. Values come from persisted repository data only.</p></div>
+      </div>
+      <figure class="analytics-chart">
+        <div class="analytics-chart-bars" aria-hidden="true">
+          ${series.map((bucket, index) => {
+    const total = totals[index];
+    const height = total === 0 ? 2 : Math.max(8, Math.round((total / maximum) * 100));
+    return `<span class="analytics-chart-bar" style="--analytics-bar-height:${height}%" title="${escapeHtml(`${formatBucketPeriod(bucket)}: ${total} recorded events`)}"></span>`;
+  }).join('')}
+        </div>
+        <figcaption>Recorded activity events per UTC bucket. Open the data table for exact values.</figcaption>
+      </figure>
+      <details class="analytics-series-data">
+        <summary>View chart data</summary>
+        <div class="analytics-series-table-wrap">
+          <table class="analytics-series-table">
+            <thead><tr><th>Period</th><th>Moderation</th><th>Opened</th><th>Closed</th><th>Quiz answers</th><th>Accuracy</th><th>Anonymous</th><th>Reputation</th></tr></thead>
+            <tbody>${series.map(bucket => `<tr><th scope="row">${escapeHtml(formatBucketPeriod(bucket))}</th><td>${escapeHtml(bucket.moderation_cases ?? 0)}</td><td>${escapeHtml(bucket.tickets_opened ?? 0)}</td><td>${escapeHtml(bucket.tickets_closed ?? 0)}</td><td>${escapeHtml(bucket.quiz_answers ?? 0)}</td><td>${escapeHtml(formatAccuracy(bucket.quiz_accuracy))}</td><td>${escapeHtml(bucket.anonymous_questions ?? 0)}</td><td>${escapeHtml(bucket.reputation_events ?? 0)}</td></tr>`).join('')}</tbody>
+          </table>
+        </div>
+      </details>
+    </section>`;
+}
+
+function analyticsReportMarkup(snapshot, requestedRange) {
+  const { selectedRange, projection } = rangeProjection(snapshot, requestedRange);
+  if (!projection) {
     return `
       <p class="analytics-unavailable" role="status">
         Analytics data unavailable. Refresh server state to try again.
       </p>`;
   }
 
-  const accuracy = analytics.quiz_accuracy == null
-    ? 'No answers in this period'
-    : `${Math.round(Number(analytics.quiz_accuracy) * 100)}%`;
-
   return `
-    <section class="analytics-period" aria-label="Analytics period">
-      <span><strong>From</strong> ${escapeHtml(formatPeriod(analytics.period_start))}</span>
-      <span><strong>To</strong> ${escapeHtml(formatPeriod(analytics.period_end))}</span>
-    </section>
-    <dl class="analytics-metrics" aria-label="Previous 7 days operational metrics">
-      ${metricDefinition('Moderation cases', analytics.moderation_cases ?? 0)}
-      ${metricDefinition('Tickets opened', analytics.tickets_opened ?? 0)}
-      ${metricDefinition('Tickets closed', analytics.tickets_closed ?? 0)}
-      ${metricDefinition('Quiz answers', analytics.quiz_answers ?? 0)}
-      ${metricDefinition('Quiz accuracy', accuracy)}
-      ${metricDefinition('Anonymous questions', analytics.anonymous_questions ?? 0)}
-      ${metricDefinition('Reputation events', analytics.reputation_events ?? 0)}
-    </dl>`;
+    <section class="analytics-dashboard" data-active-analytics-range="${escapeHtml(selectedRange)}">
+      ${rangeControlsMarkup(snapshot, selectedRange)}
+      <section class="analytics-period" aria-label="Selected analytics range">
+        <span><strong>From</strong> ${escapeHtml(formatPeriod(projection.period_start))}</span>
+        <span><strong>To</strong> ${escapeHtml(formatPeriod(projection.period_end))}</span>
+      </section>
+      <dl class="analytics-metrics" aria-label="Selected period operational metrics">
+        ${metricDefinition('Moderation cases', projection.moderation_cases ?? 0)}
+        ${metricDefinition('Tickets opened', projection.tickets_opened ?? 0)}
+        ${metricDefinition('Tickets closed', projection.tickets_closed ?? 0)}
+        ${metricDefinition('Quiz answers', projection.quiz_answers ?? 0)}
+        ${metricDefinition('Quiz accuracy', formatAccuracy(projection.quiz_accuracy))}
+        ${metricDefinition('Anonymous questions', projection.anonymous_questions ?? 0)}
+        ${metricDefinition('Reputation events', projection.reputation_events ?? 0)}
+      </dl>
+      ${analyticsChartMarkup(projection)}
+    </section>`;
+}
+
+function reportingMarkup(state, snapshot, enabled) {
+  const channel = channelHealth(snapshot);
+  return `
+    <section class="analytics-settings" aria-labelledby="analytics-settings-title">
+      <div class="analytics-section-heading">
+        <div><h2 id="analytics-settings-title">Reporting</h2><p>${state.mode === 'edit' ? 'Use the feature switch in the page header, then save or discard below.' : enabled ? 'Aggregate reporting is enabled.' : 'Aggregate reporting is disabled.'}</p></div>
+        <a class="control-inline-action" href="/control/mappings/channels">Manage mappings</a>
+      </div>
+      <div class="control-summary-table-wrap analytics-reporting-table-wrap">
+        <table class="control-summary-table analytics-reporting-table">
+          <thead><tr><th>Resource</th><th>Current</th><th>Status</th></tr></thead>
+          <tbody><tr><th scope="row">Report channel</th><td>${escapeHtml(channel.current)}</td><td class="control-status-text" data-tone="${channel.tone}">${escapeHtml(channel.status)}</td></tr></tbody>
+        </table>
+      </div>
+      ${state.mode === 'edit' ? `<div class="analytics-page-actions"><button class="control-button control-button-primary" type="button" data-analytics-save${state.dirty && state.status !== 'saving' ? '' : ' disabled'}>${state.status === 'saving' ? 'Saving…' : 'Save changes'}</button><button class="control-button control-button-secondary" type="button" data-analytics-discard${state.status === 'saving' ? ' disabled' : ''}>Discard</button></div>` : ''}
+    </section>`;
 }
 
 export function createAnalyticsPageDefinition() {
+  let selectedRange = '7d';
   return {
     pageKey: ANALYTICS_PAGE_KEY,
 
     selectPersisted(snapshot) {
       const feature = analyticsFeature(snapshot);
+      const availableRanges = snapshot?.analytics?.ranges || {};
+      const preferred = String(snapshot?.analytics?.default_range || '7d');
+      if (!availableRanges[selectedRange] && availableRanges[preferred]) selectedRange = preferred;
       return { enabled: feature ? Boolean(feature.enabled) : true };
     },
 
@@ -111,7 +225,7 @@ export function createAnalyticsPageDefinition() {
     },
 
     render({ state, snapshot } = {}) {
-      return analyticsPageMarkup({ state, snapshot });
+      return analyticsPageMarkup({ state, snapshot, selectedRange });
     },
 
     install({ root, store = controlState, onSave, rerender } = {}) {
@@ -120,6 +234,7 @@ export function createAnalyticsPageDefinition() {
         store,
         onSave,
         rerender,
+        onRangeChange(value) { selectedRange = value; },
       });
     },
   };
@@ -131,7 +246,7 @@ export function registerAnalyticsPage() {
   }
 }
 
-export function analyticsPageMarkup({ state, snapshot } = {}) {
+export function analyticsPageMarkup({ state, snapshot, selectedRange } = {}) {
   if (!state?.persisted) {
     return `<section class="control-page analytics-page"><h1>Analytics</h1><p>Load current server state to view the operational snapshot.</p></section>`;
   }
@@ -141,15 +256,10 @@ export function analyticsPageMarkup({ state, snapshot } = {}) {
     : state.status === 'conflict'
       ? '<p class="analytics-page-message" role="alert">Server state changed while you were editing. Review your draft before retrying.</p>'
       : '';
-  const settingsMarkup = `
-    <section class="analytics-settings" aria-labelledby="analytics-settings-title">
-      <div><h2 id="analytics-settings-title">Reporting</h2><p>${state.mode === 'edit' ? 'Use the feature switch in the page header, then save or discard below.' : enabled ? 'Aggregate reporting is enabled.' : 'Aggregate reporting is disabled.'}</p></div>
-      <div class="analytics-channel-row"><div><span class="analytics-channel-label">Report channel</span><strong>${escapeHtml(channelSummary(snapshot))}</strong></div><a href="/control/mappings/channels">Manage mappings</a></div>
-      ${state.mode === 'edit' ? `<div class="analytics-page-actions"><button class="control-button control-button-primary" type="button" data-analytics-save${state.dirty && state.status !== 'saving' ? '' : ' disabled'}>${state.status === 'saving' ? 'Saving…' : 'Save changes'}</button><button class="control-button control-button-secondary" type="button" data-analytics-discard${state.status === 'saving' ? ' disabled' : ''}>Discard</button></div>` : ''}
-    </section>`;
+  const preferredRange = selectedRange || String(snapshot?.analytics?.default_range || '7d');
   return `
     <section class="control-page analytics-page" data-page-key="${ANALYTICS_PAGE_KEY}">
-      <header class="analytics-page-header"><div><h1>Analytics</h1><p>Previous 7 days · exact 168-hour UTC window.</p></div>${featureHeaderActionsMarkup({
+      <header class="analytics-page-header"><div><h1>Analytics</h1><p>Operational activity from persisted server data.</p></div>${featureHeaderActionsMarkup({
         label: 'Analytics',
         enabled,
         editing: state.mode === 'edit',
@@ -157,8 +267,8 @@ export function analyticsPageMarkup({ state, snapshot } = {}) {
         toggleAttribute: 'data-analytics-enabled',
       })}</header>
       ${statusMarkup}
-      ${analyticsReportMarkup(snapshot)}
-      ${settingsMarkup}
+      ${analyticsReportMarkup(snapshot, preferredRange)}
+      ${reportingMarkup(state, snapshot, enabled)}
     </section>`;
 }
 
@@ -167,10 +277,21 @@ export function installAnalyticsPageInteractions({
   store = controlState,
   onSave,
   rerender = () => {},
+  onRangeChange = () => {},
 } = {}) {
   if (!root?.addEventListener) return () => {};
 
   const onClick = event => {
+    const rangeButton = event.target?.closest?.('[data-analytics-range]');
+    if (rangeButton && !rangeButton.disabled) {
+      const value = rangeButton.getAttribute('data-analytics-range');
+      if (RANGE_OPTIONS.some(option => option.key === value)) {
+        onRangeChange(value);
+        rerender();
+      }
+      return;
+    }
+
     if (event.target?.closest?.('[data-analytics-edit]')) {
       store.beginEdit(ANALYTICS_PAGE_KEY);
       rerender();
