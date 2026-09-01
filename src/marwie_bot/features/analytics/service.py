@@ -211,10 +211,15 @@ class AnalyticsService:
         current = _normalize_now(now)
 
         async with self.database.session() as session:
+
             async def earliest(model: type, guild_column: Any, time_column: Any) -> datetime | None:
-                statement = select(func.min(time_column)).select_from(model).where(
-                    guild_column == guild_id,
-                    time_column < current,
+                statement = (
+                    select(func.min(time_column))
+                    .select_from(model)
+                    .where(
+                        guild_column == guild_id,
+                        time_column < current,
+                    )
                 )
                 value = (await session.execute(statement)).scalar_one_or_none()
                 if value is None:
@@ -228,10 +233,16 @@ class AnalyticsService:
                 await earliest(Ticket, Ticket.guild_id, Ticket.created_at),
                 await earliest(Ticket, Ticket.guild_id, Ticket.closed_at),
                 await earliest(QuizAnswer, QuizAnswer.guild_id, QuizAnswer.answered_at),
-                await earliest(AnonymousQuestion, AnonymousQuestion.guild_id, AnonymousQuestion.created_at),
-                await earliest(ReputationEvent, ReputationEvent.guild_id, ReputationEvent.created_at),
+                await earliest(
+                    AnonymousQuestion, AnonymousQuestion.guild_id, AnonymousQuestion.created_at
+                ),
+                await earliest(
+                    ReputationEvent, ReputationEvent.guild_id, ReputationEvent.created_at
+                ),
             ]
-            all_start = min((value for value in earliest_values if value is not None), default=current)
+            all_start = min(
+                (value for value in earliest_values if value is not None), default=current
+            )
 
             buckets_by_range: dict[str, list[tuple[datetime, datetime]]] = {
                 "1d": _fixed_buckets(current, hours=24, count=6),
@@ -276,9 +287,7 @@ class AnalyticsService:
                 "moderation_cases": await bucket_counts(
                     ModerationCase, ModerationCase.guild_id, ModerationCase.created_at
                 ),
-                "tickets_opened": await bucket_counts(
-                    Ticket, Ticket.guild_id, Ticket.created_at
-                ),
+                "tickets_opened": await bucket_counts(Ticket, Ticket.guild_id, Ticket.created_at),
                 "tickets_closed": await bucket_counts(
                     Ticket, Ticket.guild_id, Ticket.closed_at, Ticket.closed_at.is_not(None)
                 ),
@@ -328,9 +337,7 @@ class AnalyticsService:
             answers = sum(item.quiz_answers for item in series)
             anonymous = sum(item.anonymous_questions for item in series)
             reputation = sum(item.reputation_events for item in series)
-            correct_total = sum(
-                metric_counts["quiz_correct"][offset - len(buckets) : offset]
-            )
+            correct_total = sum(metric_counts["quiz_correct"][offset - len(buckets) : offset])
             ranges[key] = AnalyticsRange(
                 period_start=buckets[0][0],
                 period_end=buckets[-1][1],
