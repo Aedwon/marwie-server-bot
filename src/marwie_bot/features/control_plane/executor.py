@@ -435,27 +435,23 @@ class ControlActionExecutor:
     ) -> dict[str, Any]:
         if not await self.features.is_enabled(guild.id, FeatureName.ANNOUNCEMENTS):
             raise ActionRejected("Announcements are disabled in this server.")
-        destination_resource = await self.resources.get(guild.id, ResourceKey.ANNOUNCEMENTS)
-        channel = (
-            guild.get_channel(destination_resource.discord_id)
-            if destination_resource is not None
-            else None
-        )
+        channel = guild.get_channel(int(payload["channel_id"]))
         if not isinstance(channel, discord.TextChannel):
             raise ActionRejected(
-                "Configure the Announcements destination in Mappings before publishing."
-            )
-        if int(payload["channel_id"]) != channel.id:
-            raise ActionRejected(
-                "The Announcements destination changed in Mappings after review. "
-                "Review the page again before publishing."
+                "The selected announcement destination is not an available text channel."
             )
         bot_member = guild.me
         if bot_member is None:
             raise ActionRejected("Rob-bot's server member is unavailable.")
         permissions = channel.permissions_for(bot_member)
-        if not permissions.send_messages or not permissions.embed_links:
-            raise ActionRejected("Rob-bot needs Send Messages and Embed Links in that channel.")
+        if not permissions.send_messages:
+            raise ActionRejected("Rob-bot needs Send Messages in that channel.")
+
+        title = str(payload["title"])
+        body = str(payload["body"])
+        has_embed = bool(title or body)
+        if has_embed and not permissions.embed_links:
+            raise ActionRejected("Rob-bot needs Embed Links in that channel for this announcement.")
 
         mentions = cast(dict[str, Any], payload["mentions"])
         role_ids = cast(list[int], mentions["role_ids"])
@@ -474,24 +470,35 @@ class ControlActionExecutor:
         if wants_everyone and not permissions.mention_everyone:
             raise ActionRejected("Rob-bot cannot use @everyone or @here in that channel.")
 
-        embed = discord.Embed(
-            title=str(payload["title"]) or None,
-            description=str(payload["body"]),
-            color=discord.Color(int(str(payload["color"]), 16)),
-        )
-        if payload["footer"]:
-            embed.set_footer(text=str(payload["footer"]))
+        embed: discord.Embed | None = None
+        if has_embed:
+            embed = discord.Embed(
+                title=title or None,
+                description=body or None,
+                color=discord.Color(int(str(payload["color"]), 16)),
+            )
+            if payload["footer"]:
+                embed.set_footer(text=str(payload["footer"]))
+            if payload.get("image_url"):
+                embed.set_image(url=str(payload["image_url"]))
+
         allowed_mentions = discord.AllowedMentions(
             everyone=wants_everyone,
             users=[discord.Object(id=user_id) for user_id in user_ids],
             roles=roles,
             replied_user=False,
         )
-        message = await channel.send(
-            content=str(payload["message"]) or None,
-            embed=embed,
-            allowed_mentions=allowed_mentions,
-        )
+        if embed is None:
+            message = await channel.send(
+                content=str(payload["message"]) or None,
+                allowed_mentions=allowed_mentions,
+            )
+        else:
+            message = await channel.send(
+                content=str(payload["message"]) or None,
+                embed=embed,
+                allowed_mentions=allowed_mentions,
+            )
         return {"channel_id": channel.id, "message_id": message.id}
 
     async def _post_live(

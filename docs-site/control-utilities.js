@@ -3,6 +3,7 @@ import {
   registerControlPage,
   registeredControlPage,
 } from './control-page-registry.js';
+import { featureHeaderActionsMarkup } from './control-components.js';
 
 const TICKET_PAGE = '/control/utilities/ticket-configuration';
 const NOTIFICATION_PAGE = '/control/utilities/notification-roles';
@@ -56,33 +57,17 @@ function resourceState(row) {
 function resourceSummaryMarkup(snapshot, items) {
   return `
     <section class="utility-section" aria-labelledby="utility-mappings-heading">
-      <div class="utility-section-heading">
-        <div>
-          <h2 id="utility-mappings-heading">Discord destinations</h2>
-          <p>Mappings owns these resource connections. They are read-only here.</p>
-        </div>
-      </div>
-      <div class="utility-resource-list">
-        ${items.map(item => {
-          const row = resourceFor(snapshot, item.key);
-          const state = resourceState(row);
-          const current = row?.id && row.exists
-            ? (row.name || 'Connected Discord resource')
-            : row?.id
-              ? 'Previously connected resource is unavailable'
-              : 'No resource connected';
-          return `
-            <div class="utility-resource-row">
-              <div>
-                <strong>${escapeHtml(item.label)}</strong>
-                <span>${escapeHtml(current)}</span>
-              </div>
-              <div class="utility-resource-actions">
-                <span class="utility-health" data-tone="${state.tone}">${escapeHtml(state.label)}</span>
-                <a href="${escapeHtml(item.href)}">Manage in Mappings</a>
-              </div>
-            </div>`;
-        }).join('')}
+      <div class="utility-section-heading"><div><h2 id="utility-mappings-heading">Discord mappings</h2><p>Mappings owns these resource connections. They are read-only here.</p></div></div>
+      <div class="utility-resource-table-wrap">
+        <table class="utility-resource-table">
+          <thead><tr><th>Resource</th><th>Current</th><th>Status</th><th><span class="sr-only">Action</span></th></tr></thead>
+          <tbody>${items.map(item => {
+            const row = resourceFor(snapshot, item.key);
+            const state = resourceState(row);
+            const current = row?.id && row.exists ? (row.name || 'Connected Discord resource') : row?.id ? 'Previously connected resource is unavailable' : 'No resource connected';
+            return `<tr><th scope="row">${escapeHtml(item.label)}</th><td>${escapeHtml(current)}</td><td class="utility-resource-status" data-tone="${state.tone}">${escapeHtml(state.label.replace(' / stale', ''))}</td><td><a href="${escapeHtml(item.href)}">Manage mapping</a></td></tr>`;
+          }).join('')}</tbody>
+        </table>
       </div>
     </section>`;
 }
@@ -374,16 +359,19 @@ function pageFeedback(state) {
   return '';
 }
 
-function pageHeader(title, description, state) {
+function pageHeader(title, description, state, feature = null) {
   const editing = state?.mode === 'edit';
+  const actions = feature
+    ? featureHeaderActionsMarkup({
+      label: feature.label,
+      enabled: feature.enabled,
+      editing,
+      editAttribute: 'data-utility-edit',
+      toggleAttribute: feature.toggleAttribute || '',
+    })
+    : (editing ? '' : '<button class="control-button control-button-primary" type="button" data-utility-edit>Edit settings</button>');
   return `
-    <header class="utility-page-header">
-      <div>
-        <h1>${escapeHtml(title)}</h1>
-        <p>${escapeHtml(description)}</p>
-      </div>
-      ${editing ? '' : '<button class="control-button control-button-primary" type="button" data-utility-edit>Edit settings</button>'}
-    </header>
+    <header class="utility-page-header"><div><h1>${escapeHtml(title)}</h1><p>${escapeHtml(description)}</p></div>${actions}</header>
     ${pageFeedback(state)}`;
 }
 
@@ -472,29 +460,15 @@ function ticketEditRows(state) {
 }
 
 function ticketPageMarkup({ state, snapshot } = {}) {
-  if (!state?.persisted) {
-    return '<section class="control-page utility-page"><h1>Ticket configuration</h1><p>Load current server state to manage tickets.</p></section>';
-  }
+  if (!state?.persisted) return '<section class="control-page utility-page"><h1>Ticket configuration</h1><p>Load current server state to manage tickets.</p></section>';
   const editing = state.mode === 'edit';
+  const enabled = editing ? state.draft.enabled : state.persisted.enabled;
   return `
     <section class="control-page utility-page" data-page-key="${TICKET_PAGE}">
-      ${pageHeader('Ticket configuration', 'Manage the ticket feature and ticket types.', state)}
-      <section class="utility-section" aria-labelledby="ticket-feature-heading">
-        <div class="utility-section-heading">
-          <div><h2 id="ticket-feature-heading">Ticket system</h2><p>Disabled ticket types stay visible and can be re-enabled later.</p></div>
-        </div>
-        ${editing
-          ? toggleMarkup({
-            id: 'utility-tickets-enabled',
-            checked: state.draft.enabled,
-            label: 'Tickets enabled',
-            help: 'Controls whether members can use the ticket system.',
-          }).replace('<input ', '<input data-utility-feature="tickets" ')
-          : `<p class="utility-state-line"><strong>${state.persisted.enabled ? 'Enabled' : 'Disabled'}</strong></p>`}
-      </section>
+      ${pageHeader('Ticket configuration', 'Manage the ticket feature and ticket types.', state, { label: 'Tickets', enabled, toggleAttribute: 'data-utility-feature="tickets"' })}
       <section class="utility-section" aria-labelledby="ticket-types-heading">
         <div class="utility-section-heading">
-          <div><h2 id="ticket-types-heading">Ticket types</h2><p>Create, edit, disable, or re-enable the choices shown to members.</p></div>
+          <div><h2 id="ticket-types-heading">Ticket types</h2><p>Create, edit, disable, or re-enable the choices shown to members. Disabled ticket types stay visible.</p></div>
           ${editing ? '<button class="control-button control-button-secondary" type="button" data-ticket-add>Add ticket type</button>' : ''}
         </div>
         ${editing ? ticketEditRows(state) : ticketReadRows(state.persisted.ticket_types)}
@@ -633,26 +607,13 @@ function notificationPageMarkup({ state, snapshot } = {}) {
 }
 
 function anonymousPageMarkup({ state, snapshot } = {}) {
-  if (!state?.persisted) {
-    return '<section class="control-page utility-page"><h1>Anonymous Questions</h1><p>Load current server state to manage anonymous questions.</p></section>';
-  }
+  if (!state?.persisted) return '<section class="control-page utility-page"><h1>Anonymous Questions</h1><p>Load current server state to manage anonymous questions.</p></section>';
   const editing = state.mode === 'edit';
+  const enabled = editing ? state.draft.enabled : state.persisted.enabled;
   return `
     <section class="control-page utility-page" data-page-key="${ANONYMOUS_PAGE}">
-      ${pageHeader('Anonymous Questions', 'Manage anonymous question intake without exposing submitter identity.', state)}
-      <section class="utility-section" aria-labelledby="anonymous-state-heading">
-        <div class="utility-section-heading">
-          <div><h2 id="anonymous-state-heading">Submission intake</h2><p>Submitter identity remains outside Control and is not rendered on this page.</p></div>
-        </div>
-        ${editing
-          ? toggleMarkup({
-            id: 'utility-anonymous-enabled',
-            checked: state.draft.enabled,
-            label: 'Anonymous Questions enabled',
-            help: 'Controls whether anonymous question submissions are accepted.',
-          }).replace('<input ', '<input data-utility-feature="anonymous_questions" ')
-          : `<p class="utility-state-line"><strong>${state.persisted.enabled ? 'Enabled' : 'Disabled'}</strong></p>`}
-      </section>
+      ${pageHeader('Anonymous Questions', 'Manage anonymous question intake without exposing submitter identity.', state, { label: 'Anonymous Questions', enabled, toggleAttribute: 'data-utility-feature="anonymous_questions"' })}
+      <p class="utility-note">Submitter identity remains outside Control and is not rendered on this page.</p>
       ${resourceSummaryMarkup(snapshot, [
         { key: 'anon_questions', label: 'Anonymous questions destination', href: '/control/mappings/channels' },
       ])}

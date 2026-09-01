@@ -17,7 +17,7 @@
     })();
   </script>
   <link rel="stylesheet" href="/styles.css?v=14">
-  <link rel="stylesheet" href="/control.css?v=7">
+  <link rel="stylesheet" href="/control.css?v=8">
   <style>
     #controlMain:focus-visible { outline: none; }
   </style>
@@ -51,11 +51,12 @@
     </aside>
 
     <div class="control-workspace">
-      <div id="controlGlobalStatus" class="control-global-status" role="status" aria-live="polite"></div>
       <main id="controlMain" class="control-main" tabindex="-1"></main>
     </div>
   </div>
 
-  <script type="module" src="/control-app.js?v=4"></script>
+  <div id="controlChangesTray" class="control-changes-tray-mount" role="status" aria-live="polite"></div>
+
+  <script type="module" src="/control-app.js?v=5"></script>
 </body>
 </html>

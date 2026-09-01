@@ -102,7 +102,7 @@ test('Reputation batches enable state and strict ascending thresholds without ma
   });
   assert.doesNotMatch(markup, /Manual adjustment/i);
   assert.doesNotMatch(markup, /member_id|adjust_reputation/i);
-  assert.match(markup, /Mappings/);
+  assert.match(markup, /mappings/i);
 });
 
 test('Quizzes owns schedule and full question lifecycle while quiz channel stays a Mappings summary', async () => {
@@ -171,7 +171,7 @@ test('Quizzes owns schedule and full question lifecycle while quiz channel stays
     snapshot: quizSnapshot(),
   });
   assert.match(markup, /1 question/);
-  assert.match(markup, /Mappings/);
+  assert.match(markup, /mappings/i);
   assert.doesNotMatch(markup, /data-resource-key|set_resource|clear_resource/i);
 });
 

@@ -210,3 +210,19 @@
     padding-right: 12px;
   }
 }
+
+
+/* Classic admin mapping table */
+.mapping-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
+.mapping-table { width: 100%; border-collapse: collapse; min-width: 560px; font-size: 13px; }
+.mapping-table th, .mapping-table td { padding: 13px 16px; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--border); }
+.mapping-table thead th { color: var(--muted); font-size: 13px; font-weight: 650; letter-spacing: .01em; background: color-mix(in srgb, var(--surface) 94%, var(--text) 6%); }
+.mapping-table tbody th { font-weight: 650; color: var(--text); }
+.mapping-table tbody tr:last-child > * { border-bottom: 0; }
+.mapping-current { color: var(--muted); }
+.mapping-status-text { font-weight: 650; white-space: nowrap; }
+.mapping-status-text[data-tone="good"] { color: #248a3d; }
+.mapping-status-text[data-tone="bad"] { color: #d70015; }
+.mapping-status-text[data-tone="neutral"] { color: var(--muted); }
+[data-theme="dark"] .mapping-status-text[data-tone="good"] { color: #30d158; }
+[data-theme="dark"] .mapping-status-text[data-tone="bad"] { color: #ff453a; }

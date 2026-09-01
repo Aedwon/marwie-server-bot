@@ -9,6 +9,33 @@ export function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
+export function featureHeaderActionsMarkup({
+  label = 'Feature',
+  enabled = false,
+  editing = false,
+  editAttribute = '',
+  toggleAttribute = '',
+  features = null,
+} = {}) {
+  const items = Array.isArray(features) && features.length
+    ? features
+    : [{ label, enabled, toggleAttribute }];
+  const toggles = items.map(item => {
+    const itemLabel = item.label || 'Feature';
+    const itemEnabled = Boolean(item.enabled);
+    const interactive = editing && item.toggleAttribute ? ` ${item.toggleAttribute}` : '';
+    const checked = itemEnabled ? ' checked' : '';
+    const disabled = editing ? '' : ' disabled';
+    return `<label class="control-feature-toggle${editing ? ' control-feature-toggle-editing' : ' control-feature-toggle-readonly'}">
+      <input type="checkbox"${interactive}${checked}${disabled} aria-label="${escapeHtml(itemLabel)} ${itemEnabled ? 'enabled' : 'disabled'}">
+      <span class="control-feature-toggle-track" aria-hidden="true"></span>
+      <span class="control-feature-toggle-copy">${itemEnabled ? 'Enabled' : 'Disabled'}</span>
+    </label>`;
+  }).join('');
+  const edit = editing ? '' : `<button class="control-button control-button-primary" type="button"${editAttribute ? ` ${editAttribute}` : ''}>Edit settings</button>`;
+  return `<div class="control-feature-header-actions">${toggles}${edit}</div>`;
+}
+
 export function navigationMarkup(model) {
   const primary = model.primary.map(domain => {
     const children = domain.children.map(child => `

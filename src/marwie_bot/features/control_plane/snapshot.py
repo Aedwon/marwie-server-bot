@@ -100,6 +100,18 @@ def _resource_value(guild: discord.Guild, key: ResourceKey, discord_id: int) -> 
     }
 
 
+def _channel_capabilities(
+    channel: discord.abc.GuildChannel, bot_member: discord.Member | None
+) -> dict[str, bool]:
+    if bot_member is None or not isinstance(channel, discord.TextChannel):
+        return {"send_messages": False, "embed_links": False}
+    permissions = channel.permissions_for(bot_member)
+    return {
+        "send_messages": bool(permissions.send_messages),
+        "embed_links": bool(permissions.embed_links),
+    }
+
+
 def serialize_setup_plan(plan: AutoSetupPlan) -> dict[str, Any]:
     resources: list[dict[str, Any]] = []
     counts = {"matched": 0, "review": 0, "missing": 0}
@@ -262,6 +274,7 @@ class GuildSnapshotBuilder:
                 "name": channel.name,
                 "kind": _channel_kind(channel),
                 "category_id": _id(getattr(channel, "category_id", None)),
+                **_channel_capabilities(channel, bot_member),
             }
             for channel in guild.channels
             if isinstance(

@@ -242,3 +242,20 @@
     padding-right: 12px;
   }
 }
+
+
+/* Classic admin mapping summaries */
+.community-mapping-table-card { display: block; overflow: hidden; }
+.community-mapping-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; }
+.community-mapping-table-wrap { overflow-x: auto; border-top: 1px solid var(--border); }
+.community-mapping-table { width: 100%; border-collapse: collapse; min-width: 520px; font-size: 13px; }
+.community-mapping-table th, .community-mapping-table td { padding: 11px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+.community-mapping-table thead th { color: var(--muted); font-size: 13px; font-weight: 650; }
+.community-mapping-table tbody th { font-weight: 600; }
+.community-mapping-table tbody tr:last-child > * { border-bottom: 0; }
+.community-mapping-status { font-weight: 650; white-space: nowrap; }
+.community-mapping-status[data-tone="good"] { color: #248a3d; }
+.community-mapping-status[data-tone="bad"] { color: #d70015; }
+.community-mapping-status[data-tone="neutral"] { color: var(--muted); }
+[data-theme="dark"] .community-mapping-status[data-tone="good"] { color: #30d158; }
+[data-theme="dark"] .community-mapping-status[data-tone="bad"] { color: #ff453a; }

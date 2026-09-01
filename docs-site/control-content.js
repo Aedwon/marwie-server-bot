@@ -3,6 +3,7 @@ import {
   registerControlPage,
   registeredControlPage,
 } from './control-page-registry.js';
+import { featureHeaderActionsMarkup } from './control-components.js';
 
 export const CONTENT_PAGE_CONFIGS = Object.freeze({
   '/control/content/feeds': Object.freeze({
@@ -23,6 +24,16 @@ export const CONTENT_PAGE_CONFIGS = Object.freeze({
 });
 
 let sourceSequence = 0;
+const DEFAULT_ANNOUNCEMENT_COLOR = '5865F2';
+let announcementComposerState = {
+  destinationId: null,
+  message: '',
+  title: '',
+  body: '',
+  footer: '',
+  color: DEFAULT_ANNOUNCEMENT_COLOR,
+  imageUrl: '',
+};
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -219,28 +230,15 @@ function statusMarkup(state) {
   return '<p class="content-message" data-content-operation role="status" aria-live="polite"></p>';
 }
 
-function featureSettingMarkup(config, state) {
-  if (state.mode === 'edit') {
-    return `
-      <section class="content-card content-settings-card">
-        <div>
-          <h2>Feature status</h2>
-          <p>Turn ${escapeHtml(config.title)} on or off without changing its mappings or saved content.</p>
-        </div>
-        <label class="content-switch">
-          <input type="checkbox" data-content-feature-toggle${state.draft.enabled ? ' checked' : ''}>
-          <span>${state.draft.enabled ? 'Enabled' : 'Disabled'}</span>
-        </label>
-      </section>`;
-  }
-  return `
-    <section class="content-card content-settings-card">
-      <div>
-        <h2>Feature status</h2>
-        <p>${state.persisted.enabled ? 'Enabled' : 'Disabled'} for this server.</p>
-      </div>
-      <button class="control-button control-button-secondary" type="button" data-content-edit>Edit settings</button>
-    </section>`;
+function contentHeaderMarkup(config, state, description) {
+  const enabled = state.mode === 'edit' ? state.draft.enabled : state.persisted.enabled;
+  return `<header class="content-page-header"><div><h1>${escapeHtml(config.title)}</h1><p>${escapeHtml(description)}</p></div>${featureHeaderActionsMarkup({
+    label: config.title,
+    enabled,
+    editing: state.mode === 'edit',
+    editAttribute: 'data-content-edit',
+    toggleAttribute: 'data-content-feature-toggle',
+  })}</header>`;
 }
 
 function settingsActionsMarkup(state) {
@@ -303,11 +301,8 @@ function feedsMarkup(config, state, snapshot) {
   const sources = state.mode === 'edit' ? state.draft.sources : state.persisted.sources;
   return `
     <section class="control-page content-page" data-page-key="/control/content/feeds">
-      <header class="content-page-header">
-        <div><h1>${escapeHtml(config.title)}</h1><p>Manage authoritative RSS and Atom sources. Automatic polling remains scheduled by Rob-bot.</p></div>
-      </header>
+      ${contentHeaderMarkup(config, state, 'Manage authoritative RSS and Atom sources. Automatic polling remains scheduled by Rob-bot.')}
       ${statusMarkup(state)}
-      ${featureSettingMarkup(config, state)}
       <section class="content-card">
         <div class="content-card-heading">
           <div><h2>Sources</h2><p>Destination: ${escapeHtml(mapping)}. Change the destination in Mappings.</p></div>
@@ -325,27 +320,131 @@ function feedsMarkup(config, state, snapshot) {
     </section>`;
 }
 
+export function announcementDestinationOptions(snapshot) {
+  return (snapshot?.channels || []).filter(channel => channel?.kind === 'text' && channel?.send_messages === true);
+}
+
+function mappedAnnouncementDestination(snapshot) {
+  return mappedResourceId(snapshot, 'announcements');
+}
+
+function ensureAnnouncementComposer(snapshot) {
+  const options = announcementDestinationOptions(snapshot);
+  const optionIds = new Set(options.map(item => String(item.id)));
+  const mapped = mappedAnnouncementDestination(snapshot);
+  if (!announcementComposerState.destinationId || !optionIds.has(String(announcementComposerState.destinationId))) {
+    announcementComposerState.destinationId = mapped && optionIds.has(mapped) ? mapped : (options[0]?.id ? String(options[0].id) : null);
+  }
+  return announcementComposerState;
+}
+
+export function announcementHasPostableContent(input = {}) {
+  return Boolean(String(input.message || '').trim() || String(input.title || '').trim() || String(input.body || '').trim());
+}
+
+export function announcementHasEmbed(input = {}) {
+  return Boolean(String(input.title || '').trim() || String(input.body || '').trim());
+}
+
+export function clearAnnouncementComposer(input = {}) {
+  return {
+    destinationId: input.destinationId || null,
+    message: '',
+    title: '',
+    body: '',
+    footer: '',
+    color: DEFAULT_ANNOUNCEMENT_COLOR,
+    imageUrl: '',
+  };
+}
+
+function announcementRemaining(value, limit) {
+  return Math.max(0, limit - String(value || '').length);
+}
+
+function previewToken(snapshot, token) {
+  if (token.startsWith('<@&')) {
+    const id = token.slice(3, -1);
+    const role = (snapshot?.roles || []).find(item => String(item.id) === id);
+    return `<span class="discord-mention">@${escapeHtml(role?.name || id)}</span>`;
+  }
+  if (token.startsWith('<@')) {
+    const id = token.replace('<@!', '').replace('<@', '').replace('>', '');
+    const member = (snapshot?.members || []).find(item => String(item.id) === id);
+    return `<span class="discord-mention">@${escapeHtml(member?.name || id)}</span>`;
+  }
+  if (token.startsWith('<#')) {
+    const id = token.slice(2, -1);
+    const channel = (snapshot?.channels || []).find(item => String(item.id) === id);
+    return `<span class="discord-mention">#${escapeHtml(channel?.name || id)}</span>`;
+  }
+  return `<span class="discord-mention">${escapeHtml(token)}</span>`;
+}
+
+function previewMessageMarkup(snapshot, raw) {
+  const value = String(raw || '');
+  const pattern = /<@!?[0-9]{1,20}>|<@&[0-9]{1,20}>|<#[0-9]{1,20}>|@everyone|@here/g;
+  let output = '';
+  let cursor = 0;
+  for (const match of value.matchAll(pattern)) {
+    output += escapeHtml(value.slice(cursor, match.index));
+    output += previewToken(snapshot, match[0]);
+    cursor = match.index + match[0].length;
+  }
+  output += escapeHtml(value.slice(cursor));
+  return output.split(String.fromCharCode(10)).join('<br>');
+}
+
+export function announcementPreviewMarkup(snapshot, composer = {}) {
+  const destination = (snapshot?.channels || []).find(item => String(item.id) === String(composer.destinationId || ''));
+  const message = String(composer.message || '');
+  const title = String(composer.title || '');
+  const body = String(composer.body || '');
+  const footer = String(composer.footer || '');
+  const hasEmbed = announcementHasEmbed(composer);
+  const image = hasEmbed && validHttpUrl(composer.imageUrl) ? `<img class="discord-preview-image" src="${escapeHtml(composer.imageUrl)}" alt="Announcement embed preview">` : '';
+  const embed = hasEmbed ? `<div class="discord-embed" style="--embed-color:#${escapeHtml(String(composer.color || DEFAULT_ANNOUNCEMENT_COLOR).replace('#', ''))}">${title ? `<strong>${escapeHtml(title)}</strong>` : ''}${body ? `<p>${escapeHtml(body).split(String.fromCharCode(10)).join('<br>')}</p>` : ''}${image}${footer ? `<small>${escapeHtml(footer)}</small>` : ''}</div>` : '';
+  return `<div class="discord-preview-channel">#${escapeHtml(destination?.name || 'select-a-channel')}</div><div class="discord-preview-message"><div class="discord-preview-avatar" aria-hidden="true">R</div><div><strong>Rob-bot</strong><span class="discord-bot-label">APP</span>${message ? `<p>${previewMessageMarkup(snapshot, message)}</p>` : ''}${embed || (!message ? '<p class="discord-preview-empty">Your announcement preview appears here.</p>' : '')}</div></div>`;
+}
+
+function announcementCanPost(snapshot, state, featureEnabled) {
+  if (!featureEnabled || !announcementHasPostableContent(state)) return false;
+  const channel = announcementDestinationOptions(snapshot).find(item => String(item.id) === String(state.destinationId || ''));
+  if (!channel) return false;
+  if (announcementHasEmbed(state) && channel.embed_links !== true) return false;
+  return true;
+}
+
 function announcementMarkup(config, state, snapshot) {
-  const destination = mappedResourceLabel(snapshot, 'announcements', 'Announcements');
-  const available = Boolean(mappedResourceId(snapshot, 'announcements'));
+  const composer = ensureAnnouncementComposer(snapshot);
+  const destinations = announcementDestinationOptions(snapshot);
+  const enabled = state.mode === 'edit' ? state.draft.enabled : state.persisted.enabled;
+  const canPost = announcementCanPost(snapshot, composer, enabled);
+  const destinationOptions = destinations.map(channel => `<option value="${escapeHtml(channel.id)}"${String(channel.id) === String(composer.destinationId) ? ' selected' : ''}>#${escapeHtml(channel.name)}</option>`).join('');
   return `
     <section class="control-page content-page" data-page-key="/control/content/announcements">
-      <header class="content-page-header"><div><h1>${escapeHtml(config.title)}</h1><p>Publish a one-off server announcement using the destination owned by Mappings.</p></div></header>
+      ${contentHeaderMarkup(config, state, 'Build a one-off server announcement and preview exactly what Rob-bot will post.')}
       ${statusMarkup(state)}
-      ${featureSettingMarkup(config, state)}
       ${settingsActionsMarkup(state)}
-      <section class="content-card content-builder">
-        <div class="content-card-heading"><div><h2>Announcement builder</h2><p>Destination: ${escapeHtml(destination)}</p></div></div>
-        <label>Message / mentions<input type="text" data-announcement-message placeholder="Optional text before the embed"></label>
-        <label>Title<input type="text" maxlength="256" data-announcement-title></label>
-        <label>Body<textarea maxlength="4000" rows="7" data-announcement-body required></textarea></label>
-        <div class="content-field-grid">
-          <label>Footer<input type="text" maxlength="2048" data-announcement-footer></label>
-          <label>Embed color<input type="text" value="5865F2" maxlength="7" data-announcement-color></label>
-        </div>
-        <p class="content-note">Recognized @everyone, @here, role names, and member display names are resolved against current server state. Mentioning people or roles requires consequence confirmation.</p>
-        <button class="control-button control-button-primary" type="button" data-announcement-send${available && state.persisted.enabled ? '' : ' disabled'}>Post announcement</button>
-      </section>
+      <div class="content-announcement-layout">
+        <section class="content-card content-announcement-composer">
+          <div class="content-card-heading"><div><h2>Announcement builder</h2><p>Composer values are local until you post.</p></div><button class="content-clear-action" type="button" data-announcement-clear>Clear all</button></div>
+          <label>Destination channel<select data-announcement-destination>${destinationOptions || '<option value="">No permitted text channels</option>'}</select></label>
+          <label>Message / mentions<textarea maxlength="2000" rows="4" data-announcement-message placeholder="Literal Discord syntax: <@123>, <@&456>, <#789>, @everyone, @here">${escapeHtml(composer.message)}</textarea><span class="content-field-counter" data-announcement-counter="message">${announcementRemaining(composer.message, 2000)}</span></label>
+          <label>Title<input type="text" maxlength="256" data-announcement-title value="${escapeHtml(composer.title)}"><span class="content-field-counter" data-announcement-counter="title">${announcementRemaining(composer.title, 256)}</span></label>
+          <label>Body<textarea maxlength="4096" rows="7" data-announcement-body>${escapeHtml(composer.body)}</textarea><span class="content-field-counter" data-announcement-counter="body">${announcementRemaining(composer.body, 4096)}</span></label>
+          <div class="content-field-grid">
+            <label>Footer<input type="text" maxlength="2048" data-announcement-footer value="${escapeHtml(composer.footer)}"><span class="content-field-counter" data-announcement-counter="footer">${announcementRemaining(composer.footer, 2048)}</span></label>
+            <div class="content-color-field"><span>Embed color</span><button class="content-color-swatch" type="button" data-announcement-color-swatch aria-haspopup="dialog" aria-expanded="false" style="--swatch:#${escapeHtml(composer.color)}"><span aria-hidden="true"></span><strong>#${escapeHtml(composer.color)}</strong></button><div class="content-color-popover" data-announcement-color-popover role="dialog" aria-label="Embed color" hidden><label>Color<input type="color" data-announcement-color-native value="#${escapeHtml(composer.color)}"></label><label>Hex<input type="text" maxlength="7" data-announcement-color value="${escapeHtml(composer.color)}"></label></div></div>
+          </div>
+          <label>Image URL <span class="content-field-meta">1 max</span><input type="url" maxlength="1000" data-announcement-image value="${escapeHtml(composer.imageUrl)}" placeholder="https://example.com/image.png"></label>
+          <p class="content-note">Message alone is postable. An embed is created only when Title and/or Body has content. Footer, color, and image apply only to that embed.</p>
+        </section>
+        <section class="content-announcement-preview-card">
+          <button class="control-button content-announcement-post" type="button" data-announcement-send${canPost ? '' : ' disabled'}>Post announcement</button>
+          <div class="discord-preview-shell" data-announcement-preview>${announcementPreviewMarkup(snapshot, composer)}</div>
+        </section>
+      </div>
     </section>`;
 }
 
@@ -356,9 +455,8 @@ function liveMarkup(config, state, snapshot) {
   const pingAvailable = Boolean(pingRole?.id && pingRole.exists);
   return `
     <section class="control-page content-page" data-page-key="/control/content/live">
-      <header class="content-page-header"><div><h1>${escapeHtml(config.title)}</h1><p>Post the configured live-host notice to the mapped Live destination.</p></div></header>
+      ${contentHeaderMarkup(config, state, 'Post the configured live-host notice to the mapped Live destination.')}
       ${statusMarkup(state)}
-      ${featureSettingMarkup(config, state)}
       ${settingsActionsMarkup(state)}
       <section class="content-card content-builder">
         <div class="content-card-heading"><div><h2>Live notice</h2><p>Destination: ${escapeHtml(destination)}</p></div></div>
@@ -452,17 +550,22 @@ function normalizedMentions(mentions) {
 }
 
 export function buildAnnouncementAction(snapshot, input = {}) {
+  const channelId = String(input.channelId || input.destinationId || '');
+  const channel = announcementDestinationOptions(snapshot).find(item => String(item.id) === channelId);
+  if (!channel) throw new Error('Choose a permitted announcement destination.');
+  const message = String(input.message || '');
+  const title = String(input.title || '').trim();
+  const body = String(input.body || '').trim();
+  const footer = String(input.footer || '').trim();
+  const color = String(input.color || DEFAULT_ANNOUNCEMENT_COLOR).trim().replace('#', '').toUpperCase();
+  const imageUrl = String(input.imageUrl || '').trim();
+  if (!announcementHasPostableContent({ message, title, body })) throw new Error('Add a message, title, or body before posting.');
+  if (title.length + body.length + footer.length > 6000) throw new Error('Embed text must be at most 6000 characters total.');
+  if (announcementHasEmbed({ title, body }) && channel.embed_links !== true) throw new Error('Rob-bot needs Embed Links in the selected channel for this announcement.');
+  if (imageUrl && !validHttpUrl(imageUrl)) throw new Error('Image URL must be HTTP or HTTPS.');
   return {
     actionType: 'send_announcement',
-    payload: {
-      channel_id: requireMappedId(snapshot, 'announcements', 'Announcements destination'),
-      message: String(input.message || '').trim(),
-      title: String(input.title || '').trim(),
-      body: String(input.body || '').trim(),
-      footer: String(input.footer || '').trim(),
-      color: String(input.color || '5865F2').trim().replace(/^#/, '').toUpperCase(),
-      mentions: normalizedMentions(input.mentions),
-    },
+    payload: { channel_id: channelId, message, title, body, footer, color, image_url: imageUrl, mentions: normalizedMentions(input.mentions) },
   };
 }
 
@@ -496,33 +599,16 @@ export function requiresContentConfirmation(action) {
 }
 
 export function resolveAnnouncementMentions(snapshot, rawMessage) {
-  let message = String(rawMessage || '');
+  const message = String(rawMessage || '');
   const roleIds = [];
   const userIds = [];
-  const everyone = /(^|\s)@everyone(?=\s|$|[.,!?])/i.test(message);
-  const here = /(^|\s)@here(?=\s|$|[.,!?])/i.test(message);
-  const candidates = [
-    ...(snapshot?.roles || []).map(role => ({ type: 'role', id: String(role.id), name: role.name })),
-    ...(snapshot?.members || []).map(member => ({ type: 'user', id: String(member.id), name: member.name })),
-  ]
-    .filter(item => item.id && item.name)
-    .sort((left, right) => right.name.length - left.name.length);
-
-  for (const candidate of candidates) {
-    const escaped = candidate.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const pattern = new RegExp(`(^|\\s)@${escaped}(?=\\s|$|[.,!?])`, 'gi');
-    if (!pattern.test(message)) continue;
-    pattern.lastIndex = 0;
-    if (candidate.type === 'role') roleIds.push(candidate.id);
-    else userIds.push(candidate.id);
-    const replacement = candidate.type === 'role' ? `<@&${candidate.id}>` : `<@${candidate.id}>`;
-    message = message.replace(pattern, (_match, prefix) => `${prefix}${replacement}`);
-  }
-
-  return {
-    message: message.trim(),
-    mentions: normalizedMentions({ everyone, here, role_ids: roleIds, user_ids: userIds }),
-  };
+  const knownRoles = new Set((snapshot?.roles || []).map(item => String(item.id)));
+  const knownMembers = new Set((snapshot?.members || []).map(item => String(item.id)));
+  for (const match of message.matchAll(/<@&([0-9]{1,20})>/g)) if (knownRoles.has(match[1])) roleIds.push(match[1]);
+  for (const match of message.matchAll(/<@!?([0-9]{1,20})>/g)) if (knownMembers.has(match[1])) userIds.push(match[1]);
+  const everyone = /(^|[^A-Za-z0-9_])@everyone(?=$|[^A-Za-z0-9_])/i.test(message);
+  const here = /(^|[^A-Za-z0-9_])@here(?=$|[^A-Za-z0-9_])/i.test(message);
+  return { message, mentions: normalizedMentions({ everyone, here, role_ids: roleIds, user_ids: userIds }) };
 }
 
 function sourceForKey(draft, key) {
@@ -544,16 +630,10 @@ function confirmationCopy(action) {
 }
 
 export function installContentPageInteractions({
-  root,
-  pageKey,
-  store = controlState,
-  snapshot,
-  onSave,
-  onAction,
-  onConfirm,
-  rerender = () => {},
+  root, pageKey, store = controlState, snapshot, onSave, onAction, onConfirm, rerender = () => {},
 } = {}) {
   if (!root?.addEventListener) return () => {};
+  let colorTrigger = null;
 
   const performAction = async action => {
     if (requiresContentConfirmation(action)) {
@@ -566,103 +646,101 @@ export function installContentPageInteractions({
     return true;
   };
 
+  const readComposer = () => {
+    const destination = root.querySelector('[data-announcement-destination]');
+    if (destination) announcementComposerState.destinationId = destination.value || null;
+    const fields = [
+      ['message', '[data-announcement-message]'], ['title', '[data-announcement-title]'], ['body', '[data-announcement-body]'],
+      ['footer', '[data-announcement-footer]'], ['imageUrl', '[data-announcement-image]'],
+    ];
+    for (const [key, selector] of fields) { const node = root.querySelector(selector); if (node) announcementComposerState[key] = node.value || ''; }
+    const color = root.querySelector('[data-announcement-color]');
+    if (color) announcementComposerState.color = String(color.value || DEFAULT_ANNOUNCEMENT_COLOR).replace('#', '').toUpperCase();
+    return announcementComposerState;
+  };
+
+  const syncAnnouncement = () => {
+    const composer = readComposer();
+    const limits = { message: 2000, title: 256, body: 4096, footer: 2048 };
+    for (const [key, limit] of Object.entries(limits)) {
+      const counter = root.querySelector(`[data-announcement-counter="${key}"]`);
+      if (counter) counter.textContent = String(announcementRemaining(composer[key], limit));
+    }
+    const preview = root.querySelector('[data-announcement-preview]');
+    if (preview) preview.innerHTML = announcementPreviewMarkup(snapshot, composer);
+    const send = root.querySelector('[data-announcement-send]');
+    const enabled = store.get(pageKey)?.mode === 'edit' ? store.get(pageKey)?.draft?.enabled : store.get(pageKey)?.persisted?.enabled;
+    if (send) send.disabled = !announcementCanPost(snapshot, composer, Boolean(enabled));
+    const swatch = root.querySelector('[data-announcement-color-swatch]');
+    if (swatch) { swatch.style.setProperty('--swatch', `#${composer.color}`); const copy = swatch.querySelector('strong'); if (copy) copy.textContent = `#${composer.color}`; }
+    const native = root.querySelector('[data-announcement-color-native]');
+    if (native && native.value.toUpperCase() !== `#${composer.color}`) native.value = `#${composer.color}`;
+  };
+
+  const closeColorPopover = () => {
+    const popover = root.querySelector('[data-announcement-color-popover]');
+    const trigger = root.querySelector('[data-announcement-color-swatch]');
+    if (popover && !popover.hidden) { popover.hidden = true; trigger?.setAttribute('aria-expanded', 'false'); colorTrigger?.focus?.(); }
+  };
+
+  const openColorPopover = trigger => {
+    const popover = root.querySelector('[data-announcement-color-popover]');
+    if (!popover) return;
+    colorTrigger = trigger;
+    popover.hidden = false; trigger.setAttribute('aria-expanded', 'true');
+    const rect = trigger.getBoundingClientRect();
+    const width = popover.offsetWidth || 230; const height = popover.offsetHeight || 132; const margin = 12;
+    popover.style.position = 'fixed';
+    popover.style.left = `${Math.max(margin, Math.min(globalThis.innerWidth - width - margin, rect.right - width))}px`;
+    popover.style.top = `${Math.max(margin, Math.min(globalThis.innerHeight - height - margin, rect.bottom + 8))}px`;
+    popover.querySelector('input')?.focus?.();
+  };
+
   const onClick = async event => {
-    if (event.target?.closest?.('[data-content-edit]')) {
-      store.beginEdit(pageKey);
-      rerender();
-      return;
-    }
-    if (event.target?.closest?.('[data-content-save]')) {
-      if (store.canSave(pageKey)) onSave?.(pageKey, store.buildSaveRequest(pageKey));
-      return;
-    }
-    if (event.target?.closest?.('[data-content-discard]')) {
-      store.discard(pageKey);
-      store.get(pageKey).mode = 'read';
-      rerender();
-      return;
-    }
-    if (event.target?.closest?.('[data-source-add]')) {
-      store.updateDraft(pageKey, draft => {
-        draft.sources.push(cloneSource({ enabled: true }));
-      });
-      rerender();
-      return;
-    }
+    if (event.target?.closest?.('[data-content-edit]')) { store.beginEdit(pageKey); rerender(); return; }
+    if (event.target?.closest?.('[data-content-save]')) { if (store.canSave(pageKey)) onSave?.(pageKey, store.buildSaveRequest(pageKey)); return; }
+    if (event.target?.closest?.('[data-content-discard]')) { store.discard(pageKey); store.get(pageKey).mode = 'read'; rerender(); return; }
+    if (event.target?.closest?.('[data-source-add]')) { store.updateDraft(pageKey, draft => { draft.sources.push(cloneSource({ enabled: true })); }); rerender(); return; }
     const remove = event.target?.closest?.('[data-source-remove]');
-    if (remove) {
-      const row = remove.closest?.('[data-source-row]');
-      if (row?.dataset?.sourceRow) {
-        store.updateDraft(pageKey, draft => {
-          draft.sources = draft.sources.filter(item => sourceIdentity(item) !== row.dataset.sourceRow);
-        });
-        rerender();
-      }
-      return;
+    if (remove) { const row = remove.closest?.('[data-source-row]'); if (row?.dataset?.sourceRow) { store.updateDraft(pageKey, draft => { draft.sources = draft.sources.filter(item => sourceIdentity(item) !== row.dataset.sourceRow); }); rerender(); } return; }
+    const colorButton = event.target?.closest?.('[data-announcement-color-swatch]');
+    if (colorButton) { const popover = root.querySelector('[data-announcement-color-popover]'); if (popover?.hidden) openColorPopover(colorButton); else closeColorPopover(); return; }
+    if (event.target?.closest?.('[data-announcement-clear]')) {
+      announcementComposerState = clearAnnouncementComposer(readComposer());
+      const values = { '[data-announcement-message]': '', '[data-announcement-title]': '', '[data-announcement-body]': '', '[data-announcement-footer]': '', '[data-announcement-image]': '', '[data-announcement-color]': DEFAULT_ANNOUNCEMENT_COLOR };
+      for (const [selector, value] of Object.entries(values)) { const node = root.querySelector(selector); if (node) node.value = value; }
+      syncAnnouncement(); return;
     }
     if (event.target?.closest?.('[data-announcement-send]')) {
       try {
-        const resolved = resolveAnnouncementMentions(
-          snapshot,
-          root.querySelector('[data-announcement-message]')?.value || '',
-        );
-        const action = buildAnnouncementAction(snapshot, {
-          message: resolved.message,
-          title: root.querySelector('[data-announcement-title]')?.value || '',
-          body: root.querySelector('[data-announcement-body]')?.value || '',
-          footer: root.querySelector('[data-announcement-footer]')?.value || '',
-          color: root.querySelector('[data-announcement-color]')?.value || '5865F2',
-          mentions: resolved.mentions,
-        });
-        if (!action.payload.body) throw new Error('Announcement body is required.');
+        const composer = readComposer();
+        const resolved = resolveAnnouncementMentions(snapshot, composer.message);
+        const action = buildAnnouncementAction(snapshot, { channelId: composer.destinationId, ...composer, message: resolved.message, mentions: resolved.mentions });
         localStatus(root, 'Publishing announcement…');
         const posted = await performAction(action);
-        if (posted) localStatus(root, 'Announcement posted.', 'good');
-        else localStatus(root, 'Announcement cancelled.');
-      } catch (error) {
-        localStatus(root, error instanceof Error ? error.message : 'Announcement could not be posted.', 'bad');
-      }
+        if (posted) localStatus(root, 'Announcement posted.', 'good'); else localStatus(root, 'Announcement cancelled.');
+      } catch (error) { localStatus(root, error instanceof Error ? error.message : 'Announcement could not be posted.', 'bad'); }
       return;
     }
     if (event.target?.closest?.('[data-live-send]')) {
-      try {
-        const action = buildLiveAction(snapshot, {
-          topic: root.querySelector('[data-live-topic]')?.value || '',
-          pingConfiguredRole: Boolean(root.querySelector('[data-live-ping]')?.checked),
-        });
-        localStatus(root, 'Publishing Live notice…');
-        const posted = await performAction(action);
-        if (posted) localStatus(root, 'Live notice posted.', 'good');
-        else localStatus(root, 'Live notice cancelled.');
-      } catch (error) {
-        localStatus(root, error instanceof Error ? error.message : 'Live notice could not be posted.', 'bad');
-      }
+      try { const action = buildLiveAction(snapshot, { topic: root.querySelector('[data-live-topic]')?.value || '', pingConfiguredRole: Boolean(root.querySelector('[data-live-ping]')?.checked) }); localStatus(root, 'Publishing Live notice…'); const posted = await performAction(action); if (posted) localStatus(root, 'Live notice posted.', 'good'); else localStatus(root, 'Live notice cancelled.'); } catch (error) { localStatus(root, error instanceof Error ? error.message : 'Live notice could not be posted.', 'bad'); }
     }
   };
 
   const onChange = event => {
     const feature = event.target?.closest?.('[data-content-feature-toggle]');
-    if (feature) {
-      store.updateDraft(pageKey, draft => { draft.enabled = Boolean(feature.checked); });
-      rerender();
-      return;
-    }
+    if (feature) { store.updateDraft(pageKey, draft => { draft.enabled = Boolean(feature.checked); }); rerender(); return; }
     const field = event.target?.closest?.('[data-source-field]');
-    if (field?.dataset?.sourceKey && field.dataset.sourceField) {
-      store.updateDraft(pageKey, draft => {
-        const source = sourceForKey(draft, field.dataset.sourceKey);
-        if (!source) return;
-        if (field.dataset.sourceField === 'enabled') source.enabled = Boolean(field.checked);
-        else source[field.dataset.sourceField] = field.value;
-      });
-      rerender();
-    }
+    if (field?.dataset?.sourceKey && field.dataset.sourceField) { store.updateDraft(pageKey, draft => { const source = sourceForKey(draft, field.dataset.sourceKey); if (!source) return; if (field.dataset.sourceField === 'enabled') source.enabled = Boolean(field.checked); else source[field.dataset.sourceField] = field.value; }); rerender(); return; }
+    if (event.target?.closest?.('[data-announcement-destination]')) { syncAnnouncement(); return; }
+    const native = event.target?.closest?.('[data-announcement-color-native]');
+    if (native) { const text = root.querySelector('[data-announcement-color]'); if (text) text.value = String(native.value || '').replace('#', '').toUpperCase(); syncAnnouncement(); }
   };
 
-  root.addEventListener('click', onClick);
-  root.addEventListener('change', onChange);
-  return () => {
-    root.removeEventListener('click', onClick);
-    root.removeEventListener('change', onChange);
-  };
+  const onInput = event => { if (event.target?.closest?.('[data-announcement-message], [data-announcement-title], [data-announcement-body], [data-announcement-footer], [data-announcement-image], [data-announcement-color]')) syncAnnouncement(); };
+  const onKeydown = event => { if (event.key === 'Escape') closeColorPopover(); };
+
+  root.addEventListener('click', onClick); root.addEventListener('change', onChange); root.addEventListener('input', onInput); root.addEventListener('keydown', onKeydown);
+  if (pageKey === '/control/content/announcements') { ensureAnnouncementComposer(snapshot); syncAnnouncement(); }
+  return () => { root.removeEventListener('click', onClick); root.removeEventListener('change', onChange); root.removeEventListener('input', onInput); root.removeEventListener('keydown', onKeydown); };
 }

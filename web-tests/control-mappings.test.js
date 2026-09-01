@@ -288,7 +288,7 @@ test('mapping page markup uses read then edit state, visible health text, labels
   assert.match(readMarkup, />Edit settings</);
   assert.match(readMarkup, />Connected</);
   assert.match(readMarkup, />Not connected</);
-  assert.match(readMarkup, />Unavailable \/ stale</);
+  assert.match(readMarkup, />Unavailable</);
   assert.match(readMarkup, /data-mapping-key="ticket_logs"/);
 
   store.beginEdit(pageKey);

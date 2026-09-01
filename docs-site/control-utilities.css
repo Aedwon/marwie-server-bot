@@ -394,3 +394,18 @@
     animation-duration: 0.01ms !important;
   }
 }
+
+
+/* Classic admin mapping summaries */
+.utility-resource-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 14px; }
+.utility-resource-table { width: 100%; border-collapse: collapse; min-width: 620px; font-size: 13px; }
+.utility-resource-table th, .utility-resource-table td { padding: 11px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+.utility-resource-table thead th { color: var(--muted); font-size: 13px; font-weight: 650; }
+.utility-resource-table tbody th { font-weight: 600; }
+.utility-resource-table tbody tr:last-child > * { border-bottom: 0; }
+.utility-resource-status { font-weight: 650; white-space: nowrap; }
+.utility-resource-status[data-tone="good"] { color: #248a3d; }
+.utility-resource-status[data-tone="bad"] { color: #d70015; }
+.utility-resource-status[data-tone="neutral"] { color: var(--muted); }
+[data-theme="dark"] .utility-resource-status[data-tone="good"] { color: #30d158; }
+[data-theme="dark"] .utility-resource-status[data-tone="bad"] { color: #ff453a; }

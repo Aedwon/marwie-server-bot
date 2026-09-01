@@ -3,6 +3,7 @@ import {
   registerControlPage,
   registeredControlPage,
 } from './control-page-registry.js';
+import { featureHeaderActionsMarkup } from './control-components.js';
 
 const REPUTATION = '/control/community/reputation';
 const QUIZZES = '/control/community/quizzes';
@@ -80,16 +81,23 @@ function sameQuestionContent(left, right) {
 function mappingSummary(snapshot, groups) {
   const rows = resourcesByKey(snapshot);
   return groups.map(group => `
-    <article class="community-mapping-card">
-      <div>
+    <article class="community-mapping-card community-mapping-table-card">
+      <div class="community-mapping-heading">
         <strong>${escapeHtml(group.label)}</strong>
-        <ul>${group.keys.map(key => {
-          const row = rows.get(key);
-          const value = row?.id && row?.exists ? row.name || 'Connected' : row?.id ? 'Unavailable' : 'Not connected';
-          return `<li>${escapeHtml(key.replaceAll('_', ' '))}: ${escapeHtml(value)}</li>`;
-        }).join('')}</ul>
+        <a class="control-button control-button-secondary" href="${escapeHtml(group.href)}">Manage mappings</a>
       </div>
-      <a class="control-button control-button-secondary" href="${escapeHtml(group.href)}">Mappings</a>
+      <div class="community-mapping-table-wrap">
+        <table class="community-mapping-table">
+          <thead><tr><th>Resource</th><th>Current</th><th>Status</th></tr></thead>
+          <tbody>${group.keys.map(key => {
+            const row = rows.get(key);
+            const current = row?.id && row?.exists ? row.name || 'Connected Discord resource' : row?.id ? 'Previously connected resource is unavailable' : 'No resource connected';
+            const status = row?.id && row?.exists ? 'Connected' : row?.id ? 'Unavailable' : 'Not connected';
+            const tone = row?.id && row?.exists ? 'good' : row?.id ? 'bad' : 'neutral';
+            return `<tr><th scope="row">${escapeHtml(key.replaceAll('_', ' '))}</th><td>${escapeHtml(current)}</td><td class="community-mapping-status" data-tone="${tone}">${escapeHtml(status)}</td></tr>`;
+          }).join('')}</tbody>
+        </table>
+      </div>
     </article>`).join('');
 }
 
@@ -114,29 +122,34 @@ function saveBar(state) {
   return `<div class="community-page-actions"><button class="control-button control-button-primary" type="button" data-community-save${disabled ? ' disabled' : ''}>${state?.status === 'saving' ? 'Saving…' : 'Save changes'}</button><button class="control-button control-button-secondary" type="button" data-community-discard${state?.status === 'saving' ? ' disabled' : ''}>Discard</button></div>`;
 }
 
-function pageHeader(title, description, editing) {
-  return `<header class="community-page-header"><div><h1>${escapeHtml(title)}</h1><p>${escapeHtml(description)}</p></div>${editing ? '' : '<button class="control-button control-button-primary" type="button" data-community-edit>Edit settings</button>'}</header>`;
+function pageHeader(title, description, state, features) {
+  return `<header class="community-page-header"><div><h1>${escapeHtml(title)}</h1><p>${escapeHtml(description)}</p></div>${featureHeaderActionsMarkup({
+    editing: state?.mode === 'edit',
+    editAttribute: 'data-community-edit',
+    features,
+  })}</header>`;
 }
 
 function reputationMarkup(state, snapshot) {
   const value = state.mode === 'edit' ? state.draft : state.persisted;
   const mappings = mappingSummary(snapshot, [{ label: 'Reputation roles', href: '/control/mappings/roles', keys: ['builder_role', 'contributor_role', 'mentor_role'] }]);
+  const header = pageHeader(
+    'Reputation',
+    state.mode === 'edit' ? 'Configure the feature and tier thresholds. Discord roles stay in Mappings.' : 'Current reputation status and tier thresholds.',
+    state,
+    [{ label: 'Reputation', enabled: value.enabled, toggleAttribute: 'data-community-field="enabled"' }],
+  );
   if (state.mode === 'edit') {
     const error = state.errors?.thresholds;
     return `<section class="control-page community-page" data-page-key="${REPUTATION}">
-      ${pageHeader('Reputation', 'Configure the feature and tier thresholds. Discord roles stay in Mappings.', true)}
-      ${statusMarkup(state)}
-      <div class="community-section-grid">
-        ${toggleEditor('enabled', 'Reputation', value.enabled, 'Turn automatic reputation behavior on or off.')}
-        <fieldset class="community-fieldset"><legend>Tier thresholds</legend><p>Use strictly increasing values from 1 to 100000.</p>
-          <div class="community-three-column">${['builder', 'contributor', 'mentor'].map(key => `<label>${escapeHtml(key[0].toUpperCase() + key.slice(1))}<input type="number" min="1" max="100000" step="1" data-community-threshold="${key}" value="${escapeHtml(value.thresholds[key])}"></label>`).join('')}</div>
-          ${error ? `<p class="community-field-error" role="alert">${escapeHtml(error)}</p>` : ''}
-        </fieldset>
-      </div>${saveBar(state)}<section class="community-mappings"><h2>Discord mappings</h2>${mappings}</section></section>`;
+      ${header}${statusMarkup(state)}
+      <div class="community-section-grid"><fieldset class="community-fieldset"><legend>Tier thresholds</legend><p>Use strictly increasing values from 1 to 100000.</p>
+        <div class="community-three-column">${['builder', 'contributor', 'mentor'].map(key => `<label>${escapeHtml(key[0].toUpperCase() + key.slice(1))}<input type="number" min="1" max="100000" step="1" data-community-threshold="${key}" value="${escapeHtml(value.thresholds[key])}"></label>`).join('')}</div>
+        ${error ? `<p class="community-field-error" role="alert">${escapeHtml(error)}</p>` : ''}
+      </fieldset></div>${saveBar(state)}<section class="community-mappings"><h2>Discord mappings</h2>${mappings}</section></section>`;
   }
-  return `<section class="control-page community-page" data-page-key="${REPUTATION}">
-    ${pageHeader('Reputation', 'Current reputation status and tier thresholds.', false)}${statusMarkup(state)}
-    <div class="community-read-grid"><article class="community-summary-card"><strong>Feature status</strong>${statePill(value.enabled)}</article><article class="community-summary-card"><strong>Tier thresholds</strong><dl><div><dt>Builder</dt><dd>${escapeHtml(value.thresholds.builder)}</dd></div><div><dt>Contributor</dt><dd>${escapeHtml(value.thresholds.contributor)}</dd></div><div><dt>Mentor</dt><dd>${escapeHtml(value.thresholds.mentor)}</dd></div></dl></article></div>
+  return `<section class="control-page community-page" data-page-key="${REPUTATION}">${header}${statusMarkup(state)}
+    <div class="community-read-grid"><article class="community-summary-card"><strong>Tier thresholds</strong><dl><div><dt>Builder</dt><dd>${escapeHtml(value.thresholds.builder)}</dd></div><div><dt>Contributor</dt><dd>${escapeHtml(value.thresholds.contributor)}</dd></div><div><dt>Mentor</dt><dd>${escapeHtml(value.thresholds.mentor)}</dd></div></dl></article></div>
     <section class="community-mappings"><h2>Discord mappings</h2>${mappings}</section></section>`;
 }
 
@@ -156,17 +169,21 @@ function quizzesMarkup(state, snapshot) {
   const value = state.mode === 'edit' ? state.draft : state.persisted;
   const count = value.questions.length;
   const mappings = mappingSummary(snapshot, [{ label: 'Quiz channel', href: '/control/mappings/channels', keys: ['quiz_channel'] }]);
+  const header = pageHeader(
+    'Quizzes',
+    state.mode === 'edit' ? 'Configure scheduling and maintain the question bank. The quiz channel stays in Mappings.' : 'Current schedule and question-bank status.',
+    state,
+    [{ label: 'Scheduled quizzes', enabled: value.enabled, toggleAttribute: 'data-community-field="enabled"' }],
+  );
   if (state.mode === 'edit') {
-    return `<section class="control-page community-page" data-page-key="${QUIZZES}">
-      ${pageHeader('Quizzes', 'Configure scheduling and maintain the question bank. The quiz channel stays in Mappings.', true)}${statusMarkup(state)}
-      <div class="community-section-grid">${toggleEditor('enabled', 'Scheduled quizzes', value.enabled, 'Turn scheduled quiz posting on or off.')}<label class="community-field-card">Interval in hours<input type="number" min="1" max="720" step="1" data-community-field="intervalHours" value="${value.intervalHours == null ? '' : escapeHtml(value.intervalHours)}" placeholder="24"><small>Between 1 and 720 hours. Leave blank if automatic scheduling is not configured.</small>${state.errors?.intervalHours ? `<span class="community-field-error" role="alert">${escapeHtml(state.errors.intervalHours)}</span>` : ''}</label></div>
+    return `<section class="control-page community-page" data-page-key="${QUIZZES}">${header}${statusMarkup(state)}
+      <div class="community-section-grid"><label class="community-field-card">Interval in hours<input type="number" min="1" max="720" step="1" data-community-field="intervalHours" value="${value.intervalHours == null ? '' : escapeHtml(value.intervalHours)}" placeholder="24"><small>Between 1 and 720 hours. Leave blank if automatic scheduling is not configured.</small>${state.errors?.intervalHours ? `<span class="community-field-error" role="alert">${escapeHtml(state.errors.intervalHours)}</span>` : ''}</label></div>
       <section class="community-question-section"><div class="community-section-heading"><div><h2>Question bank</h2><p>${count} question${count === 1 ? '' : 's'} in this server.</p></div><button class="control-button control-button-secondary" type="button" data-community-add-question>Add question</button></div><div class="community-question-list">${value.questions.map((question, index) => questionEditor(question, index, state.errors?.[`question_${index}`])).join('')}</div></section>
       ${saveBar(state)}<section class="community-mappings"><h2>Discord mappings</h2>${mappings}</section></section>`;
   }
   const enabledCount = value.questions.filter(question => question.enabled).length;
-  return `<section class="control-page community-page" data-page-key="${QUIZZES}">
-    ${pageHeader('Quizzes', 'Current schedule and question-bank status.', false)}${statusMarkup(state)}
-    <div class="community-read-grid"><article class="community-summary-card"><strong>Feature status</strong>${statePill(value.enabled)}</article><article class="community-summary-card"><strong>Schedule</strong><span>${value.intervalHours == null ? 'Not configured' : `Every ${escapeHtml(value.intervalHours)} hours`}</span><small>${value.lastPostedAt ? `Last posted ${escapeHtml(value.lastPostedAt)}` : 'No recorded post yet'}</small></article><article class="community-summary-card"><strong>Question bank</strong><span>${count} question${count === 1 ? '' : 's'}</span><small>${enabledCount} enabled</small></article></div>
+  return `<section class="control-page community-page" data-page-key="${QUIZZES}">${header}${statusMarkup(state)}
+    <div class="community-read-grid"><article class="community-summary-card"><strong>Schedule</strong><span>${value.intervalHours == null ? 'Not configured' : `Every ${escapeHtml(value.intervalHours)} hours`}</span><small>${value.lastPostedAt ? `Last posted ${escapeHtml(value.lastPostedAt)}` : 'No recorded post yet'}</small></article><article class="community-summary-card"><strong>Question bank</strong><span>${count} question${count === 1 ? '' : 's'}</span><small>${enabledCount} enabled</small></article></div>
     <section class="community-mappings"><h2>Discord mappings</h2>${mappings}</section></section>`;
 }
 
@@ -176,19 +193,28 @@ function voiceCoworkingMarkup(state, snapshot) {
     { label: 'Voice channels', href: '/control/mappings/channels', keys: ['create_workspace_voice', 'coworking_lounge'] },
     { label: 'Temporary voice category', href: '/control/mappings/categories', keys: ['temp_voice_category'] },
   ]);
-  if (state.mode === 'edit') {
-    return `<section class="control-page community-page" data-page-key="${VOICE_COWORKING}">${pageHeader('Voice & Coworking', 'Manage the two related features independently. Their Discord resources stay in Mappings.', true)}${statusMarkup(state)}<div class="community-section-grid">${toggleEditor('voiceEnabled', 'Temporary voice workspaces', value.voiceEnabled)}${toggleEditor('coworkingEnabled', 'Coworking', value.coworkingEnabled)}</div>${saveBar(state)}<section class="community-mappings"><h2>Discord mappings</h2>${mappings}</section></section>`;
-  }
-  return `<section class="control-page community-page" data-page-key="${VOICE_COWORKING}">${pageHeader('Voice & Coworking', 'Current feature state and Discord wiring health.', false)}${statusMarkup(state)}<div class="community-read-grid"><article class="community-summary-card"><strong>Temporary voice workspaces</strong>${statePill(value.voiceEnabled)}</article><article class="community-summary-card"><strong>Coworking</strong>${statePill(value.coworkingEnabled)}</article></div><section class="community-mappings"><h2>Discord mappings</h2>${mappings}</section></section>`;
+  const header = pageHeader(
+    'Voice & Coworking',
+    state.mode === 'edit' ? 'Manage the two related features independently. Their Discord resources stay in Mappings.' : 'Current feature state and Discord wiring health.',
+    state,
+    [
+      { label: 'Temporary voice workspaces', enabled: value.voiceEnabled, toggleAttribute: 'data-community-field="voiceEnabled"' },
+      { label: 'Coworking', enabled: value.coworkingEnabled, toggleAttribute: 'data-community-field="coworkingEnabled"' },
+    ],
+  );
+  return `<section class="control-page community-page" data-page-key="${VOICE_COWORKING}">${header}${statusMarkup(state)}${state.mode === 'edit' ? saveBar(state) : ''}<section class="community-mappings"><h2>Discord mappings</h2>${mappings}</section></section>`;
 }
 
 function showcaseMarkup(state, snapshot) {
   const value = state.mode === 'edit' ? state.draft : state.persisted;
   const mappings = mappingSummary(snapshot, [{ label: 'Showcase resources', href: '/control/mappings/channels', keys: ['showcase_forum', 'app_of_the_week', 'collab_lfg'] }]);
-  if (state.mode === 'edit') {
-    return `<section class="control-page community-page" data-page-key="${SHOWCASE}">${pageHeader('Showcase', 'Manage Showcase behavior here. Forum and destination channels stay in Mappings.', true)}${statusMarkup(state)}<div class="community-section-grid">${toggleEditor('enabled', 'Showcase', value.enabled, 'Turn Showcase and spotlight behavior on or off.')}</div>${saveBar(state)}<section class="community-mappings"><h2>Discord mappings</h2>${mappings}</section></section>`;
-  }
-  return `<section class="control-page community-page" data-page-key="${SHOWCASE}">${pageHeader('Showcase', 'Current Showcase status and Discord wiring health.', false)}${statusMarkup(state)}<div class="community-read-grid"><article class="community-summary-card"><strong>Feature status</strong>${statePill(value.enabled)}</article></div><section class="community-mappings"><h2>Discord mappings</h2>${mappings}</section></section>`;
+  const header = pageHeader(
+    'Showcase',
+    state.mode === 'edit' ? 'Manage Showcase behavior here. Forum and destination channels stay in Mappings.' : 'Current Showcase status and Discord wiring health.',
+    state,
+    [{ label: 'Showcase', enabled: value.enabled, toggleAttribute: 'data-community-field="enabled"' }],
+  );
+  return `<section class="control-page community-page" data-page-key="${SHOWCASE}">${header}${statusMarkup(state)}${state.mode === 'edit' ? saveBar(state) : ''}<section class="community-mappings"><h2>Discord mappings</h2>${mappings}</section></section>`;
 }
 
 function renderPage(pageKey, state, snapshot) {

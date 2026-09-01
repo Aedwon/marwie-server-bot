@@ -23,6 +23,10 @@ function snapshot() {
       { key: 'live_announcements', id: '103', name: 'live', exists: true, kind: 'text' },
       { key: 'live_ping_role', id: '104', name: 'Live Notifications', exists: true, kind: 'role' },
     ],
+    channels: [
+      { id: '102', name: 'announcements', kind: 'text', category_id: null, send_messages: true, embed_links: true },
+      { id: '105', name: 'release-updates', kind: 'text', category_id: null, send_messages: true, embed_links: true },
+    ],
     ai_sources: [
       {
         id: 1,
@@ -124,7 +128,7 @@ test('Feeds has no Poll now action and does not edit the ai_updates mapping', as
   assert.match(markup, /Last checked/i);
 });
 
-test('Announcement and Live builders use current Mappings-owned resources only', async () => {
+test('Announcement chooses a permitted destination while Live remains Mappings-owned', async () => {
   const {
     buildAnnouncementAction,
     buildLiveAction,
@@ -132,7 +136,7 @@ test('Announcement and Live builders use current Mappings-owned resources only',
   const state = snapshot();
 
   const announcement = buildAnnouncementAction(state, {
-    channel_id: '999',
+    channelId: '105',
     message: '',
     title: 'Update',
     body: 'Hello',
@@ -146,7 +150,7 @@ test('Announcement and Live builders use current Mappings-owned resources only',
     },
   });
   assert.equal(announcement.actionType, 'send_announcement');
-  assert.equal(announcement.payload.channel_id, '102');
+  assert.equal(announcement.payload.channel_id, '105');
 
   const live = buildLiveAction(state, {
     channel_id: '999',
@@ -184,13 +188,13 @@ test('consequence confirmation is limited to real mentions', async () => {
   const state = snapshot();
 
   const ordinary = buildAnnouncementAction(state, {
-    message: '', title: '', body: 'Plain update', footer: '', color: '5865F2',
+    channelId: '102', message: '', title: '', body: 'Plain update', footer: '', color: '5865F2',
     mentions: { everyone: false, here: false, role_ids: [], user_ids: [] },
   });
   assert.equal(requiresContentConfirmation(ordinary), false);
 
   const everyone = buildAnnouncementAction(state, {
-    message: '@everyone', title: '', body: 'Important', footer: '', color: '5865F2',
+    channelId: '102', message: '@everyone', title: '', body: 'Important', footer: '', color: '5865F2',
     mentions: { everyone: true, here: false, role_ids: [], user_ids: [] },
   });
   assert.equal(requiresContentConfirmation(everyone), true);

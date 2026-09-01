@@ -278,13 +278,26 @@ export function validateActionPayload(actionType, rawPayload) {
     case ACTIONS.SEND_ANNOUNCEMENT: {
       const color = text(data.color || '5865F2', 'Embed color', 7).replace(/^#/, '').toUpperCase();
       if (!/^[0-9A-F]{6}$/.test(color)) throw new HttpError(400, 'Color must be a six-digit hex value such as 5865F2.');
+      const message = text(data.message, 'Message', 2000, { required: false });
+      const title = text(data.title, 'Title', 256, { required: false });
+      const body = text(data.body, 'Announcement body', 4096, { required: false });
+      const footer = text(data.footer, 'Footer', 2048, { required: false });
+      const imageUrl = text(data.image_url, 'Image URL', 1000, { required: false });
+      if (!message && !title && !body) throw new HttpError(400, 'Announcement content requires a message, title, or body.');
+      if (title.length + body.length + footer.length > 6000) throw new HttpError(400, 'Embed text must be at most 6000 characters total.');
+      if (imageUrl) {
+        let parsed;
+        try { parsed = new URL(imageUrl); } catch { throw new HttpError(400, 'Image URL must be HTTP or HTTPS.'); }
+        if (!['http:', 'https:'].includes(parsed.protocol)) throw new HttpError(400, 'Image URL must be HTTP or HTTPS.');
+      }
       return {
         channel_id: snowflake(data.channel_id, 'Announcement channel'),
-        message: text(data.message, 'Message', 2000, { required: false }),
-        title: text(data.title, 'Title', 256, { required: false }),
-        body: text(data.body, 'Announcement body', 4000),
-        footer: text(data.footer, 'Footer', 2048, { required: false }),
+        message,
+        title,
+        body,
+        footer,
         color,
+        image_url: imageUrl,
         mentions: mentions(data.mentions),
       };
     }

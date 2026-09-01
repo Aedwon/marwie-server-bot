@@ -169,3 +169,40 @@
     overflow-wrap: anywhere;
   }
 }
+
+
+/* Announcement builder refinement */
+.content-announcement-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, .9fr); gap: 18px; align-items: start; }
+.content-announcement-composer { min-width: 0; }
+.content-clear-action { appearance: none; border: 0; background: transparent; color: #d70015; font: inherit; font-size: 13px; font-weight: 650; padding: 7px 0; cursor: pointer; }
+[data-theme="dark"] .content-clear-action { color: #ff453a; }
+.content-announcement-composer label { position: relative; }
+.content-field-counter { display: block; margin-top: 5px; text-align: right; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.content-field-meta { color: var(--muted); font-size: 13px; font-weight: 500; }
+.content-color-field { position: relative; display: flex; flex-direction: column; gap: 8px; }
+.content-color-swatch { appearance: none; min-height: 42px; display: inline-flex; align-items: center; gap: 9px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface); color: var(--text); font: inherit; padding: 0 11px; cursor: pointer; }
+.content-color-swatch > span { width: 22px; height: 22px; border-radius: 7px; background: var(--swatch); border: 1px solid rgb(127 127 127 / 25%); }
+.content-color-swatch strong { font-size: 13px; }
+.content-color-popover { z-index: 120; width: 230px; padding: 12px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); box-shadow: 0 18px 48px rgb(0 0 0 / 28%); }
+.content-color-popover[hidden] { display: none; }
+.content-color-popover label { display: grid; gap: 6px; margin-bottom: 9px; }
+.content-announcement-preview-card { position: sticky; top: 24px; display: grid; gap: 12px; min-width: 0; }
+.content-announcement-post { justify-self: end; background: #fff; color: #111; border-color: #fff; font-weight: 700; }
+.content-announcement-post:hover:not(:disabled) { background: #f2f2f2; }
+.content-announcement-post:disabled { opacity: .42; cursor: not-allowed; }
+.discord-preview-shell { min-height: 250px; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; background: #313338; color: #f2f3f5; font-size: 14px; }
+.discord-preview-channel { padding: 11px 14px; border-bottom: 1px solid #232428; color: #b5bac1; font-weight: 650; }
+.discord-preview-message { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 10px; padding: 16px 14px; }
+.discord-preview-avatar { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: #5865f2; color: white; font-weight: 750; }
+.discord-preview-message strong { margin-right: 6px; }
+.discord-bot-label { display: inline-block; padding: 1px 4px; border-radius: 3px; background: #5865f2; color: white; font-size: 13px; font-weight: 750; vertical-align: 2px; }
+.discord-preview-message p { margin: 5px 0 0; line-height: 1.45; overflow-wrap: anywhere; }
+.discord-mention { border-radius: 3px; padding: 0 2px; background: rgb(88 101 242 / 28%); color: #c9cdfb; }
+.discord-embed { position: relative; margin-top: 9px; padding: 12px 12px 12px 16px; border-radius: 4px; background: #2b2d31; overflow: hidden; }
+.discord-embed::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--embed-color); }
+.discord-embed strong { display: block; margin: 0 0 4px; }
+.discord-embed small { display: block; margin-top: 9px; color: #b5bac1; }
+.discord-preview-image { display: block; width: 100%; max-height: 340px; object-fit: cover; border-radius: 6px; margin-top: 10px; }
+.discord-preview-empty { color: #949ba4; }
+@media (max-width: 900px) { .content-announcement-layout { grid-template-columns: 1fr; } .content-announcement-preview-card { position: static; } }
+@media (prefers-reduced-motion: reduce) { .content-color-popover { scroll-behavior: auto; } }

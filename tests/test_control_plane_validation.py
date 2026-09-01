@@ -142,3 +142,57 @@ def test_live_post_preserves_explicit_destination_and_ping_choice() -> None:
         {"channel_id": None, "ping_role_id": None, "topic": ""},
     )
     assert no_ping == {"channel_id": None, "ping_role_id": None, "topic": ""}
+
+
+def test_announcement_allows_message_only_and_validates_optional_embed_image() -> None:
+    base = {
+        "channel_id": "10",
+        "message": "Message only",
+        "title": "",
+        "body": "",
+        "footer": "",
+        "color": "5865F2",
+        "image_url": "",
+        "mentions": {
+            "everyone": False,
+            "here": False,
+            "role_ids": [],
+            "user_ids": [],
+        },
+    }
+    message_only = validate_action_payload(ControlActionType.SEND_ANNOUNCEMENT, base)
+    assert message_only["body"] == ""
+    assert message_only["image_url"] == ""
+
+    max_body = validate_action_payload(
+        ControlActionType.SEND_ANNOUNCEMENT,
+        {**base, "message": "", "body": "x" * 4096},
+    )
+    assert len(max_body["body"]) == 4096
+
+    with pytest.raises(ValueError):
+        validate_action_payload(
+            ControlActionType.SEND_ANNOUNCEMENT,
+            {**base, "message": "", "body": "x" * 4097},
+        )
+    with pytest.raises(ValueError, match="6000"):
+        validate_action_payload(
+            ControlActionType.SEND_ANNOUNCEMENT,
+            {
+                **base,
+                "message": "",
+                "title": "x" * 256,
+                "body": "y" * 4096,
+                "footer": "z" * 2048,
+            },
+        )
+    with pytest.raises(ValueError, match="HTTP|HTTPS"):
+        validate_action_payload(
+            ControlActionType.SEND_ANNOUNCEMENT,
+            {**base, "image_url": "javascript:alert(1)"},
+        )
+    with pytest.raises(ValueError, match="message|title|body|content"):
+        validate_action_payload(
+            ControlActionType.SEND_ANNOUNCEMENT,
+            {**base, "message": "", "footer": "footer"},
+        )

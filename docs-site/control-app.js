@@ -6,6 +6,7 @@ import { registerCommunityPages } from './control-community.js';
 import { registerMappingPages } from './control-mappings.js';
 import { registerUtilitiesPages } from './control-utilities.js';
 import { installThemeControls } from './control-theme.js';
+import { createChangesTrayController } from './control-tray.js';
 import { createNavigationState, installDrawerController, navigationModel } from './control-navigation.js';
 import { resolveControlRoute } from './control-router.js';
 import { createActivityController, installActivityPage } from './control-secondary.js';
@@ -37,7 +38,7 @@ const shell = {
   close: document.querySelector('#controlNavClose'),
   main: document.querySelector('#controlMain'),
   identity: document.querySelector('#controlIdentity'),
-  status: document.querySelector('#controlGlobalStatus'),
+  tray: document.querySelector('#controlChangesTray'),
 };
 
 let session = null;
@@ -69,6 +70,11 @@ registerContentPages();
 registerUtilitiesPages();
 registerAnalyticsPage();
 registerMappingPages();
+
+const changesTray = createChangesTrayController({
+  root: shell.tray,
+  getDirtyPages: () => controlState.dirtyPages(),
+});
 
 function readJson(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key) || '') || fallback; } catch { return fallback; }
@@ -233,6 +239,7 @@ function renderMain() {
     removePageInteractions = installActivityPage(shell.main, activity);
   }
   shell.main.focus({ preventScroll: true });
+  changesTray.render();
 }
 
 function navigate(path, { replace = false } = {}) {
@@ -247,8 +254,7 @@ function navigate(path, { replace = false } = {}) {
 }
 
 function setStatus(message, tone = '') {
-  shell.status.textContent = message || '';
-  shell.status.dataset.tone = tone;
+  changesTray.setStatus(message, tone);
 }
 
 async function request(url, options = {}) {

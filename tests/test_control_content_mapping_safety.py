@@ -111,6 +111,7 @@ def announcement_payload(channel_id: int) -> dict[str, Any]:
         "body": "Hello",
         "footer": "",
         "color": "5865F2",
+        "image_url": "",
         "mentions": {
             "everyone": False,
             "here": False,
@@ -157,32 +158,30 @@ def fake_text_channel_type(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_announcement_modified_payload_cannot_redirect_to_another_text_channel() -> None:
+async def test_announcement_selected_permitted_destination_publishes() -> None:
     guild = FakeGuild()
     mapped = FakeTextChannel(101)
-    tampered = FakeTextChannel(999)
-    guild.channels = {101: mapped, 999: tampered}
+    selected = FakeTextChannel(999)
+    guild.channels = {101: mapped, 999: selected}
     worker = executor({ResourceKey.ANNOUNCEMENTS: 101})
 
-    with pytest.raises(ActionRejected, match="mapping|Mappings|destination"):
-        await send_announcement(worker, guild, announcement_payload(999))
+    result = await send_announcement(worker, guild, announcement_payload(999))
 
+    assert result["channel_id"] == 999
     assert mapped.sent == []
-    assert tampered.sent == []
+    assert len(selected.sent) == 1
 
 
 @pytest.mark.asyncio
-async def test_announcement_mapping_change_after_action_construction_fails_closed() -> None:
+async def test_announcement_missing_selected_destination_fails_closed() -> None:
     guild = FakeGuild()
-    reviewed = FakeTextChannel(101)
     current = FakeTextChannel(102)
-    guild.channels = {101: reviewed, 102: current}
+    guild.channels = {102: current}
     worker = executor({ResourceKey.ANNOUNCEMENTS: 102})
 
-    with pytest.raises(ActionRejected, match="mapping|Mappings|destination"):
+    with pytest.raises(ActionRejected, match="text channel|unavailable|destination"):
         await send_announcement(worker, guild, announcement_payload(101))
 
-    assert reviewed.sent == []
     assert current.sent == []
 
 
@@ -216,6 +215,51 @@ async def test_announcement_feature_and_bot_permission_checks_remain_active() ->
         await send_announcement(worker, guild, announcement_payload(101))
 
     assert channel.sent == []
+
+
+@pytest.mark.asyncio
+async def test_announcement_message_only_does_not_require_embed_links() -> None:
+    guild = FakeGuild()
+    channel = FakeTextChannel(101, permissions=FakePermissions(embed_links=False))
+    guild.channels = {101: channel}
+    worker = executor({ResourceKey.ANNOUNCEMENTS: 101})
+    payload = announcement_payload(101)
+    payload.update({"message": "Message only", "title": "", "body": "", "footer": ""})
+
+    result = await send_announcement(worker, guild, payload)
+
+    assert result["channel_id"] == 101
+    assert channel.sent[0]["content"] == "Message only"
+    assert "embed" not in channel.sent[0]
+
+
+@pytest.mark.asyncio
+async def test_announcement_embed_requires_embed_links() -> None:
+    guild = FakeGuild()
+    channel = FakeTextChannel(101, permissions=FakePermissions(embed_links=False))
+    guild.channels = {101: channel}
+    worker = executor({ResourceKey.ANNOUNCEMENTS: 101})
+
+    with pytest.raises(ActionRejected, match="Embed Links"):
+        await send_announcement(worker, guild, announcement_payload(101))
+
+    assert channel.sent == []
+
+
+@pytest.mark.asyncio
+async def test_announcement_single_image_is_applied_to_the_optional_embed() -> None:
+    guild = FakeGuild()
+    channel = FakeTextChannel(101)
+    guild.channels = {101: channel}
+    worker = executor({ResourceKey.ANNOUNCEMENTS: 101})
+    payload = announcement_payload(101)
+    payload["image_url"] = "https://example.com/announcement.png"
+
+    await send_announcement(worker, guild, payload)
+
+    embed = channel.sent[0]["embed"]
+    assert embed is not None
+    assert embed.image.url == "https://example.com/announcement.png"
 
 
 @pytest.mark.asyncio

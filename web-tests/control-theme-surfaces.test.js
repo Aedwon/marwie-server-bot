@@ -15,5 +15,5 @@ test('Control bridges its legacy surface tokens to the handbook theme palette', 
 });
 
 test('Control shell stylesheet URL is cache-busted for the current Control surface contract', () => {
-  assert.match(controlHtml, /href=["']\/control\.css\?v=7["']/);
+  assert.match(controlHtml, /href=["']\/control\.css\?v=8["']/);
 });

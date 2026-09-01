@@ -3,6 +3,7 @@ import {
   registerControlPage,
   registeredControlPage,
 } from './control-page-registry.js';
+import { featureHeaderActionsMarkup } from './control-components.js';
 
 export const ANALYTICS_PAGE_KEY = '/control/analytics';
 
@@ -132,62 +133,29 @@ export function registerAnalyticsPage() {
 
 export function analyticsPageMarkup({ state, snapshot } = {}) {
   if (!state?.persisted) {
-    return `
-      <section class="control-page analytics-page">
-        <h1>Analytics</h1>
-        <p>Load current server state to view the operational snapshot.</p>
-      </section>`;
+    return `<section class="control-page analytics-page"><h1>Analytics</h1><p>Load current server state to view the operational snapshot.</p></section>`;
   }
-
-  const enabled = state.mode === 'edit'
-    ? Boolean(state.draft?.enabled)
-    : Boolean(state.persisted?.enabled);
+  const enabled = state.mode === 'edit' ? Boolean(state.draft?.enabled) : Boolean(state.persisted?.enabled);
   const statusMarkup = state.saveError
     ? `<p class="analytics-page-message" role="alert">${escapeHtml(state.saveError)}</p>`
     : state.status === 'conflict'
       ? '<p class="analytics-page-message" role="alert">Server state changed while you were editing. Review your draft before retrying.</p>'
       : '';
-
-  const settingsMarkup = state.mode === 'edit'
-    ? `
-      <section class="analytics-settings" aria-labelledby="analytics-settings-title">
-        <div>
-          <h2 id="analytics-settings-title">Reporting</h2>
-          <p>Analytics owns only whether aggregate reporting is enabled.</p>
-        </div>
-        <label class="analytics-toggle">
-          <input type="checkbox" data-analytics-enabled${enabled ? ' checked' : ''}>
-          <span>Enable Analytics reporting</span>
-        </label>
-        <div class="analytics-page-actions">
-          <button class="control-button control-button-primary" type="button" data-analytics-save${state.dirty && state.status !== 'saving' ? '' : ' disabled'}>${state.status === 'saving' ? 'Saving…' : 'Save changes'}</button>
-          <button class="control-button control-button-secondary" type="button" data-analytics-discard${state.status === 'saving' ? ' disabled' : ''}>Discard</button>
-        </div>
-      </section>`
-    : `
-      <section class="analytics-settings" aria-labelledby="analytics-settings-title">
-        <div>
-          <h2 id="analytics-settings-title">Reporting</h2>
-          <p>${enabled ? 'Aggregate reporting is enabled.' : 'Aggregate reporting is disabled.'}</p>
-        </div>
-        <div class="analytics-channel-row">
-          <div>
-            <span class="analytics-channel-label">Report channel</span>
-            <strong>${escapeHtml(channelSummary(snapshot))}</strong>
-          </div>
-          <a href="/control/mappings/channels">Manage in Mappings</a>
-        </div>
-      </section>`;
-
+  const settingsMarkup = `
+    <section class="analytics-settings" aria-labelledby="analytics-settings-title">
+      <div><h2 id="analytics-settings-title">Reporting</h2><p>${state.mode === 'edit' ? 'Use the feature switch in the page header, then save or discard below.' : enabled ? 'Aggregate reporting is enabled.' : 'Aggregate reporting is disabled.'}</p></div>
+      <div class="analytics-channel-row"><div><span class="analytics-channel-label">Report channel</span><strong>${escapeHtml(channelSummary(snapshot))}</strong></div><a href="/control/mappings/channels">Manage mappings</a></div>
+      ${state.mode === 'edit' ? `<div class="analytics-page-actions"><button class="control-button control-button-primary" type="button" data-analytics-save${state.dirty && state.status !== 'saving' ? '' : ' disabled'}>${state.status === 'saving' ? 'Saving…' : 'Save changes'}</button><button class="control-button control-button-secondary" type="button" data-analytics-discard${state.status === 'saving' ? ' disabled' : ''}>Discard</button></div>` : ''}
+    </section>`;
   return `
     <section class="control-page analytics-page" data-page-key="${ANALYTICS_PAGE_KEY}">
-      <header class="analytics-page-header">
-        <div>
-          <h1>Analytics</h1>
-          <p>Previous 7 days · exact 168-hour UTC window.</p>
-        </div>
-        ${state.mode === 'edit' ? '' : '<button class="control-button control-button-primary" type="button" data-analytics-edit>Edit settings</button>'}
-      </header>
+      <header class="analytics-page-header"><div><h1>Analytics</h1><p>Previous 7 days · exact 168-hour UTC window.</p></div>${featureHeaderActionsMarkup({
+        label: 'Analytics',
+        enabled,
+        editing: state.mode === 'edit',
+        editAttribute: 'data-analytics-edit',
+        toggleAttribute: 'data-analytics-enabled',
+      })}</header>
       ${statusMarkup}
       ${analyticsReportMarkup(snapshot)}
       ${settingsMarkup}

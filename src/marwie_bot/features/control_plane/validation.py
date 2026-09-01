@@ -377,13 +377,27 @@ def validate_action_payload(
             int(color, 16)
         except ValueError as error:
             raise ValueError("Color must be a six-digit hex value such as 5865F2.") from error
+        message = _text(data.get("message"), field="Message", max_length=2000, required=False)
+        title = _text(data.get("title"), field="Title", max_length=256, required=False)
+        body = _text(data.get("body"), field="Announcement body", max_length=4096, required=False)
+        footer = _text(data.get("footer"), field="Footer", max_length=2048, required=False)
+        image_url = _text(data.get("image_url"), field="Image URL", max_length=1000, required=False)
+        if not (message or title or body):
+            raise ValueError("Announcement content requires a message, title, or body.")
+        if len(title) + len(body) + len(footer) > 6000:
+            raise ValueError("Embed text must be at most 6000 characters total.")
+        if image_url:
+            parsed = urlparse(image_url)
+            if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+                raise ValueError("Image URL must be HTTP or HTTPS.")
         return {
             "channel_id": _snowflake(data.get("channel_id"), field="Announcement channel"),
-            "message": _text(data.get("message"), field="Message", max_length=2000, required=False),
-            "title": _text(data.get("title"), field="Title", max_length=256, required=False),
-            "body": _text(data.get("body"), field="Announcement body", max_length=4000),
-            "footer": _text(data.get("footer"), field="Footer", max_length=2048, required=False),
+            "message": message,
+            "title": title,
+            "body": body,
+            "footer": footer,
             "color": color.upper(),
+            "image_url": image_url,
             "mentions": _mentions(data.get("mentions")),
         }
 

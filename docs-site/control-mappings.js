@@ -275,7 +275,7 @@ export function registerMappingPages() {
 
 function healthFor(row) {
   if (row?.id && row.exists) return { label: 'Connected', className: 'good' };
-  if (row?.id) return { label: 'Unavailable / stale', className: 'bad' };
+  if (row?.id) return { label: 'Unavailable', className: 'bad' };
   return { label: 'Not connected', className: 'neutral' };
 }
 
@@ -288,13 +288,11 @@ function readRow(key, row) {
       ? 'Previously connected resource is unavailable'
       : 'No resource connected';
   return `
-    <article class="mapping-row" data-mapping-key="${escapeHtml(key)}">
-      <div class="mapping-row-copy">
-        <strong>${escapeHtml(definition.label)}</strong>
-        <span class="mapping-current">${escapeHtml(current)}</span>
-      </div>
-      <span class="mapping-health" data-tone="${health.className}">${escapeHtml(health.label)}</span>
-    </article>`;
+    <tr data-mapping-key="${escapeHtml(key)}">
+      <th scope="row">${escapeHtml(definition.label)}</th>
+      <td class="mapping-current">${escapeHtml(current)}</td>
+      <td class="mapping-status-text" data-tone="${health.className}">${escapeHtml(health.label)}</td>
+    </tr>`;
 }
 
 function editRow(key, persisted, selected, snapshot, error) {
@@ -472,8 +470,11 @@ export function mappingPageMarkup({ pageKey, state, snapshot } = {}) {
         <button class="control-button control-button-primary" type="button" data-mapping-edit>Edit settings</button>
       </header>
       ${statusMarkup}
-      <div class="mapping-read-list">
-        ${config.resourceKeys.map(key => readRow(key, state.persisted[key])).join('')}
+      <div class="mapping-table-wrap">
+        <table class="mapping-table">
+          <thead><tr><th>Resource</th><th>Current</th><th>Status</th></tr></thead>
+          <tbody>${config.resourceKeys.map(key => readRow(key, state.persisted[key])).join('')}</tbody>
+        </table>
       </div>
       ${suggestionMarkup(pageKey, snapshot)}
     </section>`;
