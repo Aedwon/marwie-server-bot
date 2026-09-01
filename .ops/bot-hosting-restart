@@ -1,4 +1,4 @@
 # Managed restart marker for Rob-bot.
 # Update this file only on branch ops/bot-hosting-restart to trigger a restart.
-target_main_sha=8dc8239055c763c2e8447f59a3257d1ad6f4814d
-requested_at=2026-08-30T18:35:00+08:00
+target_main_sha=28f3739ca01c2c703304017a90778b539fb3518a
+requested_at=2026-09-02T03:32:13+08:00
