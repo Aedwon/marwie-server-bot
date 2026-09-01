@@ -76,7 +76,7 @@ test('All Commands defaults to Dark and reuses Control theme and drawer behavior
 
 test('All Commands keeps the approved 13px typography floor and metadata treatment', () => {
   assert.deepEqual(fontSizeViolations(commandsCss), []);
-  for (const selector of ['.commands-meta', '.search-status', '.workflow-path > strong', '.permission-badge']) {
+  for (const selector of ['.search-status', '.permission-badge']) {
     const block = cssBlock(commandsCss, selector);
     assert.match(block, /font-size\s*:\s*13px\s*;/);
     assert.match(block, /line-height\s*:\s*18px\s*;/);
@@ -105,18 +105,18 @@ test('command search and hash reveal remain wired to the existing manual renderi
   assert.match(commandsHtml, /id="commandSearch"[^>]*type="search"/);
   assert.match(commandsHtml, /id="commandSearchClear"/);
   assert.match(commandsHtml, /id="commandResultCount"/);
-  assert.match(commandsJs, /function setupCommandSearch\(container, cards\)/);
+  assert.match(commandsJs, /function setupCommandSearch\(container, cards, dialog\)/);
   assert.match(commandsJs, /input\?\.addEventListener\('input', applyFilter\)/);
   assert.match(commandsJs, /terms\.every\(term => haystack\.includes\(term\)\)/);
-  assert.match(commandsJs, /function revealHashTarget\(\)/);
-  assert.match(commandsJs, /addEventListener\('hashchange', revealHashTarget\)/);
+  assert.match(commandsJs, /function openHashTarget\(\)/);
+  assert.match(commandsJs, /addEventListener\('hashchange', dialogController\.openHashTarget\)/);
   assert.match(commandsJs, /fetch\('\/commands\.md\?v=/);
   assert.equal(publicManual, canonicalManual);
 });
 
 test('All Commands is public and canonical website routing stays separated from Control and handbook', () => {
   assert.doesNotMatch(commandsHtml + commandsJs, /\/api\/(?:session|auth)|Sign in with Discord|controlIdentity/);
-  assert.match(commandsHtml, /href="\/"[^>]*>Control<\/a>/);
+  assert.match(commandsHtml, /href="\/control"[^>]*>Control<\/a>/);
   assert.match(commandsHtml, /href="\/handbook"[^>]*>Handbook<\/a>/);
 
   const rewrite = source => vercel.rewrites.find(item => item.source === source)?.destination;

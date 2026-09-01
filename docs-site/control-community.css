@@ -287,3 +287,65 @@
 .community-mapping-heading { margin-bottom: 9px; }
 .community-mapping-heading strong { font-size: 13px; line-height: 18px; color: var(--control-muted); }
 @media(max-width:720px){ .community-tier-progression,.community-tier-editor,.community-ops-snapshot{grid-template-columns:1fr}.community-tier-step+.community-tier-step,.community-tier-editor label+label,.community-ops-snapshot>div+div{border-left:0;border-top:1px solid var(--control-border)} }
+
+
+/* R3 form refinements */
+.community-tier-editor {
+  display: grid;
+  gap: 14px;
+}
+
+.community-threshold-field {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(140px, 220px);
+  align-items: center;
+  gap: 16px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.community-threshold-label {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 650;
+}
+
+.community-threshold-input {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px solid var(--control-border);
+  border-radius: 10px;
+  background: var(--control-surface);
+  color: var(--control-text);
+  font: inherit;
+  font-size: 13px;
+  line-height: 18px;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.community-threshold-input::-webkit-inner-spin-button,
+.community-threshold-input::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.community-threshold-input:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.community-inline-toggle.control-feature-toggle { width: auto; }
+.community-tier-step { grid-template-columns: minmax(0, 1fr) auto; }
+
+@media (max-width: 560px) {
+  .community-threshold-field {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .community-threshold-input { max-width: none; }
+}

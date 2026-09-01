@@ -315,7 +315,6 @@ function editRow(key, persisted, selected, snapshot, error) {
         ${staleSelected ? `<option value="${escapeHtml(selectedId)}" disabled selected>Unavailable current mapping</option>` : ''}
         ${optionMarkup}
       </select>
-      <span class="mapping-field-help" id="mapping-${escapeHtml(key)}-help">Choose an available ${escapeHtml(kindLabel(definition.kind))}.</span>
       ${error ? `<span class="mapping-field-error" id="mapping-${escapeHtml(key)}-error" role="alert">${escapeHtml(error)}</span>` : ''}
     </div>`;
 }

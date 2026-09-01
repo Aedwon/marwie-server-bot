@@ -61,7 +61,8 @@ function timestampLabel(value) {
 export function commandsPageMarkup() {
   const items = COMMAND_TASKS.map(task => `
     <li class="control-command-item" data-command-task="${task.key}">
-      <div class="control-command-goal"><span class="control-command-kicker">Task</span><h2>${escapeHtml(task.title)}</h2><p>${escapeHtml(task.description)}</p></div>
+      <div class="control-command-goal">
+<h2>${escapeHtml(task.title)}</h2><p>${escapeHtml(task.description)}</p></div>
       <code class="control-command-chip">${escapeHtml(task.command)}</code>
       <a class="control-inline-action control-command-action" href="${task.href}">Open guide</a>
     </li>`).join('');

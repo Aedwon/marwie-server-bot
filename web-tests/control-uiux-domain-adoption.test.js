@@ -25,12 +25,13 @@ test('Community feature pages adopt the shared top-right feature control and Cla
   };
   const markup = renderDefinition(createCommunityPageDefinition('/control/community/reputation'), snapshot);
   assert.equal(markup.includes('control-feature-header-actions'), true);
-  assert.equal(markup.includes('aria-label=\"Reputation enabled\"'), true);
+  assert.equal(markup.includes('aria-label=\"Reputation enabled\"'), false);
+  assert.equal(markup.includes('type=\"checkbox\"'), false);
   assert.equal(markup.includes('data-community-edit'), true);
   assert.equal(markup.includes('Feature status'), false);
-  assert.equal(markup.includes('<table class=\"community-mapping-table\">'), true);
+  assert.equal(markup.includes('<table class=\"control-summary-table\">'), true);
   assert.equal(markup.includes('Manage mappings'), true);
-  assert.equal(markup.includes('community-mapping-status'), true);
+  assert.equal(markup.includes('control-status-text'), true);
 });
 
 test('Utilities feature pages keep one header feature toggle and render mapping status as plain table text', () => {
@@ -45,11 +46,12 @@ test('Utilities feature pages keep one header feature toggle and render mapping 
   };
   const markup = renderDefinition(createUtilitiesPageDefinition('/control/utilities/ticket-configuration'), snapshot);
   assert.equal(markup.includes('control-feature-header-actions'), true);
-  assert.equal(markup.includes('aria-label=\"Tickets enabled\"'), true);
+  assert.equal(markup.includes('aria-label=\"Tickets enabled\"'), false);
+  assert.equal(markup.includes('type=\"checkbox\"'), false);
   assert.equal(markup.includes('data-utility-edit'), true);
   assert.equal(markup.includes('ticket-feature-heading'), false);
-  assert.equal(markup.includes('<table class=\"utility-resource-table\">'), true);
-  assert.equal(markup.includes('utility-resource-status'), true);
+  assert.equal(markup.includes('<table class=\"control-summary-table utility-resource-table\">'), true);
+  assert.equal(markup.includes('control-status-text'), true);
   assert.equal(markup.includes('Manage mapping'), true);
 });
 
@@ -65,7 +67,8 @@ test('Analytics moves its editable feature toggle into the standard page header'
   store.hydrate(definition.pageKey, snapshot, 'b'.repeat(64));
   const readMarkup = definition.render({ state: store.get(definition.pageKey), snapshot });
   assert.equal(readMarkup.includes('control-feature-header-actions'), true);
-  assert.equal(readMarkup.includes('aria-label=\"Analytics enabled\"'), true);
+  assert.equal(readMarkup.includes('aria-label=\"Analytics enabled\"'), false);
+  assert.equal(readMarkup.includes('data-analytics-enabled'), false);
   assert.equal(readMarkup.includes('data-analytics-edit'), true);
   store.beginEdit(definition.pageKey);
   const editMarkup = definition.render({ state: store.get(definition.pageKey), snapshot });

@@ -17,23 +17,25 @@ export function featureHeaderActionsMarkup({
   toggleAttribute = '',
   features = null,
 } = {}) {
+  if (!editing) {
+    return `<div class="control-feature-header-actions"><button class="control-button control-button-primary" type="button"${editAttribute ? ` ${editAttribute}` : ''}>Edit settings</button></div>`;
+  }
+
   const items = Array.isArray(features) && features.length
     ? features
-    : [{ label, enabled, toggleAttribute }];
+    : [{label, enabled, toggleAttribute}];
   const toggles = items.map(item => {
     const itemLabel = item.label || 'Feature';
     const itemEnabled = Boolean(item.enabled);
-    const interactive = editing && item.toggleAttribute ? ` ${item.toggleAttribute}` : '';
+    const interactive = item.toggleAttribute ? ` ${item.toggleAttribute}` : '';
     const checked = itemEnabled ? ' checked' : '';
-    const disabled = editing ? '' : ' disabled';
-    return `<label class="control-feature-toggle${editing ? ' control-feature-toggle-editing' : ' control-feature-toggle-readonly'}">
-      <input type="checkbox"${interactive}${checked}${disabled} aria-label="${escapeHtml(itemLabel)} ${itemEnabled ? 'enabled' : 'disabled'}">
+    return `<label class="control-feature-toggle control-feature-toggle-editing">
+      <input type="checkbox"${interactive}${checked} aria-label="${escapeHtml(itemLabel)} ${itemEnabled ? 'enabled' : 'disabled'}">
       <span class="control-feature-toggle-track" aria-hidden="true"></span>
       <span class="control-feature-toggle-copy">${itemEnabled ? 'Enabled' : 'Disabled'}</span>
     </label>`;
   }).join('');
-  const edit = editing ? '' : `<button class="control-button control-button-primary" type="button"${editAttribute ? ` ${editAttribute}` : ''}>Edit settings</button>`;
-  return `<div class="control-feature-header-actions">${edit}${toggles}</div>`;
+  return `<div class="control-feature-header-actions">${toggles}</div>`;
 }
 
 export function navigationMarkup(model) {

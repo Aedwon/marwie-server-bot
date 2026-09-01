@@ -7,85 +7,61 @@ const themeColor = document.querySelector('#themeColor');
 const scheme = matchMedia('(prefers-color-scheme: dark)');
 
 const WORKFLOWS = [
-  {
-    id: 'workflow-setup',
-    title: 'Setup & health',
-    intro: 'Install, discover existing resources, verify mappings, then override only what needs manual control.',
-    path: ['`/ping`', '`/setup auto`', '`/setup status`', 'Manual `/setup …` only if needed'],
-    commands: [
-      '/ping',
-      '/setup auto',
-      '/setup status',
-      '/setup role-panel',
-      '/setup text-channel',
-      '/setup voice-channel',
-      '/setup forum',
-      '/setup category',
-      '/setup role',
-      '/setup feature',
-      '/setup log-ignore',
-    ],
-  },
-  {
-    id: 'workflow-moderation',
-    title: 'Moderation',
-    intro: 'Review context, act, reverse when needed, and audit anonymous questions only for moderation.',
-    path: ['`/history` if needed', '`/warn`, `/timeout`, `/kick`, or `/ban`', '`/unban` to reverse', '`/anonwho` for audits'],
-    commands: ['/history', '/warn', '/timeout', '/kick', '/ban', '/unban', '/anonwho'],
-  },
-  {
-    id: 'workflow-tickets',
-    title: 'Tickets',
-    intro: 'Define support types and publish the entry panel. Claiming, closing, reopening, and transcripts use ticket controls.',
-    path: ['`/ticket-type list`', '`/ticket-type add`', '`/ticket-panel post`', 'Staff ticket controls'],
-    commands: ['/ticket-type list', '/ticket-type add', '/ticket-type disable', '/ticket-panel post'],
-  },
-  {
-    id: 'workflow-publishing',
-    title: 'Publishing',
-    intro: 'Publish server announcements or Mar Wie’s TikTok Live notice.',
-    path: ['`/announce` for server updates', '`/live` for TikTok Live'],
-    commands: ['/announce', '/live'],
-  },
-  {
-    id: 'workflow-reputation',
-    title: 'Reputation',
-    intro: 'Inspect reputation, tune milestones, and make staff adjustments.',
-    path: ['Review reputation', 'Adjust only if needed'],
-    commands: ['/rank', '/profile', '/leaderboard', '/reputation award', '/reputation thresholds'],
-  },
-  {
-    id: 'workflow-learning',
-    title: 'Quizzes & anonymous Q&A',
-    intro: 'Create and schedule quizzes; support anonymous questions. Identity audits stay under Moderation.',
-    path: ['`/quiz add`', '`/quiz start` or `/quiz schedule`', '`/anonask`'],
-    commands: ['/quiz add', '/quiz start', '/quiz schedule', '/anonask'],
-  },
-  {
-    id: 'workflow-collaboration',
-    title: 'Coworking & collaboration',
-    intro: 'Member self-service tools for focus sessions and finding collaborators.',
-    path: ['`/pomodoro start`', 'Check or stop', '`/lfg`'],
-    commands: ['/pomodoro start', '/pomodoro status', '/pomodoro stop', '/lfg'],
-  },
-  {
-    id: 'workflow-operations',
-    title: 'Feeds & operations',
-    intro: 'Maintain AI feeds, review analytics, and select App of the Week.',
-    path: ['Review sources', 'Add, poll, or disable', '`/analytics`', '`/app-of-week`'],
-    commands: ['/ai-source list', '/ai-source add', '/ai-source poll', '/ai-source disable', '/analytics', '/app-of-week'],
-  },
+  { id: 'workflow-setup', title: 'Setup & health', intro: 'Connect Discord resources, review configuration health, and adjust server settings.', commands: ['/ping', '/setup auto', '/setup status', '/setup role-panel', '/setup text-channel', '/setup voice-channel', '/setup forum', '/setup category', '/setup role', '/setup feature', '/setup log-ignore'] },
+  { id: 'workflow-moderation', title: 'Moderation', intro: 'Review member history and take or reverse moderation actions.', commands: ['/history', '/warn', '/timeout', '/kick', '/ban', '/unban', '/anonwho'] },
+  { id: 'workflow-tickets', title: 'Tickets', intro: 'Configure support ticket types and publish the member entry panel.', commands: ['/ticket-type list', '/ticket-type add', '/ticket-type disable', '/ticket-panel post'] },
+  { id: 'workflow-publishing', title: 'Publishing', intro: 'Send server announcements and the authorized TikTok Live notice.', commands: ['/announce', '/live'] },
+  { id: 'workflow-reputation', title: 'Reputation', intro: 'Review reputation, manage tiers, and make staff point adjustments.', commands: ['/rank', '/profile', '/leaderboard', '/reputation award', '/reputation thresholds'] },
+  { id: 'workflow-learning', title: 'Quizzes & anonymous Q&A', intro: 'Manage quizzes and anonymous questions for the community.', commands: ['/quiz add', '/quiz start', '/quiz schedule', '/anonask'] },
+  { id: 'workflow-collaboration', title: 'Coworking & collaboration', intro: 'Use focus-session tools and help members find collaborators.', commands: ['/pomodoro start', '/pomodoro status', '/pomodoro stop', '/lfg'] },
+  { id: 'workflow-operations', title: 'Feeds & operations', intro: 'Manage AI feed sources, review activity reporting, and spotlight showcase work.', commands: ['/ai-source list', '/ai-source add', '/ai-source poll', '/ai-source disable', '/analytics', '/app-of-week'] },
 ];
 
-const SOURCE_CONTEXT_WORKFLOW = new Map([
-  ['System and setup', 'workflow-setup'],
-  ['Moderation', 'workflow-moderation'],
-  ['Tickets and announcements', 'workflow-tickets'],
-  ['Reputation', 'workflow-reputation'],
-  ['Quizzes and anonymous questions', 'workflow-learning'],
-  ['Coworking and collaboration', 'workflow-collaboration'],
-  ['AI updates, analytics, and showcase', 'workflow-operations'],
-]);
+const COMMAND_PREVIEWS = Object.freeze({
+  '/ping': Object.freeze({ permission: 'Anyone', description: 'Check whether Rob-bot is responding and view current gateway latency.' }),
+  '/setup auto': Object.freeze({ permission: 'Administrator', description: 'Discover compatible Discord resources and bind clear existing matches automatically.' }),
+  '/setup role-panel': Object.freeze({ permission: 'Administrator', description: 'Post or refresh the Live Notifications self-role panel for members.' }),
+  '/setup text-channel': Object.freeze({ permission: 'Administrator', description: 'Bind a Control text-channel resource to an existing Discord text channel.' }),
+  '/setup voice-channel': Object.freeze({ permission: 'Administrator', description: 'Bind a Control voice-channel resource to an existing Discord voice channel.' }),
+  '/setup forum': Object.freeze({ permission: 'Administrator', description: 'Bind a forum-backed Control resource to an existing Discord Forum Channel.' }),
+  '/setup category': Object.freeze({ permission: 'Administrator', description: 'Bind a Control category resource to an existing Discord category.' }),
+  '/setup role': Object.freeze({ permission: 'Administrator', description: 'Bind a Control role resource to an existing Discord role.' }),
+  '/setup feature': Object.freeze({ permission: 'Administrator', description: 'Enable or disable one Rob-bot feature for this server.' }),
+  '/setup log-ignore': Object.freeze({ permission: 'Administrator', description: 'Include or exclude a channel from message edit and delete logging.' }),
+  '/setup status': Object.freeze({ permission: 'Administrator', description: 'Review current feature switches and Discord resource mappings.' }),
+  '/warn': Object.freeze({ permission: 'Moderate Members', description: 'Record a moderation warning for a member and attempt to notify them.' }),
+  '/timeout': Object.freeze({ permission: 'Moderate Members', description: 'Apply a Discord timeout to a member for the requested duration and record the case.' }),
+  '/kick': Object.freeze({ permission: 'Kick Members', description: 'Remove a member from the server and record the moderation action.' }),
+  '/ban': Object.freeze({ permission: 'Ban Members', description: 'Ban a member or account and record the moderation action.' }),
+  '/unban': Object.freeze({ permission: 'Ban Members', description: 'Remove an existing server ban and record the reversal.' }),
+  '/history': Object.freeze({ permission: 'Moderate Members', description: 'Review recorded moderation history for a member.' }),
+  '/ticket-type add': Object.freeze({ permission: 'Administrator', description: 'Create or update a support ticket type and ensure it is enabled.' }),
+  '/ticket-type disable': Object.freeze({ permission: 'Administrator', description: 'Disable an existing support ticket type so members cannot open new tickets of that type.' }),
+  '/ticket-type list': Object.freeze({ permission: 'Administrator', description: 'List the support ticket types currently enabled for the server.' }),
+  '/ticket-panel post': Object.freeze({ permission: 'Administrator', description: 'Post the support ticket entry panel with its persistent Open ticket control.' }),
+  '/announce': Object.freeze({ permission: 'Manage Server', description: 'Publish a server announcement to an approved destination without triggering mentions.' }),
+  '/live': Object.freeze({ permission: 'Administrator · Mar Wie only', description: 'Publish the configured TikTok Live notice, with the optional Live Notifications role ping when available.' }),
+  '/rank': Object.freeze({ permission: 'Anyone', description: 'Show your current reputation points and tier progress.' }),
+  '/profile': Object.freeze({ permission: 'Anyone', description: 'Show reputation and profile information for yourself or another member.' }),
+  '/leaderboard': Object.freeze({ permission: 'Anyone', description: 'Show the server reputation leaderboard.' }),
+  '/reputation award': Object.freeze({ permission: 'Manage Server', description: 'Add or remove staff-adjusted reputation points for a member and synchronize tier roles.' }),
+  '/reputation thresholds': Object.freeze({ permission: 'Manage Server', description: 'Set the Builder, Contributor, and Mentor reputation thresholds.' }),
+  '/quiz add': Object.freeze({ permission: 'Manage Server', description: 'Add a multiple-choice question to the server quiz bank.' }),
+  '/quiz start': Object.freeze({ permission: 'Manage Server', description: 'Post a quiz question now and open its timed answer session.' }),
+  '/quiz schedule': Object.freeze({ permission: 'Manage Server', description: 'Set or update the interval used for automatic quiz posting.' }),
+  '/anonask': Object.freeze({ permission: 'Anyone', description: 'Submit a question that is posted publicly without exposing the author.' }),
+  '/anonwho': Object.freeze({ permission: 'Moderate Members', description: 'Resolve the author of an anonymous question for a deliberate staff audit.' }),
+  '/pomodoro start': Object.freeze({ permission: 'Anyone', description: 'Start a personal Pomodoro focus session in the coworking system.' }),
+  '/pomodoro status': Object.freeze({ permission: 'Anyone', description: 'Check the remaining state of your active Pomodoro session.' }),
+  '/pomodoro stop': Object.freeze({ permission: 'Anyone', description: 'Stop your active Pomodoro focus session.' }),
+  '/lfg': Object.freeze({ permission: 'Anyone', description: 'Post a collaboration request in the configured looking-for-group destination.' }),
+  '/ai-source add': Object.freeze({ permission: 'Manage Server', description: 'Add an AI news feed source for later polling.' }),
+  '/ai-source list': Object.freeze({ permission: 'Manage Server', description: 'List configured AI feed sources and their identifiers.' }),
+  '/ai-source disable': Object.freeze({ permission: 'Manage Server', description: 'Disable a configured AI feed source by its identifier.' }),
+  '/ai-source poll': Object.freeze({ permission: 'Manage Server', description: 'Fetch eligible feed items for review and controlled posting.' }),
+  '/analytics': Object.freeze({ permission: 'Manage Server', description: 'Generate the aggregate seven-day server activity report.' }),
+  '/app-of-week': Object.freeze({ permission: 'Manage Server', description: 'Spotlight an eligible showcase thread as App of the Week.' }),
+});
 
 installThemeControls({
   root,
@@ -316,30 +292,10 @@ function headingText(element) {
 
 function regroupByWorkflow(container) {
   const original = [...container.children];
-  const preamble = [];
   const commands = new Map();
-  const contexts = new Map(WORKFLOWS.map(workflow => [workflow.id, []]));
-  let sourceCategory = null;
   let currentCommand = null;
-  let skippingOldIndex = false;
 
   for (const node of original) {
-    if (node.matches?.('h2.manual-category')) {
-      sourceCategory = headingText(node);
-      currentCommand = null;
-      skippingOldIndex = false;
-      continue;
-    }
-
-    if (sourceCategory === null) {
-      if (node.tagName === 'H3' && headingText(node) === 'Command index') {
-        skippingOldIndex = true;
-        continue;
-      }
-      if (!skippingOldIndex) preamble.push(node);
-      continue;
-    }
-
     if (node.matches?.('h3[data-command]')) {
       currentCommand = node.dataset.command;
       if (!commands.has(currentCommand)) commands.set(currentCommand, []);
@@ -347,186 +303,162 @@ function regroupByWorkflow(container) {
       continue;
     }
 
-    if (node.tagName === 'H3') currentCommand = null;
-
-    if (currentCommand) {
-      commands.get(currentCommand).push(node);
+    if (node.matches?.('h2.manual-category') || node.tagName === 'H3') {
+      currentCommand = null;
       continue;
     }
 
-    const workflowId = SOURCE_CONTEXT_WORKFLOW.get(sourceCategory);
-    if (workflowId) contexts.get(workflowId).push(node);
+    if (currentCommand) commands.get(currentCommand).push(node);
   }
 
   container.replaceChildren();
-
-  const guidanceStart = preamble.findIndex(node => node.tagName === 'H3');
-  if (guidanceStart >= 0) {
-    const notes = document.createElement('details');
-    notes.className = 'manual-notes';
-    const summary = document.createElement('summary');
-    summary.textContent = 'Using this manual';
-    const body = document.createElement('div');
-    body.className = 'manual-notes-body';
-    preamble.slice(guidanceStart).forEach(node => body.append(node));
-    notes.append(summary, body);
-    container.append(notes);
-  }
-
+  const cards = [];
+  const details = new Map();
   const assigned = new Set();
+
   for (const workflow of WORKFLOWS) {
     const section = document.createElement('section');
     section.className = 'workflow-section';
     section.id = workflow.id;
-    section.innerHTML = `
-      <div class="workflow-header">
-        <h2>${escapeHtml(workflow.title)}</h2>
-        <p>${escapeHtml(workflow.intro)}</p>
-        <div class="workflow-path" aria-label="Typical path">
-          <strong>Path</strong>
-          <ol>${workflow.path.map(step => `<li>${inlineMarkdown(step)}</li>`).join('')}</ol>
-        </div>
-      </div>`;
-
-    const sharedContext = contexts.get(workflow.id) || [];
-    if (sharedContext.length) {
-      const context = document.createElement('div');
-      context.className = 'workflow-context';
-      sharedContext.forEach(node => context.append(node));
-      section.append(context);
-    }
+    section.innerHTML = `<div class="workflow-header"><h2>${escapeHtml(workflow.title)}</h2><p>${escapeHtml(workflow.intro)}</p></div>`;
 
     const list = document.createElement('div');
     list.className = 'workflow-command-list';
     for (const command of workflow.commands) {
+      if (assigned.has(command)) continue;
       const nodes = commands.get(command);
-      if (!nodes) {
-        console.warn(`Workflow references missing command ${command}.`);
+      const preview = COMMAND_PREVIEWS[command];
+      if (!nodes || !preview) {
+        console.warn(`Command preview is incomplete for ${command}.`);
         continue;
       }
+      const heading = nodes[0];
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'command-card';
+      card.id = heading.id;
+      card.dataset.command = command;
+      card.dataset.search = `${command} ${preview.permission} ${preview.description}`.toLowerCase();
+      card.innerHTML = `
+        <span class="command-card-topline">
+          <span class="command-name"><code>${escapeHtml(command)}</code></span>
+          <span class="permission-badge">${escapeHtml(preview.permission)}</span>
+        </span>
+        <span class="command-description">${escapeHtml(preview.description)}</span>`;
+      list.append(card);
+      cards.push(card);
+      details.set(command, nodes.slice(1).map(node => node.cloneNode(true)));
       assigned.add(command);
-      const entry = document.createElement('section');
-      entry.className = 'command-entry';
-      nodes.forEach(node => entry.append(node));
-      list.append(entry);
     }
     section.append(list);
     container.append(section);
   }
 
   const unassigned = [...commands.keys()].filter(command => !assigned.has(command));
-  if (unassigned.length) {
-    const section = document.createElement('section');
-    section.className = 'workflow-section';
-    section.id = 'workflow-other';
-    section.innerHTML = '<div class="workflow-header"><h2>Other</h2><p>Commands not yet assigned to a workflow.</p></div>';
-    const list = document.createElement('div');
-    list.className = 'workflow-command-list';
-    for (const command of unassigned) {
-      const entry = document.createElement('section');
-      entry.className = 'command-entry';
-      commands.get(command).forEach(node => entry.append(node));
-      list.append(entry);
-    }
-    section.append(list);
-    container.append(section);
-    console.warn(`Unassigned workflow commands: ${unassigned.join(', ')}`);
-  }
-
-  return { sourceCount: commands.size, assignedCount: assigned.size, unassigned };
-}
-
-function labeledParagraph(entry, label) {
-  return [...entry.children].find(node => {
-    if (node.tagName !== 'P') return false;
-    const strong = node.querySelector(':scope > strong');
-    return strong?.textContent.trim() === label;
-  }) || null;
-}
-
-function paragraphValueHtml(paragraph) {
-  if (!paragraph) return '';
-  const copy = paragraph.cloneNode(true);
-  copy.querySelector(':scope > strong')?.remove();
-  return copy.innerHTML.trim();
-}
-
-function shortPermission(paragraph) {
-  if (!paragraph) return '';
-  const value = paragraph.textContent.replace(/^Permission:\s*/i, '').trim();
-  const firstSentence = value.match(/^.*?\.(?:\s|$)/)?.[0] || value;
-  return firstSentence.replace(/\.$/, '').trim();
-}
-
-function structureCommandCards(container) {
-  const entries = [...container.querySelectorAll('.command-entry')];
-
-  for (const entry of entries) {
-    const heading = entry.querySelector(':scope > h3[data-command]');
-    if (!heading) continue;
-
-    const command = heading.dataset.command || headingText(heading);
-    const syntax = labeledParagraph(entry, 'Syntax:');
-    const permission = labeledParagraph(entry, 'Permission:');
-    const behavior = labeledParagraph(entry, 'What happens:');
-    const searchText = entry.textContent.replace(/\s+/g, ' ').trim().toLowerCase();
-
-    const card = document.createElement('details');
-    card.className = 'command-card';
-    card.id = heading.id;
-    card.dataset.command = command;
-    card.dataset.search = searchText;
-
-    const summary = document.createElement('summary');
-    const permissionText = shortPermission(permission);
-    summary.innerHTML = `
-      <span class="command-card-topline">
-        <span class="command-name"><code>${escapeHtml(command)}</code></span>
-        ${permissionText ? `<span class="permission-badge">${escapeHtml(permissionText)}</span>` : ''}
-      </span>
-      ${syntax ? `<span class="command-syntax">${paragraphValueHtml(syntax)}</span>` : ''}
-      ${behavior ? `<span class="command-description">${paragraphValueHtml(behavior)}</span>` : ''}`;
-
-    const body = document.createElement('div');
-    body.className = 'command-body';
-    const extracted = new Set([heading, syntax, permission, behavior].filter(Boolean));
-    [...entry.children].forEach(node => {
-      if (!extracted.has(node)) body.append(node);
-    });
-
-    card.append(summary, body);
-    entry.replaceWith(card);
-  }
-
-  return [...container.querySelectorAll('.command-card')];
+  if (unassigned.length) console.warn(`Unassigned command documentation: ${unassigned.join(', ')}`);
+  return { sourceCount: commands.size, assignedCount: assigned.size, unassigned, cards, details };
 }
 
 function setupManualNavigation() {
   const links = [...document.querySelectorAll('.manual-nav a[href^="#"]')];
-  const targets = links
-    .map(link => document.querySelector(link.getAttribute('href')))
-    .filter(Boolean);
-
-  if ('IntersectionObserver' in window) {
-    const observer = new IntersectionObserver(entries => {
-      const visible = entries
-        .filter(entry => entry.isIntersecting && !entry.target.hidden)
-        .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
-      if (!visible) return;
-      links.forEach(link => {
-        link.setAttribute('aria-current', String(link.getAttribute('href') === `#${visible.target.id}`));
-      });
-    }, { rootMargin: '-12% 0px -76% 0px' });
-    targets.forEach(target => observer.observe(target));
-  }
+  const targets = links.map(link => document.querySelector(link.getAttribute('href'))).filter(Boolean);
+  if (!('IntersectionObserver' in window)) return;
+  const observer = new IntersectionObserver(entries => {
+    const visible = entries
+      .filter(entry => entry.isIntersecting && !entry.target.hidden)
+      .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+    if (!visible) return;
+    links.forEach(link => {
+      if (link.getAttribute('href') === `#${visible.target.id}`) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    });
+  }, { rootMargin: '-12% 0px -76% 0px' });
+  targets.forEach(target => observer.observe(target));
 }
 
-function setupCommandSearch(container, cards) {
+function setupCommandDialog(cards, details) {
+  const dialog = document.querySelector('#commandDialog');
+  const title = document.querySelector('#commandDialogTitle');
+  const body = document.querySelector('#commandDialogBody');
+  const closeButton = document.querySelector('[data-command-dialog-close]');
+  if (!dialog || !title || !body || !closeButton) return { openHashTarget() {} };
+
+  let lastTrigger = null;
+  let clearHashOnClose = true;
+  let restoreFocusOnClose = true;
+
+  function setHash(id) {
+    if (location.hash === `#${id}`) return;
+    history.pushState(null, '', `#${id}`);
+  }
+
+  function clearCommandHash() {
+    if (!location.hash.startsWith('#command-')) return;
+    history.replaceState(null, '', `${location.pathname}${location.search}`);
+  }
+
+  function openCommand(card, { direct = false, updateHash = true } = {}) {
+    const command = card?.dataset?.command;
+    const nodes = details.get(command);
+    if (!command || !nodes) return;
+    if (dialog.open) {
+      clearHashOnClose = false;
+      restoreFocusOnClose = false;
+      dialog.close();
+    }
+    lastTrigger = direct ? null : card;
+    title.textContent = command;
+    body.replaceChildren(...nodes.map(node => node.cloneNode(true)));
+    if (updateHash) setHash(card.id);
+    dialog.showModal();
+    closeButton.focus();
+  }
+
+  function requestClose({ clearHash = true, restoreFocus = true } = {}) {
+    clearHashOnClose = clearHash;
+    restoreFocusOnClose = restoreFocus;
+    if (dialog.open) dialog.close();
+  }
+
+  closeButton.addEventListener('click', () => requestClose());
+  dialog.addEventListener('cancel', event => {
+    event.preventDefault();
+    requestClose();
+  });
+  dialog.addEventListener('close', () => {
+    if (clearHashOnClose) clearCommandHash();
+    body.replaceChildren();
+    title.textContent = '';
+    const restore = restoreFocusOnClose ? lastTrigger : null;
+    lastTrigger = null;
+    clearHashOnClose = true;
+    restoreFocusOnClose = true;
+    restore?.focus();
+  });
+
+  cards.forEach(card => card.addEventListener('click', () => openCommand(card)));
+
+  function openHashTarget() {
+    const id = location.hash.slice(1);
+    if (!id) {
+      if (dialog.open) requestClose({ clearHash: false, restoreFocus: false });
+      return;
+    }
+    const card = cards.find(candidate => candidate.id === id);
+    if (!card) return;
+    card.hidden = false;
+    card.closest('.workflow-section')?.removeAttribute('hidden');
+    openCommand(card, { direct: true, updateHash: false });
+  }
+
+  return { openHashTarget };
+}
+
+function setupCommandSearch(container, cards, dialog) {
   const input = document.querySelector('#commandSearch');
   const clear = document.querySelector('#commandSearchClear');
   const count = document.querySelector('#commandResultCount');
   const workflows = [...container.querySelectorAll('.workflow-section')];
-  const notes = container.querySelector('.manual-notes');
   const empty = document.createElement('div');
   empty.className = 'command-empty-note';
   empty.hidden = true;
@@ -537,19 +469,13 @@ function setupCommandSearch(container, cards) {
     const query = (input?.value || '').trim().toLowerCase();
     const terms = query.split(/\s+/).filter(Boolean);
     let visible = 0;
-
     for (const card of cards) {
       const haystack = `${card.dataset.command || ''} ${card.dataset.search || ''}`;
       const match = terms.every(term => haystack.includes(term));
       card.hidden = !match;
       if (match) visible += 1;
     }
-
-    for (const workflow of workflows) {
-      workflow.hidden = !workflow.querySelector('.command-card:not([hidden])');
-    }
-
-    if (notes) notes.hidden = Boolean(query);
+    for (const workflow of workflows) workflow.hidden = !workflow.querySelector('.command-card:not([hidden])');
     if (clear) clear.hidden = !query;
     if (count) count.textContent = `${visible} command${visible === 1 ? '' : 's'}`;
     empty.hidden = visible !== 0;
@@ -565,6 +491,7 @@ function setupCommandSearch(container, cards) {
   input?.addEventListener('input', applyFilter);
   clear?.addEventListener('click', clearSearch);
   addEventListener('keydown', event => {
+    if (dialog?.open) return;
     const target = event.target;
     const typing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target?.isContentEditable;
     if (event.key === '/' && !typing) {
@@ -577,51 +504,27 @@ function setupCommandSearch(container, cards) {
       clearSearch();
     }
   });
-
   applyFilter();
-}
-
-function revealHashTarget() {
-  if (!location.hash) return;
-  const target = document.querySelector(location.hash);
-  if (!target) return;
-
-  if (target.classList.contains('command-card')) {
-    target.hidden = false;
-    target.open = true;
-    target.closest('.workflow-section')?.removeAttribute('hidden');
-  }
-
-  requestAnimationFrame(() => {
-    target.scrollIntoView({ block: 'start' });
-    if (target.classList.contains('command-card')) {
-      target.querySelector(':scope > summary')?.focus({ preventScroll: true });
-    }
-  });
 }
 
 async function loadManual() {
   const container = document.querySelector('#manualContent');
   if (!container) return;
-
   try {
     const response = await fetch('/commands.md?v=1', { cache: 'no-cache' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const markdown = await response.text();
-    container.innerHTML = renderMarkdown(markdown);
-
+    container.innerHTML = renderMarkdown(await response.text());
     const result = regroupByWorkflow(container);
-    const cards = structureCommandCards(container);
-    const renderedCount = cards.length;
-    const expectedCount = new Set(WORKFLOWS.flatMap(workflow => workflow.commands)).size;
-    if (result.sourceCount !== expectedCount || result.assignedCount !== expectedCount || renderedCount !== expectedCount || result.unassigned.length) {
-      console.warn(`Expected ${expectedCount} workflow-assigned slash commands. Source=${result.sourceCount}, assigned=${result.assignedCount}, rendered=${renderedCount}, unassigned=${result.unassigned.length}.`);
+    const expectedCount = Object.keys(COMMAND_PREVIEWS).length;
+    if (result.sourceCount !== expectedCount || result.assignedCount !== expectedCount || result.unassigned.length) {
+      console.warn(`Expected ${expectedCount} unique command previews. Source=${result.sourceCount}, assigned=${result.assignedCount}, unassigned=${result.unassigned.length}.`);
     }
-
     setupManualNavigation();
-    setupCommandSearch(container, cards);
-    revealHashTarget();
-    addEventListener('hashchange', revealHashTarget);
+    const dialog = document.querySelector('#commandDialog');
+    setupCommandSearch(container, result.cards, dialog);
+    const dialogController = setupCommandDialog(result.cards, result.details);
+    dialogController.openHashTarget();
+    addEventListener('hashchange', dialogController.openHashTarget);
   } catch (error) {
     console.error('Could not load command manual', error);
     container.innerHTML = '<div class="manual-error"><strong>Could not load commands.</strong><p>Read the <a href="/commands.md">plain Markdown manual</a>.</p></div>';

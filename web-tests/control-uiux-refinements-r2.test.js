@@ -93,7 +93,9 @@ test('Analytics dashboard defaults to 7d and renders only real supplied range se
   }
   assert.match(markup, /data-selected="true"[^>]*>7d</i);
   assert.match(markup, /Activity over time/);
-  assert.match(markup, /analytics-series-table/);
+  assert.match(markup, /analytics-line-chart/);
+  assert.equal((markup.match(/analytics-line-point/g) || []).length, range.series.length);
+  assert.doesNotMatch(markup, /analytics-series-table|View chart data/);
   assert.doesNotMatch(markup, /Previous 7 days · exact 168-hour UTC window/);
 });
 

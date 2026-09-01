@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="description" content="Rob-bot All Commands: the complete public slash-command reference for syntax, permissions, inputs, prerequisites, side effects, confirmations, and examples.">
+  <meta name="description" content="Rob-bot command reference. Find commands by task, permission, or name.">
   <meta name="theme-color" content="#171719" id="themeColor">
   <title>All Commands · Rob-bot</title>
   <link rel="icon" type="image/png" sizes="64x64" href="/favicon-robin-v2.png">
@@ -18,28 +18,25 @@
   </script>
   <link rel="stylesheet" href="/styles.css?v=14">
   <link rel="stylesheet" href="/control.css?v=5">
-  <link rel="stylesheet" href="/commands.css?v=5">
+  <link rel="stylesheet" href="/commands.css?v=6">
 </head>
 <body class="control-page commands-page">
   <a class="skip" href="#commandsMain">Skip to commands</a>
   <header class="control-topbar commands-topbar">
     <button id="commandsMenuButton" class="control-menu-button" type="button" aria-controls="commandsNavDrawer" aria-expanded="false">Menu</button>
-    <a class="control-mobile-brand" href="/">Rob-bot · All Commands</a>
+    <a class="control-mobile-brand" href="/control">Rob-bot Control</a>
   </header>
 
   <div class="control-shell commands-shell">
-    <aside id="commandsNavDrawer" class="control-rail commands-rail" aria-label="All Commands navigation">
-      <div class="control-rail-head commands-rail-head">
-        <div class="commands-rail-copy">
-          <span class="control-eyebrow">Reference</span>
-          <strong class="commands-rail-title">All Commands</strong>
-        </div>
-        <button id="commandsNavClose" class="control-nav-close" type="button" aria-label="Close All Commands navigation">Close</button>
+    <aside id="commandsNavDrawer" class="control-rail commands-rail" aria-label="Control navigation">
+      <div class="control-rail-head">
+        <span class="commands-nav-context">Commands</span>
+        <button id="commandsNavClose" class="control-nav-close" type="button" aria-label="Close Control navigation">Close</button>
       </div>
 
-      <nav class="control-primary-nav" aria-label="Site navigation">
-        <a href="/">Control</a>
-        <a href="/commands" aria-current="page">All Commands</a>
+      <nav class="control-primary-nav commands-primary-nav" aria-label="Control destinations">
+        <a href="/control">Control</a>
+        <a href="/commands" aria-current="page">Commands</a>
         <a href="/handbook">Handbook</a>
       </nav>
 
@@ -54,44 +51,56 @@
         <a href="#workflow-operations">Feeds &amp; operations</a>
       </nav>
 
-      <a class="control-brand" href="/"><img src="/rob-robin.jpg?v=1" alt=""><span>Rob-bot<small>Control</small></span></a>
+      <a class="control-brand" href="/"><img src="/rob-robin.jpg?v=1" alt=""><span>Rob-bot Control Panel</span></a>
       <div class="control-appearance" role="group" aria-label="Appearance">
-        <button type="button" data-theme-choice="dark" aria-pressed="true">Dark</button>
-        <button type="button" data-theme-choice="light" aria-pressed="false">Light</button>
-        <button type="button" data-theme-choice="system" aria-pressed="false">System</button>
+        <button type="button" data-theme-choice="dark" aria-pressed="true" aria-label="Dark theme" title="Dark">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 15.3A8.5 8.5 0 0 1 8.7 4a8.5 8.5 0 1 0 11.3 11.3Z"/></svg>
+        </button>
+        <button type="button" data-theme-choice="light" aria-pressed="false" aria-label="Light theme" title="Light">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        </button>
+        <button type="button" data-theme-choice="system" aria-pressed="false" aria-label="Follow system theme" title="System">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        </button>
       </div>
     </aside>
 
     <div class="control-workspace commands-workspace">
       <main id="commandsMain" class="control-main commands-main" tabindex="-1">
         <section class="control-page-section commands-hero" aria-labelledby="commandsTitle">
-          <p class="control-eyebrow">Reference</p>
           <h1 id="commandsTitle">All Commands</h1>
-          <p class="control-page-intro">The complete public Rob-bot command manual. Search by command, permission, or task, then expand an entry for syntax, inputs, prerequisites, side effects, confirmation behavior, and examples.</p>
-          <p class="commands-meta">Public reference · No sign-in required</p>
+          <p class="control-page-intro">Find the right command by task, permission, or name.</p>
         </section>
 
         <section class="manual-toolbar" aria-label="Command search">
-          <div class="command-search-wrap">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg>
-            <input id="commandSearch" type="search" autocomplete="off" spellcheck="false" placeholder="Search commands, permissions, or tasks" aria-label="Search commands">
-            <kbd aria-hidden="true">/</kbd>
-            <button id="commandSearchClear" type="button" hidden>Clear</button>
+          <div class="command-search-row">
+            <label class="command-search-field" for="commandSearch">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg>
+              <input id="commandSearch" type="search" autocomplete="off" spellcheck="false" placeholder="Search commands, permissions, or tasks" aria-label="Search commands">
+              <kbd aria-hidden="true">/</kbd>
+            </label>
+            <button id="commandSearchClear" class="control-button control-button-secondary" type="button" hidden>Clear</button>
           </div>
           <div class="search-status"><span id="commandResultCount">Loading command index</span><span>Press / to search · Esc clears</span></div>
         </section>
 
-        <div id="manualContent" class="manual-content" aria-live="polite">
-          <p class="manual-loading">Loading commands…</p>
-        </div>
-        <noscript>
-          <div class="commands-note"><strong>JavaScript required</strong><p>Read the <a href="/commands.md">plain Markdown manual</a>.</p></div>
-        </noscript>
-
-        <footer class="commands-footer">Rob-bot · <a href="/">Control</a> · <a href="/handbook">Handbook</a> · <a href="https://github.com/Aedwon/marwie-server-bot" target="_blank" rel="noreferrer">GitHub</a></footer>
+        <div id="manualContent" class="manual-content" aria-live="polite"><p class="manual-loading">Loading commands…</p></div>
+        <noscript><div class="commands-note"><strong>JavaScript required</strong><p>Read the <a href="/commands.md">plain Markdown manual</a>.</p></div></noscript>
+        <footer class="commands-footer">Rob-bot · <a href="/control">Control</a> · <a href="/handbook">Handbook</a> · <a href="https://github.com/Aedwon/marwie-server-bot" target="_blank" rel="noreferrer">GitHub</a></footer>
       </main>
     </div>
   </div>
-  <script type="module" src="/commands.js?v=4"></script>
+
+  <dialog id="commandDialog" class="command-dialog" aria-labelledby="commandDialogTitle">
+    <div class="command-dialog-shell">
+      <header class="command-dialog-header">
+        <h2 id="commandDialogTitle"></h2>
+        <button class="control-button control-button-secondary" type="button" data-command-dialog-close>Close</button>
+      </header>
+      <div id="commandDialogBody" class="command-dialog-body"></div>
+    </div>
+  </dialog>
+
+  <script type="module" src="/commands.js?v=6"></script>
 </body>
 </html>

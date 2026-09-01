@@ -114,37 +114,89 @@ function activityTotal(bucket) {
     + Number(bucket?.reputation_events || 0);
 }
 
-function analyticsChartMarkup(projection) {
+function niceActivityMaximum(maximum) {
+  const value = Math.max(1, Number(maximum) || 0);
+  const magnitude = 10 ** Math.floor(Math.log10(value));
+  const normalized = value / magnitude;
+  const nice = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
+  return nice * magnitude;
+}
+
+function xTickIndexes(length, maximumTicks = 6) {
+  if (length <= 0) return [];
+  if (length <= maximumTicks) return Array.from({ length }, (_, index) => index);
+  const last = length - 1;
+  const indexes = new Set([0, last]);
+  for (let tick = 1; tick < maximumTicks - 1; tick += 1) {
+    indexes.add(Math.round((last * tick) / (maximumTicks - 1)));
+  }
+  return [...indexes].sort((left, right) => left - right);
+}
+
+function formatAxisBucket(bucket, selectedRange) {
+  const parsed = new Date(bucket?.period_start);
+  if (Number.isNaN(parsed.getTime())) return '';
+  const shortRange = selectedRange === '1d' || selectedRange === '3d';
+  return new Intl.DateTimeFormat(undefined, shortRange
+    ? { hour: 'numeric', minute: '2-digit', timeZone: 'UTC', timeZoneName: 'short' }
+    : { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(parsed);
+}
+
+function analyticsChartMarkup(projection, selectedRange) {
   const series = Array.isArray(projection?.series) ? projection.series : [];
   if (!series.length) return '';
+
   const totals = series.map(activityTotal);
-  const maximum = Math.max(1, ...totals);
+  const maximum = niceActivityMaximum(Math.max(0, ...totals));
+  const width = 720;
+  const height = 280;
+  const margin = { top: 18, right: 18, bottom: 50, left: 54 };
+  const plotWidth = width - margin.left - margin.right;
+  const plotHeight = height - margin.top - margin.bottom;
+  const xFor = index => series.length === 1
+    ? margin.left + (plotWidth / 2)
+    : margin.left + ((index / (series.length - 1)) * plotWidth);
+  const yFor = total => margin.top + plotHeight - ((total / maximum) * plotHeight);
+  const points = totals.map((total, index) => `${xFor(index).toFixed(2)},${yFor(total).toFixed(2)}`);
+  const yTicks = Array.from({ length: 5 }, (_, index) => {
+    const value = (maximum * index) / 4;
+    return {
+      value,
+      y: yFor(value),
+      label: Number.isInteger(value) ? String(value) : value.toFixed(1),
+    };
+  });
+  const xTicks = xTickIndexes(series.length).map(index => ({
+    index,
+    x: xFor(index),
+    label: formatAxisBucket(series[index], selectedRange),
+  }));
+  const summary = `${series.length} real UTC bucket${series.length === 1 ? '' : 's'} are plotted for ${selectedRange === 'all' ? 'All time' : selectedRange}. Activity ranges from ${Math.min(...totals)} to ${Math.max(...totals)} events per supplied bucket.`;
+
   return `
     <section class="analytics-chart-section" aria-labelledby="analytics-chart-title">
-      <div class="analytics-section-heading">
-        <div><h2 id="analytics-chart-title">Activity over time</h2><p>Recorded operational events in each UTC bucket. Values come from persisted repository data only.</p></div>
-      </div>
+      <div class="analytics-section-heading"><h2 id="analytics-chart-title">Activity over time</h2></div>
       <figure class="analytics-chart">
-        <div class="analytics-chart-bars" aria-hidden="true">
-          ${series.map((bucket, index) => {
-    const total = totals[index];
-    const height = total === 0 ? 2 : Math.max(8, Math.round((total / maximum) * 100));
-    return `<span class="analytics-chart-bar" style="--analytics-bar-height:${height}%" title="${escapeHtml(`${formatBucketPeriod(bucket)}: ${total} recorded events`)}"></span>`;
-  }).join('')}
-        </div>
-        <figcaption>Recorded activity events per UTC bucket. Open the data table for exact values.</figcaption>
+        <p class="control-visually-hidden" id="analytics-line-chart-summary">${escapeHtml(summary)}</p>
+        <svg class="analytics-line-chart" viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="analytics-chart-title analytics-line-chart-summary" preserveAspectRatio="xMidYMid meet">
+          <g class="analytics-axis analytics-axis-y" aria-hidden="true">
+            <line x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${margin.top + plotHeight}"></line>
+            ${yTicks.map(tick => `<g class="analytics-axis-tick"><line x1="${margin.left - 5}" y1="${tick.y.toFixed(2)}" x2="${margin.left}" y2="${tick.y.toFixed(2)}"></line><text x="${margin.left - 9}" y="${(tick.y + 4).toFixed(2)}" text-anchor="end">${escapeHtml(tick.label)}</text></g>`).join('')}
+            <text class="analytics-axis-label" x="14" y="${margin.top + (plotHeight / 2)}" text-anchor="middle" transform="rotate(-90 14 ${margin.top + (plotHeight / 2)})">Activity count</text>
+          </g>
+          <g class="analytics-axis analytics-axis-x" aria-hidden="true">
+            <line x1="${margin.left}" y1="${margin.top + plotHeight}" x2="${margin.left + plotWidth}" y2="${margin.top + plotHeight}"></line>
+            ${xTicks.map(tick => `<g class="analytics-axis-tick"><line x1="${tick.x.toFixed(2)}" y1="${margin.top + plotHeight}" x2="${tick.x.toFixed(2)}" y2="${margin.top + plotHeight + 5}"></line><text x="${tick.x.toFixed(2)}" y="${margin.top + plotHeight + 20}" text-anchor="middle">${escapeHtml(tick.label)}</text></g>`).join('')}
+            <text class="analytics-axis-label" x="${margin.left + (plotWidth / 2)}" y="${height - 6}" text-anchor="middle">UTC time / date</text>
+          </g>
+          ${series.length > 1 ? `<polyline class="analytics-line-path" points="${points.join(' ')}" fill="none"></polyline>` : ''}
+          ${series.map((bucket, index) => `<circle class="analytics-line-point" cx="${xFor(index).toFixed(2)}" cy="${yFor(totals[index]).toFixed(2)}" r="4" data-analytics-point="${index}"><title>${escapeHtml(`${formatBucketPeriod(bucket)}: ${totals[index]} activity events`)}</title></circle>`).join('')}
+        </svg>
+        <figcaption>Activity count per supplied UTC bucket from persisted server data.</figcaption>
       </figure>
-      <details class="analytics-series-data">
-        <summary>View chart data</summary>
-        <div class="analytics-series-table-wrap">
-          <table class="analytics-series-table">
-            <thead><tr><th>Period</th><th>Moderation</th><th>Opened</th><th>Closed</th><th>Quiz answers</th><th>Accuracy</th><th>Anonymous</th><th>Reputation</th></tr></thead>
-            <tbody>${series.map(bucket => `<tr><th scope="row">${escapeHtml(formatBucketPeriod(bucket))}</th><td>${escapeHtml(bucket.moderation_cases ?? 0)}</td><td>${escapeHtml(bucket.tickets_opened ?? 0)}</td><td>${escapeHtml(bucket.tickets_closed ?? 0)}</td><td>${escapeHtml(bucket.quiz_answers ?? 0)}</td><td>${escapeHtml(formatAccuracy(bucket.quiz_accuracy))}</td><td>${escapeHtml(bucket.anonymous_questions ?? 0)}</td><td>${escapeHtml(bucket.reputation_events ?? 0)}</td></tr>`).join('')}</tbody>
-          </table>
-        </div>
-      </details>
     </section>`;
 }
+
 
 function analyticsReportMarkup(snapshot, requestedRange) {
   const { selectedRange, projection } = rangeProjection(snapshot, requestedRange);
@@ -157,11 +209,13 @@ function analyticsReportMarkup(snapshot, requestedRange) {
 
   return `
     <section class="analytics-dashboard" data-active-analytics-range="${escapeHtml(selectedRange)}">
-      ${rangeControlsMarkup(snapshot, selectedRange)}
-      <section class="analytics-period" aria-label="Selected analytics range">
-        <span><strong>From</strong> ${escapeHtml(formatPeriod(projection.period_start))}</span>
-        <span><strong>To</strong> ${escapeHtml(formatPeriod(projection.period_end))}</span>
-      </section>
+      <div class="analytics-range-row">
+        <section class="analytics-period" aria-label="Selected analytics range">
+          <span><strong>From</strong> ${escapeHtml(formatPeriod(projection.period_start))}</span>
+          <span><strong>To</strong> ${escapeHtml(formatPeriod(projection.period_end))}</span>
+        </section>
+        ${rangeControlsMarkup(snapshot, selectedRange)}
+      </div>
       <dl class="analytics-metrics" aria-label="Selected period operational metrics">
         ${metricDefinition('Moderation cases', projection.moderation_cases ?? 0)}
         ${metricDefinition('Tickets opened', projection.tickets_opened ?? 0)}
@@ -171,7 +225,7 @@ function analyticsReportMarkup(snapshot, requestedRange) {
         ${metricDefinition('Anonymous questions', projection.anonymous_questions ?? 0)}
         ${metricDefinition('Reputation events', projection.reputation_events ?? 0)}
       </dl>
-      ${analyticsChartMarkup(projection)}
+      ${analyticsChartMarkup(projection, selectedRange)}
     </section>`;
 }
 
