@@ -238,6 +238,10 @@ class ControlPlaneCog(commands.Cog):
         ):
             return
         logger.info("Control wake received webhook_id=%s", webhook_id)
+        try:
+            await message.delete()
+        except discord.HTTPException:
+            logger.warning("Could not delete Control wake message webhook_id=%s", webhook_id)
         processed = await self._drain_actions()
         logger.info("Control wake drain complete processed=%s", processed)
 
