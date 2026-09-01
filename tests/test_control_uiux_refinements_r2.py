@@ -50,7 +50,9 @@ def test_voice_control_ownership_and_revision_ignore_coworking() -> None:
     assert page_revision(base, page_key) != page_revision(voice_changed, page_key)
 
 
-async def test_control_analytics_dashboard_uses_real_multi_range_data_and_contiguous_buckets() -> None:
+async def test_control_analytics_dashboard_uses_real_multi_range_data_and_contiguous_buckets() -> (
+    None
+):
     database = await _database()
     now = datetime(2026, 9, 1, 12, 0, tzinfo=UTC)
 
