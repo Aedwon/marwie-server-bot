@@ -10,7 +10,7 @@ from marwie_bot.features.control_plane.cog import ControlPlaneCog
 @pytest.mark.asyncio
 async def test_control_wake_message_is_deleted_before_queue_drain() -> None:
     cog = object.__new__(ControlPlaneCog)
-    cog.settings = SimpleNamespace(
+    cog.settings = SimpleNamespace(  # type: ignore[assignment]
         enable_background_tasks=True,
         control_wake_webhook_id=123,
     )
@@ -37,7 +37,7 @@ async def test_control_wake_message_is_deleted_before_queue_drain() -> None:
 @pytest.mark.asyncio
 async def test_unrelated_webhook_message_is_not_deleted_or_drained() -> None:
     cog = object.__new__(ControlPlaneCog)
-    cog.settings = SimpleNamespace(
+    cog.settings = SimpleNamespace(  # type: ignore[assignment]
         enable_background_tasks=True,
         control_wake_webhook_id=123,
     )
