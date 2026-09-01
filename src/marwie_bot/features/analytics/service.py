@@ -133,7 +133,7 @@ def _all_time_buckets(start: datetime, end: datetime) -> list[tuple[datetime, da
     span = end - start
     count = min(12, max(1, math.ceil(span.total_seconds() / 86400)))
     boundaries = [start + (span * index / count) for index in range(count)] + [end]
-    return list(zip(boundaries, boundaries[1:]))
+    return list(zip(boundaries, boundaries[1:], strict=False))
 
 
 class AnalyticsService:
