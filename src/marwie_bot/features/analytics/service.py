@@ -221,7 +221,7 @@ class AnalyticsService:
                         time_column < current,
                     )
                 )
-                value = (await session.execute(statement)).scalar_one_or_none()
+                value: datetime | None = (await session.execute(statement)).scalar_one_or_none()
                 if value is None:
                     return None
                 if value.tzinfo is None:
