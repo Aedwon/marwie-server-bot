@@ -12,6 +12,7 @@ import {
   snapshotIsFresh,
   tryWakeControlWorker,
 } from './_lib/control.js';
+import { normalizeSnapshotChannelCapabilities } from './_lib/snapshot-compat.js';
 
 const REFRESH_BUCKET_MS = 5 * 1000;
 const REFRESH_WAIT_MS = 75 * 1000;
@@ -75,7 +76,7 @@ async function waitForFreshSnapshot(guildId, wakeDelivered) {
 function sendSnapshot(res, row) {
   json(res, 200, {
     guild_id: String(row.guild_id),
-    state: row.snapshot_json,
+    state: normalizeSnapshotChannelCapabilities(row.snapshot_json),
     snapshot: {
       updated_at: row.updated_at,
       worker_version: row.worker_version,
