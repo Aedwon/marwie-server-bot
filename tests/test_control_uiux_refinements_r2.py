@@ -135,7 +135,7 @@ async def test_control_analytics_dashboard_uses_real_multi_range_data_and_contig
             series = range_projection["series"]
             assert series[0]["period_start"] == range_projection["period_start"]
             assert series[-1]["period_end"] == range_projection["period_end"]
-            for left, right in zip(series, series[1:]):
+            for left, right in zip(series, series[1:], strict=False):
                 assert left["period_end"] == right["period_start"]
             assert all("quiz_correct" not in bucket for bucket in series)
 
