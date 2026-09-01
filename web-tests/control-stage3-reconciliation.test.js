@@ -14,7 +14,7 @@ test('Stage 3 app registers every canonical domain module and stylesheet', () =>
     'registerMappingPages',
     'workflowPageMarkup',
     '/control-community.css?v=1',
-    '/control-content.css?v=1',
+    '/control-content.css?v=2',
     '/control-utilities.css?v=1',
     '/control-analytics-workflows.css?v=1',
     '/control-mappings.css?v=1',
