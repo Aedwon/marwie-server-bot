@@ -43,6 +43,7 @@ const CHANNEL_RESOURCE_KEYS = new Set([
   'moderation_log', 'ticket_panel', 'ticket_logs', 'create_workspace_voice', 'coworking_lounge',
   'announcements', 'live_announcements', 'role_panel', 'ai_updates', 'quiz_channel',
   'anon_questions', 'analytics', 'showcase_forum', 'app_of_the_week', 'collab_lfg', 'bot_log',
+  'compromised_account_trap',
 ]);
 
 
