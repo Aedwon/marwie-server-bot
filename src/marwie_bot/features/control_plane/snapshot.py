@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+from collections.abc import Iterable
 from typing import Any
 
 import discord
@@ -110,6 +111,20 @@ def _channel_capabilities(
         "send_messages": bool(permissions.send_messages),
         "embed_links": bool(permissions.embed_links),
     }
+
+
+def serialize_guild_emojis(emojis: Iterable[Any]) -> list[dict[str, Any]]:
+    return [
+        {
+            "id": _id(int(emoji.id)),
+            "name": str(emoji.name),
+            "animated": bool(emoji.animated),
+            "available": True,
+            "url": str(emoji.url),
+        }
+        for emoji in emojis
+        if bool(getattr(emoji, "available", True))
+    ]
 
 
 def serialize_setup_plan(plan: AutoSetupPlan) -> dict[str, Any]:
@@ -298,6 +313,7 @@ class GuildSnapshotBuilder:
             for role in guild.roles
             if not role.is_default()
         ]
+        emojis = serialize_guild_emojis(guild.emojis)
         members = [
             {"id": _id(member.id), "name": member.display_name}
             for member in guild.members
@@ -332,6 +348,7 @@ class GuildSnapshotBuilder:
             "features": feature_rows,
             "channels": channels,
             "roles": roles,
+            "emojis": emojis,
             "members": members,
             "member_directory_complete": guild.chunked,
             "ticket_types": [
