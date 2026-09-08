@@ -1,4 +1,4 @@
-name: Restart Rob-bot
+name: Diagnose Rob-bot
 
 on:
   push:
@@ -12,42 +12,35 @@ permissions:
   contents: read
 
 jobs:
-  restart:
+  diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 3
     env:
       BOT_HOSTING_API_KEY: ${{ secrets.BOT_HOSTING_API_KEY }}
       BOT_HOSTING_DEPLOYMENT_ID: ${{ secrets.BOT_HOSTING_DEPLOYMENT_ID }}
 
     steps:
-      - name: Validate restart configuration
+      - name: Validate diagnostic configuration
         shell: bash
         run: |
           set -euo pipefail
+          [[ -n "${BOT_HOSTING_API_KEY}" ]] || { echo "::error::Missing repository secret BOT_HOSTING_API_KEY"; exit 1; }
+          [[ -n "${BOT_HOSTING_DEPLOYMENT_ID}" ]] || { echo "::error::Missing repository secret BOT_HOSTING_DEPLOYMENT_ID"; exit 1; }
 
-          if [[ -z "${BOT_HOSTING_API_KEY}" ]]; then
-            echo "::error::Missing repository secret BOT_HOSTING_API_KEY"
-            exit 1
-          fi
-
-          if [[ -z "${BOT_HOSTING_DEPLOYMENT_ID}" ]]; then
-            echo "::error::Missing repository secret BOT_HOSTING_DEPLOYMENT_ID"
-            exit 1
-          fi
-
-      - name: Restart Bot-Hosting deployment
+      - name: Read linked Git state
         shell: bash
         run: |
           set -euo pipefail
+          curl --fail-with-body --silent --show-error \
+            --header "Authorization: Bearer ${BOT_HOSTING_API_KEY}" \
+            "https://bot-hosting.net/api/v1/deployments/${BOT_HOSTING_DEPLOYMENT_ID}/git"
+          echo
 
-          response="$(
-            curl --fail-with-body --silent --show-error \
-              --request POST \
-              --header "Authorization: Bearer ${BOT_HOSTING_API_KEY}" \
-              --header "Content-Type: application/json" \
-              --data '{"action":"restart"}' \
-              "https://bot-hosting.net/api/v1/deployments/${BOT_HOSTING_DEPLOYMENT_ID}/power"
-          )"
-
-          printf '%s\n' "${response}"
-          echo "Restart request accepted. Bot-Hosting Auto Pull should re-pull the linked branch during restart."
+      - name: Diagnose Bot-Hosting deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail-with-body --silent --show-error \
+            --header "Authorization: Bearer ${BOT_HOSTING_API_KEY}" \
+            "https://bot-hosting.net/api/v1/deployments/${BOT_HOSTING_DEPLOYMENT_ID}/diagnose?waitSeconds=45"
+          echo
