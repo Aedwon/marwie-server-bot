@@ -10,6 +10,7 @@ import {
 
 const CHANNEL_KEYS = [
   'moderation_log',
+  'compromised_account_trap',
   'ticket_panel',
   'ticket_logs',
   'create_workspace_voice',

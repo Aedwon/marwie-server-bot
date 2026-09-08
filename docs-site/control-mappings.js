@@ -4,8 +4,10 @@ import {
   registeredControlPage,
 } from './control-page-registry.js';
 
+const COMPROMISED_ACCOUNT_TRAP_KEY = 'compromised_account_trap';
 const CHANNEL_KEYS = Object.freeze([
   'moderation_log',
+  COMPROMISED_ACCOUNT_TRAP_KEY,
   'ticket_panel',
   'ticket_logs',
   'create_workspace_voice',
@@ -52,6 +54,14 @@ export const MAPPING_PAGE_CONFIGS = Object.freeze({
 
 export const MAPPING_RESOURCE_DEFINITIONS = Object.freeze({
   moderation_log: Object.freeze({ label: 'Moderation log', group: 'channels', kind: 'text' }),
+  compromised_account_trap: Object.freeze({
+    label: 'Compromised account trap',
+    group: 'channels',
+    kind: 'text',
+    manualOnly: true,
+    destructive: true,
+    warning: 'Any human who sends a new message in this channel will trigger automatic compromised-account enforcement.',
+  }),
   ticket_panel: Object.freeze({ label: 'Ticket panel', group: 'channels', kind: 'text' }),
   ticket_logs: Object.freeze({ label: 'Ticket logs', group: 'channels', kind: 'text' }),
   create_workspace_voice: Object.freeze({ label: 'Create workspace voice', group: 'channels', kind: 'voice' }),
@@ -77,6 +87,38 @@ export const MAPPING_RESOURCE_DEFINITIONS = Object.freeze({
 const suggestionReviewOpen = new Set();
 const suggestionConfirmations = new Map();
 const suggestionOperations = new Map();
+const destructiveMappingConfirmations = new Map();
+
+function mappingId(value) {
+  const raw = value && typeof value === 'object' ? value.id : value;
+  return raw == null || raw === '' ? null : String(raw);
+}
+
+export function requiresDestructiveMappingConfirmation(persisted, draft) {
+  const current = mappingId(persisted?.[COMPROMISED_ACCOUNT_TRAP_KEY]);
+  const selected = mappingId(draft?.[COMPROMISED_ACCOUNT_TRAP_KEY]);
+  return selected !== null && selected !== current;
+}
+
+function destructiveConfirmationStateFor(pageKey, persisted, draft) {
+  const selectedId = mappingId(draft?.[COMPROMISED_ACCOUNT_TRAP_KEY]);
+  const required = requiresDestructiveMappingConfirmation(persisted, draft);
+  const existing = destructiveMappingConfirmations.get(pageKey);
+
+  if (!required) {
+    const fresh = { selectedId, acknowledged: false, required: false };
+    destructiveMappingConfirmations.set(pageKey, fresh);
+    return fresh;
+  }
+
+  if (existing?.selectedId === selectedId) {
+    return { ...existing, required: true };
+  }
+
+  const fresh = { selectedId, acknowledged: false, required: true };
+  destructiveMappingConfirmations.set(pageKey, fresh);
+  return fresh;
+}
 
 function reviewPlanHash(snapshot) {
   return String(snapshot?.mappings_review?.plan_hash || '');
@@ -231,6 +273,18 @@ export function createMappingPageDefinition(pageKey) {
           errors[key] = `${MAPPING_RESOURCE_DEFINITIONS[key].label} must use an available ${kindLabel(MAPPING_RESOURCE_DEFINITIONS[key].kind)}.`;
         }
       }
+
+      const persisted = {
+        [COMPROMISED_ACCOUNT_TRAP_KEY]: persistedIds[COMPROMISED_ACCOUNT_TRAP_KEY] ?? null,
+      };
+      const confirmation = destructiveConfirmationStateFor(pageKey, persisted, draft);
+      if (
+        confirmation.required
+        && !confirmation.acknowledged
+        && !errors[COMPROMISED_ACCOUNT_TRAP_KEY]
+      ) {
+        errors[COMPROMISED_ACCOUNT_TRAP_KEY] = 'Confirm automatic compromised-account enforcement before saving.';
+      }
       return errors;
     },
 
@@ -273,15 +327,20 @@ export function registerMappingPages() {
   }
 }
 
-function healthFor(row) {
-  if (row?.id && row.exists) return { label: 'Connected', className: 'good' };
+function healthFor(key, row) {
+  if (row?.id && row.exists) {
+    return {
+      label: key === COMPROMISED_ACCOUNT_TRAP_KEY ? 'Armed' : 'Connected',
+      className: 'good',
+    };
+  }
   if (row?.id) return { label: 'Unavailable', className: 'bad' };
   return { label: 'Not connected', className: 'neutral' };
 }
 
 function readRow(key, row) {
   const definition = MAPPING_RESOURCE_DEFINITIONS[key];
-  const health = healthFor(row);
+  const health = healthFor(key, row);
   const current = row?.id && row.exists
     ? (row.name || 'Connected Discord resource')
     : row?.id
@@ -323,14 +382,17 @@ export function mappingSuggestionGroups(snapshot) {
   const groups = { channels: [], roles: [], categories: [] };
   for (const item of snapshot?.mappings_review?.proposed || []) {
     const definition = MAPPING_RESOURCE_DEFINITIONS[item?.key];
-    if (!definition || !groups[definition.group]) continue;
+    if (!definition || definition.manualOnly || !groups[definition.group]) continue;
     groups[definition.group].push({ ...item, group: definition.group });
   }
   return groups;
 }
 
 function approvedProposals(snapshot) {
-  return (snapshot?.mappings_review?.proposed || []).filter(item => Boolean(MAPPING_RESOURCE_DEFINITIONS[item?.key]));
+  return (snapshot?.mappings_review?.proposed || []).filter(item => {
+    const definition = MAPPING_RESOURCE_DEFINITIONS[item?.key];
+    return Boolean(definition && !definition.manualOnly);
+  });
 }
 
 export function mappingSuggestionApplyPayload(snapshot, confirmedKeys = new Set()) {
@@ -431,6 +493,21 @@ function suggestionMarkup(pageKey, snapshot) {
     </section>`;
 }
 
+function destructiveMappingMarkup(pageKey, state) {
+  const confirmation = destructiveConfirmationStateFor(pageKey, state.persisted, state.draft);
+  if (!confirmation.required) return '';
+
+  const definition = MAPPING_RESOURCE_DEFINITIONS[COMPROMISED_ACCOUNT_TRAP_KEY];
+  return `
+    <aside class="mapping-destructive-warning" role="alert">
+      <p>${escapeHtml(definition.warning)}</p>
+      <label class="mapping-confirmation">
+        <input type="checkbox" data-mapping-destructive-confirm="${COMPROMISED_ACCOUNT_TRAP_KEY}"${confirmation.acknowledged ? ' checked' : ''}>
+        I understand that mapping this channel arms automatic compromised-account enforcement.
+      </label>
+    </aside>`;
+}
+
 export function mappingPageMarkup({ pageKey, state, snapshot } = {}) {
   const config = MAPPING_PAGE_CONFIGS[pageKey];
   if (!config) return '';
@@ -454,6 +531,7 @@ export function mappingPageMarkup({ pageKey, state, snapshot } = {}) {
         <div class="mapping-edit-grid">
           ${config.resourceKeys.map(key => editRow(key, state.persisted[key], state.draft[key], snapshot, state.errors?.[key])).join('')}
         </div>
+        ${destructiveMappingMarkup(pageKey, state)}
         <div class="mapping-page-actions">
           <button class="control-button control-button-primary" type="button" data-mapping-save${state.dirty && !Object.keys(state.errors || {}).length && state.status !== 'saving' ? '' : ' disabled'}>${state.status === 'saving' ? 'Saving…' : 'Save changes'}</button>
           <button class="control-button control-button-secondary" type="button" data-mapping-discard${state.status === 'saving' ? ' disabled' : ''}>Discard</button>
@@ -506,6 +584,7 @@ export function installMappingPageInteractions({
 
     const discard = event.target?.closest?.('[data-mapping-discard]');
     if (discard) {
+      destructiveMappingConfirmations.delete(pageKey);
       store.discard(pageKey);
       store.get(pageKey).mode = 'read';
       rerender();
@@ -593,6 +672,23 @@ export function installMappingPageInteractions({
         rerender();
         return;
       }
+    }
+
+    const destructiveConfirmation = event.target?.closest?.('[data-mapping-destructive-confirm]');
+    if (
+      destructiveConfirmation?.dataset?.mappingDestructiveConfirm
+      === COMPROMISED_ACCOUNT_TRAP_KEY
+    ) {
+      const state = store.get(pageKey);
+      const selectedId = mappingId(state.draft?.[COMPROMISED_ACCOUNT_TRAP_KEY]);
+      destructiveMappingConfirmations.set(pageKey, {
+        selectedId,
+        acknowledged: Boolean(destructiveConfirmation.checked),
+        required: true,
+      });
+      store.updateDraft(pageKey, draft => draft);
+      rerender();
+      return;
     }
 
     const confirmation = event.target?.closest?.('[data-mapping-confirm-key]');
