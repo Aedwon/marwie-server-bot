@@ -19,7 +19,9 @@ class _Repository:
     def __init__(self) -> None:
         self.saved: dict[str, Any] | None = None
 
-    async def upsert_snapshot(self, guild_id: int, snapshot: dict[str, Any], worker_id: str) -> None:
+    async def upsert_snapshot(
+        self, guild_id: int, snapshot: dict[str, Any], worker_id: str
+    ) -> None:
         assert guild_id == 123
         assert worker_id == "test-worker"
         self.saved = snapshot
