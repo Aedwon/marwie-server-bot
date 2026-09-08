@@ -1,5 +1,9 @@
+import sqlite3
+from pathlib import Path
+
 from sqlalchemy.engine import make_url
 
+from marwie_bot.db.migrations import upgrade_database
 from marwie_bot.db.session import normalize_database_url
 
 
@@ -48,3 +52,14 @@ def test_preserves_explicit_asyncpg_ssl_override() -> None:
 
     assert url.query["ssl"] == "verify-full"
     assert "sslmode" not in url.query
+
+
+async def test_notification_emoji_storage_migration_applies_on_sqlite(tmp_path: Path) -> None:
+    database_path = tmp_path / "notification-emoji-migration.sqlite3"
+    await upgrade_database(f"sqlite:///{database_path}")
+
+    with sqlite3.connect(database_path) as connection:
+        columns = connection.execute("PRAGMA table_info(notification_role_buttons)").fetchall()
+
+    emoji_column = next(column for column in columns if column[1] == "emoji")
+    assert emoji_column[2] == "VARCHAR(100)"
