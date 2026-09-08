@@ -253,7 +253,7 @@ def validate_action_payload(
                     "role_id": role_id,
                     "label": _text(raw.get("label"), field="Button label", max_length=80),
                     "emoji": _text(
-                        raw.get("emoji"), field="Button emoji", max_length=32, required=False
+                        raw.get("emoji"), field="Button emoji", max_length=100, required=False
                     ),
                     "style": style,
                 }
