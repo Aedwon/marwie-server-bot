@@ -61,7 +61,9 @@ test('reputation page accepts its feature toggle and thresholds in one logical s
   assert.equal(result.changes.length, 2);
 });
 
-test('notification role page-save resolves destination from Mappings instead of requiring channel_id', () => {
+test('notification role page-save resolves destination from Mappings and preserves full custom emoji', () => {
+  const emoji = `<a:${'x'.repeat(32)}:1234567890123456789>`;
+  assert.ok(emoji.length > 32);
   const payload = {
     title: 'AI Updates',
     description: "Get tagged for when there's a major update from the model providers.",
@@ -69,7 +71,7 @@ test('notification role page-save resolves destination from Mappings instead of 
       {
         role_id: '1234567890123456789',
         label: 'Grok',
-        emoji: ':grok:',
+        emoji,
         style: 'primary',
       },
     ],
@@ -92,6 +94,7 @@ test('notification role page-save resolves destination from Mappings instead of 
 
   assert.equal(result.changes[0].payload.channel_id, null);
   assert.equal(result.changes[0].payload.title, 'AI Updates');
+  assert.equal(result.changes[0].payload.buttons[0].emoji, emoji);
 });
 
 test('page-save rejects cross-page feature ownership and legacy Build Help mappings', () => {
