@@ -1,6 +1,7 @@
 import pytest
 
 from marwie_bot.features.control_plane.domain import ControlActionType
+from marwie_bot.features.control_plane.models import NotificationRoleButton
 from marwie_bot.features.control_plane.validation import (
     ActionPermission,
     required_permission,
@@ -106,6 +107,24 @@ def test_notification_panel_rejects_duplicate_roles() -> None:
                 ],
             },
         )
+
+
+def test_notification_panel_accepts_full_custom_emoji_value() -> None:
+    emoji = f"<a:{'x' * 32}:1234567890123456789>"
+    assert len(emoji) > 32
+    payload = validate_action_payload(
+        ControlActionType.SAVE_NOTIFICATION_PANEL,
+        {
+            "channel_id": "10",
+            "title": "Notifications",
+            "description": "Choose roles.",
+            "buttons": [
+                {"role_id": "20", "label": "Updates", "emoji": emoji, "style": "primary"},
+            ],
+        },
+    )
+    assert payload["buttons"][0]["emoji"] == emoji
+    assert NotificationRoleButton.__table__.c.emoji.type.length >= len(emoji)
 
 
 def test_announcement_mentions_are_explicit_structured_targets() -> None:
