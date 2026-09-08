@@ -39,6 +39,7 @@ const RESOURCE_KEYS = new Set([
   'live_announcements', 'live_ping_role', 'role_panel', 'ai_updates', 'quiz_channel',
   'anon_questions', 'analytics', 'showcase_forum',
   'app_of_the_week', 'collab_lfg', 'builder_role', 'contributor_role', 'mentor_role', 'bot_log',
+  'compromised_account_trap',
 ]);
 
 const MAPPING_RESOURCE_KEYS = new Set([

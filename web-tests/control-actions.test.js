@@ -30,6 +30,22 @@ test('Discord snowflakes remain strings beyond JavaScript safe integer range', (
 });
 
 
+test('compromised account trap accepts direct set and clear resource actions', () => {
+  const snowflake = '1546719767929552997';
+  assert.deepEqual(
+    validateActionPayload(ACTIONS.SET_RESOURCE, {
+      key: 'compromised_account_trap',
+      discord_id: snowflake,
+    }),
+    { key: 'compromised_account_trap', discord_id: snowflake },
+  );
+  assert.deepEqual(
+    validateActionPayload(ACTIONS.CLEAR_RESOURCE, { key: 'compromised_account_trap' }),
+    { key: 'compromised_account_trap' },
+  );
+});
+
+
 test('ticket administration cannot be weakened to Manage Server', () => {
   assert.throws(
     () => requireBrowserPermission({ permissions: MANAGE_GUILD, owner: false }, ACTIONS.UPSERT_TICKET_TYPE),
