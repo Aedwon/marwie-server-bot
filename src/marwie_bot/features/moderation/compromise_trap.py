@@ -211,7 +211,11 @@ class CompromisedAccountTrapCog(commands.Cog):
         )
         embed.add_field(name="Containment", value=containment_status, inline=True)
         embed.add_field(name="Incident", value=str(incident_id), inline=True)
-        embed.add_field(name="Case", value=str(case_id) if case_id is not None else "Unavailable", inline=True)
+        embed.add_field(
+            name="Case",
+            value=str(case_id) if case_id is not None else "Unavailable",
+            inline=True,
+        )
 
         try:
             await channel.send(embed=embed)
@@ -275,7 +279,9 @@ class CompromisedAccountTrapCog(commands.Cog):
                     message.id,
                     result.incident_id,
                     type(error).__name__,
-                    result.containment_status.value if result.containment_status is not None else None,
+                    result.containment_status.value
+                    if result.containment_status is not None
+                    else None,
                     exc_info=(type(error), error, error.__traceback__),
                 )
             else:
@@ -288,7 +294,9 @@ class CompromisedAccountTrapCog(commands.Cog):
             trigger_message_id=message.id,
             incident_id=result.incident_id,
             case_id=case_id,
-            ban_status=result.ban_status.value if result.ban_status is not None else "not_attempted",
+            ban_status=result.ban_status.value
+            if result.ban_status is not None
+            else "not_attempted",
             cleanup_path=str(result.metadata.get("cleanup_path", "none")),
             deleted_message_count=result.deleted_message_count,
             failed_scope_ids=_failed_scope_ids(result.failed_scopes),
