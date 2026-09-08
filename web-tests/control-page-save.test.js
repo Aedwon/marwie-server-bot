@@ -61,6 +61,24 @@ test('reputation page accepts its feature toggle and thresholds in one logical s
   assert.equal(result.changes.length, 2);
 });
 
+test('channels Mappings page owns compromised account trap direct mapping', () => {
+  const snowflake = '1546719767929552997';
+  const result = validate({
+    page_key: '/control/mappings/channels',
+    base_revision: 'a'.repeat(64),
+    changes: [
+      {
+        action_type: 'set_resource',
+        payload: { key: 'compromised_account_trap', discord_id: snowflake },
+      },
+    ],
+  });
+  assert.deepEqual(result.changes[0].payload, {
+    key: 'compromised_account_trap',
+    discord_id: snowflake,
+  });
+});
+
 test('notification role page-save resolves destination from Mappings and preserves full custom emoji', () => {
   const emoji = `<a:${'x'.repeat(32)}:1234567890123456789>`;
   assert.ok(emoji.length > 32);
