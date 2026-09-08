@@ -3,7 +3,9 @@ from typing import Any
 
 import discord
 
+from marwie_bot.features.control_plane import cog as control_plane_cog_module
 from marwie_bot.features.control_plane import notification_panel as notification_panel_module
+from marwie_bot.features.control_plane.cog import ControlPlaneCog
 from marwie_bot.features.control_plane.notification_panel import (
     button_custom_id,
     button_style,
@@ -125,3 +127,41 @@ async def test_legacy_notification_panel_is_adopted_without_posting_a_duplicate(
         ],
         "updated_by": bot_user_id,
     }
+
+
+async def test_notification_view_registration_adopts_legacy_panel_first(monkeypatch: Any) -> None:
+    guild = SimpleNamespace(id=123)
+    resources = _Resources(321, 456)
+    repository = _Repository()
+    calls: list[tuple[int, int, object, object]] = []
+
+    async def adopt(**kwargs: Any) -> None:
+        calls.append(
+            (
+                kwargs["guild"].id,
+                kwargs["bot_user_id"],
+                kwargs["resources"],
+                kwargs["repository"],
+            )
+        )
+
+    monkeypatch.setattr(
+        control_plane_cog_module,
+        "adopt_legacy_notification_panel",
+        adopt,
+        raising=False,
+    )
+    bot = SimpleNamespace(
+        user=SimpleNamespace(id=999),
+        guilds=[guild],
+        add_view=lambda *args, **kwargs: None,
+    )
+    executor = SimpleNamespace(resources=resources)
+    cog = object.__new__(ControlPlaneCog)
+    object.__setattr__(cog, "bot", bot)
+    object.__setattr__(cog, "repository", repository)
+    object.__setattr__(cog, "executor", executor)
+
+    await cog._register_notification_views()
+
+    assert calls == [(123, 999, resources, repository)]
