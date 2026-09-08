@@ -15,11 +15,11 @@ from marwie_bot.features.moderation.compromise_trap_repository import (
     SQLAlchemyCompromiseTrapRepository,
 )
 from marwie_bot.features.moderation.compromise_trap_service import (
+    TRAP_REASON,
     BanAttempt,
     CleanupFailure,
     CleanupResult,
     CompromiseTrapService,
-    TRAP_REASON,
     TrapTrigger,
 )
 from marwie_bot.features.moderation.repository import SQLAlchemyModerationRepository
