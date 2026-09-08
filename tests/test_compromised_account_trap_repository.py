@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -18,13 +19,13 @@ from marwie_bot.features.moderation.compromise_trap_repository import (
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def _database(tmp_path: Path) -> Database:
+async def _database(tmp_path: Path) -> Database:
     path = tmp_path / "trap.db"
     url = f"sqlite+aiosqlite:///{path}"
     config = Config(str(ROOT / "alembic.ini"))
     config.set_main_option("script_location", str(ROOT / "migrations"))
     config.set_main_option("sqlalchemy.url", url)
-    command.upgrade(config, "head")
+    await asyncio.to_thread(command.upgrade, config, "head")
     return Database(url)
 
 
@@ -38,7 +39,7 @@ async def _count(database: Database) -> int:
 
 @pytest.mark.asyncio
 async def test_claim_persists_in_progress_incident_before_return(tmp_path: Path) -> None:
-    database = _database(tmp_path)
+    database = await _database(tmp_path)
     repository = SQLAlchemyCompromiseTrapRepository(database)
     triggered_at = datetime(2026, 9, 9, 3, 0, tzinfo=UTC)
 
@@ -67,7 +68,7 @@ async def test_claim_persists_in_progress_incident_before_return(tmp_path: Path)
 
 @pytest.mark.asyncio
 async def test_active_same_user_is_in_flight_but_different_user_can_claim(tmp_path: Path) -> None:
-    database = _database(tmp_path)
+    database = await _database(tmp_path)
     repository = SQLAlchemyCompromiseTrapRepository(database)
     now = datetime(2026, 9, 9, 3, 5, tzinfo=UTC)
 
@@ -107,7 +108,7 @@ async def test_active_same_user_is_in_flight_but_different_user_can_claim(tmp_pa
 
 @pytest.mark.asyncio
 async def test_finalize_clears_active_key_and_persists_durable_cooldown(tmp_path: Path) -> None:
-    database = _database(tmp_path)
+    database = await _database(tmp_path)
     repository = SQLAlchemyCompromiseTrapRepository(database)
     triggered_at = datetime(2026, 9, 9, 3, 10, tzinfo=UTC)
     finalized_at = triggered_at + timedelta(seconds=5)
@@ -154,7 +155,7 @@ async def test_finalize_clears_active_key_and_persists_durable_cooldown(tmp_path
 
 @pytest.mark.asyncio
 async def test_cooldown_blocks_then_expires_for_same_user(tmp_path: Path) -> None:
-    database = _database(tmp_path)
+    database = await _database(tmp_path)
     repository = SQLAlchemyCompromiseTrapRepository(database)
     triggered_at = datetime(2026, 9, 9, 3, 20, tzinfo=UTC)
     finalized_at = triggered_at + timedelta(seconds=2)
@@ -208,7 +209,7 @@ async def test_cooldown_blocks_then_expires_for_same_user(tmp_path: Path) -> Non
 
 @pytest.mark.asyncio
 async def test_restart_reconciliation_is_idempotent_and_never_reclaims(tmp_path: Path) -> None:
-    database = _database(tmp_path)
+    database = await _database(tmp_path)
     repository = SQLAlchemyCompromiseTrapRepository(database)
     now = datetime(2026, 9, 9, 3, 30, tzinfo=UTC)
 
@@ -237,7 +238,7 @@ async def test_restart_reconciliation_is_idempotent_and_never_reclaims(tmp_path:
 
 @pytest.mark.asyncio
 async def test_duplicate_trigger_message_id_is_non_destructive(tmp_path: Path) -> None:
-    database = _database(tmp_path)
+    database = await _database(tmp_path)
     repository = SQLAlchemyCompromiseTrapRepository(database)
     now = datetime(2026, 9, 9, 3, 40, tzinfo=UTC)
 

@@ -289,3 +289,39 @@ class ShowcaseSpotlight(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class CompromisedAccountIncident(Base):
+    __tablename__ = "compromised_account_incidents"
+    __table_args__ = (
+        UniqueConstraint(
+            "trigger_message_id",
+            name="uq_compromised_account_incidents_trigger_message_id",
+        ),
+        UniqueConstraint("active_key", name="uq_compromised_account_incidents_active_key"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    guild_id: Mapped[int] = mapped_column(BigInteger, nullable=False, index=True)
+    target_id: Mapped[int] = mapped_column(BigInteger, nullable=False, index=True)
+    trigger_channel_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    trigger_message_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    triggered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    containment_status: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    ban_status: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    ban_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    native_delete_requested: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    fallback_cleanup_run: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    deleted_message_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    failed_scopes_json: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
+    active_key: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    cooldown_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
