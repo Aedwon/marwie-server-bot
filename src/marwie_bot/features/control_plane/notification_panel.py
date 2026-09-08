@@ -5,17 +5,41 @@ from typing import Protocol
 
 import discord
 
+from marwie_bot.config.resources import ResourceKey
+from marwie_bot.features.configuration.service import ResourceService
 from marwie_bot.features.control_plane.domain import NotificationRolePanelRecord
 
 logger = logging.getLogger(__name__)
 
 _CUSTOM_ID_PREFIX = "rob:self-role:"
+_LEGACY_PANEL_TITLE = "Notification roles"
+_LEGACY_PANEL_DESCRIPTION = (
+    "Use the button below to toggle optional community notifications. "
+    "You can press it again at any time to remove the role."
+)
+_LEGACY_BUTTON_LABEL = "Live Notifications"
 
 
 class PanelMessageRepository(Protocol):
     async def set_notification_panel_message(
         self, guild_id: int, message_id: int
     ) -> NotificationRolePanelRecord | None: ...
+
+
+class NotificationPanelRepository(PanelMessageRepository, Protocol):
+    async def get_notification_panel(self, guild_id: int) -> NotificationRolePanelRecord | None: ...
+
+    async def save_notification_panel(
+        self,
+        *,
+        guild_id: int,
+        channel_id: int,
+        title: str,
+        description: str,
+        buttons: list[dict[str, object]],
+        updated_by: int,
+        message_id: int | None = None,
+    ) -> NotificationRolePanelRecord: ...
 
 
 def button_custom_id(guild_id: int, role_id: int) -> str:
@@ -148,6 +172,69 @@ def build_notification_panel_embed(panel: NotificationRolePanelRecord) -> discor
         description=panel.description,
         color=discord.Color.blurple(),
     )
+
+
+async def adopt_legacy_notification_panel(
+    *,
+    guild: discord.Guild,
+    bot_user_id: int,
+    resources: ResourceService,
+    repository: NotificationPanelRepository,
+) -> NotificationRolePanelRecord | None:
+    existing = await repository.get_notification_panel(guild.id)
+    if existing is not None:
+        return existing
+
+    channel_record = await resources.get(guild.id, ResourceKey.ROLE_PANEL)
+    role_record = await resources.get(guild.id, ResourceKey.LIVE_PING_ROLE)
+    if channel_record is None or role_record is None:
+        return None
+
+    channel = guild.get_channel(channel_record.discord_id)
+    role = guild.get_role(role_record.discord_id)
+    if not isinstance(channel, discord.TextChannel) or role is None:
+        return None
+
+    legacy_message: discord.Message | None = None
+    legacy_embed: discord.Embed | None = None
+    async for message in channel.history(limit=50):
+        if message.author.id != bot_user_id:
+            continue
+        embed = next(
+            (item for item in message.embeds if item.title == _LEGACY_PANEL_TITLE),
+            None,
+        )
+        if embed is not None:
+            legacy_message = message
+            legacy_embed = embed
+            break
+
+    if legacy_message is None or legacy_embed is None:
+        return None
+
+    panel = await repository.save_notification_panel(
+        guild_id=guild.id,
+        channel_id=channel.id,
+        message_id=legacy_message.id,
+        title=legacy_embed.title or _LEGACY_PANEL_TITLE,
+        description=legacy_embed.description or _LEGACY_PANEL_DESCRIPTION,
+        buttons=[
+            {
+                "role_id": role.id,
+                "label": _LEGACY_BUTTON_LABEL,
+                "emoji": "",
+                "style": "primary",
+            }
+        ],
+        updated_by=bot_user_id,
+    )
+    logger.info(
+        "Adopted legacy notification role panel guild_id=%s channel_id=%s message_id=%s",
+        guild.id,
+        channel.id,
+        legacy_message.id,
+    )
+    return panel
 
 
 async def upsert_notification_panel(
