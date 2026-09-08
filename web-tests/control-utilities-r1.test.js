@@ -179,17 +179,18 @@ test('Notification roles preserves a configured emoji that is no longer availabl
   assert.match(markup, /:deleted:/);
 });
 
-test('Notification role text input rerenders so the preview follows the draft immediately', async () => {
+test('Notification role text input updates the preview without rebuilding the editor', async () => {
   const { createUtilitiesPageDefinition } = await utilitiesModule();
   const definition = createUtilitiesPageDefinition('/control/utilities/notification-roles');
   const listeners = new Map();
+  const preview = { innerHTML: '' };
   const root = {
     addEventListener(name, listener) {
       listeners.set(name, listener);
     },
     removeEventListener() {},
-    querySelector() {
-      return null;
+    querySelector(selector) {
+      return selector === '[data-notification-preview-body]' ? preview : null;
     },
   };
   const state = {
@@ -217,6 +218,7 @@ test('Notification role text input rerenders so the preview follows the draft im
   definition.install({
     root,
     store,
+    snapshot: { emojis: [] },
     rerender() {
       rerenders += 1;
     },
@@ -231,7 +233,71 @@ test('Notification role text input rerenders so the preview follows the draft im
   });
 
   assert.equal(state.draft.title, 'New title');
-  assert.equal(rerenders, 1);
+  assert.match(preview.innerHTML, /New title/);
+  assert.equal(rerenders, 0);
+});
+
+test('Notification emoji search filters server choices without changing the draft', async () => {
+  const { createUtilitiesPageDefinition } = await utilitiesModule();
+  const definition = createUtilitiesPageDefinition('/control/utilities/notification-roles');
+  const listeners = new Map();
+  const options = [
+    { value: '', textContent: 'None', selected: false, hidden: false, dataset: {} },
+    { value: '<:grok:1234>', textContent: 'grok', selected: true, hidden: false, dataset: {} },
+    { value: '<a:party:5678>', textContent: 'party (animated)', selected: false, hidden: false, dataset: {} },
+  ];
+  const select = { options };
+  const picker = {
+    querySelector(selector) {
+      return selector === '[data-notification-field="emoji"]' ? select : null;
+    },
+  };
+  const root = {
+    addEventListener(name, listener) {
+      listeners.set(name, listener);
+    },
+    removeEventListener() {},
+    querySelector() {
+      return null;
+    },
+  };
+  const state = {
+    draft: {
+      title: 'Notifications',
+      description: 'Choose updates.',
+      buttons: [{ role_id: '456', label: 'Events', emoji: '<:grok:1234>', style: 'primary' }],
+    },
+    dirty: false,
+    status: 'clean',
+  };
+  const store = {
+    updateDraft(_pageKey, mutate) {
+      mutate(state.draft);
+      state.dirty = true;
+    },
+    get() {
+      return state;
+    },
+    canSave() {
+      return true;
+    },
+  };
+  definition.install({ root, store, snapshot: { emojis: [] } });
+
+  listeners.get('input')({
+    target: {
+      dataset: { notificationEmojiSearch: 'true' },
+      value: 'grok',
+      closest() {
+        return picker;
+      },
+    },
+  });
+
+  assert.equal(options[0].hidden, false);
+  assert.equal(options[1].hidden, false);
+  assert.equal(options[2].hidden, true);
+  assert.equal(state.dirty, false);
 });
 
 test('Anonymous Questions edits only its feature state and never renders submitter identity', async () => {
