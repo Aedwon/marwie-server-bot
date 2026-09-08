@@ -1,4 +1,4 @@
-name: Diagnose Rob-bot
+name: Probe Rob-bot startup
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 jobs:
-  diagnose:
+  probe:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     env:
@@ -20,27 +20,23 @@ jobs:
       BOT_HOSTING_DEPLOYMENT_ID: ${{ secrets.BOT_HOSTING_DEPLOYMENT_ID }}
 
     steps:
-      - name: Validate diagnostic configuration
+      - name: Validate probe configuration
         shell: bash
         run: |
           set -euo pipefail
           [[ -n "${BOT_HOSTING_API_KEY}" ]] || { echo "::error::Missing repository secret BOT_HOSTING_API_KEY"; exit 1; }
           [[ -n "${BOT_HOSTING_DEPLOYMENT_ID}" ]] || { echo "::error::Missing repository secret BOT_HOSTING_DEPLOYMENT_ID"; exit 1; }
 
-      - name: Read linked Git state
+      - name: Start and observe deployment
         shell: bash
         run: |
           set -euo pipefail
-          curl --fail-with-body --silent --show-error \
-            --header "Authorization: Bearer ${BOT_HOSTING_API_KEY}" \
-            "https://bot-hosting.net/api/v1/deployments/${BOT_HOSTING_DEPLOYMENT_ID}/git"
-          echo
-
-      - name: Diagnose Bot-Hosting deployment
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl --fail-with-body --silent --show-error \
-            --header "Authorization: Bearer ${BOT_HOSTING_API_KEY}" \
-            "https://bot-hosting.net/api/v1/deployments/${BOT_HOSTING_DEPLOYMENT_ID}/diagnose?waitSeconds=45"
-          echo
+          response="$(
+            curl --fail-with-body --silent --show-error \
+              --request POST \
+              --header "Authorization: Bearer ${BOT_HOSTING_API_KEY}" \
+              --header "Content-Type: application/json" \
+              --data '{"action":"start","waitSeconds":45}' \
+              "https://bot-hosting.net/api/v1/deployments/${BOT_HOSTING_DEPLOYMENT_ID}/power"
+          )"
+          printf '%s\n' "${response}"
