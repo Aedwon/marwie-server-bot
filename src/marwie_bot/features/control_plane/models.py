@@ -97,5 +97,5 @@ class NotificationRoleButton(Base):
     position: Mapped[int] = mapped_column(Integer, nullable=False)
     role_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     label: Mapped[str] = mapped_column(String(80), nullable=False)
-    emoji: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    emoji: Mapped[str | None] = mapped_column(String(100), nullable=True)
     style: Mapped[str] = mapped_column(String(16), nullable=False)
