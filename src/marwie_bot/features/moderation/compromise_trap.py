@@ -20,6 +20,7 @@ from marwie_bot.features.moderation.compromise_trap_service import (
     CleanupFailure,
     CleanupResult,
     CompromiseTrapService,
+    TrapExecutionResult,
     TrapTrigger,
 )
 from marwie_bot.features.moderation.repository import SQLAlchemyModerationRepository
@@ -38,6 +39,18 @@ def _discord_error(error: discord.HTTPException) -> str:
     detail = str(error).strip()
     value = type(error).__name__ if not detail else f"{type(error).__name__}: {detail}"
     return value[:300]
+
+
+def _failed_scope_ids(values: Any) -> list[int]:
+    result: list[int] = []
+    for value in values or ():
+        if isinstance(value, dict):
+            scope_id = value.get("scope_id")
+        else:
+            scope_id = getattr(value, "scope_id", None)
+        if isinstance(scope_id, int):
+            result.append(scope_id)
+    return result
 
 
 class DiscordTrapEnforcer:
@@ -146,15 +159,145 @@ class DiscordTrapEnforcer:
 class CompromisedAccountTrapCog(commands.Cog):
     def __init__(
         self,
-        bot: commands.Bot,
-        resources: ResourceService,
-        trap_service: CompromiseTrapService,
-        moderation: ModerationService | None = None,
+        bot: Any,
+        resources: Any,
+        trap_service: Any,
+        moderation: Any | None = None,
+        incidents: Any | None = None,
     ) -> None:
         self.bot = bot
         self.resources = resources
         self.trap_service = trap_service
         self.moderation = moderation
+        self.incidents = incidents
+
+    async def _post_summary(
+        self,
+        guild: Any,
+        *,
+        target_id: int,
+        trigger_channel_id: int,
+        trigger_message_id: int,
+        incident_id: int,
+        case_id: int | None,
+        ban_status: str,
+        cleanup_path: str,
+        deleted_message_count: int,
+        failed_scope_ids: list[int],
+        containment_status: str,
+    ) -> bool:
+        resource = await self.resources.get(guild.id, ResourceKey.MODERATION_LOG)
+        if resource is None:
+            return False
+        channel = guild.get_channel(resource.discord_id)
+        if not isinstance(channel, discord.TextChannel):
+            return False
+
+        embed = discord.Embed(
+            title="Compromised account trap incident",
+            color=discord.Color.orange(),
+            timestamp=datetime.now(UTC),
+        )
+        embed.add_field(name="Target", value=f"<@{target_id}>", inline=True)
+        embed.add_field(name="Trap channel", value=f"<#{trigger_channel_id}>", inline=True)
+        embed.add_field(name="Trigger message", value=str(trigger_message_id), inline=True)
+        embed.add_field(name="Ban result", value=ban_status, inline=True)
+        embed.add_field(name="Cleanup path", value=cleanup_path, inline=True)
+        embed.add_field(name="Deleted messages", value=str(deleted_message_count), inline=True)
+        embed.add_field(
+            name="Failed/inaccessible scopes",
+            value=", ".join(str(scope_id) for scope_id in failed_scope_ids) or "None",
+            inline=False,
+        )
+        embed.add_field(name="Containment", value=containment_status, inline=True)
+        embed.add_field(name="Incident", value=str(incident_id), inline=True)
+        embed.add_field(name="Case", value=str(case_id) if case_id is not None else "Unavailable", inline=True)
+
+        try:
+            await channel.send(embed=embed)
+        except discord.HTTPException as error:
+            logger.warning(
+                "Could not post compromise trap summary guild_id=%s user_id=%s channel_id=%s message_id=%s incident_id=%s error_class=%s containment_status=%s",
+                guild.id,
+                target_id,
+                trigger_channel_id,
+                trigger_message_id,
+                incident_id,
+                type(error).__name__,
+                containment_status,
+            )
+            return False
+        return True
+
+    async def _audit_full_incident(
+        self,
+        guild: Any,
+        message: Any,
+        result: TrapExecutionResult,
+        moderator_id: int,
+    ) -> None:
+        if result.incident_id is None:
+            logger.error(
+                "Completed compromise trap result missing incident id guild_id=%s user_id=%s channel_id=%s message_id=%s",
+                guild.id,
+                message.author.id,
+                message.channel.id,
+                message.id,
+            )
+            return
+
+        case_id: int | None = None
+        if self.moderation is None:
+            logger.error(
+                "Compromise trap moderation service unavailable guild_id=%s user_id=%s channel_id=%s message_id=%s incident_id=%s",
+                guild.id,
+                message.author.id,
+                message.channel.id,
+                message.id,
+                result.incident_id,
+            )
+        else:
+            try:
+                case = await self.moderation.create_case(
+                    guild.id,
+                    "ban",
+                    message.author.id,
+                    moderator_id,
+                    result.reason,
+                    metadata=result.metadata,
+                )
+            except Exception as error:
+                logger.error(
+                    "Could not persist compromise trap moderation case guild_id=%s user_id=%s channel_id=%s message_id=%s incident_id=%s error_class=%s containment_status=%s",
+                    guild.id,
+                    message.author.id,
+                    message.channel.id,
+                    message.id,
+                    result.incident_id,
+                    type(error).__name__,
+                    result.containment_status.value if result.containment_status is not None else None,
+                    exc_info=(type(error), error, error.__traceback__),
+                )
+            else:
+                case_id = case.id
+
+        await self._post_summary(
+            guild,
+            target_id=message.author.id,
+            trigger_channel_id=message.channel.id,
+            trigger_message_id=message.id,
+            incident_id=result.incident_id,
+            case_id=case_id,
+            ban_status=result.ban_status.value if result.ban_status is not None else "not_attempted",
+            cleanup_path=str(result.metadata.get("cleanup_path", "none")),
+            deleted_message_count=result.deleted_message_count,
+            failed_scope_ids=_failed_scope_ids(result.failed_scopes),
+            containment_status=(
+                result.containment_status.value
+                if result.containment_status is not None
+                else "unknown"
+            ),
+        )
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
@@ -196,19 +339,54 @@ class CompromisedAccountTrapCog(commands.Cog):
             DiscordTrapEnforcer(guild),
             moderator_id=bot_user.id,
         )
-        if not result.delete_trigger_only:
+        if result.delete_trigger_only:
+            try:
+                await message.delete(reason=TRAP_REASON)
+            except discord.HTTPException as error:
+                logger.warning(
+                    "Could not delete duplicate/cooldown compromise trap message guild_id=%s user_id=%s channel_id=%s message_id=%s error=%s",
+                    guild.id,
+                    message.author.id,
+                    message.channel.id,
+                    message.id,
+                    _discord_error(error),
+                )
             return
 
-        try:
-            await message.delete(reason=TRAP_REASON)
-        except discord.HTTPException as error:
-            logger.warning(
-                "Could not delete duplicate/cooldown compromise trap message guild_id=%s user_id=%s channel_id=%s message_id=%s error=%s",
-                guild.id,
-                message.author.id,
-                message.channel.id,
-                message.id,
-                _discord_error(error),
+        if result.full_incident:
+            await self._audit_full_incident(guild, message, result, bot_user.id)
+
+    @commands.Cog.listener()
+    async def on_ready(self) -> None:
+        if self.incidents is None:
+            return
+
+        interrupted = await self.incidents.mark_in_progress_interrupted(datetime.now(UTC))
+        for incident in interrupted:
+            guild = self.bot.get_guild(incident.guild_id)
+            if guild is None:
+                logger.warning(
+                    "Interrupted compromise trap incident guild unavailable guild_id=%s user_id=%s channel_id=%s message_id=%s incident_id=%s containment_status=interrupted",
+                    incident.guild_id,
+                    incident.target_id,
+                    incident.trigger_channel_id,
+                    incident.trigger_message_id,
+                    incident.id,
+                )
+                continue
+
+            await self._post_summary(
+                guild,
+                target_id=incident.target_id,
+                trigger_channel_id=incident.trigger_channel_id,
+                trigger_message_id=incident.trigger_message_id,
+                incident_id=incident.id,
+                case_id=None,
+                ban_status=incident.ban_status or "not_attempted",
+                cleanup_path=("fallback" if incident.fallback_cleanup_run else "none"),
+                deleted_message_count=incident.deleted_message_count,
+                failed_scope_ids=_failed_scope_ids(incident.failed_scopes),
+                containment_status=incident.containment_status or "interrupted",
             )
 
 
@@ -218,6 +396,9 @@ async def setup(bot: commands.Bot) -> None:
         raise RuntimeError("Database is not initialized before loading CompromisedAccountTrapCog")
 
     resources = ResourceService(SQLAlchemyResourceRepository(database))
-    trap_service = CompromiseTrapService(SQLAlchemyCompromiseTrapRepository(database))
+    incidents = SQLAlchemyCompromiseTrapRepository(database)
+    trap_service = CompromiseTrapService(incidents)
     moderation = ModerationService(SQLAlchemyModerationRepository(database))
-    await bot.add_cog(CompromisedAccountTrapCog(bot, resources, trap_service, moderation))
+    await bot.add_cog(
+        CompromisedAccountTrapCog(bot, resources, trap_service, moderation, incidents)
+    )
