@@ -1,9 +1,11 @@
+import sqlite3
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
 import discord
 
+from marwie_bot.db.migrations import upgrade_database
 from marwie_bot.features.control_plane import cog as control_plane_cog_module
 from marwie_bot.features.control_plane import notification_panel as notification_panel_module
 from marwie_bot.features.control_plane import snapshot as snapshot_module
@@ -96,6 +98,17 @@ def test_notification_emoji_storage_migration_widens_and_can_downgrade() -> None
     assert "type_=sa.String(length=100)" in source
     assert "existing_type=sa.String(length=100)" in source
     assert "type_=sa.String(length=32)" in source
+
+
+async def test_notification_emoji_storage_migration_applies_on_sqlite(tmp_path: Path) -> None:
+    database_path = tmp_path / "notification-emoji-migration.sqlite3"
+    await upgrade_database(f"sqlite:///{database_path}")
+
+    with sqlite3.connect(database_path) as connection:
+        columns = connection.execute("PRAGMA table_info(notification_role_buttons)").fetchall()
+
+    emoji_column = next(column for column in columns if column[1] == "emoji")
+    assert emoji_column[2] == "VARCHAR(100)"
 
 
 class _TextChannel:
