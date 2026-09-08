@@ -246,9 +246,7 @@ class FakeTrapService:
             delete_trigger_only=self.delete_trigger_only,
             incident_id=1,
             reason="automatic trap",
-            containment_status=(
-                ContainmentStatus.CONTAINED if self.full_incident else None
-            ),
+            containment_status=(ContainmentStatus.CONTAINED if self.full_incident else None),
             ban_status=BanStatus.SUCCEEDED if self.full_incident else None,
             ban_error=None,
             native_delete_requested=self.full_incident,
@@ -792,10 +790,7 @@ async def test_startup_reconciliation_reports_interrupted_once_without_destructi
             moderation_log.sent_embeds[0].title or "",
             moderation_log.sent_embeds[0].description or "",
         ]
-        + [
-            f"{field.name} {field.value}"
-            for field in moderation_log.sent_embeds[0].fields
-        ]
+        + [f"{field.name} {field.value}" for field in moderation_log.sent_embeds[0].fields]
     )
     assert "interrupted" in rendered.lower()
     assert "7" in rendered
