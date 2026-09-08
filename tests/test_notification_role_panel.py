@@ -92,10 +92,10 @@ def test_notification_emoji_storage_migration_widens_and_can_downgrade() -> None
     assert 'revision: str = "20260908_0005"' in source
     assert 'down_revision: str | None = "20260830_0004"' in source
     assert source.count('op.batch_alter_table("notification_role_buttons")') == 2
-    assert 'existing_type=sa.String(length=32)' in source
-    assert 'type_=sa.String(length=100)' in source
-    assert 'existing_type=sa.String(length=100)' in source
-    assert 'type_=sa.String(length=32)' in source
+    assert "existing_type=sa.String(length=32)" in source
+    assert "type_=sa.String(length=100)" in source
+    assert "existing_type=sa.String(length=100)" in source
+    assert "type_=sa.String(length=32)" in source
 
 
 class _TextChannel:
