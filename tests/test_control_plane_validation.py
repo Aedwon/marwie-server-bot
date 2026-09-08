@@ -1,4 +1,5 @@
 import pytest
+from sqlalchemy import String
 
 from marwie_bot.features.control_plane.domain import ControlActionType
 from marwie_bot.features.control_plane.models import NotificationRoleButton
@@ -124,7 +125,10 @@ def test_notification_panel_accepts_full_custom_emoji_value() -> None:
         },
     )
     assert payload["buttons"][0]["emoji"] == emoji
-    assert NotificationRoleButton.__table__.c.emoji.type.length >= len(emoji)
+    emoji_type = NotificationRoleButton.__table__.c.emoji.type
+    assert isinstance(emoji_type, String)
+    assert emoji_type.length is not None
+    assert emoji_type.length >= len(emoji)
 
 
 def test_announcement_mentions_are_explicit_structured_targets() -> None:
