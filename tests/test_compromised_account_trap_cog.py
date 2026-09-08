@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 from types import SimpleNamespace
-from typing import Any, AsyncIterator
+from typing import Any
 
 import discord
 import pytest
@@ -645,7 +646,16 @@ async def test_full_incident_creates_one_automated_case_and_summary(
         [embed.title or "", embed.description or ""]
         + [f"{field.name} {field.value}" for field in embed.fields]
     )
-    for expected in ("<@123>", "<#10>", "500", "succeeded", "discord_native_ban", "contained", "1", "44"):
+    for expected in (
+        "<@123>",
+        "<#10>",
+        "500",
+        "succeeded",
+        "discord_native_ban",
+        "contained",
+        "1",
+        "44",
+    ):
         assert expected in rendered
 
 
@@ -767,7 +777,7 @@ async def test_startup_reconciliation_reports_interrupted_once_without_destructi
         service,
         FakeModerationService(),
     )
-    setattr(cog, "incidents", incidents)
+    cog.incidents = incidents
 
     assert hasattr(cog, "on_ready"), "Trap cog must reconcile interrupted incidents on ready"
     await cog.on_ready()
@@ -778,8 +788,14 @@ async def test_startup_reconciliation_reports_interrupted_once_without_destructi
     assert guild.ban_calls == []
     assert len(moderation_log.sent_embeds) == 1
     rendered = " ".join(
-        [moderation_log.sent_embeds[0].title or "", moderation_log.sent_embeds[0].description or ""]
-        + [f"{field.name} {field.value}" for field in moderation_log.sent_embeds[0].fields]
+        [
+            moderation_log.sent_embeds[0].title or "",
+            moderation_log.sent_embeds[0].description or "",
+        ]
+        + [
+            f"{field.name} {field.value}"
+            for field in moderation_log.sent_embeds[0].fields
+        ]
     )
     assert "interrupted" in rendered.lower()
     assert "7" in rendered
