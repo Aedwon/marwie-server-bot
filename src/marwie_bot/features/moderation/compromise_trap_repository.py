@@ -212,4 +212,6 @@ class SQLAlchemyCompromiseTrapRepository:
                 model.containment_status = "interrupted"
                 model.active_key = None
             await session.commit()
+            for model in models:
+                await session.refresh(model)
             return [self._record(model) for model in models]
