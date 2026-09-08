@@ -12,9 +12,12 @@ from marwie_bot.shared.confirmations import build_confirmation_prompt
 from marwie_bot.shared.errors import UserFacingCommandError, build_failure_message
 
 
-def test_auto_setup_blueprint_covers_every_current_resource() -> None:
+def test_auto_setup_blueprint_covers_every_non_manual_resource() -> None:
     configured_keys = {item.key for item in AUTO_SETUP_RESOURCES}
-    assert configured_keys == set(ResourceKey)
+    manual_only_keys = {ResourceKey.COMPROMISED_ACCOUNT_TRAP}
+
+    assert configured_keys == set(ResourceKey) - manual_only_keys
+    assert not configured_keys & manual_only_keys
 
 
 def test_auto_setup_reuses_bot_logs_for_both_log_resource_keys() -> None:
