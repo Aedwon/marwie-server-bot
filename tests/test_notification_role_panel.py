@@ -1,3 +1,4 @@
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
@@ -76,6 +77,25 @@ def test_control_snapshot_serializes_available_server_emojis() -> None:
             "url": "https://cdn.discordapp.com/emojis/5678.gif",
         },
     ]
+
+
+def test_notification_emoji_storage_migration_widens_and_can_downgrade() -> None:
+    migration_path = (
+        Path(__file__).resolve().parents[1]
+        / "migrations"
+        / "versions"
+        / "20260908_0005_widen_notification_emoji.py"
+    )
+    assert migration_path.exists()
+    source = migration_path.read_text(encoding="utf-8")
+
+    assert 'revision: str = "20260908_0005"' in source
+    assert 'down_revision: str | None = "20260830_0004"' in source
+    assert source.count('op.batch_alter_table("notification_role_buttons")') == 2
+    assert 'existing_type=sa.String(length=32)' in source
+    assert 'type_=sa.String(length=100)' in source
+    assert 'existing_type=sa.String(length=100)' in source
+    assert 'type_=sa.String(length=32)' in source
 
 
 class _TextChannel:
