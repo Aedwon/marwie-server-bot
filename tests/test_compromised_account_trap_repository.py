@@ -32,8 +32,9 @@ async def _database(tmp_path: Path) -> Database:
 async def _count(database: Database) -> int:
     async with database.session() as session:
         return int(
-            (await session.execute(select(func.count()).select_from(CompromisedAccountIncident)))
-            .scalar_one()
+            (
+                await session.execute(select(func.count()).select_from(CompromisedAccountIncident))
+            ).scalar_one()
         )
 
 
