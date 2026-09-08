@@ -5,6 +5,7 @@ import discord
 
 from marwie_bot.features.control_plane import cog as control_plane_cog_module
 from marwie_bot.features.control_plane import notification_panel as notification_panel_module
+from marwie_bot.features.control_plane import snapshot as snapshot_module
 from marwie_bot.features.control_plane.cog import ControlPlaneCog
 from marwie_bot.features.control_plane.notification_panel import (
     button_custom_id,
@@ -29,6 +30,52 @@ def test_notification_button_styles_are_explicit() -> None:
     assert button_style("secondary") is discord.ButtonStyle.secondary
     assert button_style("success") is discord.ButtonStyle.success
     assert button_style("danger") is discord.ButtonStyle.danger
+
+
+def test_control_snapshot_serializes_available_server_emojis() -> None:
+    module_members = vars(snapshot_module)
+    assert "serialize_guild_emojis" in module_members
+    serialize_guild_emojis = module_members["serialize_guild_emojis"]
+    emojis = [
+        SimpleNamespace(
+            id=1234,
+            name="grok",
+            animated=False,
+            available=True,
+            url="https://cdn.discordapp.com/emojis/1234.webp",
+        ),
+        SimpleNamespace(
+            id=5678,
+            name="party",
+            animated=True,
+            available=True,
+            url="https://cdn.discordapp.com/emojis/5678.gif",
+        ),
+        SimpleNamespace(
+            id=9999,
+            name="unavailable",
+            animated=False,
+            available=False,
+            url="https://cdn.discordapp.com/emojis/9999.webp",
+        ),
+    ]
+
+    assert serialize_guild_emojis(emojis) == [
+        {
+            "id": "1234",
+            "name": "grok",
+            "animated": False,
+            "available": True,
+            "url": "https://cdn.discordapp.com/emojis/1234.webp",
+        },
+        {
+            "id": "5678",
+            "name": "party",
+            "animated": True,
+            "available": True,
+            "url": "https://cdn.discordapp.com/emojis/5678.gif",
+        },
+    ]
 
 
 class _TextChannel:
