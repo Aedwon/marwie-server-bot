@@ -17,6 +17,7 @@ EXTENSIONS = (
     "marwie_bot.features.system",
     "marwie_bot.features.configuration.cog",
     "marwie_bot.features.moderation.cog",
+    "marwie_bot.features.moderation.compromise_trap",
     "marwie_bot.features.message_logs.cog",
     "marwie_bot.features.tickets.cog",
     "marwie_bot.features.voice.cog",
