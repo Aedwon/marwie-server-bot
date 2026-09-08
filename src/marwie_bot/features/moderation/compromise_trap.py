@@ -134,7 +134,7 @@ class DiscordTrapEnforcer:
                     if message.author.id != user_id:
                         continue
                     try:
-                        await message.delete(reason=TRAP_REASON)
+                        await _delete_trigger_message(message)
                     except discord.HTTPException as error:
                         record_failure(scope, _discord_error(error))
                     else:
