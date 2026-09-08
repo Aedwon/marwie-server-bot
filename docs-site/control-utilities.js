@@ -225,7 +225,7 @@ function notificationErrors(draft) {
 
     if (!label) errors[`${prefix}.label`] = 'Button label is required.';
     else if (label.length > 80) errors[`${prefix}.label`] = 'Button label must be at most 80 characters.';
-    if (emoji.length > 32) errors[`${prefix}.emoji`] = 'Emoji must be at most 32 characters.';
+    if (emoji.length > 100) errors[`${prefix}.emoji`] = 'Emoji must be at most 100 characters.';
     if (!['primary', 'secondary', 'success', 'danger'].includes(style)) {
       errors[`${prefix}.style`] = 'Choose a supported button style.';
     }
