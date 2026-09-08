@@ -2,6 +2,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  ACTIONS,
+  normalizeActionType as realNormalizeActionType,
+  validateActionPayload as realValidateActionPayload,
+} from '../api/_lib/actions.js';
+import {
   PAGE_SAVE_ACTIONS_BY_PAGE,
   pageSavePayloadMatches,
   validatePageSavePayload,
@@ -54,6 +59,39 @@ test('reputation page accepts its feature toggle and thresholds in one logical s
     ],
   });
   assert.equal(result.changes.length, 2);
+});
+
+test('notification role page-save resolves destination from Mappings instead of requiring channel_id', () => {
+  const payload = {
+    title: 'AI Updates',
+    description: "Get tagged for when there's a major update from the model providers.",
+    buttons: [
+      {
+        role_id: '1234567890123456789',
+        label: 'Grok',
+        emoji: ':grok:',
+        style: 'primary',
+      },
+    ],
+  };
+
+  assert.throws(
+    () => realValidateActionPayload(ACTIONS.SAVE_NOTIFICATION_PANEL, payload),
+    /Panel channel must be a Discord ID/,
+  );
+
+  const result = validatePageSavePayload({
+    page_key: '/control/utilities/notification-roles',
+    base_revision: 'a'.repeat(64),
+    changes: [{ action_type: ACTIONS.SAVE_NOTIFICATION_PANEL, payload }],
+  }, {
+    normalizeActionType: realNormalizeActionType,
+    validateActionPayload: realValidateActionPayload,
+    HttpError,
+  });
+
+  assert.equal(result.changes[0].payload.channel_id, null);
+  assert.equal(result.changes[0].payload.title, 'AI Updates');
 });
 
 test('page-save rejects cross-page feature ownership and legacy Build Help mappings', () => {
