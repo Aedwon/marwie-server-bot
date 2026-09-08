@@ -98,7 +98,9 @@ async def test_legacy_notification_panel_is_adopted_without_posting_a_duplicate(
     repository = _Repository()
     monkeypatch.setattr(notification_panel_module.discord, "TextChannel", _TextChannel)
 
-    adopt = getattr(notification_panel_module, "adopt_legacy_notification_panel")
+    module_members = vars(notification_panel_module)
+    assert "adopt_legacy_notification_panel" in module_members
+    adopt = module_members["adopt_legacy_notification_panel"]
     adopted = await adopt(
         guild=guild,
         bot_user_id=bot_user_id,
