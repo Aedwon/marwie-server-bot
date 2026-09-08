@@ -207,7 +207,7 @@ export function validateActionPayload(actionType, rawPayload) {
         return {
           role_id: roleId,
           label: text(button.label, 'Button label', 80),
-          emoji: text(button.emoji, 'Button emoji', 32, { required: false }),
+          emoji: text(button.emoji, 'Button emoji', 100, { required: false }),
           style,
         };
       });
