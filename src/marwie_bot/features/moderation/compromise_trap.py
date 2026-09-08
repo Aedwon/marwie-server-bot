@@ -54,7 +54,7 @@ def _failed_scope_ids(values: Any) -> list[int]:
 
 
 class DiscordTrapEnforcer:
-    def __init__(self, guild: discord.Guild) -> None:
+    def __init__(self, guild: Any) -> None:
         self.guild = guild
 
     async def ban(
@@ -308,7 +308,7 @@ class CompromisedAccountTrapCog(commands.Cog):
         )
 
     @commands.Cog.listener()
-    async def on_message(self, message: discord.Message) -> None:
+    async def on_message(self, message: Any) -> None:
         guild = message.guild
         if guild is None:
             return
@@ -349,7 +349,7 @@ class CompromisedAccountTrapCog(commands.Cog):
         )
         if result.delete_trigger_only:
             try:
-                await message.delete(reason=TRAP_REASON)
+                await message.delete()
             except discord.HTTPException as error:
                 logger.warning(
                     "Could not delete duplicate/cooldown compromise trap message guild_id=%s user_id=%s channel_id=%s message_id=%s error=%s",
