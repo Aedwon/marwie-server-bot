@@ -1,5 +1,15 @@
+import sqlite3
+from pathlib import Path
+from types import SimpleNamespace
+from typing import Any
+
 import discord
 
+from marwie_bot.db.migrations import upgrade_database
+from marwie_bot.features.control_plane import cog as control_plane_cog_module
+from marwie_bot.features.control_plane import notification_panel as notification_panel_module
+from marwie_bot.features.control_plane import snapshot as snapshot_module
+from marwie_bot.features.control_plane.cog import ControlPlaneCog
 from marwie_bot.features.control_plane.notification_panel import (
     button_custom_id,
     button_style,
@@ -23,3 +33,215 @@ def test_notification_button_styles_are_explicit() -> None:
     assert button_style("secondary") is discord.ButtonStyle.secondary
     assert button_style("success") is discord.ButtonStyle.success
     assert button_style("danger") is discord.ButtonStyle.danger
+
+
+def test_control_snapshot_serializes_available_server_emojis() -> None:
+    module_members = vars(snapshot_module)
+    assert "serialize_guild_emojis" in module_members
+    serialize_guild_emojis = module_members["serialize_guild_emojis"]
+    emojis = [
+        SimpleNamespace(
+            id=1234,
+            name="grok",
+            animated=False,
+            available=True,
+            url="https://cdn.discordapp.com/emojis/1234.webp",
+        ),
+        SimpleNamespace(
+            id=5678,
+            name="party",
+            animated=True,
+            available=True,
+            url="https://cdn.discordapp.com/emojis/5678.gif",
+        ),
+        SimpleNamespace(
+            id=9999,
+            name="unavailable",
+            animated=False,
+            available=False,
+            url="https://cdn.discordapp.com/emojis/9999.webp",
+        ),
+    ]
+
+    assert serialize_guild_emojis(emojis) == [
+        {
+            "id": "1234",
+            "name": "grok",
+            "animated": False,
+            "available": True,
+            "url": "https://cdn.discordapp.com/emojis/1234.webp",
+        },
+        {
+            "id": "5678",
+            "name": "party",
+            "animated": True,
+            "available": True,
+            "url": "https://cdn.discordapp.com/emojis/5678.gif",
+        },
+    ]
+
+
+def test_notification_emoji_storage_migration_widens_and_can_downgrade() -> None:
+    migration_path = (
+        Path(__file__).resolve().parents[1]
+        / "migrations"
+        / "versions"
+        / "20260908_0005_widen_notification_emoji.py"
+    )
+    assert migration_path.exists()
+    source = migration_path.read_text(encoding="utf-8")
+
+    assert 'revision: str = "20260908_0005"' in source
+    assert 'down_revision: str | None = "20260830_0004"' in source
+    assert source.count('op.batch_alter_table("notification_role_buttons")') == 2
+    assert "existing_type=sa.String(length=32)" in source
+    assert "type_=sa.String(length=100)" in source
+    assert "existing_type=sa.String(length=100)" in source
+    assert "type_=sa.String(length=32)" in source
+
+
+async def test_notification_emoji_storage_migration_applies_on_sqlite(tmp_path: Path) -> None:
+    database_path = tmp_path / "notification-emoji-migration.sqlite3"
+    await upgrade_database(f"sqlite:///{database_path}")
+
+    with sqlite3.connect(database_path) as connection:
+        columns = connection.execute("PRAGMA table_info(notification_role_buttons)").fetchall()
+
+    emoji_column = next(column for column in columns if column[1] == "emoji")
+    assert emoji_column[2] == "VARCHAR(100)"
+
+
+class _TextChannel:
+    def __init__(self, channel_id: int, messages: list[object]) -> None:
+        self.id = channel_id
+        self._messages = messages
+
+    def history(self, *, limit: int) -> Any:
+        assert limit == 50
+
+        async def iterate() -> Any:
+            for message in self._messages:
+                yield message
+
+        return iterate()
+
+
+class _Resources:
+    def __init__(self, channel_id: int, role_id: int) -> None:
+        self.channel_id = channel_id
+        self.role_id = role_id
+
+    async def get(self, guild_id: int, key: Any) -> object | None:
+        assert guild_id == 123
+        if key.value == "role_panel":
+            return SimpleNamespace(discord_id=self.channel_id)
+        if key.value == "live_ping_role":
+            return SimpleNamespace(discord_id=self.role_id)
+        return None
+
+
+class _Repository:
+    def __init__(self) -> None:
+        self.saved: dict[str, Any] | None = None
+
+    async def get_notification_panel(self, guild_id: int) -> object | None:
+        assert guild_id == 123
+        return None
+
+    async def save_notification_panel(self, **kwargs: Any) -> object:
+        self.saved = dict(kwargs)
+        return SimpleNamespace(**kwargs)
+
+
+async def test_legacy_notification_panel_is_adopted_without_posting_a_duplicate(
+    monkeypatch: Any,
+) -> None:
+    bot_user_id = 999
+    channel_id = 321
+    role_id = 456
+    message_id = 654
+    description = (
+        "Use the button below to toggle optional community notifications. "
+        "You can press it again at any time to remove the role."
+    )
+    message = SimpleNamespace(
+        id=message_id,
+        author=SimpleNamespace(id=bot_user_id),
+        embeds=[SimpleNamespace(title="Notification roles", description=description)],
+    )
+    channel = _TextChannel(channel_id, [message])
+    role = SimpleNamespace(id=role_id)
+    guild = SimpleNamespace(
+        id=123,
+        get_channel=lambda candidate: channel if candidate == channel_id else None,
+        get_role=lambda candidate: role if candidate == role_id else None,
+    )
+    resources = _Resources(channel_id, role_id)
+    repository = _Repository()
+    monkeypatch.setattr(notification_panel_module.discord, "TextChannel", _TextChannel)
+
+    module_members = vars(notification_panel_module)
+    assert "adopt_legacy_notification_panel" in module_members
+    adopt = module_members["adopt_legacy_notification_panel"]
+    adopted = await adopt(
+        guild=guild,
+        bot_user_id=bot_user_id,
+        resources=resources,
+        repository=repository,
+    )
+
+    assert adopted is not None
+    assert repository.saved == {
+        "guild_id": 123,
+        "channel_id": channel_id,
+        "message_id": message_id,
+        "title": "Notification roles",
+        "description": description,
+        "buttons": [
+            {
+                "role_id": role_id,
+                "label": "Live Notifications",
+                "emoji": "",
+                "style": "primary",
+            }
+        ],
+        "updated_by": bot_user_id,
+    }
+
+
+async def test_notification_view_registration_adopts_legacy_panel_first(monkeypatch: Any) -> None:
+    guild = SimpleNamespace(id=123)
+    resources = _Resources(321, 456)
+    repository = _Repository()
+    calls: list[tuple[int, int, object, object]] = []
+
+    async def adopt(**kwargs: Any) -> None:
+        calls.append(
+            (
+                kwargs["guild"].id,
+                kwargs["bot_user_id"],
+                kwargs["resources"],
+                kwargs["repository"],
+            )
+        )
+
+    monkeypatch.setattr(
+        control_plane_cog_module,
+        "adopt_legacy_notification_panel",
+        adopt,
+        raising=False,
+    )
+    bot = SimpleNamespace(
+        user=SimpleNamespace(id=999),
+        guilds=[guild],
+        add_view=lambda *args, **kwargs: None,
+    )
+    executor = SimpleNamespace(resources=resources)
+    cog = object.__new__(ControlPlaneCog)
+    object.__setattr__(cog, "bot", bot)
+    object.__setattr__(cog, "repository", repository)
+    object.__setattr__(cog, "executor", executor)
+
+    await cog._register_notification_views()
+
+    assert calls == [(123, 999, resources, repository)]

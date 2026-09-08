@@ -225,7 +225,7 @@ function notificationErrors(draft) {
 
     if (!label) errors[`${prefix}.label`] = 'Button label is required.';
     else if (label.length > 80) errors[`${prefix}.label`] = 'Button label must be at most 80 characters.';
-    if (emoji.length > 32) errors[`${prefix}.emoji`] = 'Emoji must be at most 32 characters.';
+    if (emoji.length > 100) errors[`${prefix}.emoji`] = 'Emoji must be at most 100 characters.';
     if (!['primary', 'secondary', 'success', 'danger'].includes(style)) {
       errors[`${prefix}.style`] = 'Choose a supported button style.';
     }
@@ -496,6 +496,137 @@ function roleOptions(snapshot, selected) {
     ${options.map(role => `<option value="${escapeHtml(role.id)}"${String(role.id) === selectedId ? ' selected' : ''}>${escapeHtml(role.name)}</option>`).join('')}`;
 }
 
+function availableServerEmojis(snapshot) {
+  return (snapshot?.emojis || [])
+    .filter(emoji => emoji && emoji.id && emoji.name && emoji.available !== false)
+    .sort((left, right) => String(left.name).localeCompare(String(right.name)));
+}
+
+function customEmojiValue(emoji) {
+  const prefix = emoji?.animated ? 'a' : '';
+  return `<${prefix}:${String(emoji?.name || '')}:${String(emoji?.id || '')}>`;
+}
+
+function parseCustomEmoji(value) {
+  const match = String(value || '').match(/^<(a?):([^:>]+):([1-9]\d*)>$/);
+  if (!match) return null;
+  return {
+    animated: match[1] === 'a',
+    name: match[2],
+    id: match[3],
+  };
+}
+
+function serverEmojiForValue(snapshot, value) {
+  const parsed = parseCustomEmoji(value);
+  if (!parsed) return null;
+  return availableServerEmojis(snapshot).find(emoji => String(emoji.id) === parsed.id) || null;
+}
+
+function emojiImageMarkup(emoji, className = 'utility-emoji-image') {
+  if (!emoji?.url) return '';
+  return `<img class="${className}" src="${escapeHtml(emoji.url)}" alt="" aria-hidden="true">`;
+}
+
+function emojiSummaryMarkup(snapshot, value) {
+  const selected = String(value || '');
+  if (!selected) {
+    return '<span class="utility-emoji-none" aria-hidden="true">—</span><span>None</span>';
+  }
+  const emoji = serverEmojiForValue(snapshot, selected);
+  if (emoji) {
+    return `${emojiImageMarkup(emoji)}<span>${escapeHtml(emoji.name)}${emoji.animated ? ' <small>Animated</small>' : ''}</span>`;
+  }
+  const parsed = parseCustomEmoji(selected);
+  if (parsed) {
+    return `<span class="utility-emoji-none" aria-hidden="true">?</span><span>Current emoji unavailable <small>:${escapeHtml(parsed.name)}:</small></span>`;
+  }
+  return `<span class="utility-emoji-none" aria-hidden="true">?</span><span>${escapeHtml(selected)}</span>`;
+}
+
+function emojiPickerMarkup(snapshot, selected, index, error) {
+  const selectedValue = String(selected || '');
+  const emojis = availableServerEmojis(snapshot);
+  const hasSelected = !selectedValue || emojis.some(emoji => customEmojiValue(emoji) === selectedValue);
+  const stale = selectedValue && !hasSelected;
+  return `
+    <div class="utility-emoji-field" data-notification-emoji-picker>
+      <span class="utility-field-label">Emoji</span>
+      <details class="utility-emoji-combobox">
+        <summary aria-label="Choose emoji for button ${index + 1}">
+          <span class="utility-emoji-current">${emojiSummaryMarkup(snapshot, selectedValue)}</span>
+          <span class="utility-emoji-chevron" aria-hidden="true">⌄</span>
+        </summary>
+        <div class="utility-emoji-menu">
+          <label class="utility-emoji-search-label">
+            <span class="sr-only">Search server emoji</span>
+            <input type="search" placeholder="Search server emoji…" autocomplete="off" data-notification-emoji-search="true">
+          </label>
+          <div class="utility-emoji-options" role="listbox" aria-label="Server emoji">
+            <button class="utility-emoji-option" type="button" role="option" aria-selected="${!selectedValue}" data-notification-emoji-option="" data-emoji-name="none">
+              <span class="utility-emoji-none" aria-hidden="true">—</span><span>None</span>
+            </button>
+            ${stale ? `
+              <button class="utility-emoji-option utility-emoji-option-stale" type="button" role="option" aria-selected="true" data-notification-emoji-option="${escapeHtml(selectedValue)}" data-emoji-name="current emoji unavailable" disabled>
+                <span class="utility-emoji-none" aria-hidden="true">?</span><span>Current emoji unavailable</span>
+              </button>` : ''}
+            ${emojis.map(emoji => {
+              const value = customEmojiValue(emoji);
+              return `
+                <button class="utility-emoji-option" type="button" role="option" aria-selected="${value === selectedValue}" data-notification-emoji-option="${escapeHtml(value)}" data-emoji-name="${escapeHtml(emoji.name.toLowerCase())}">
+                  ${emojiImageMarkup(emoji)}<span>${escapeHtml(emoji.name)}${emoji.animated ? ' <small>Animated</small>' : ''}</span>
+                </button>`;
+            }).join('')}
+          </div>
+        </div>
+      </details>
+      <input type="hidden" value="${escapeHtml(selectedValue)}" data-notification-field="emoji">
+      ${error ? `<small class="utility-field-error" role="alert">${escapeHtml(error)}</small>` : ''}
+    </div>`;
+}
+
+function previewEmojiMarkup(snapshot, value) {
+  const selected = String(value || '');
+  if (!selected) return '';
+  const emoji = serverEmojiForValue(snapshot, selected);
+  if (emoji) {
+    return `${emojiImageMarkup(emoji, 'utility-discord-button-emoji')}<span class="sr-only">:${escapeHtml(emoji.name)}:</span>`;
+  }
+  const parsed = parseCustomEmoji(selected);
+  if (parsed) return `<span class="utility-discord-button-emoji-fallback">:${escapeHtml(parsed.name)}:</span>`;
+  return `<span class="utility-discord-button-emoji-fallback">${escapeHtml(selected)}</span>`;
+}
+
+function notificationPreviewBodyMarkup(panel, snapshot) {
+  const title = String(panel?.title || '').trim();
+  const description = String(panel?.description || '').trim();
+  const buttons = panel?.buttons || [];
+  return `
+    <div class="utility-discord-embed">
+      <h4>${escapeHtml(title || 'Panel title')}</h4>
+      <p>${escapeHtml(description || 'Panel description').replaceAll('\n', '<br>')}</p>
+    </div>
+    <div class="utility-discord-actions">
+      ${buttons.length ? buttons.map(item => `
+        <button class="utility-discord-button utility-discord-button-${escapeHtml(item.style || 'primary')}" type="button" data-notification-preview-button disabled>
+          ${previewEmojiMarkup(snapshot, item.emoji)}<span>${escapeHtml(String(item.label || '').trim() || 'Button label')}</span>
+        </button>`).join('') : '<span class="utility-discord-no-buttons">No buttons yet</span>'}
+    </div>`;
+}
+
+function notificationPreviewMarkup(panel, snapshot) {
+  return `
+    <aside class="utility-notification-preview" aria-labelledby="notification-preview-heading">
+      <div class="utility-notification-preview-heading">
+        <h3 id="notification-preview-heading">Preview</h3>
+        <p>Approximate Discord appearance. Preview buttons are disabled.</p>
+      </div>
+      <div class="utility-discord-preview" data-notification-preview-body>
+        ${notificationPreviewBodyMarkup(panel, snapshot)}
+      </div>
+    </aside>`;
+}
+
 function notificationRead(state, snapshot) {
   const panel = state.persisted;
   if (!panel.title && !panel.description && !panel.buttons.length) {
@@ -537,11 +668,7 @@ function notificationButtonRows(state, snapshot) {
             <input type="text" maxlength="80" value="${escapeHtml(item.label)}" data-notification-field="label" aria-invalid="${Boolean(labelError)}">
             ${labelError ? `<small class="utility-field-error" role="alert">${escapeHtml(labelError)}</small>` : ''}
           </label>
-          <label>
-            <span>Emoji</span>
-            <input type="text" maxlength="32" value="${escapeHtml(item.emoji)}" data-notification-field="emoji" aria-invalid="${Boolean(emojiError)}">
-            ${emojiError ? `<small class="utility-field-error" role="alert">${escapeHtml(emojiError)}</small>` : ''}
-          </label>
+          ${emojiPickerMarkup(snapshot, item.emoji, index, emojiError)}
           <label>
             <span>Style</span>
             <select data-notification-field="style" aria-invalid="${Boolean(styleError)}">
@@ -564,31 +691,36 @@ function notificationPageMarkup({ state, snapshot } = {}) {
   const editing = state.mode === 'edit';
   const buttonError = state?.errors?.buttons || '';
   return `
-    <section class="control-page utility-page" data-page-key="${NOTIFICATION_PAGE}">
+    <section class="control-page utility-page utility-notification-page" data-page-key="${NOTIFICATION_PAGE}">
       ${pageHeader('Notification roles', 'Manage the self-assignable role panel.', state)}
       <section class="utility-section" aria-labelledby="notification-panel-heading">
         <div class="utility-section-heading">
           <div><h2 id="notification-panel-heading">Panel</h2><p>Destination wiring stays in Mappings.</p></div>
         </div>
         ${editing ? `
-          <div class="utility-form-stack">
-            <label>
-              <span>Title</span>
-              <input type="text" maxlength="256" value="${escapeHtml(state.draft.title)}" data-notification-panel-field="title" aria-invalid="${Boolean(state.errors?.title)}">
-              ${state.errors?.title ? `<small class="utility-field-error" role="alert">${escapeHtml(state.errors.title)}</small>` : ''}
-            </label>
-            <label>
-              <span>Description</span>
-              <textarea maxlength="2000" rows="4" data-notification-panel-field="description" aria-invalid="${Boolean(state.errors?.description)}">${escapeHtml(state.draft.description)}</textarea>
-              ${state.errors?.description ? `<small class="utility-field-error" role="alert">${escapeHtml(state.errors.description)}</small>` : ''}
-            </label>
+          <div class="utility-notification-layout">
+            <div class="utility-notification-editor">
+              <div class="utility-form-stack">
+                <label>
+                  <span>Title</span>
+                  <input type="text" maxlength="256" value="${escapeHtml(state.draft.title)}" data-notification-panel-field="title" aria-invalid="${Boolean(state.errors?.title)}">
+                  ${state.errors?.title ? `<small class="utility-field-error" role="alert">${escapeHtml(state.errors.title)}</small>` : ''}
+                </label>
+                <label>
+                  <span>Description</span>
+                  <textarea maxlength="2000" rows="4" data-notification-panel-field="description" aria-invalid="${Boolean(state.errors?.description)}">${escapeHtml(state.draft.description)}</textarea>
+                  ${state.errors?.description ? `<small class="utility-field-error" role="alert">${escapeHtml(state.errors.description)}</small>` : ''}
+                </label>
+              </div>
+              <div class="utility-section-heading utility-subheading">
+                <div><h3>Buttons</h3><p>Choose the role, label, emoji, and visual style for each button.</p></div>
+                <button class="control-button control-button-secondary" type="button" data-notification-add${state.draft.buttons.length >= 25 ? ' disabled' : ''}>Add button</button>
+              </div>
+              ${buttonError ? `<p class="utility-field-error" role="alert">${escapeHtml(buttonError)}</p>` : ''}
+              ${notificationButtonRows(state, snapshot)}
+            </div>
+            ${notificationPreviewMarkup(state.draft, snapshot)}
           </div>
-          <div class="utility-section-heading utility-subheading">
-            <div><h3>Buttons</h3><p>Choose the role, label, emoji, and visual style for each button.</p></div>
-            <button class="control-button control-button-secondary" type="button" data-notification-add${state.draft.buttons.length >= 25 ? ' disabled' : ''}>Add button</button>
-          </div>
-          ${buttonError ? `<p class="utility-field-error" role="alert">${escapeHtml(buttonError)}</p>` : ''}
-          ${notificationButtonRows(state, snapshot)}
         ` : notificationRead(state, snapshot)}
       </section>
       ${resourceSummaryMarkup(snapshot, [
@@ -663,10 +795,40 @@ function updateNotificationDraftFromField(store, pageKey, field) {
   return true;
 }
 
+function updateNotificationEmojiFromOption(store, pageKey, option) {
+  const row = option.closest?.('[data-notification-row]');
+  const index = Number(row?.dataset?.notificationRow);
+  if (!Number.isInteger(index)) return false;
+  store.updateDraft(pageKey, draft => {
+    if (draft.buttons[index]) {
+      draft.buttons[index].emoji = String(option.dataset?.notificationEmojiOption || '');
+    }
+  });
+  return true;
+}
+
+function filterNotificationEmojiOptions(field) {
+  const picker = field.closest?.('[data-notification-emoji-picker]');
+  const query = String(field.value || '').trim().toLowerCase();
+  const options = picker?.querySelectorAll?.('[data-notification-emoji-option]') || [];
+  for (const option of options) {
+    const isSelected = option.getAttribute?.('aria-selected') === 'true';
+    const name = String(option.dataset?.emojiName || option.textContent || '').toLowerCase();
+    const isNone = String(option.dataset?.notificationEmojiOption || '') === '';
+    option.hidden = Boolean(query) && !isSelected && !isNone && !name.includes(query);
+  }
+}
+
+function refreshNotificationPreview(root, draft, snapshot) {
+  const preview = root.querySelector?.('[data-notification-preview-body]');
+  if (preview) preview.innerHTML = notificationPreviewBodyMarkup(draft, snapshot);
+}
+
 export function installUtilitiesPageInteractions({
   root,
   pageKey,
   store = controlState,
+  snapshot = {},
   onSave,
   rerender = () => {},
 } = {}) {
@@ -736,11 +898,25 @@ export function installUtilitiesPageInteractions({
         if (Number.isInteger(index) && draft.buttons[index]) draft.buttons.splice(index, 1);
       });
       rerender();
+      return;
+    }
+
+    const emojiOption = event.target?.closest?.('[data-notification-emoji-option]');
+    if (pageKey === NOTIFICATION_PAGE && emojiOption && !emojiOption.disabled) {
+      if (updateNotificationEmojiFromOption(store, pageKey, emojiOption)) rerender();
     }
   };
 
   const onInput = event => {
     const field = event.target;
+    if (
+      pageKey === NOTIFICATION_PAGE
+      && field?.dataset?.notificationEmojiSearch !== undefined
+    ) {
+      filterNotificationEmojiOptions(field);
+      return;
+    }
+
     let changed = false;
     if (pageKey === TICKET_PAGE && field?.dataset?.ticketField && field.type !== 'checkbox') {
       changed = updateTicketDraftFromField(store, pageKey, field);
@@ -748,10 +924,16 @@ export function installUtilitiesPageInteractions({
       pageKey === NOTIFICATION_PAGE
       && (field?.dataset?.notificationPanelField || field?.dataset?.notificationField)
       && field.tagName !== 'SELECT'
+      && field.type !== 'hidden'
     ) {
       changed = updateNotificationDraftFromField(store, pageKey, field);
     }
-    if (changed) updateActionBar(root, store, pageKey);
+    if (changed) {
+      updateActionBar(root, store, pageKey);
+      if (pageKey === NOTIFICATION_PAGE) {
+        refreshNotificationPreview(root, store.get(pageKey).draft, snapshot);
+      }
+    }
   };
 
   const onChange = event => {
@@ -772,6 +954,7 @@ export function installUtilitiesPageInteractions({
     if (
       pageKey === NOTIFICATION_PAGE
       && (event.target?.dataset?.notificationPanelField || event.target?.dataset?.notificationField)
+      && event.target.type !== 'hidden'
     ) {
       if (updateNotificationDraftFromField(store, pageKey, event.target)) rerender();
     }

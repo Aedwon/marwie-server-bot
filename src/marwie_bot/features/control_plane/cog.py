@@ -21,7 +21,10 @@ from marwie_bot.features.configuration.repository import (
 from marwie_bot.features.configuration.service import FeatureConfigService, ResourceService
 from marwie_bot.features.control_plane.domain import ControlActionRecord, ControlActionType
 from marwie_bot.features.control_plane.executor import ActionRejected, ControlActionExecutor
-from marwie_bot.features.control_plane.notification_panel import NotificationRoleView
+from marwie_bot.features.control_plane.notification_panel import (
+    NotificationRoleView,
+    adopt_legacy_notification_panel,
+)
 from marwie_bot.features.control_plane.page_revisions import build_page_revisions
 from marwie_bot.features.control_plane.page_save_executor import PageSaveExecutor
 from marwie_bot.features.control_plane.repository import SQLAlchemyControlRepository
@@ -94,7 +97,20 @@ class ControlPlaneCog(commands.Cog):
         await self.repository.upsert_snapshot(guild.id, snapshot, self.worker_id)
 
     async def _register_notification_views(self) -> None:
+        bot_user = self.bot.user
         for guild in self.bot.guilds:
+            if bot_user is not None:
+                try:
+                    await adopt_legacy_notification_panel(
+                        guild=guild,
+                        bot_user_id=bot_user.id,
+                        resources=self.executor.resources,
+                        repository=self.repository,
+                    )
+                except Exception:
+                    logger.exception(
+                        "Could not adopt legacy notification role panel guild_id=%s", guild.id
+                    )
             panel = await self.repository.get_notification_panel(guild.id)
             if panel is None or not panel.buttons:
                 continue

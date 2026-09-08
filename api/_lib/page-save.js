@@ -91,6 +91,20 @@ function requireOwnership(pageKey, actionType, payload, HttpError) {
   }
 }
 
+function validatePageChangePayload(actionType, rawPayload, validateActionPayload) {
+  if (
+    actionType === 'save_notification_panel'
+    && rawPayload
+    && typeof rawPayload === 'object'
+    && !Array.isArray(rawPayload)
+    && (rawPayload.channel_id === undefined || rawPayload.channel_id === null || rawPayload.channel_id === '')
+  ) {
+    const payload = validateActionPayload(actionType, { ...rawPayload, channel_id: '1' });
+    return { ...payload, channel_id: null };
+  }
+  return validateActionPayload(actionType, rawPayload);
+}
+
 export function validatePageSavePayload(rawPayload, dependencies) {
   const { normalizeActionType, validateActionPayload, HttpError } = dependencies;
   const data = mapping(rawPayload, 'Page save payload', HttpError);
@@ -122,7 +136,11 @@ export function validatePageSavePayload(rawPayload, dependencies) {
     if (actionType === 'save_page' || actionType === 'refresh_snapshot') {
       throw new HttpError(400, 'Nested internal control actions are not allowed.');
     }
-    const payload = validateActionPayload(actionType, change.payload || {});
+    const payload = validatePageChangePayload(
+      actionType,
+      change.payload || {},
+      validateActionPayload,
+    );
     requireOwnership(pageKey, actionType, payload, HttpError);
     return { action_type: actionType, payload };
   });
