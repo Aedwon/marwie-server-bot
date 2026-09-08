@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, AsyncIterator
 
 import discord
 import pytest
@@ -19,6 +19,7 @@ from marwie_bot.features.moderation.compromise_trap_service import (
     ContainmentStatus,
     TrapExecutionResult,
 )
+from marwie_bot.features.moderation.service import ModerationCaseRecord
 
 NOW = datetime(2026, 9, 9, 4, 0, tzinfo=UTC)
 
@@ -43,7 +44,9 @@ class FakeAuthor:
 
 
 class FakeHistoryMessage:
-    def __init__(self, message_id: int, author_id: int, *, delete_error: Exception | None = None) -> None:
+    def __init__(
+        self, message_id: int, author_id: int, *, delete_error: Exception | None = None
+    ) -> None:
         self.id = message_id
         self.author = FakeAuthor(author_id)
         self.delete_error = delete_error
@@ -77,11 +80,11 @@ class FakeScope:
         del member
         return self._permissions
 
-    def history(self, *, limit: None, after: datetime):
+    def history(self, *, limit: None, after: datetime) -> AsyncIterator[FakeHistoryMessage]:
         assert limit is None
         self.history_after = after
 
-        async def iterator():
+        async def iterator() -> AsyncIterator[FakeHistoryMessage]:
             if self._history_error is not None:
                 raise self._history_error
             for message in self._messages:
@@ -104,6 +107,7 @@ class FakeTextChannel(FakeScope):
         private_archived: list[FakeScope] | None = None,
         public_archive_error: Exception | None = None,
         private_archive_error: Exception | None = None,
+        send_error: Exception | None = None,
     ) -> None:
         super().__init__(
             scope_id,
@@ -117,6 +121,8 @@ class FakeTextChannel(FakeScope):
         self._private_archived = private_archived or []
         self._public_archive_error = public_archive_error
         self._private_archive_error = private_archive_error
+        self._send_error = send_error
+        self.sent_embeds: list[discord.Embed] = []
 
     def archived_threads(
         self,
@@ -124,19 +130,24 @@ class FakeTextChannel(FakeScope):
         private: bool = False,
         joined: bool = False,
         limit: None = None,
-    ):
+    ) -> AsyncIterator[FakeScope]:
         del joined
         assert limit is None
         values = self._private_archived if private else self._public_archived
         error = self._private_archive_error if private else self._public_archive_error
 
-        async def iterator():
+        async def iterator() -> AsyncIterator[FakeScope]:
             if error is not None:
                 raise error
             for thread in values:
                 yield thread
 
         return iterator()
+
+    async def send(self, *, embed: discord.Embed) -> None:
+        if self._send_error is not None:
+            raise self._send_error
+        self.sent_embeds.append(embed)
 
 
 class FakeGuild:
@@ -146,6 +157,7 @@ class FakeGuild:
         self.me = SimpleNamespace(id=999)
         self._resolved: dict[int, Any] = {channel.id: channel for channel in self.text_channels}
         self.ban_calls: list[tuple[int, str, int]] = []
+        self.unban_calls: list[int] = []
         self.ban_error: Exception | None = None
 
     def get_channel(self, channel_id: int) -> Any:
@@ -162,42 +174,144 @@ class FakeGuild:
         if self.ban_error is not None:
             raise self.ban_error
 
+    async def unban(self, target: discord.Object, *, reason: str | None = None) -> None:
+        del reason
+        self.unban_calls.append(target.id)
+
+
+class FakeBot:
+    def __init__(self, guild: FakeGuild | None = None) -> None:
+        self.user = SimpleNamespace(id=999)
+        self.guild = guild
+
+    def get_guild(self, guild_id: int) -> FakeGuild | None:
+        if self.guild is not None and self.guild.id == guild_id:
+            return self.guild
+        return None
+
 
 class FakeResourceService:
-    def __init__(self, discord_id: int | None) -> None:
-        self.discord_id = discord_id
+    def __init__(
+        self,
+        trap_id: int | None,
+        *,
+        moderation_log_id: int | None = None,
+    ) -> None:
+        self.trap_id = trap_id
+        self.moderation_log_id = moderation_log_id
         self.calls: list[tuple[int, ResourceKey]] = []
 
-    async def get(self, guild_id: int, key: ResourceKey):
+    async def get(self, guild_id: int, key: ResourceKey) -> Any:
         self.calls.append((guild_id, key))
-        if self.discord_id is None:
+        if key is ResourceKey.COMPROMISED_ACCOUNT_TRAP:
+            discord_id = self.trap_id
+        elif key is ResourceKey.MODERATION_LOG:
+            discord_id = self.moderation_log_id
+        else:
+            discord_id = None
+        if discord_id is None:
             return None
-        return SimpleNamespace(discord_id=self.discord_id)
+        return SimpleNamespace(discord_id=discord_id)
 
 
 class FakeTrapService:
-    def __init__(self, *, delete_trigger_only: bool = False) -> None:
+    def __init__(
+        self,
+        *,
+        delete_trigger_only: bool = False,
+        full_incident: bool = False,
+        metadata: dict[str, Any] | None = None,
+    ) -> None:
         self.delete_trigger_only = delete_trigger_only
+        self.full_incident = full_incident
+        self.metadata = metadata or {}
         self.calls: list[tuple[Any, Any, int]] = []
 
-    async def execute(self, trigger: Any, enforcer: Any, *, moderator_id: int, now: Any = None):
+    async def execute(
+        self,
+        trigger: Any,
+        enforcer: Any,
+        *,
+        moderator_id: int,
+        now: Any = None,
+    ) -> TrapExecutionResult:
         del now
         self.calls.append((trigger, enforcer, moderator_id))
         return TrapExecutionResult(
-            disposition=(ClaimDisposition.COOLDOWN if self.delete_trigger_only else ClaimDisposition.CLAIMED),
-            full_incident=not self.delete_trigger_only,
+            disposition=(
+                ClaimDisposition.COOLDOWN if self.delete_trigger_only else ClaimDisposition.CLAIMED
+            ),
+            full_incident=self.full_incident,
             delete_trigger_only=self.delete_trigger_only,
             incident_id=1,
             reason="automatic trap",
-            containment_status=(None if self.delete_trigger_only else ContainmentStatus.CONTAINED),
-            ban_status=(None if self.delete_trigger_only else BanStatus.SUCCEEDED),
+            containment_status=(
+                ContainmentStatus.CONTAINED if self.full_incident else None
+            ),
+            ban_status=BanStatus.SUCCEEDED if self.full_incident else None,
             ban_error=None,
-            native_delete_requested=not self.delete_trigger_only,
+            native_delete_requested=self.full_incident,
             fallback_cleanup_run=False,
             deleted_message_count=0,
             failed_scopes=(),
-            metadata={},
+            metadata=dict(self.metadata),
         )
+
+
+class FakeModerationService:
+    def __init__(self, *, error: Exception | None = None) -> None:
+        self.error = error
+        self.calls: list[dict[str, Any]] = []
+
+    async def create_case(
+        self,
+        guild_id: int,
+        action: str,
+        target_id: int,
+        moderator_id: int,
+        reason: str,
+        *,
+        expires_at: datetime | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> ModerationCaseRecord:
+        self.calls.append(
+            {
+                "guild_id": guild_id,
+                "action": action,
+                "target_id": target_id,
+                "moderator_id": moderator_id,
+                "reason": reason,
+                "expires_at": expires_at,
+                "metadata": dict(metadata or {}),
+            }
+        )
+        if self.error is not None:
+            raise self.error
+        return ModerationCaseRecord(
+            id=44,
+            guild_id=guild_id,
+            action=action,
+            target_id=target_id,
+            moderator_id=moderator_id,
+            reason=reason,
+            created_at=NOW,
+            expires_at=expires_at,
+            metadata=dict(metadata or {}),
+        )
+
+
+class FakeIncidentRepository:
+    def __init__(self, interrupted: list[Any]) -> None:
+        self.interrupted = list(interrupted)
+        self.calls: list[datetime] = []
+
+    async def mark_in_progress_interrupted(self, now: datetime) -> list[Any]:
+        self.calls.append(now)
+        if not self.interrupted:
+            return []
+        rows = list(self.interrupted)
+        self.interrupted.clear()
+        return rows
 
 
 class FakeIncomingMessage:
@@ -237,17 +351,38 @@ class FakeIncomingMessage:
         self.deleted = True
 
 
-def _bot() -> Any:
-    return SimpleNamespace(user=SimpleNamespace(id=999))
+def _bot(guild: FakeGuild | None = None) -> FakeBot:
+    return FakeBot(guild)
 
 
-def _http_error(kind: type[discord.HTTPException], status: int, message: str) -> discord.HTTPException:
+def _http_error(
+    kind: type[discord.HTTPException], status: int, message: str
+) -> discord.HTTPException:
     response = SimpleNamespace(status=status, reason=message)
     return kind(response, {"message": message, "code": 0})
 
 
 def _patch_text_channel(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(compromise_trap.discord, "TextChannel", FakeTextChannel)
+
+
+def _full_metadata() -> dict[str, Any]:
+    return {
+        "automated": True,
+        "source": "compromised_account_trap",
+        "incident_id": 1,
+        "trigger_channel_id": 10,
+        "trigger_message_id": 500,
+        "moderator_id": 999,
+        "ban_status": "succeeded",
+        "ban_error": None,
+        "native_delete_requested": True,
+        "cleanup_path": "discord_native_ban",
+        "fallback_cleanup_run": False,
+        "deleted_message_count": 0,
+        "failed_scope_ids": [],
+        "containment_status": "contained",
+    }
 
 
 async def test_no_mapping_means_no_service_call(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -373,7 +508,9 @@ async def test_duplicate_or_cooldown_deletes_only_new_trigger_message(
     channel = FakeTextChannel(10, "trap")
     guild = FakeGuild(1, channels=[channel])
     message = FakeIncomingMessage(guild, channel)
-    cog = CompromisedAccountTrapCog(_bot(), FakeResourceService(10), FakeTrapService(delete_trigger_only=True))
+    cog = CompromisedAccountTrapCog(
+        _bot(), FakeResourceService(10), FakeTrapService(delete_trigger_only=True)
+    )
 
     await cog.on_message(message)
 
@@ -478,3 +615,171 @@ async def test_cleanup_records_message_and_archive_failures_without_aborting() -
     assert result.deleted_count == 2
     assert result.scanned_scopes == 2
     assert any(failure.scope_id == 10 for failure in result.failures)
+
+
+async def test_full_incident_creates_one_automated_case_and_summary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_text_channel(monkeypatch)
+    trap = FakeTextChannel(10, "trap")
+    moderation_log = FakeTextChannel(20, "moderation-log")
+    guild = FakeGuild(1, channels=[trap, moderation_log])
+    resources = FakeResourceService(10, moderation_log_id=20)
+    service = FakeTrapService(full_incident=True, metadata=_full_metadata())
+    moderation = FakeModerationService()
+    cog = CompromisedAccountTrapCog(_bot(guild), resources, service, moderation)
+
+    await cog.on_message(FakeIncomingMessage(guild, trap))
+
+    assert len(moderation.calls) == 1
+    call = moderation.calls[0]
+    assert call["action"] == "ban"
+    assert call["target_id"] == 123
+    assert call["moderator_id"] == 999
+    assert call["reason"] == "automatic trap"
+    assert call["metadata"] == _full_metadata()
+    assert all("content" not in key.lower() for key in call["metadata"])
+    assert len(moderation_log.sent_embeds) == 1
+    embed = moderation_log.sent_embeds[0]
+    rendered = " ".join(
+        [embed.title or "", embed.description or ""]
+        + [f"{field.name} {field.value}" for field in embed.fields]
+    )
+    for expected in ("<@123>", "<#10>", "500", "succeeded", "discord_native_ban", "contained", "1", "44"):
+        assert expected in rendered
+
+
+async def test_duplicate_or_cooldown_creates_no_case_or_summary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_text_channel(monkeypatch)
+    trap = FakeTextChannel(10, "trap")
+    moderation_log = FakeTextChannel(20, "moderation-log")
+    guild = FakeGuild(1, channels=[trap, moderation_log])
+    moderation = FakeModerationService()
+    cog = CompromisedAccountTrapCog(
+        _bot(guild),
+        FakeResourceService(10, moderation_log_id=20),
+        FakeTrapService(delete_trigger_only=True),
+        moderation,
+    )
+    message = FakeIncomingMessage(guild, trap)
+
+    await cog.on_message(message)
+
+    assert message.deleted is True
+    assert moderation.calls == []
+    assert moderation_log.sent_embeds == []
+
+
+async def test_case_persistence_failure_never_rolls_back_containment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_text_channel(monkeypatch)
+    trap = FakeTextChannel(10, "trap")
+    moderation_log = FakeTextChannel(20, "moderation-log")
+    guild = FakeGuild(1, channels=[trap, moderation_log])
+    moderation = FakeModerationService(error=RuntimeError("database unavailable"))
+    cog = CompromisedAccountTrapCog(
+        _bot(guild),
+        FakeResourceService(10, moderation_log_id=20),
+        FakeTrapService(full_incident=True, metadata=_full_metadata()),
+        moderation,
+    )
+
+    await cog.on_message(FakeIncomingMessage(guild, trap))
+
+    assert len(moderation.calls) == 1
+    assert guild.unban_calls == []
+    assert len(moderation_log.sent_embeds) == 1
+
+
+@pytest.mark.parametrize("moderation_log_id", [None, 9999])
+async def test_absent_or_stale_moderation_log_preserves_case(
+    monkeypatch: pytest.MonkeyPatch,
+    moderation_log_id: int | None,
+) -> None:
+    _patch_text_channel(monkeypatch)
+    trap = FakeTextChannel(10, "trap")
+    guild = FakeGuild(1, channels=[trap])
+    moderation = FakeModerationService()
+    cog = CompromisedAccountTrapCog(
+        _bot(guild),
+        FakeResourceService(10, moderation_log_id=moderation_log_id),
+        FakeTrapService(full_incident=True, metadata=_full_metadata()),
+        moderation,
+    )
+
+    await cog.on_message(FakeIncomingMessage(guild, trap))
+
+    assert len(moderation.calls) == 1
+    assert guild.unban_calls == []
+
+
+async def test_moderation_log_post_failure_preserves_case(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_text_channel(monkeypatch)
+    trap = FakeTextChannel(10, "trap")
+    moderation_log = FakeTextChannel(
+        20,
+        "moderation-log",
+        send_error=_http_error(discord.Forbidden, 403, "cannot post"),
+    )
+    guild = FakeGuild(1, channels=[trap, moderation_log])
+    moderation = FakeModerationService()
+    cog = CompromisedAccountTrapCog(
+        _bot(guild),
+        FakeResourceService(10, moderation_log_id=20),
+        FakeTrapService(full_incident=True, metadata=_full_metadata()),
+        moderation,
+    )
+
+    await cog.on_message(FakeIncomingMessage(guild, trap))
+
+    assert len(moderation.calls) == 1
+    assert guild.unban_calls == []
+
+
+async def test_startup_reconciliation_reports_interrupted_once_without_destructive_replay(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_text_channel(monkeypatch)
+    moderation_log = FakeTextChannel(20, "moderation-log")
+    guild = FakeGuild(1, channels=[moderation_log])
+    interrupted = SimpleNamespace(
+        id=7,
+        guild_id=1,
+        target_id=123,
+        trigger_channel_id=10,
+        trigger_message_id=500,
+        containment_status="interrupted",
+        ban_status=None,
+        fallback_cleanup_run=False,
+        deleted_message_count=0,
+        failed_scopes=(),
+    )
+    incidents = FakeIncidentRepository([interrupted])
+    service = FakeTrapService()
+    cog = CompromisedAccountTrapCog(
+        _bot(guild),
+        FakeResourceService(None, moderation_log_id=20),
+        service,
+        FakeModerationService(),
+    )
+    setattr(cog, "incidents", incidents)
+
+    assert hasattr(cog, "on_ready"), "Trap cog must reconcile interrupted incidents on ready"
+    await cog.on_ready()
+    await cog.on_ready()
+
+    assert len(incidents.calls) == 2
+    assert service.calls == []
+    assert guild.ban_calls == []
+    assert len(moderation_log.sent_embeds) == 1
+    rendered = " ".join(
+        [moderation_log.sent_embeds[0].title or "", moderation_log.sent_embeds[0].description or ""]
+        + [f"{field.name} {field.value}" for field in moderation_log.sent_embeds[0].fields]
+    )
+    assert "interrupted" in rendered.lower()
+    assert "7" in rendered
