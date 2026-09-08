@@ -12,14 +12,16 @@ Leaving the unsupported keyword would cause a runtime `TypeError` during fallbac
 
 ## Scope amendment
 
-No file-table expansion is required. The already-authorized Task 4 files remain the only implementation/test files involved:
+The already-authorized Task 4 production file remains the only production file involved. A small dedicated regression test is added so its fake message matches discord.py's real deletion signature instead of the older permissive test double.
 
-- `src/marwie_bot/features/moderation/compromise_trap.py`
-- `tests/test_compromised_account_trap_cog.py`
+| Path | Action | Purpose |
+| --- | --- | --- |
+| `src/marwie_bot/features/moderation/compromise_trap.py` | modify | Use the supported message deletion signature for fallback history cleanup |
+| `tests/test_compromised_account_trap_discord_api.py` | create | Prove fallback cleanup works with a message whose `delete()` accepts no audit-log reason keyword |
 
 ## Repair contract
 
 - History cleanup must call the supported discord.py message deletion API without an unsupported `reason` keyword.
 - The cleanup window, target filtering, permission checks, deletion count, per-scope failure behavior, active/archived-thread coverage, and containment semantics remain unchanged.
-- A test double must reject unexpected deletion keyword arguments so this discord.py signature mismatch cannot regress silently.
+- The regression test double must reject unexpected deletion keyword arguments so this discord.py signature mismatch cannot regress silently.
 - This amendment does not authorize production merges, deployment, direct database writes, or bot restarts.
