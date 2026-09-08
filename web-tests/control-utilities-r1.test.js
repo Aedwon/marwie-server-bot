@@ -134,8 +134,8 @@ test('Notification roles renders server emoji choices and a Discord-style draft 
   });
 
   assert.match(markup, /data-notification-emoji-search/);
-  assert.match(markup, /value="<:grok:1234>"/);
-  assert.match(markup, /value="<a:party:5678>"/);
+  assert.match(markup, /data-notification-emoji-option="&lt;:grok:1234&gt;"/);
+  assert.match(markup, /data-notification-emoji-option="&lt;a:party:5678&gt;"/);
   assert.match(markup, /utility-notification-preview/);
   assert.match(markup, /AI Updates preview/);
   assert.match(markup, /https:\/\/cdn\.discordapp\.com\/emojis\/1234\.webp/);
@@ -175,7 +175,7 @@ test('Notification roles preserves a configured emoji that is no longer availabl
   });
 
   assert.match(markup, /Current emoji unavailable/);
-  assert.match(markup, /value="<:deleted:9999>" selected/);
+  assert.match(markup, /data-notification-emoji-option="&lt;:deleted:9999&gt;"/);
   assert.match(markup, /:deleted:/);
 });
 
@@ -241,15 +241,25 @@ test('Notification emoji search filters server choices without changing the draf
   const { createUtilitiesPageDefinition } = await utilitiesModule();
   const definition = createUtilitiesPageDefinition('/control/utilities/notification-roles');
   const listeners = new Map();
+  const option = ({ value, name, selected }) => ({
+    hidden: false,
+    textContent: name,
+    dataset: {
+      notificationEmojiOption: value,
+      emojiName: name.toLowerCase(),
+    },
+    getAttribute(attribute) {
+      return attribute === 'aria-selected' ? String(selected) : null;
+    },
+  });
   const options = [
-    { value: '', textContent: 'None', selected: false, hidden: false, dataset: {} },
-    { value: '<:grok:1234>', textContent: 'grok', selected: true, hidden: false, dataset: {} },
-    { value: '<a:party:5678>', textContent: 'party (animated)', selected: false, hidden: false, dataset: {} },
+    option({ value: '', name: 'None', selected: false }),
+    option({ value: '<:grok:1234>', name: 'grok', selected: true }),
+    option({ value: '<a:party:5678>', name: 'party', selected: false }),
   ];
-  const select = { options };
   const picker = {
-    querySelector(selector) {
-      return selector === '[data-notification-field="emoji"]' ? select : null;
+    querySelectorAll(selector) {
+      return selector === '[data-notification-emoji-option]' ? options : [];
     },
   };
   const root = {
