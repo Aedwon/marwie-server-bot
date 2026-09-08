@@ -121,10 +121,12 @@ Use these names and value contracts unless execution uncovers an existing reposi
 TRAP_DELETE_SECONDS = 86_400
 TRAP_COOLDOWN_SECONDS = 60
 
+
 class IncidentStatus(StrEnum):
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     INTERRUPTED = "interrupted"
+
 
 class ContainmentStatus(StrEnum):
     CONTAINED = "contained"
@@ -132,9 +134,11 @@ class ContainmentStatus(StrEnum):
     FAILED = "failed"
     INTERRUPTED = "interrupted"
 
+
 class BanStatus(StrEnum):
     SUCCEEDED = "succeeded"
     FAILED = "failed"
+
 
 @dataclass(frozen=True, slots=True)
 class TrapTrigger:
@@ -144,16 +148,19 @@ class TrapTrigger:
     message_id: int
     triggered_at: datetime
 
+
 @dataclass(frozen=True, slots=True)
 class BanAttempt:
     succeeded: bool
     error: str | None = None
+
 
 @dataclass(frozen=True, slots=True)
 class CleanupFailure:
     scope_id: int
     scope_name: str
     error: str
+
 
 @dataclass(frozen=True, slots=True)
 class CleanupResult:
@@ -238,9 +245,7 @@ class ResourceKey(StrEnum):
 - [ ] Introduce:
 
 ```python
-MANUAL_ONLY_MAPPING_KEYS: tuple[ResourceKey, ...] = (
-    ResourceKey.COMPROMISED_ACCOUNT_TRAP,
-)
+MANUAL_ONLY_MAPPING_KEYS: tuple[ResourceKey, ...] = (ResourceKey.COMPROMISED_ACCOUNT_TRAP,)
 SUGGESTIBLE_MAPPING_KEYS: tuple[ResourceKey, ...] = tuple(
     key for key in APPROVED_MAPPING_KEYS if key not in MANUAL_ONLY_MAPPING_KEYS
 )
