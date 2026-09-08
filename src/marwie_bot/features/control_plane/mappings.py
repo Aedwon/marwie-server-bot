@@ -44,9 +44,7 @@ APPROVED_MAPPING_KEYS: tuple[ResourceKey, ...] = (
     *ROLE_MAPPING_KEYS,
     *CATEGORY_MAPPING_KEYS,
 )
-MANUAL_ONLY_MAPPING_KEYS: tuple[ResourceKey, ...] = (
-    ResourceKey.COMPROMISED_ACCOUNT_TRAP,
-)
+MANUAL_ONLY_MAPPING_KEYS: tuple[ResourceKey, ...] = (ResourceKey.COMPROMISED_ACCOUNT_TRAP,)
 SUGGESTIBLE_MAPPING_KEYS: tuple[ResourceKey, ...] = tuple(
     key for key in APPROVED_MAPPING_KEYS if key not in MANUAL_ONLY_MAPPING_KEYS
 )
