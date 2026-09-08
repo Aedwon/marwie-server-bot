@@ -41,6 +41,7 @@ CHANNEL_KEYS = {
     ResourceKey.SHOWCASE_FORUM,
     ResourceKey.APP_OF_WEEK,
     ResourceKey.COLLAB_LFG,
+    ResourceKey.COMPROMISED_ACCOUNT_TRAP,
 }
 ROLE_KEYS = {
     ResourceKey.LIVE_PING_ROLE,

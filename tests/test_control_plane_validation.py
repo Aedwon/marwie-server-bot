@@ -165,3 +165,41 @@ def test_live_post_preserves_explicit_destination_and_ping_choice() -> None:
         {"channel_id": None, "ping_role_id": None, "topic": ""},
     )
     assert no_ping == {"channel_id": None, "ping_role_id": None, "topic": ""}
+
+
+def test_manual_resource_mapping_accepts_compromised_account_trap() -> None:
+    payload = validate_action_payload(
+        ControlActionType.SET_RESOURCE,
+        {"key": "compromised_account_trap", "discord_id": "123456789"},
+    )
+    assert payload == {"key": "compromised_account_trap", "discord_id": 123456789}
+
+
+def test_mapping_suggestions_reject_compromised_account_trap_item() -> None:
+    with pytest.raises(ValueError, match="manual-only"):
+        validate_action_payload(
+            ControlActionType.APPLY_MAPPING_SUGGESTIONS,
+            {
+                "plan_hash": "a" * 64,
+                "items": [
+                    {
+                        "key": "compromised_account_trap",
+                        "action": "bind",
+                        "target_id": "123456789",
+                    }
+                ],
+                "confirmed_keys": [],
+            },
+        )
+
+
+def test_mapping_suggestions_reject_compromised_account_trap_confirmation() -> None:
+    with pytest.raises(ValueError, match="manual-only"):
+        validate_action_payload(
+            ControlActionType.APPLY_MAPPING_SUGGESTIONS,
+            {
+                "plan_hash": "a" * 64,
+                "items": [],
+                "confirmed_keys": ["compromised_account_trap"],
+            },
+        )

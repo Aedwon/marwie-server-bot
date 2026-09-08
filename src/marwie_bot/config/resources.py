@@ -26,6 +26,7 @@ class ResourceKey(StrEnum):
     BUILDER_ROLE = "builder_role"
     CONTRIBUTOR_ROLE = "contributor_role"
     MENTOR_ROLE = "mentor_role"
+    COMPROMISED_ACCOUNT_TRAP = "compromised_account_trap"
     BOT_LOG = "bot_log"
 
 
@@ -75,5 +76,6 @@ RESOURCE_TYPES: dict[ResourceKey, ResourceType] = {
     ResourceKey.BUILDER_ROLE: ResourceType.ROLE,
     ResourceKey.CONTRIBUTOR_ROLE: ResourceType.ROLE,
     ResourceKey.MENTOR_ROLE: ResourceType.ROLE,
+    ResourceKey.COMPROMISED_ACCOUNT_TRAP: ResourceType.CHANNEL,
     ResourceKey.BOT_LOG: ResourceType.CHANNEL,
 }

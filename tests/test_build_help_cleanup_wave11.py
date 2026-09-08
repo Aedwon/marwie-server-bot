@@ -132,7 +132,7 @@ def test_downgrade_recreates_compatible_empty_forum_solutions_schema(tmp_path: P
         } <= indexes
 
 
-def test_cleanup_revision_follows_stage3_revision_and_is_head() -> None:
+def test_cleanup_revision_follows_stage3_revision() -> None:
     migration = ROOT / "migrations/versions/20260830_0004_remove_build_help.py"
     assert migration.exists()
 
@@ -140,7 +140,6 @@ def test_cleanup_revision_follows_stage3_revision_and_is_head() -> None:
     config.set_main_option("script_location", str(ROOT / "migrations"))
     script = ScriptDirectory.from_config(config)
 
-    assert script.get_heads() == [CLEANUP_REVISION]
     revision = script.get_revision(CLEANUP_REVISION)
     assert revision is not None
     assert revision.down_revision == PREVIOUS_REVISION

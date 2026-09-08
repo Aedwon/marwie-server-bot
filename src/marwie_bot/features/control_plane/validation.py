@@ -6,7 +6,10 @@ from urllib.parse import urlparse
 
 from marwie_bot.config.resources import FeatureName, ResourceKey
 from marwie_bot.features.control_plane.domain import ControlActionType
-from marwie_bot.features.control_plane.mappings import APPROVED_MAPPING_KEYS
+from marwie_bot.features.control_plane.mappings import (
+    MANUAL_ONLY_MAPPING_KEYS,
+    SUGGESTIBLE_MAPPING_KEYS,
+)
 
 
 class ActionPermission(StrEnum):
@@ -27,7 +30,8 @@ _ADMIN_ACTIONS = {
     ControlActionType.REFRESH_TICKET_PANEL,
     ControlActionType.POST_LIVE,
 }
-_APPROVED_MAPPING_KEY_SET = frozenset(APPROVED_MAPPING_KEYS)
+_MANUAL_ONLY_MAPPING_KEY_SET = frozenset(MANUAL_ONLY_MAPPING_KEYS)
+_SUGGESTIBLE_MAPPING_KEY_SET = frozenset(SUGGESTIBLE_MAPPING_KEYS)
 _MAPPING_SUGGESTION_ACTIONS = frozenset({"bind", "remap", "create"})
 
 
@@ -107,10 +111,17 @@ def _mapping_plan_hash(value: Any) -> str:
     return plan_hash.lower()
 
 
+def _ensure_suggestible_mapping_key(key: ResourceKey) -> None:
+    if key in _MANUAL_ONLY_MAPPING_KEY_SET:
+        raise ValueError(f"Resource `{key.value}` is manual-only and cannot be suggested.")
+    if key not in _SUGGESTIBLE_MAPPING_KEY_SET:
+        raise ValueError(f"Resource `{key.value}` is not managed by Mappings.")
+
+
 def _mapping_suggestion_items(value: Any) -> list[dict[str, Any]]:
     if not isinstance(value, list):
         raise ValueError("Mapping review items must be a list.")
-    if len(value) > len(APPROVED_MAPPING_KEYS):
+    if len(value) > len(SUGGESTIBLE_MAPPING_KEYS):
         raise ValueError("Mapping review contains too many resources.")
 
     result: list[dict[str, Any]] = []
@@ -119,8 +130,7 @@ def _mapping_suggestion_items(value: Any) -> list[dict[str, Any]]:
         if not isinstance(raw, dict):
             raise ValueError("Each mapping review item must be an object.")
         key = ResourceKey(_text(raw.get("key"), field="Resource key", max_length=100))
-        if key not in _APPROVED_MAPPING_KEY_SET:
-            raise ValueError(f"Resource `{key.value}` is not managed by Mappings.")
+        _ensure_suggestible_mapping_key(key)
         if key in seen:
             raise ValueError("Mapping review contains a duplicate resource.")
         seen.add(key)
@@ -151,8 +161,7 @@ def _mapping_confirmations(value: Any) -> list[str]:
     seen: set[ResourceKey] = set()
     for raw in value:
         key = ResourceKey(_text(raw, field="Confirmed resource", max_length=100))
-        if key not in _APPROVED_MAPPING_KEY_SET:
-            raise ValueError(f"Resource `{key.value}` is not managed by Mappings.")
+        _ensure_suggestible_mapping_key(key)
         if key in seen:
             raise ValueError("Mapping confirmations contain a duplicate resource.")
         seen.add(key)

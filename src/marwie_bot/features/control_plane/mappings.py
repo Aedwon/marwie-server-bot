@@ -27,6 +27,7 @@ CHANNEL_MAPPING_KEYS: tuple[ResourceKey, ...] = (
     ResourceKey.SHOWCASE_FORUM,
     ResourceKey.APP_OF_WEEK,
     ResourceKey.COLLAB_LFG,
+    ResourceKey.COMPROMISED_ACCOUNT_TRAP,
 )
 ROLE_MAPPING_KEYS: tuple[ResourceKey, ...] = (
     ResourceKey.LIVE_PING_ROLE,
@@ -43,7 +44,11 @@ APPROVED_MAPPING_KEYS: tuple[ResourceKey, ...] = (
     *ROLE_MAPPING_KEYS,
     *CATEGORY_MAPPING_KEYS,
 )
-_APPROVED_MAPPING_KEY_SET = frozenset(APPROVED_MAPPING_KEYS)
+MANUAL_ONLY_MAPPING_KEYS: tuple[ResourceKey, ...] = (ResourceKey.COMPROMISED_ACCOUNT_TRAP,)
+SUGGESTIBLE_MAPPING_KEYS: tuple[ResourceKey, ...] = tuple(
+    key for key in APPROVED_MAPPING_KEYS if key not in MANUAL_ONLY_MAPPING_KEYS
+)
+_SUGGESTIBLE_MAPPING_KEY_SET = frozenset(SUGGESTIBLE_MAPPING_KEYS)
 
 
 def mapping_group(key: ResourceKey) -> str:
@@ -80,7 +85,7 @@ def serialize_mapping_review(plan: AutoSetupPlan) -> dict[str, Any]:
     resources = [
         _serialize_discovery(item)
         for item in plan.resources
-        if item.blueprint.key in _APPROVED_MAPPING_KEY_SET
+        if item.blueprint.key in _SUGGESTIBLE_MAPPING_KEY_SET
     ]
     proposed = [item for item in resources if item["action"] != DiscoveryAction.KEEP.value]
     required_confirmations = [
@@ -101,5 +106,5 @@ def serialize_mapping_review(plan: AutoSetupPlan) -> dict[str, Any]:
 
 def scoped_mapping_plan(plan: AutoSetupPlan) -> AutoSetupPlan:
     return AutoSetupPlan(
-        tuple(item for item in plan.resources if item.blueprint.key in _APPROVED_MAPPING_KEY_SET)
+        tuple(item for item in plan.resources if item.blueprint.key in _SUGGESTIBLE_MAPPING_KEY_SET)
     )

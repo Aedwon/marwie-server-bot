@@ -5,7 +5,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
-from marwie_bot.config.resources import ResourceKey
+from marwie_bot.config.resources import RESOURCE_TYPES, ResourceKey, ResourceType
 from marwie_bot.features.configuration.provisioning import (
     AUTO_SETUP_RESOURCES,
     AutoSetupPlan,
@@ -53,3 +53,15 @@ def test_scoped_review_groups_real_channel_role_and_category_proposals() -> None
         "roles": ["builder_role"],
         "categories": ["temp_voice_category"],
     }
+
+
+def test_compromised_account_trap_is_a_manual_only_channel_mapping() -> None:
+    mappings = _module()
+    key = ResourceKey.COMPROMISED_ACCOUNT_TRAP
+
+    assert RESOURCE_TYPES[key] is ResourceType.CHANNEL
+    assert key in mappings.CHANNEL_MAPPING_KEYS
+    assert key in mappings.APPROVED_MAPPING_KEYS
+    assert key in mappings.MANUAL_ONLY_MAPPING_KEYS
+    assert key not in mappings.SUGGESTIBLE_MAPPING_KEYS
+    assert all(item.key is not key for item in AUTO_SETUP_RESOURCES)
