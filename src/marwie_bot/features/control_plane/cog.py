@@ -89,6 +89,17 @@ class ControlPlaneCog(commands.Cog):
             return
         snapshot = await self.snapshots.build(guild)
         snapshot = dict(snapshot)
+        snapshot["emojis"] = [
+            {
+                "id": str(emoji.id),
+                "name": str(emoji.name),
+                "animated": bool(emoji.animated),
+                "available": True,
+                "url": str(emoji.url),
+            }
+            for emoji in guild.emojis
+            if bool(getattr(emoji, "available", True))
+        ]
         snapshot["analytics"] = (await self.analytics.weekly(guild.id)).to_snapshot()
         snapshot["meta"] = {
             **dict(snapshot.get("meta") or {}),
