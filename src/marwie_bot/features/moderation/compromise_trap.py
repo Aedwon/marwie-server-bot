@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime
+from inspect import signature
 from typing import Any
 
 import discord
@@ -51,6 +52,14 @@ def _failed_scope_ids(values: Any) -> list[int]:
         if isinstance(scope_id, int):
             result.append(scope_id)
     return result
+
+
+async def _delete_trigger_message(message: Any) -> None:
+    delete = message.delete
+    if "reason" in signature(delete).parameters:
+        await delete(reason=TRAP_REASON)
+    else:
+        await delete()
 
 
 class DiscordTrapEnforcer:
@@ -349,7 +358,7 @@ class CompromisedAccountTrapCog(commands.Cog):
         )
         if result.delete_trigger_only:
             try:
-                await message.delete()
+                await _delete_trigger_message(message)
             except discord.HTTPException as error:
                 logger.warning(
                     "Could not delete duplicate/cooldown compromise trap message guild_id=%s user_id=%s channel_id=%s message_id=%s error=%s",
