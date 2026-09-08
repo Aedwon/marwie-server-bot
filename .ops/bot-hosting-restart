@@ -1,4 +1,3 @@
 # Managed restart marker for Rob-bot.
-# Temporarily used by the ops branch startup probe workflow; production branches are unchanged.
-target_main_sha=d6539ab2eb4e65339914e31c1c844cd809b31dc4
-diagnostic_nonce=post-restart-2
+target_main_sha=ccd1c9ac33aa564248e24e751fd5509750eebf0c
+restart_nonce=compromise-trap-page-save-hotfix-r2
