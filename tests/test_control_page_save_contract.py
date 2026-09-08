@@ -45,6 +45,29 @@ def test_reputation_page_accepts_owned_changes_in_one_logical_save() -> None:
     ]
 
 
+def test_channels_mapping_page_owns_compromised_account_trap() -> None:
+    snowflake = "1546719767929552997"
+    payload = normalize(
+        {
+            "page_key": "/control/mappings/channels",
+            "base_revision": "a" * 64,
+            "changes": [
+                {
+                    "action_type": "set_resource",
+                    "payload": {
+                        "key": "compromised_account_trap",
+                        "discord_id": snowflake,
+                    },
+                }
+            ],
+        }
+    )
+    assert payload["changes"][0]["payload"] == {
+        "key": "compromised_account_trap",
+        "discord_id": snowflake,
+    }
+
+
 def test_page_save_rejects_commands_only_and_cross_page_actions() -> None:
     with pytest.raises(ValueError, match="does not belong"):
         normalize(

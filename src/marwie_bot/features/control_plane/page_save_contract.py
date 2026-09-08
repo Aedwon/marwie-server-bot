@@ -71,6 +71,7 @@ CHANNEL_RESOURCE_KEYS = frozenset(
         "showcase_forum",
         "app_of_the_week",
         "collab_lfg",
+        "compromised_account_trap",
     }
 )
 
