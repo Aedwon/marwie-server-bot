@@ -310,6 +310,22 @@ test('Notification emoji search filters server choices without changing the draf
   assert.equal(state.dirty, false);
 });
 
+test('Notification roles accepts full Discord custom emoji identifiers', async () => {
+  const { createUtilitiesPageDefinition } = await utilitiesModule();
+  const definition = createUtilitiesPageDefinition('/control/utilities/notification-roles');
+  const emoji = `<a:${'x'.repeat(32)}:1234567890123456789>`;
+  assert.ok(emoji.length > 32);
+  const persisted = definition.selectPersisted({
+    notification_panel: {
+      title: 'Notifications',
+      description: 'Choose updates.',
+      buttons: [{ role_id: '456', label: 'Events', emoji, style: 'primary' }],
+    },
+  });
+
+  assert.deepEqual(definition.validateDraft(definition.cloneDraft(persisted)), {});
+});
+
 test('Anonymous Questions edits only its feature state and never renders submitter identity', async () => {
   const { createUtilitiesPageDefinition } = await utilitiesModule();
   const definition = createUtilitiesPageDefinition('/control/utilities/anonymous-questions');
