@@ -144,8 +144,6 @@ class AnonymousMessagesCog(commands.Cog, name="AnonMessages"):
             found_missing = False
 
             for item in plan:
-                if item.current_number == item.expected_number:
-                    continue
                 try:
                     message = await channel.fetch_message(item.message_id)
                 except discord.NotFound:
@@ -160,6 +158,8 @@ class AnonymousMessagesCog(commands.Cog, name="AnonMessages"):
                     )
                     continue
 
+                if item.current_number == item.expected_number:
+                    continue
                 if not message.embeds:
                     logger.warning(
                         "Tracked anonymous message has no embed guild_id=%s message_id=%s",
@@ -206,8 +206,10 @@ class AnonymousMessagesCog(commands.Cog, name="AnonMessages"):
             return False
         permissions = channel.permissions_for(member)
         return bool(
-            permissions.send_messages
+            permissions.view_channel
+            and permissions.send_messages
             and permissions.embed_links
+            and permissions.read_message_history
             and permissions.manage_messages
         )
 
