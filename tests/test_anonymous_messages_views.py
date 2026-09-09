@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 
 import discord
 
@@ -52,7 +52,7 @@ class _Resources:
         return SimpleNamespace(discord_id=channel_id) if channel_id is not None else None
 
 
-def _guild() -> object:
+def _guild() -> Any:
     channels = {
         101: _TextChannel(101, "anonymous-panel"),
         102: _TextChannel(102, "anonymous-messages"),
@@ -95,13 +95,13 @@ def test_public_reply_embed_uses_generic_identity_only() -> None:
 
 
 def test_audit_embed_contains_staff_identity_and_context() -> None:
-    user = SimpleNamespace(
+    user: Any = SimpleNamespace(
         id=55,
         mention="<@55>",
         display_avatar=SimpleNamespace(url="https://example.test/avatar.png"),
         __str__=lambda self: "member-name",
     )
-    channel = _TextChannel(102, "anonymous-messages")
+    channel: Any = _TextChannel(102, "anonymous-messages")
 
     embed = build_audit_embed(
         user=user,
@@ -122,8 +122,11 @@ def test_audit_embed_contains_staff_identity_and_context() -> None:
 
 
 def test_persistent_view_custom_ids_match_reference_contract() -> None:
-    panel = AnonPanelView(_Service(), _Resources(), _Features())
-    reply = AnonReplyView(_Service(), _Resources(), _Features())
+    service: Any = _Service()
+    resources: Any = _Resources()
+    features: Any = _Features()
+    panel = AnonPanelView(service, resources, features)
+    reply = AnonReplyView(service, resources, features)
 
     assert panel.timeout is None
     assert reply.timeout is None
@@ -132,16 +135,16 @@ def test_persistent_view_custom_ids_match_reference_contract() -> None:
 
 
 def test_member_must_be_able_to_view_both_public_anonymous_channels() -> None:
-    member = object()
+    member = cast(discord.Member, object())
     visible = AnonymousMessageDestinations(
-        _TextChannel(101, "anonymous-panel"),
-        _TextChannel(102, "anonymous-messages"),
-        _TextChannel(103, "anonymous-audit-log", visible=False),
+        cast(Any, _TextChannel(101, "anonymous-panel")),
+        cast(Any, _TextChannel(102, "anonymous-messages")),
+        cast(Any, _TextChannel(103, "anonymous-audit-log", visible=False)),
     )
     hidden_submissions = AnonymousMessageDestinations(
-        _TextChannel(101, "anonymous-panel"),
-        _TextChannel(102, "anonymous-messages", visible=False),
-        _TextChannel(103, "anonymous-audit-log"),
+        cast(Any, _TextChannel(101, "anonymous-panel")),
+        cast(Any, _TextChannel(102, "anonymous-messages", visible=False)),
+        cast(Any, _TextChannel(103, "anonymous-audit-log")),
     )
 
     assert member_can_use_public_channels(member, visible) is True
@@ -150,8 +153,9 @@ def test_member_must_be_able_to_view_both_public_anonymous_channels() -> None:
 
 async def test_destinations_resolve_independently(monkeypatch: Any) -> None:
     monkeypatch.setattr(discord, "TextChannel", _TextChannel)
+    resources: Any = _Resources()
 
-    destinations = await resolve_destinations(_guild(), _Resources())
+    destinations = await resolve_destinations(_guild(), resources)
 
     assert destinations is not None
     assert destinations.panel.id == 101
@@ -163,5 +167,6 @@ async def test_destinations_fail_closed_when_a_required_mapping_is_missing(monke
     monkeypatch.setattr(discord, "TextChannel", _TextChannel)
     resources = _Resources()
     del resources.mapping["anon_messages_audit_log"]
+    typed_resources: Any = resources
 
-    assert await resolve_destinations(_guild(), resources) is None
+    assert await resolve_destinations(_guild(), typed_resources) is None
