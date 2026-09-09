@@ -3,12 +3,13 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass
+from typing import Any, cast
 
 import discord
 from discord import app_commands
 from discord.ext import commands, tasks
 
-from marwie_bot.config.resources import ResourceKey
+from marwie_bot.config.resources import FeatureName, ResourceKey
 from marwie_bot.db.session import Database
 from marwie_bot.features.anonymous_messages.render import build_panel_embed
 from marwie_bot.features.anonymous_messages.repository import SQLAlchemyAnonymousMessageRepository
@@ -75,22 +76,23 @@ class AnonymousMessagesCog(commands.Cog, name="AnonMessages"):
         if self.sync_queue_worker.is_running():
             self.sync_queue_worker.cancel()
 
+    async def _mapped_submissions_id(self, guild_id: int) -> int | None:
+        resource = await self.resources.get(guild_id, ResourceKey.ANON_MESSAGES_SUBMISSIONS)
+        return resource.discord_id if resource is not None else None
+
     async def _submissions_channel(self, guild: discord.Guild) -> discord.TextChannel | None:
-        resource = await self.resources.get(guild.id, ResourceKey.ANON_MESSAGES_SUBMISSIONS)
-        if resource is None:
+        channel_id = await self._mapped_submissions_id(guild.id)
+        if channel_id is None:
             return None
-        channel = guild.get_channel(resource.discord_id)
+        channel = guild.get_channel(channel_id)
         return channel if isinstance(channel, discord.TextChannel) else None
 
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent) -> None:
         if payload.guild_id is None:
             return
-        guild = self.bot.get_guild(payload.guild_id)
-        if guild is None:
-            return
-        channel = await self._submissions_channel(guild)
-        if channel is None or channel.id != payload.channel_id:
+        submissions_id = await self._mapped_submissions_id(payload.guild_id)
+        if submissions_id is None or submissions_id != payload.channel_id:
             return
         tracked = await self.service.mark_deleted_by_message(payload.guild_id, payload.message_id)
         if tracked:
@@ -100,11 +102,8 @@ class AnonymousMessagesCog(commands.Cog, name="AnonMessages"):
     async def on_raw_bulk_message_delete(self, payload: discord.RawBulkMessageDeleteEvent) -> None:
         if payload.guild_id is None:
             return
-        guild = self.bot.get_guild(payload.guild_id)
-        if guild is None:
-            return
-        channel = await self._submissions_channel(guild)
-        if channel is None or channel.id != payload.channel_id:
+        submissions_id = await self._mapped_submissions_id(payload.guild_id)
+        if submissions_id is None or submissions_id != payload.channel_id:
             return
 
         tracked_any = False
@@ -213,11 +212,10 @@ class AnonymousMessagesCog(commands.Cog, name="AnonMessages"):
         )
 
     async def _ensure_panel(self, guild: discord.Guild, *, force: bool = False) -> bool:
-        if not force:
-            from marwie_bot.config.resources import FeatureName
-
-            if not await self.features.is_enabled(guild.id, FeatureName.ANONYMOUS_MESSAGES):
-                return False
+        if not force and not await self.features.is_enabled(
+            guild.id, FeatureName.ANONYMOUS_MESSAGES
+        ):
+            return False
 
         destinations = await resolve_destinations(guild, self.resources)
         if destinations is None:
@@ -249,7 +247,7 @@ class AnonymousMessagesCog(commands.Cog, name="AnonMessages"):
             old_channel = guild.get_channel(stored.channel_id)
             if old_channel is not None and hasattr(old_channel, "fetch_message"):
                 try:
-                    old_message = await old_channel.fetch_message(stored.message_id)  # type: ignore[attr-defined]
+                    old_message = await cast(Any, old_channel).fetch_message(stored.message_id)
                     await old_message.delete()
                 except discord.NotFound:
                     pass
