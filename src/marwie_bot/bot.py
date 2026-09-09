@@ -95,6 +95,8 @@ class MarwieBot(commands.Bot):
         intents.voice_states = True
 
         if settings.cutover_read_only:
+            # Background schedulers can persist state even when nobody invokes a
+            # command. Disable them for the short migration window as well.
             settings.enable_background_tasks = False
 
         super().__init__(
