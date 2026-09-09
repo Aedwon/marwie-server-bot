@@ -84,7 +84,9 @@ class SQLAlchemyAnonymousMessageRepository:
         async with self.database.session() as session:
             model = await session.get(AnonymousMessage, record_id)
             if model is None:
-                raise RuntimeError("Anonymous message disappeared before Discord message attachment")
+                raise RuntimeError(
+                    "Anonymous message disappeared before Discord message attachment"
+                )
             model.message_id = message_id
             await session.commit()
             await session.refresh(model)
