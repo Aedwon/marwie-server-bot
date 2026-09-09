@@ -399,5 +399,5 @@ def test_admin_commands_have_runtime_administrator_checks() -> None:
     assert sync.default_permissions is not None
     assert deploy.default_permissions.administrator is True
     assert sync.default_permissions.administrator is True
-    assert deploy.checks
-    assert sync.checks
+    assert getattr(deploy, "checks", None)
+    assert getattr(sync, "checks", None)
