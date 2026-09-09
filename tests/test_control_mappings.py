@@ -37,6 +37,9 @@ CHANNEL_KEYS = {
     ResourceKey.AI_UPDATES,
     ResourceKey.QUIZ_CHANNEL,
     ResourceKey.ANON_QUESTIONS,
+    ResourceKey.ANON_MESSAGES_PANEL,
+    ResourceKey.ANON_MESSAGES_SUBMISSIONS,
+    ResourceKey.ANON_MESSAGES_AUDIT_LOG,
     ResourceKey.ANALYTICS,
     ResourceKey.SHOWCASE_FORUM,
     ResourceKey.APP_OF_WEEK,
@@ -237,7 +240,6 @@ def test_mapping_review_hash_ignores_message_logging_changes() -> None:
             target=_resource(9992, "other-bot-logs"),
         ),
     )
-
     assert (
         module.serialize_mapping_review(first)["plan_hash"]
         == module.serialize_mapping_review(second)["plan_hash"]
