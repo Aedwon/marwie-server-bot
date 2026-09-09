@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass
+from typing import Any
 
 import discord
 
@@ -146,7 +147,7 @@ async def interaction_destinations(
 
 
 class AnonMessageModal(discord.ui.Modal, title="📨 Send Anonymous Message"):
-    message_input = discord.ui.TextInput(
+    message_input: discord.ui.TextInput[AnonMessageModal] = discord.ui.TextInput(
         label="Your Message",
         style=discord.TextStyle.paragraph,
         placeholder="Write your anonymous message here...",
@@ -256,7 +257,14 @@ class AnonMessageModal(discord.ui.Modal, title="📨 Send Anonymous Message"):
             f"✅ Your anonymous message (#{record.display_number}) has been posted in {destinations.submissions.mention}.",
         )
 
-    async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
+    async def on_error(
+        self,
+        interaction: discord.Interaction,
+        error: Exception,
+        item: discord.ui.Item[Any] | None = None,
+        /,
+    ) -> None:
+        del item
         logger.exception(
             "Anonymous message modal failed guild_id=%s user_id=%s",
             interaction.guild_id,
@@ -270,7 +278,7 @@ class AnonMessageModal(discord.ui.Modal, title="📨 Send Anonymous Message"):
 
 
 class AnonReplyModal(discord.ui.Modal, title="💬 Anonymous Reply"):
-    reply_input = discord.ui.TextInput(
+    reply_input: discord.ui.TextInput[AnonReplyModal] = discord.ui.TextInput(
         label="Your Reply",
         style=discord.TextStyle.paragraph,
         placeholder="Write your anonymous reply here...",
@@ -371,7 +379,14 @@ class AnonReplyModal(discord.ui.Modal, title="💬 Anonymous Reply"):
         )
         await send_ephemeral(interaction, "✅ Your anonymous reply has been posted!")
 
-    async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
+    async def on_error(
+        self,
+        interaction: discord.Interaction,
+        error: Exception,
+        item: discord.ui.Item[Any] | None = None,
+        /,
+    ) -> None:
+        del item
         logger.exception(
             "Anonymous reply modal failed guild_id=%s user_id=%s",
             interaction.guild_id,
