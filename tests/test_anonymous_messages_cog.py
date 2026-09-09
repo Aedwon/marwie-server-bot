@@ -19,6 +19,16 @@ class _Service:
 
     async def mark_deleted_by_message(self, guild_id: int, message_id: int) -> bool:
         self.deleted.append((guild_id, message_id))
+        remaining = [item for item in self.plan if item.message_id != message_id]
+        self.plan = [
+            RenumberItem(
+                item.record_id,
+                item.message_id,
+                item.current_number,
+                expected_number,
+            )
+            for expected_number, item in enumerate(remaining, start=1)
+        ]
         return True
 
     async def get_panel(self, guild_id: int) -> object | None:
@@ -44,6 +54,15 @@ class _Service:
 
     async def set_display_number(self, record_id: int, display_number: int) -> object:
         self.display_updates.append((record_id, display_number))
+        self.plan = [
+            RenumberItem(
+                item.record_id,
+                item.message_id,
+                display_number if item.record_id == record_id else item.current_number,
+                item.expected_number,
+            )
+            for item in self.plan
+        ]
         return SimpleNamespace(id=record_id, display_number=display_number)
 
 
@@ -81,7 +100,13 @@ class _Message:
 
 
 class _Channel:
-    def __init__(self, channel_id: int, *, messages: dict[int, _Message] | None = None) -> None:
+    def __init__(
+        self,
+        channel_id: int,
+        *,
+        messages: dict[int, _Message] | None = None,
+        read_history: bool = True,
+    ) -> None:
         self.id = channel_id
         self.name = f"channel-{channel_id}"
         self.mention = f"<#{channel_id}>"
@@ -89,6 +114,7 @@ class _Channel:
         self.messages = messages or {}
         self.sent: list[dict[str, Any]] = []
         self.latest_message_id: int | None = None
+        self.read_history = read_history
 
     def history(self, *, limit: int) -> Any:
         assert limit == 1
@@ -114,7 +140,14 @@ class _Channel:
         return message
 
     def permissions_for(self, member: object) -> object:
-        return SimpleNamespace(send_messages=True, embed_links=True, manage_messages=True)
+        del member
+        return SimpleNamespace(
+            view_channel=True,
+            send_messages=True,
+            embed_links=True,
+            manage_messages=True,
+            read_message_history=self.read_history,
+        )
 
 
 def _bot(*, background: bool = False) -> object:
@@ -240,6 +273,19 @@ async def test_panel_is_not_reposted_when_tracked_panel_is_already_latest(monkey
     assert panel_channel.sent == []
 
 
+def test_panel_reconciliation_requires_read_message_history() -> None:
+    guild = SimpleNamespace(me=object())
+
+    assert AnonymousMessagesCog._panel_permissions_ok(_Channel(101), guild) is True
+    assert (
+        AnonymousMessagesCog._panel_permissions_ok(
+            _Channel(101, read_history=False),
+            guild,
+        )
+        is False
+    )
+
+
 async def test_full_sync_edits_only_wrong_numbers_and_persists_corrected_number(
     monkeypatch: Any,
 ) -> None:
@@ -270,6 +316,37 @@ async def test_full_sync_edits_only_wrong_numbers_and_persists_corrected_number(
     assert first.edits == []
     assert third.edits[0].title == "Anonymous Message #2"
     assert service.display_updates == [(3, 2)]
+
+
+async def test_full_sync_discovers_offline_delete_even_when_number_was_correct(
+    monkeypatch: Any,
+) -> None:
+    service = _Service()
+    second = _Message(502, "Anonymous Message #2")
+    submissions = _Channel(102, messages={502: second})
+    guild = SimpleNamespace(id=1)
+    service.plan = [
+        RenumberItem(1, 501, 1, 1),
+        RenumberItem(2, 502, 2, 2),
+    ]
+
+    async def fake_submission(guild_arg: object) -> object:
+        return submissions
+
+    async def no_sleep(seconds: float) -> None:
+        assert seconds == 2
+
+    monkeypatch.setattr(cog_module.asyncio, "sleep", no_sleep)
+    cog = AnonymousMessagesCog(_bot(), service, _Resources(), _Features())
+    cog._submissions_channel = fake_submission
+
+    result = await cog._run_full_sync(guild)
+
+    assert service.deleted == [(1, 501)]
+    assert second.edits[0].title == "Anonymous Message #1"
+    assert service.display_updates == [(2, 1)]
+    assert result.total == 1
+    assert result.corrected == 1
 
 
 def test_admin_commands_have_runtime_administrator_checks() -> None:
