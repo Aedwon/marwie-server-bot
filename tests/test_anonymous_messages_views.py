@@ -13,6 +13,7 @@ from marwie_bot.features.anonymous_messages.views import (
     AnonPanelView,
     AnonReplyView,
     AnonymousMessageDestinations,
+    audit_channel_is_private,
     member_can_use_public_channels,
     resolve_destinations,
 )
@@ -52,15 +53,21 @@ class _Resources:
         return SimpleNamespace(discord_id=channel_id) if channel_id is not None else None
 
 
-def _guild() -> Any:
+def _guild(*, audit_visible_to_everyone: bool = False) -> Any:
+    default_role = object()
     channels = {
         101: _TextChannel(101, "anonymous-panel"),
         102: _TextChannel(102, "anonymous-messages"),
-        103: _TextChannel(103, "anonymous-audit-log"),
+        103: _TextChannel(
+            103,
+            "anonymous-audit-log",
+            visible=audit_visible_to_everyone,
+        ),
     }
     return SimpleNamespace(
         id=1,
         icon=SimpleNamespace(url="https://example.test/icon.png"),
+        default_role=default_role,
         get_channel=lambda channel_id: channels.get(channel_id),
     )
 
@@ -154,6 +161,18 @@ def test_member_must_be_able_to_view_both_public_anonymous_channels() -> None:
     assert member_can_use_public_channels(member, hidden_submissions) is False
 
 
+def test_audit_channel_must_be_separate_from_public_destinations() -> None:
+    guild: Any = _guild()
+    shared = cast(discord.TextChannel, _TextChannel(101, "shared", visible=False))
+    destinations = AnonymousMessageDestinations(
+        shared,
+        cast(Any, _TextChannel(102, "anonymous-messages")),
+        shared,
+    )
+
+    assert audit_channel_is_private(guild, destinations) is False
+
+
 async def test_destinations_resolve_independently(monkeypatch: Any) -> None:
     monkeypatch.setattr(discord, "TextChannel", _TextChannel)
     resources: Any = _Resources()
@@ -164,6 +183,13 @@ async def test_destinations_resolve_independently(monkeypatch: Any) -> None:
     assert destinations.panel.id == 101
     assert destinations.submissions.id == 102
     assert destinations.audit_log.id == 103
+
+
+async def test_destinations_fail_closed_when_audit_channel_is_public(monkeypatch: Any) -> None:
+    monkeypatch.setattr(discord, "TextChannel", _TextChannel)
+    resources: Any = _Resources()
+
+    assert await resolve_destinations(_guild(audit_visible_to_everyone=True), resources) is None
 
 
 async def test_destinations_fail_closed_when_a_required_mapping_is_missing(
