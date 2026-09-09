@@ -118,7 +118,7 @@ def test_command_manual_copies_are_byte_identical_and_keep_wave7_wave9_contracts
     assert docs == site
     text = docs.decode()
     index = text.split("## Command index", 1)[1].split("\n## ", 1)[0]
-    assert len(re.findall(r"(?m)^\d+\. `/", index)) == 43
+    assert len(re.findall(r"(?m)^\d+\. `/", index)) == 45
     poll = text.split("## `/ai-source poll`", 1)[1].split("\n## ", 1)[0].lower()
     for phrase in ("preview", "post", "cancel", "60 seconds", "20", "scheduled"):
         assert phrase in poll
