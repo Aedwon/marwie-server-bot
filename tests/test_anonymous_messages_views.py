@@ -116,8 +116,7 @@ def test_audit_embed_contains_staff_identity_and_context() -> None:
     assert payload["description"] == "private audit content"
     assert any(field["name"] == "Author" and "55" in field["value"] for field in payload["fields"])
     assert any(
-        field["name"] == "Context" and field["value"] == "Message #3"
-        for field in payload["fields"]
+        field["name"] == "Context" and field["value"] == "Message #3" for field in payload["fields"]
     )
 
 
@@ -163,7 +162,9 @@ async def test_destinations_resolve_independently(monkeypatch: Any) -> None:
     assert destinations.audit_log.id == 103
 
 
-async def test_destinations_fail_closed_when_a_required_mapping_is_missing(monkeypatch: Any) -> None:
+async def test_destinations_fail_closed_when_a_required_mapping_is_missing(
+    monkeypatch: Any,
+) -> None:
     monkeypatch.setattr(discord, "TextChannel", _TextChannel)
     resources = _Resources()
     del resources.mapping["anon_messages_audit_log"]
