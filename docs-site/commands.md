@@ -227,7 +227,7 @@ Rob-bot never automatically deletes, renames, moves, or merges existing server r
 | Parameter | Required | Accepted input | Meaning |
 | --- | --- | --- | --- |
 | `key` | yes | A `ResourceKey` whose stored type is `channel` | Logical resource to bind. |
-| `channel` | yes | Existing Discord voice channel | Voice channel whose ID will be stored. |
+| `channel` | yes | Existing Discord voice channel | Voice channel whose Discord ID will be stored. |
 
 **Recommended keys:**
 
@@ -312,7 +312,7 @@ Rob-bot does not grant the role merely because it was mapped. `live_ping_role` i
 | Parameter | Required | Accepted input | Meaning |
 | --- | --- | --- | --- |
 | `feature` | yes | One of the configured feature choices | `moderation`, `message_logs`, `tickets`, `voice`, `announcements`, `live_announcements`, `reputation`, `quizzes`, `anonymous_questions`, `anonymous_messages`, `coworking`, `ai_updates`, `analytics`, or `showcase`. |
-| `enabled` | yes | Boolean `true` or `false` | `true` enables the feature; `false` disables the feature. |
+| `enabled` | yes | Boolean `true` or `false` | `true` enables the feature; `false` disables it. |
 
 Features default to enabled if the server has never stored an override.
 
@@ -407,12 +407,12 @@ When a moderation case is recorded, Rob-bot also attempts to post it to the conf
 
 **Rob-bot permission required:** Moderate Members.
 
-**What happens:** Validates hierarchy, applies Discord's native member timeout until the requested number of minutes has elapsed, records a `timeout` moderation case with the expiry timestamp, attempts to audit-log the case, attempts to DM the member, and returns the case number privately to the moderator.
+**What happens:** Validates hierarchy, applies Discord's native member timeout until the requested number of minutes has elapsed, records a `timeout` moderation case with the expiry timestamp, attempts to audit-log the case, attempts to DM the member, and returns the case number privately.
 
 | Parameter | Required | Accepted input | Meaning |
 | --- | --- | --- | --- |
 | `member` | yes | Current server member | Member to timeout. |
-| `minutes` | yes | Integer from 1 to 40320 | Timeout duration in minutes. |
+| `minutes` | yes | Integer from 1 to 40320 | Timeout duration in minutes. `40320` is 28 days. |
 | `reason` | yes | Text, 1 to 1000 characters | Reason passed to Discord and stored in the case. |
 
 **Example usage:**
@@ -1113,7 +1113,7 @@ Source IDs from this list are used by `/ai-source disable`.
 | --- | --- | --- | --- |
 | `source_id` | yes | Positive integer, minimum `1` | Source ID shown by `/ai-source list`. |
 
-If the ID is absent or belongs to another server, Rob-bot reports `Source not found.`
+If the ID does not exist or belongs to another server, Rob-bot reports `Source not found.`
 
 **Example usage:**
 
