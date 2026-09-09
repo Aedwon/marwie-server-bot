@@ -54,7 +54,16 @@ def channel_allows_bot_output(channel: discord.TextChannel, guild: discord.Guild
     if member is None:
         return False
     permissions = channel.permissions_for(member)
-    return permissions.send_messages and permissions.embed_links
+    return permissions.view_channel and permissions.send_messages and permissions.embed_links
+
+
+def member_can_use_public_channels(
+    member: discord.Member,
+    destinations: AnonymousMessageDestinations,
+) -> bool:
+    panel_permissions = destinations.panel.permissions_for(member)
+    submissions_permissions = destinations.submissions.permissions_for(member)
+    return panel_permissions.view_channel and submissions_permissions.view_channel
 
 
 async def send_ephemeral(interaction: discord.Interaction, message: str) -> None:
@@ -110,6 +119,15 @@ async def interaction_destinations(
         await send_ephemeral(
             interaction,
             "Anonymous messages are not fully configured. Ask a server administrator to check the panel, submissions, and audit-log mappings.",
+        )
+        return None
+    if not isinstance(interaction.user, discord.Member) or not member_can_use_public_channels(
+        interaction.user,
+        destinations,
+    ):
+        await send_ephemeral(
+            interaction,
+            "You need access to both the anonymous-message panel and submissions channels to use this feature.",
         )
         return None
     if not channel_allows_bot_output(destinations.submissions, guild):
