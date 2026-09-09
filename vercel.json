@@ -1,6 +1,13 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
+  "git": {
+    "deploymentEnabled": {
+      "**": false,
+      "web/rob-bot-site-production": true,
+      "vercel-ready-*": true
+    }
+  },
   "functions": {
     "api/guild-state.js": {
       "maxDuration": 90
