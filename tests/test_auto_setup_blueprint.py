@@ -131,9 +131,9 @@ def test_confirmation_prompt_includes_custom_side_effect_detail() -> None:
 
 def test_confirmation_prompt_truncates_long_option_values() -> None:
     prompt = build_confirmation_prompt(
-        "setup auto",
-        "Discover or create the standard resources needed by the bot.",
-        {"detail": "x" * 300},
+        "announce",
+        "Post an announcement.",
+        {"message": "x" * 1_000},
     )
 
     assert "x" * 200 not in prompt
