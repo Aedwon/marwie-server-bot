@@ -179,7 +179,10 @@ async def test_cog_load_registers_both_persistent_views_without_starting_disable
 
     await cog.cog_load()
 
-    assert [type(view).__name__ for view in bot.registered_views] == ["AnonPanelView", "AnonReplyView"]
+    assert [type(view).__name__ for view in bot.registered_views] == [
+        "AnonPanelView",
+        "AnonReplyView",
+    ]
     assert not cog.sticky_repost.is_running()
     assert not cog.sync_queue_worker.is_running()
 
