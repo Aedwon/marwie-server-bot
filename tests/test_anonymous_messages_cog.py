@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 
 import discord
 
@@ -128,7 +128,8 @@ class _Channel:
     async def fetch_message(self, message_id: int) -> _Message:
         message = self.messages.get(message_id)
         if message is None:
-            raise discord.NotFound(SimpleNamespace(status=404, reason="Not Found"), "missing")
+            response: Any = SimpleNamespace(status=404, reason="Not Found")
+            raise discord.NotFound(response, "missing")
         return message
 
     async def send(self, **kwargs: Any) -> object:
@@ -150,7 +151,7 @@ class _Channel:
         )
 
 
-def _bot(*, background: bool = False) -> object:
+def _bot(*, background: bool = False) -> Any:
     views: list[object] = []
     return SimpleNamespace(
         settings=SimpleNamespace(enable_background_tasks=background),
@@ -163,12 +164,12 @@ def _bot(*, background: bool = False) -> object:
     )
 
 
-def _cog(bot: object | None = None) -> AnonymousMessagesCog:
+def _cog(bot: object | None = None) -> Any:
     return AnonymousMessagesCog(
-        bot=bot or _bot(),
-        service=_Service(),
-        resources=_Resources(),
-        features=_Features(),
+        bot=cast(Any, bot or _bot()),
+        service=cast(Any, _Service()),
+        resources=cast(Any, _Resources()),
+        features=cast(Any, _Features()),
     )
 
 
@@ -234,14 +235,23 @@ async def test_moved_panel_mapping_deletes_old_tracked_panel_before_reposting(
         }.get(channel_id),
     )
     service.panel = SimpleNamespace(guild_id=1, channel_id=101, message_id=700)
-    destinations = AnonymousMessageDestinations(new_channel, submissions, audit)
+    destinations = AnonymousMessageDestinations(
+        cast(Any, new_channel),
+        cast(Any, submissions),
+        cast(Any, audit),
+    )
 
     async def fake_resolve(guild_arg: object, resources_arg: object) -> object:
         assert guild_arg is guild
         return destinations
 
     monkeypatch.setattr(cog_module, "resolve_destinations", fake_resolve)
-    cog = AnonymousMessagesCog(_bot(), service, _Resources(), _Features())
+    cog: Any = AnonymousMessagesCog(
+        _bot(),
+        cast(Any, service),
+        cast(Any, _Resources()),
+        cast(Any, _Features()),
+    )
 
     changed = await cog._ensure_panel(guild)
 
@@ -262,10 +272,20 @@ async def test_panel_is_not_reposted_when_tracked_panel_is_already_latest(monkey
     service.panel = SimpleNamespace(guild_id=1, channel_id=101, message_id=700)
 
     async def fake_resolve(guild_arg: object, resources_arg: object) -> object:
-        return AnonymousMessageDestinations(panel_channel, submissions, audit)
+        del guild_arg, resources_arg
+        return AnonymousMessageDestinations(
+            cast(Any, panel_channel),
+            cast(Any, submissions),
+            cast(Any, audit),
+        )
 
     monkeypatch.setattr(cog_module, "resolve_destinations", fake_resolve)
-    cog = AnonymousMessagesCog(_bot(), service, _Resources(), _Features())
+    cog: Any = AnonymousMessagesCog(
+        _bot(),
+        cast(Any, service),
+        cast(Any, _Resources()),
+        cast(Any, _Features()),
+    )
 
     changed = await cog._ensure_panel(guild)
 
@@ -276,11 +296,17 @@ async def test_panel_is_not_reposted_when_tracked_panel_is_already_latest(monkey
 def test_panel_reconciliation_requires_read_message_history() -> None:
     guild = SimpleNamespace(me=object())
 
-    assert AnonymousMessagesCog._panel_permissions_ok(_Channel(101), guild) is True
     assert (
         AnonymousMessagesCog._panel_permissions_ok(
-            _Channel(101, read_history=False),
-            guild,
+            cast(Any, _Channel(101)),
+            cast(Any, guild),
+        )
+        is True
+    )
+    assert (
+        AnonymousMessagesCog._panel_permissions_ok(
+            cast(Any, _Channel(101, read_history=False)),
+            cast(Any, guild),
         )
         is False
     )
@@ -300,13 +326,19 @@ async def test_full_sync_edits_only_wrong_numbers_and_persists_corrected_number(
     ]
 
     async def fake_submission(guild_arg: object) -> object:
+        del guild_arg
         return submissions
 
     async def no_sleep(seconds: float) -> None:
         assert seconds == 2
 
     monkeypatch.setattr(cog_module.asyncio, "sleep", no_sleep)
-    cog = AnonymousMessagesCog(_bot(), service, _Resources(), _Features())
+    cog: Any = AnonymousMessagesCog(
+        _bot(),
+        cast(Any, service),
+        cast(Any, _Resources()),
+        cast(Any, _Features()),
+    )
     cog._submissions_channel = fake_submission
 
     result = await cog._run_full_sync(guild)
@@ -331,13 +363,19 @@ async def test_full_sync_discovers_offline_delete_even_when_number_was_correct(
     ]
 
     async def fake_submission(guild_arg: object) -> object:
+        del guild_arg
         return submissions
 
     async def no_sleep(seconds: float) -> None:
         assert seconds == 2
 
     monkeypatch.setattr(cog_module.asyncio, "sleep", no_sleep)
-    cog = AnonymousMessagesCog(_bot(), service, _Resources(), _Features())
+    cog: Any = AnonymousMessagesCog(
+        _bot(),
+        cast(Any, service),
+        cast(Any, _Resources()),
+        cast(Any, _Features()),
+    )
     cog._submissions_channel = fake_submission
 
     result = await cog._run_full_sync(guild)
