@@ -146,9 +146,7 @@ class AnonymousMessageService:
             reply_to_message_id=reply_to_message_id,
         )
 
-    async def attach_message(
-        self, record_id: int, message_id: int
-    ) -> AnonymousMessageRecord:
+    async def attach_message(self, record_id: int, message_id: int) -> AnonymousMessageRecord:
         return await self.repository.attach_message(record_id, message_id)
 
     async def discard_unposted(self, record_id: int) -> bool:
