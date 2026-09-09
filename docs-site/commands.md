@@ -206,6 +206,8 @@ Rob-bot never automatically deletes, renames, moves, or merges existing server r
 
 **Recommended text-channel keys:** `moderation_log`, `message_log`, `ticket_panel`, `ticket_logs`, `announcements`, `live_announcements`, `role_panel`, `ai_updates`, `quiz_channel`, `anon_questions`, `anon_messages_panel`, `anon_messages_submissions`, `anon_messages_audit_log`, `analytics`, `app_of_the_week`, `collab_lfg`, and `bot_log`.
 
+**Anonymous audit mapping:** When binding `anon_messages_audit_log` manually, choose a separate private text channel that `@everyone` cannot view. It must not be the same channel as `anon_messages_panel` or `anon_messages_submissions`; the anonymous-message feature fails closed if this privacy requirement is not met.
+
 **Important note:** Some logical resources such as `showcase_forum`, `create_workspace_voice`, and `coworking_lounge` also use the generic stored resource type `channel`, but their features expect a Forum Channel or voice channel at runtime. Use `/setup forum` or `/setup voice-channel` for those instead. The storage layer does not currently distinguish every Discord channel subtype.
 
 **Example usage:**
@@ -310,7 +312,7 @@ Rob-bot does not grant the role merely because it was mapped. `live_ping_role` i
 | Parameter | Required | Accepted input | Meaning |
 | --- | --- | --- | --- |
 | `feature` | yes | One of the configured feature choices | `moderation`, `message_logs`, `tickets`, `voice`, `announcements`, `live_announcements`, `reputation`, `quizzes`, `anonymous_questions`, `anonymous_messages`, `coworking`, `ai_updates`, `analytics`, or `showcase`. |
-| `enabled` | yes | Boolean `true` or `false` | `true` enables the feature; `false` disables it. |
+| `enabled` | yes | Boolean `true` or `false` | `true` enables the feature; `false` disables the feature. |
 
 Features default to enabled if the server has never stored an override.
 
@@ -405,12 +407,12 @@ When a moderation case is recorded, Rob-bot also attempts to post it to the conf
 
 **Rob-bot permission required:** Moderate Members.
 
-**What happens:** Validates hierarchy, applies Discord's native member timeout until the requested number of minutes has elapsed, records a `timeout` moderation case with the expiry timestamp, attempts to audit-log the case, attempts to DM the member, and returns the case number privately.
+**What happens:** Validates hierarchy, applies Discord's native member timeout until the requested number of minutes has elapsed, records a `timeout` moderation case with the expiry timestamp, attempts to audit-log the case, attempts to DM the member, and returns the case number privately to the moderator.
 
 | Parameter | Required | Accepted input | Meaning |
 | --- | --- | --- | --- |
 | `member` | yes | Current server member | Member to timeout. |
-| `minutes` | yes | Integer from 1 to 40320 | Timeout duration in minutes. `40320` is 28 days. |
+| `minutes` | yes | Integer from 1 to 40320 | Timeout duration in minutes. |
 | `reason` | yes | Text, 1 to 1000 characters | Reason passed to Discord and stored in the case. |
 
 **Example usage:**
@@ -911,7 +913,7 @@ The anonymous-message system is a persistent button/modal workflow rather than a
 - `anon_messages_submissions` — where numbered anonymous messages and anonymous replies are posted;
 - `anon_messages_audit_log` — the private staff destination that receives the submitter identity and submitted content for abuse and safety review.
 
-The panel and submissions mappings may point to the same Discord channel to reproduce the original single-channel layout, or to different channels. The audit destination should remain staff-only. The `anonymous_messages` feature flag must be enabled. A member must be able to view both the current panel and submissions channels; a persistent button left behind in an old mapping is rejected.
+The panel and submissions mappings may point to the same Discord channel to reproduce the original single-channel layout, or to different channels. The audit mapping must point to a separate private text channel that `@everyone` cannot view; it cannot share the panel or submissions destination. Rob-bot fails closed if that privacy requirement is not met. The `anonymous_messages` feature flag must be enabled. A member must be able to view both the current panel and submissions channels; a persistent button left behind in an old mapping is rejected.
 
 Member flow:
 
@@ -940,11 +942,12 @@ When a tracked top-level anonymous message is deleted, Rob-bot soft-deletes its 
 **Prerequisites:**
 
 - `anon_messages_panel`, `anon_messages_submissions`, and `anon_messages_audit_log` must each resolve to an existing text channel;
+- `anon_messages_audit_log` must be a separate private channel from the panel and submissions destinations, and `@everyone` must not be able to view it;
 - in the panel channel, Rob-bot needs View Channel, Send Messages, Embed Links, Read Message History, and Manage Messages so it can keep the panel sticky and replace the previous tracked panel;
 - members who use the panel must have access to both the mapped panel and submissions channels;
 - actual anonymous posting also requires Rob-bot to be able to View Channel, Send Messages, and Embed Links in both the submissions and audit destinations.
 
-If a required mapping is missing, Rob-bot asks the administrator to configure all three in Mappings. If panel permissions are insufficient, deployment fails closed and reports that the panel could not be deployed.
+If a required mapping is missing or the audit mapping is public/shared with a public anonymous-message destination, Rob-bot fails closed and asks the administrator to correct the mappings. If panel permissions are insufficient, deployment fails closed and reports that the panel could not be deployed.
 
 **Example usage:**
 
