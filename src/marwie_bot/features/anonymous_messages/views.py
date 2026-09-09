@@ -26,6 +26,19 @@ class AnonymousMessageDestinations:
     audit_log: discord.TextChannel
 
 
+def audit_channel_is_private(
+    guild: discord.Guild,
+    destinations: AnonymousMessageDestinations,
+) -> bool:
+    if destinations.audit_log.id in {
+        destinations.panel.id,
+        destinations.submissions.id,
+    }:
+        return False
+    permissions = destinations.audit_log.permissions_for(guild.default_role)
+    return not permissions.view_channel
+
+
 async def resolve_destinations(
     guild: discord.Guild,
     resources: ResourceService,
@@ -47,7 +60,10 @@ async def resolve_destinations(
         return None
     if not isinstance(audit_log, discord.TextChannel):
         return None
-    return AnonymousMessageDestinations(panel, submissions, audit_log)
+    destinations = AnonymousMessageDestinations(panel, submissions, audit_log)
+    if not audit_channel_is_private(guild, destinations):
+        return None
+    return destinations
 
 
 def channel_allows_bot_output(channel: discord.TextChannel, guild: discord.Guild) -> bool:
@@ -119,7 +135,7 @@ async def interaction_destinations(
     if destinations is None:
         await send_ephemeral(
             interaction,
-            "Anonymous messages are not fully configured. Ask a server administrator to check the panel, submissions, and audit-log mappings.",
+            "Anonymous messages are not safely configured. Ask a server administrator to check the panel and submissions mappings and make sure the audit log is a separate private channel.",
         )
         return None
     if not isinstance(interaction.user, discord.Member) or not member_can_use_public_channels(
