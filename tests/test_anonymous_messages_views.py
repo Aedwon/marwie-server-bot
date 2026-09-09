@@ -129,8 +129,12 @@ def test_persistent_view_custom_ids_match_reference_contract() -> None:
 
     assert panel.timeout is None
     assert reply.timeout is None
-    assert [item.custom_id for item in panel.children] == ["anon_messages:send_button"]
-    assert [item.custom_id for item in reply.children] == ["anon_messages:reply_button"]
+    assert [getattr(item, "custom_id", None) for item in panel.children] == [
+        "anon_messages:send_button"
+    ]
+    assert [getattr(item, "custom_id", None) for item in reply.children] == [
+        "anon_messages:reply_button"
+    ]
 
 
 def test_member_must_be_able_to_view_both_public_anonymous_channels() -> None:
