@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any, cast
 
 from sqlalchemy import delete, func, select
+from sqlalchemy.engine import CursorResult
 
 from marwie_bot.db.models import AnonymousMessage, AnonymousMessagePanel
 from marwie_bot.db.session import Database
@@ -159,7 +161,6 @@ class SQLAlchemyAnonymousMessageRepository:
             else:
                 model.channel_id = channel_id
                 model.message_id = message_id
-                model.updated_at = func.now()
             await session.commit()
             await session.refresh(model)
             return self._panel_record(model)
@@ -170,4 +171,4 @@ class SQLAlchemyAnonymousMessageRepository:
                 delete(AnonymousMessagePanel).where(AnonymousMessagePanel.guild_id == guild_id)
             )
             await session.commit()
-            return bool(result.rowcount)
+            return bool(cast(CursorResult[Any], result).rowcount)
