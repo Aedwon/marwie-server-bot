@@ -12,6 +12,8 @@ from marwie_bot.features.anonymous_messages.render import (
 from marwie_bot.features.anonymous_messages.views import (
     AnonPanelView,
     AnonReplyView,
+    AnonymousMessageDestinations,
+    member_can_use_public_channels,
     resolve_destinations,
 )
 
@@ -25,10 +27,15 @@ class _Features:
 
 
 class _TextChannel:
-    def __init__(self, channel_id: int, name: str) -> None:
+    def __init__(self, channel_id: int, name: str, *, visible: bool = True) -> None:
         self.id = channel_id
         self.name = name
         self.mention = f"<#{channel_id}>"
+        self.visible = visible
+
+    def permissions_for(self, member: object) -> object:
+        del member
+        return SimpleNamespace(view_channel=self.visible)
 
 
 class _Resources:
@@ -122,6 +129,23 @@ def test_persistent_view_custom_ids_match_reference_contract() -> None:
     assert reply.timeout is None
     assert [item.custom_id for item in panel.children] == ["anon_messages:send_button"]
     assert [item.custom_id for item in reply.children] == ["anon_messages:reply_button"]
+
+
+def test_member_must_be_able_to_view_both_public_anonymous_channels() -> None:
+    member = object()
+    visible = AnonymousMessageDestinations(
+        _TextChannel(101, "anonymous-panel"),
+        _TextChannel(102, "anonymous-messages"),
+        _TextChannel(103, "anonymous-audit-log", visible=False),
+    )
+    hidden_submissions = AnonymousMessageDestinations(
+        _TextChannel(101, "anonymous-panel"),
+        _TextChannel(102, "anonymous-messages", visible=False),
+        _TextChannel(103, "anonymous-audit-log"),
+    )
+
+    assert member_can_use_public_channels(member, visible) is True
+    assert member_can_use_public_channels(member, hidden_submissions) is False
 
 
 async def test_destinations_resolve_independently(monkeypatch: Any) -> None:
