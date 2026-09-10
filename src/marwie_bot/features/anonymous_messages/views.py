@@ -39,15 +39,14 @@ def audit_channel_is_private(
     return not permissions.view_channel
 
 
-async def resolve_destinations(
+def _destinations_from_records(
     guild: discord.Guild,
-    resources: ResourceService,
+    records: list[Any],
 ) -> AnonymousMessageDestinations | None:
-    panel_record, submissions_record, audit_record = await asyncio.gather(
-        resources.get(guild.id, ResourceKey.ANON_MESSAGES_PANEL),
-        resources.get(guild.id, ResourceKey.ANON_MESSAGES_SUBMISSIONS),
-        resources.get(guild.id, ResourceKey.ANON_MESSAGES_AUDIT_LOG),
-    )
+    by_key = {record.key: record for record in records}
+    panel_record = by_key.get(ResourceKey.ANON_MESSAGES_PANEL)
+    submissions_record = by_key.get(ResourceKey.ANON_MESSAGES_SUBMISSIONS)
+    audit_record = by_key.get(ResourceKey.ANON_MESSAGES_AUDIT_LOG)
     if panel_record is None or submissions_record is None or audit_record is None:
         return None
 
@@ -64,6 +63,24 @@ async def resolve_destinations(
     if not audit_channel_is_private(guild, destinations):
         return None
     return destinations
+
+
+async def resolve_destinations(
+    guild: discord.Guild,
+    resources: ResourceService,
+) -> AnonymousMessageDestinations | None:
+    panel_record, submissions_record, audit_record = await asyncio.gather(
+        resources.get(guild.id, ResourceKey.ANON_MESSAGES_PANEL),
+        resources.get(guild.id, ResourceKey.ANON_MESSAGES_SUBMISSIONS),
+        resources.get(guild.id, ResourceKey.ANON_MESSAGES_AUDIT_LOG),
+    )
+    if panel_record is None or submissions_record is None or audit_record is None:
+        return None
+
+    return _destinations_from_records(
+        guild,
+        [panel_record, submissions_record, audit_record],
+    )
 
 
 def channel_allows_bot_output(channel: discord.TextChannel, guild: discord.Guild) -> bool:
@@ -128,10 +145,16 @@ async def interaction_destinations(
     if guild is None:
         await send_ephemeral(interaction, "❌ This can only be used in a server.")
         return None
-    if not await features.is_enabled(guild.id, FeatureName.ANONYMOUS_MESSAGES):
+
+    enabled, resource_records = await asyncio.gather(
+        features.is_enabled(guild.id, FeatureName.ANONYMOUS_MESSAGES),
+        resources.list_for_guild(guild.id),
+    )
+    if not enabled:
         await send_ephemeral(interaction, "Anonymous messages are disabled here.")
         return None
-    destinations = await resolve_destinations(guild, resources)
+
+    destinations = _destinations_from_records(guild, resource_records)
     if destinations is None:
         await send_ephemeral(
             interaction,
@@ -439,15 +462,6 @@ class AnonPanelView(discord.ui.View):
         button: discord.ui.Button[discord.ui.View],
     ) -> None:
         del button
-        destinations = await interaction_destinations(interaction, self.resources, self.features)
-        if destinations is None:
-            return
-        if interaction.channel_id != destinations.panel.id:
-            await send_ephemeral(
-                interaction,
-                "This anonymous-message panel is no longer active. Use the current panel instead.",
-            )
-            return
         await interaction.response.send_modal(
             AnonMessageModal(self.service, self.resources, self.features)
         )
@@ -477,15 +491,6 @@ class AnonReplyView(discord.ui.View):
         button: discord.ui.Button[discord.ui.View],
     ) -> None:
         del button
-        destinations = await interaction_destinations(interaction, self.resources, self.features)
-        if destinations is None:
-            return
-        if interaction.channel_id != destinations.submissions.id:
-            await send_ephemeral(
-                interaction,
-                "This anonymous reply button is no longer in the active submissions channel.",
-            )
-            return
         original_message = interaction.message
         if original_message is None:
             await send_ephemeral(interaction, "❌ The message to reply to is unavailable.")
