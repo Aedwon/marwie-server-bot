@@ -46,6 +46,15 @@ class RenumberItem:
 class AnonymousMessageRepository(Protocol):
     async def next_display_number(self, guild_id: int) -> int: ...
 
+    async def create_top_level(
+        self,
+        *,
+        guild_id: int,
+        user_id: int,
+        channel_id: int,
+        content: str,
+    ) -> AnonymousMessageRecord: ...
+
     async def create(
         self,
         *,
@@ -116,15 +125,11 @@ class AnonymousMessageService:
     ) -> AnonymousMessageRecord:
         normalized = self._normalize_message(content)
         async with self._number_lock(guild_id):
-            display_number = await self.repository.next_display_number(guild_id)
-            return await self.repository.create(
+            return await self.repository.create_top_level(
                 guild_id=guild_id,
                 user_id=user_id,
                 channel_id=channel_id,
-                kind=AnonymousMessageKind.MESSAGE,
                 content=normalized,
-                display_number=display_number,
-                reply_to_message_id=None,
             )
 
     async def create_reply(
