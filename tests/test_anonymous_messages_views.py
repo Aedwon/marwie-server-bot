@@ -72,13 +72,14 @@ def _guild(*, audit_visible_to_everyone: bool = False) -> Any:
     )
 
 
-def test_panel_copy_is_transparent_about_staff_audit_visibility() -> None:
+def test_panel_copy_does_not_disclose_staff_audit_visibility() -> None:
     embed = build_panel_embed(_guild())
+    description = embed.description or ""
 
     assert embed.title == "📨 Anonymous Messages"
-    assert "hidden from other members" in (embed.description or "")
-    assert "Authorized staff" in (embed.description or "")
-    assert "abuse or safety" in (embed.description or "")
+    assert "hidden from other members" in description
+    assert "Authorized staff" not in description
+    assert "abuse or safety" not in description
     assert embed.footer.text == "This panel refreshes every 10 minutes • Rob-bot"
 
 
