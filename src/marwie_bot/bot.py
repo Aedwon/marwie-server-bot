@@ -108,6 +108,25 @@ class MarwieBot(commands.Bot):
         self.settings = settings
         self.database = None
 
+    async def _sync_application_commands(self) -> None:
+        try:
+            if self.settings.command_guild_id is not None:
+                guild = discord.Object(id=self.settings.command_guild_id)
+                self.tree.copy_global_to(guild=guild)
+                synced = await self.tree.sync(guild=guild)
+                logger.info(
+                    "Synced %s commands to guild %s",
+                    len(synced),
+                    self.settings.command_guild_id,
+                )
+            else:
+                synced = await self.tree.sync()
+                logger.info("Synced %s global commands", len(synced))
+        except (app_commands.AppCommandError, discord.HTTPException):
+            logger.exception(
+                "Application command sync failed; continuing startup with the previously registered Discord command set"
+            )
+
     async def setup_hook(self) -> None:
         logger.info("Applying database migrations")
         await upgrade_database(self.settings.database_url)
@@ -134,18 +153,7 @@ class MarwieBot(commands.Bot):
             logger.info("Command sync disabled")
             return
 
-        if self.settings.command_guild_id is not None:
-            guild = discord.Object(id=self.settings.command_guild_id)
-            self.tree.copy_global_to(guild=guild)
-            synced = await self.tree.sync(guild=guild)
-            logger.info(
-                "Synced %s commands to guild %s",
-                len(synced),
-                self.settings.command_guild_id,
-            )
-        else:
-            synced = await self.tree.sync()
-            logger.info("Synced %s global commands", len(synced))
+        await self._sync_application_commands()
 
     async def on_ready(self) -> None:
         logger.info("Bot ready as %s", self.user)
