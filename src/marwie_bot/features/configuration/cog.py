@@ -46,14 +46,15 @@ class ResourceKeyTransformer(app_commands.Transformer):
         return ResourceKey(value)
 
     async def autocomplete(
-        self, _interaction: discord.Interaction, value: str
-    ) -> list[app_commands.Choice[str]]:
-        current = value.casefold()
-        return [
+        self, _interaction: discord.Interaction, value: int | float | str
+    ) -> list[app_commands.Choice[int | float | str]]:
+        current = str(value).casefold()
+        choices: list[app_commands.Choice[int | float | str]] = [
             app_commands.Choice(name=key.value, value=key.value)
             for key in ResourceKey
             if current in key.value.casefold()
-        ][:25]
+        ]
+        return choices[:25]
 
 
 def _display_resource(resource: DiscordResource | None) -> str:
