@@ -10,7 +10,6 @@ import {
 
 const CHANNEL_KEYS = [
   'moderation_log',
-  'compromised_account_trap',
   'ticket_panel',
   'ticket_logs',
   'create_workspace_voice',
@@ -21,6 +20,9 @@ const CHANNEL_KEYS = [
   'ai_updates',
   'quiz_channel',
   'anon_questions',
+  'anon_messages_panel',
+  'anon_messages_submissions',
+  'anon_messages_audit_log',
   'analytics',
   'showcase_forum',
   'app_of_the_week',
@@ -289,7 +291,7 @@ test('mapping page markup uses read then edit state, visible health text, labels
   assert.match(readMarkup, />Edit settings</);
   assert.match(readMarkup, />Connected</);
   assert.match(readMarkup, />Not connected</);
-  assert.match(readMarkup, />Unavailable</);
+  assert.match(readMarkup, />Unavailable \/ stale</);
   assert.match(readMarkup, /data-mapping-key="ticket_logs"/);
 
   store.beginEdit(pageKey);

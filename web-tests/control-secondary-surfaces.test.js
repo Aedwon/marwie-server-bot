@@ -20,20 +20,17 @@ test('Commands renders exactly the three approved Discord-admin references and c
   const markup = commandsPageMarkup();
   assert.match(markup, /<h1>Commands<\/h1>/);
   assert.equal((markup.match(/data-command-task=/g) || []).length, 3);
-  assert.match(markup, /<code class="control-command-chip">\/reputation award<\/code>/);
-  assert.match(markup, /href="\/commands#command-reputation-award"[^>]*>Open guide<\/a>/);
-  assert.match(markup, /<code class="control-command-chip">\/ticket-panel post<\/code>/);
-  assert.match(markup, /href="\/commands#command-ticket-panel-post"[^>]*>Open guide<\/a>/);
-  assert.match(markup, /<code class="control-command-chip">\/ai-source poll<\/code>/);
-  assert.match(markup, /href="\/commands#command-ai-source-poll"[^>]*>Open guide<\/a>/);
+  assert.match(markup, /href="\/commands#command-reputation-award"[^>]*>\/reputation award<\/a>/);
+  assert.match(markup, /href="\/commands#command-ticket-panel-post"[^>]*>\/ticket-panel post<\/a>/);
+  assert.match(markup, /href="\/commands#command-ai-source-poll"[^>]*>\/ai-source poll<\/a>/);
   assert.match(markup, /href="\/commands"[^>]*>Open the full Commands manual<\/a>/);
   assert.doesNotMatch(markup, /<(?:form|button|input|select|textarea)\b/i);
   assert.doesNotMatch(markup, /adjust_reputation|refresh_ticket_panel|poll_ai_sources|enqueueControlAction/);
 });
 
-test('Commands reuses the synchronized 43-command canonical manual without duplicating its catalog', () => {
+test('Commands reuses the synchronized 45-command canonical manual without duplicating its catalog', () => {
   assert.equal(commandsManual, deployedCommandsManual);
-  assert.equal((commandsManual.match(/^##\s+`\/[^`]+`\s*$/gm) || []).length, 43);
+  assert.equal((commandsManual.match(/^##\s+`\/[^`]+`\s*$/gm) || []).length, 45);
   const markup = commandsPageMarkup();
   assert.equal((markup.match(/data-command-task=/g) || []).length, 3);
   assert.doesNotMatch(markup, /45 commands|command count|implementation|authentication architecture/i);

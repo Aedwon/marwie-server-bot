@@ -37,15 +37,16 @@ const RESOURCE_KEYS = new Set([
   'moderation_log', 'message_log', 'ticket_panel', 'ticket_category', 'ticket_logs',
   'create_workspace_voice', 'temp_voice_category', 'coworking_lounge', 'announcements',
   'live_announcements', 'live_ping_role', 'role_panel', 'ai_updates', 'quiz_channel',
-  'anon_questions', 'analytics', 'showcase_forum',
+  'anon_questions', 'anon_messages_panel', 'anon_messages_submissions',
+  'anon_messages_audit_log', 'analytics', 'showcase_forum',
   'app_of_the_week', 'collab_lfg', 'builder_role', 'contributor_role', 'mentor_role', 'bot_log',
-  'compromised_account_trap',
 ]);
 
 const MAPPING_RESOURCE_KEYS = new Set([
   'moderation_log', 'ticket_panel', 'ticket_logs', 'create_workspace_voice', 'coworking_lounge',
   'announcements', 'live_announcements', 'role_panel', 'ai_updates', 'quiz_channel',
-  'anon_questions', 'analytics', 'showcase_forum', 'app_of_the_week', 'collab_lfg',
+  'anon_questions', 'anon_messages_panel', 'anon_messages_submissions',
+  'anon_messages_audit_log', 'analytics', 'showcase_forum', 'app_of_the_week', 'collab_lfg',
   'live_ping_role', 'builder_role', 'contributor_role', 'mentor_role',
   'ticket_category', 'temp_voice_category',
 ]);
@@ -53,7 +54,7 @@ const MAPPING_ACTIONS = new Set(['bind', 'remap', 'create']);
 
 const FEATURE_NAMES = new Set([
   'moderation', 'message_logs', 'tickets', 'voice', 'announcements', 'live_announcements',
-  'reputation', 'quizzes', 'anonymous_questions', 'coworking', 'ai_updates',
+  'reputation', 'quizzes', 'anonymous_questions', 'anonymous_messages', 'coworking', 'ai_updates',
   'analytics', 'showcase',
 ]);
 
@@ -208,7 +209,7 @@ export function validateActionPayload(actionType, rawPayload) {
         return {
           role_id: roleId,
           label: text(button.label, 'Button label', 80),
-          emoji: text(button.emoji, 'Button emoji', 100, { required: false }),
+          emoji: text(button.emoji, 'Button emoji', 32, { required: false }),
           style,
         };
       });
@@ -279,26 +280,13 @@ export function validateActionPayload(actionType, rawPayload) {
     case ACTIONS.SEND_ANNOUNCEMENT: {
       const color = text(data.color || '5865F2', 'Embed color', 7).replace(/^#/, '').toUpperCase();
       if (!/^[0-9A-F]{6}$/.test(color)) throw new HttpError(400, 'Color must be a six-digit hex value such as 5865F2.');
-      const message = text(data.message, 'Message', 2000, { required: false });
-      const title = text(data.title, 'Title', 256, { required: false });
-      const body = text(data.body, 'Announcement body', 4096, { required: false });
-      const footer = text(data.footer, 'Footer', 2048, { required: false });
-      const imageUrl = text(data.image_url, 'Image URL', 1000, { required: false });
-      if (!message && !title && !body) throw new HttpError(400, 'Announcement content requires a message, title, or body.');
-      if (title.length + body.length + footer.length > 6000) throw new HttpError(400, 'Embed text must be at most 6000 characters total.');
-      if (imageUrl) {
-        let parsed;
-        try { parsed = new URL(imageUrl); } catch { throw new HttpError(400, 'Image URL must be HTTP or HTTPS.'); }
-        if (!['http:', 'https:'].includes(parsed.protocol)) throw new HttpError(400, 'Image URL must be HTTP or HTTPS.');
-      }
       return {
         channel_id: snowflake(data.channel_id, 'Announcement channel'),
-        message,
-        title,
-        body,
-        footer,
+        message: text(data.message, 'Message', 2000, { required: false }),
+        title: text(data.title, 'Title', 256, { required: false }),
+        body: text(data.body, 'Announcement body', 4000),
+        footer: text(data.footer, 'Footer', 2048, { required: false }),
         color,
-        image_url: imageUrl,
         mentions: mentions(data.mentions),
       };
     }
