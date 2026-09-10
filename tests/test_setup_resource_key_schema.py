@@ -22,4 +22,4 @@ def test_setup_resource_key_uses_autocomplete_instead_of_static_choices(
     )
 
     assert len(key_parameter.choices) <= 25
-    assert key_parameter.autocomplete is not None
+    assert key_parameter.autocomplete is True
