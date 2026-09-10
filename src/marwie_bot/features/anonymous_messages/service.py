@@ -125,11 +125,24 @@ class AnonymousMessageService:
     ) -> AnonymousMessageRecord:
         normalized = self._normalize_message(content)
         async with self._number_lock(guild_id):
-            return await self.repository.create_top_level(
+            create_top_level = getattr(self.repository, "create_top_level", None)
+            if create_top_level is not None:
+                return await create_top_level(
+                    guild_id=guild_id,
+                    user_id=user_id,
+                    channel_id=channel_id,
+                    content=normalized,
+                )
+
+            display_number = await self.repository.next_display_number(guild_id)
+            return await self.repository.create(
                 guild_id=guild_id,
                 user_id=user_id,
                 channel_id=channel_id,
+                kind=AnonymousMessageKind.MESSAGE,
                 content=normalized,
+                display_number=display_number,
+                reply_to_message_id=None,
             )
 
     async def create_reply(
