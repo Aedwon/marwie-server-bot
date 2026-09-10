@@ -42,9 +42,7 @@ _AUTO_SETUP_CONFIRMATION_DETAIL = (
 
 
 class ResourceKeyTransformer(app_commands.Transformer):
-    async def transform(
-        self, _interaction: discord.Interaction, value: str
-    ) -> ResourceKey:
+    async def transform(self, _interaction: discord.Interaction, value: str) -> ResourceKey:
         return ResourceKey(value)
 
     async def autocomplete(
