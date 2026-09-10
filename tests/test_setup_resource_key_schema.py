@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from discord import app_commands
 
 from marwie_bot.features.configuration.cog import ConfigurationCog
 
@@ -15,6 +16,7 @@ def test_setup_resource_key_uses_autocomplete_instead_of_static_choices(
     command = next(
         command for command in ConfigurationCog.setup_group.commands if command.name == command_name
     )
+    assert isinstance(command, app_commands.Command)
     key_parameter = next(parameter for parameter in command.parameters if parameter.name == "key")
 
     assert len(key_parameter.choices) <= 25
