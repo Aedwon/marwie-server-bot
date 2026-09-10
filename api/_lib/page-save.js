@@ -42,7 +42,8 @@ const CATEGORY_RESOURCE_KEYS = new Set(['ticket_category', 'temp_voice_category'
 const CHANNEL_RESOURCE_KEYS = new Set([
   'moderation_log', 'ticket_panel', 'ticket_logs', 'create_workspace_voice', 'coworking_lounge',
   'announcements', 'live_announcements', 'role_panel', 'ai_updates', 'quiz_channel',
-  'anon_questions', 'analytics', 'showcase_forum', 'app_of_the_week', 'collab_lfg', 'bot_log',
+  'anon_questions', 'anon_messages_panel', 'anon_messages_submissions', 'anon_messages_audit_log',
+  'analytics', 'showcase_forum', 'app_of_the_week', 'collab_lfg', 'bot_log',
   'compromised_account_trap',
 ]);
 
