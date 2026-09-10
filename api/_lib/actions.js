@@ -37,14 +37,16 @@ const RESOURCE_KEYS = new Set([
   'moderation_log', 'message_log', 'ticket_panel', 'ticket_category', 'ticket_logs',
   'create_workspace_voice', 'temp_voice_category', 'coworking_lounge', 'announcements',
   'live_announcements', 'live_ping_role', 'role_panel', 'ai_updates', 'quiz_channel',
-  'anon_questions', 'analytics', 'showcase_forum',
+  'anon_questions', 'anon_messages_panel', 'anon_messages_submissions',
+  'anon_messages_audit_log', 'analytics', 'showcase_forum',
   'app_of_the_week', 'collab_lfg', 'builder_role', 'contributor_role', 'mentor_role', 'bot_log',
 ]);
 
 const MAPPING_RESOURCE_KEYS = new Set([
   'moderation_log', 'ticket_panel', 'ticket_logs', 'create_workspace_voice', 'coworking_lounge',
   'announcements', 'live_announcements', 'role_panel', 'ai_updates', 'quiz_channel',
-  'anon_questions', 'analytics', 'showcase_forum', 'app_of_the_week', 'collab_lfg',
+  'anon_questions', 'anon_messages_panel', 'anon_messages_submissions',
+  'anon_messages_audit_log', 'analytics', 'showcase_forum', 'app_of_the_week', 'collab_lfg',
   'live_ping_role', 'builder_role', 'contributor_role', 'mentor_role',
   'ticket_category', 'temp_voice_category',
 ]);
@@ -52,7 +54,7 @@ const MAPPING_ACTIONS = new Set(['bind', 'remap', 'create']);
 
 const FEATURE_NAMES = new Set([
   'moderation', 'message_logs', 'tickets', 'voice', 'announcements', 'live_announcements',
-  'reputation', 'quizzes', 'anonymous_questions', 'coworking', 'ai_updates',
+  'reputation', 'quizzes', 'anonymous_questions', 'anonymous_messages', 'coworking', 'ai_updates',
   'analytics', 'showcase',
 ]);
 

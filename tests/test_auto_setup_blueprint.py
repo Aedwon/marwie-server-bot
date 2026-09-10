@@ -1,6 +1,6 @@
 import pytest
 
-from marwie_bot.config.resources import ResourceKey
+from marwie_bot.config.resources import FeatureName, ResourceKey
 from marwie_bot.features.configuration.provisioning import (
     AUTO_SETUP_RESOURCES,
     ProvisionKind,
@@ -37,6 +37,21 @@ def test_auto_setup_role_semantics_are_explicit() -> None:
     assert by_key[ResourceKey.ROLE_PANEL].name == "roles"
 
 
+def test_anonymous_message_blueprints_are_independent_and_audit_private() -> None:
+    by_key = {item.key: item for item in AUTO_SETUP_RESOURCES}
+
+    assert FeatureName.ANONYMOUS_MESSAGES.value == "anonymous_messages"
+    assert by_key[ResourceKey.ANON_MESSAGES_PANEL].name == "anonymous-messages-panel"
+    assert by_key[ResourceKey.ANON_MESSAGES_SUBMISSIONS].name == "anonymous-messages"
+    assert by_key[ResourceKey.ANON_MESSAGES_AUDIT_LOG].name == "anonymous-audit-log"
+    assert by_key[ResourceKey.ANON_MESSAGES_PANEL].kind == ProvisionKind.TEXT
+    assert by_key[ResourceKey.ANON_MESSAGES_SUBMISSIONS].kind == ProvisionKind.TEXT
+    assert by_key[ResourceKey.ANON_MESSAGES_AUDIT_LOG].kind == ProvisionKind.TEXT
+    assert by_key[ResourceKey.ANON_MESSAGES_PANEL].private is False
+    assert by_key[ResourceKey.ANON_MESSAGES_SUBMISSIONS].private is False
+    assert by_key[ResourceKey.ANON_MESSAGES_AUDIT_LOG].private is True
+
+
 def test_auto_setup_keeps_ticket_category_private() -> None:
     by_key = {item.key: item for item in AUTO_SETUP_RESOURCES}
     assert by_key[ResourceKey.TICKET_CATEGORY].private is True
@@ -57,6 +72,9 @@ def test_auto_setup_matches_existing_server_aliases() -> None:
     assert resource_name_matches("Create VC", by_key[ResourceKey.CREATE_WORKSPACE_VOICE])
     assert resource_name_matches("Coworking", by_key[ResourceKey.COWORKING_LOUNGE])
     assert resource_name_matches("🎭-anonymous", by_key[ResourceKey.ANON_QUESTIONS])
+    assert resource_name_matches("anonymous-panel", by_key[ResourceKey.ANON_MESSAGES_PANEL])
+    assert resource_name_matches("anon-messages", by_key[ResourceKey.ANON_MESSAGES_SUBMISSIONS])
+    assert resource_name_matches("anon-audit", by_key[ResourceKey.ANON_MESSAGES_AUDIT_LOG])
     assert resource_name_matches("🤖-ai-updates", by_key[ResourceKey.AI_UPDATES])
     assert resource_name_matches("🤝-collab-lfg", by_key[ResourceKey.COLLAB_LFG])
     assert resource_name_matches("📱-app-of-the-week", by_key[ResourceKey.APP_OF_WEEK])

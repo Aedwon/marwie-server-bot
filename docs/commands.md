@@ -2,7 +2,7 @@
 
 This is the canonical operating manual for Rob-bot's slash commands. It documents the behavior currently implemented in `src/marwie_bot/features/`.
 
-Rob-bot currently registers **43 slash commands**.
+Rob-bot currently registers **45 slash commands**.
 
 ## How to read this manual
 
@@ -82,29 +82,31 @@ This also applies to read-only commands such as `/ping`, `/rank`, `/profile`, `/
 27. `/reputation award`
 28. `/reputation thresholds`
 
-### Quizzes and anonymous questions
+### Quizzes and anonymous features
 
 29. `/quiz add`
 30. `/quiz start`
 31. `/quiz schedule`
 32. `/anonask`
 33. `/anonwho`
+34. `/anon deploy`
+35. `/anon sync`
 
 ### Coworking and collaboration
 
-34. `/pomodoro start`
-35. `/pomodoro status`
-36. `/pomodoro stop`
-37. `/lfg`
+36. `/pomodoro start`
+37. `/pomodoro status`
+38. `/pomodoro stop`
+39. `/lfg`
 
 ### AI updates, analytics, and showcase
 
-38. `/ai-source add`
-39. `/ai-source list`
-40. `/ai-source disable`
-41. `/ai-source poll`
-42. `/analytics`
-43. `/app-of-week`
+40. `/ai-source add`
+41. `/ai-source list`
+42. `/ai-source disable`
+43. `/ai-source poll`
+44. `/analytics`
+45. `/app-of-week`
 
 ---
 
@@ -202,7 +204,9 @@ Rob-bot never automatically deletes, renames, moves, or merges existing server r
 | `key` | yes | A Rob-bot `ResourceKey` choice | Logical bot resource to bind. Keys whose stored resource type is not `channel` are rejected. |
 | `channel` | yes | An existing Discord text channel | Text channel whose Discord ID will be stored for the key. |
 
-**Recommended text-channel keys:** `moderation_log`, `message_log`, `ticket_panel`, `ticket_logs`, `announcements`, `live_announcements`, `role_panel`, `ai_updates`, `quiz_channel`, `anon_questions`, `analytics`, `app_of_the_week`, `collab_lfg`, and `bot_log`.
+**Recommended text-channel keys:** `moderation_log`, `message_log`, `ticket_panel`, `ticket_logs`, `announcements`, `live_announcements`, `role_panel`, `ai_updates`, `quiz_channel`, `anon_questions`, `anon_messages_panel`, `anon_messages_submissions`, `anon_messages_audit_log`, `analytics`, `app_of_the_week`, `collab_lfg`, and `bot_log`.
+
+**Anonymous audit mapping:** When binding `anon_messages_audit_log` manually, choose a separate private text channel that `@everyone` cannot view. It must not be the same channel as `anon_messages_panel` or `anon_messages_submissions`; the anonymous-message feature fails closed if this privacy requirement is not met.
 
 **Important note:** Some logical resources such as `showcase_forum`, `create_workspace_voice`, and `coworking_lounge` also use the generic stored resource type `channel`, but their features expect a Forum Channel or voice channel at runtime. Use `/setup forum` or `/setup voice-channel` for those instead. The storage layer does not currently distinguish every Discord channel subtype.
 
@@ -307,7 +311,7 @@ Rob-bot does not grant the role merely because it was mapped. `live_ping_role` i
 
 | Parameter | Required | Accepted input | Meaning |
 | --- | --- | --- | --- |
-| `feature` | yes | One of the configured feature choices | `moderation`, `message_logs`, `tickets`, `voice`, `announcements`, `live_announcements`, `reputation`, `quizzes`, `anonymous_questions`, `coworking`, `ai_updates`, `analytics`, or `showcase`. |
+| `feature` | yes | One of the configured feature choices | `moderation`, `message_logs`, `tickets`, `voice`, `announcements`, `live_announcements`, `reputation`, `quizzes`, `anonymous_questions`, `anonymous_messages`, `coworking`, `ai_updates`, `analytics`, or `showcase`. |
 | `enabled` | yes | Boolean `true` or `false` | `true` enables the feature; `false` disables it. |
 
 Features default to enabled if the server has never stored an override.
@@ -782,7 +786,7 @@ Changing thresholds stores the new policy. The command does not iterate through 
 
 ---
 
-# Quizzes and anonymous questions
+# Quizzes and anonymous features
 
 ## `/quiz add`
 
@@ -898,6 +902,78 @@ This command is intended for deliberate staff abuse/audit review.
 **Example usage:**
 
 `/anonwho question_id:12`
+
+---
+
+## Anonymous message panel and replies
+
+The anonymous-message system is a persistent button/modal workflow rather than a member slash command. It is separate from `/anonask` and uses three independently configurable text-channel mappings:
+
+- `anon_messages_panel` — where the persistent **Send Message** panel is kept;
+- `anon_messages_submissions` — where numbered anonymous messages and anonymous replies are posted;
+- `anon_messages_audit_log` — the private staff destination that receives the submitter identity and submitted content for abuse and safety review.
+
+The panel and submissions mappings may point to the same Discord channel to reproduce the original single-channel layout, or to different channels. The audit mapping must point to a separate private text channel that `@everyone` cannot view; it cannot share the panel or submissions destination. Rob-bot fails closed if that privacy requirement is not met. The `anonymous_messages` feature flag must be enabled. A member must be able to view both the current panel and submissions channels; a persistent button left behind in an old mapping is rejected.
+
+Member flow:
+
+1. Press **Send Message** on the current anonymous-message panel.
+2. Enter 10 to 2000 characters in the modal. Leading and trailing whitespace is removed before validation.
+3. Rob-bot posts a public embed titled `Anonymous Message #N` in the mapped submissions channel with no member identity and with mention parsing disabled.
+4. Rob-bot stores the durable message record and writes the private staff audit entry. Public anonymity therefore means hidden from other members, not hidden from authorized staff.
+5. Any anonymous top-level message or anonymous reply has a persistent **Reply Anonymously** button. Replies accept 5 to 2000 characters, are posted as Discord replies, are not numbered, and also disable mention parsing.
+
+With background tasks enabled, Rob-bot checks the panel every 10 minutes. If the tracked panel is no longer the newest message in its mapped panel channel, Rob-bot removes the old tracked panel when possible and posts a fresh one at the bottom. If the panel mapping moves, Rob-bot uses durable panel state to clean up the previously tracked panel before posting in the new channel.
+
+When a tracked top-level anonymous message is deleted, Rob-bot soft-deletes its durable record and queues a renumber pass. Active top-level messages are kept contiguous as `#1`, `#2`, and so on. Anonymous replies do not affect numbering. `/anon sync` can also reconcile messages that were deleted while Rob-bot was offline.
+
+---
+
+## `/anon deploy`
+
+**Syntax:** `/anon deploy`
+
+**Permission:** Administrator.
+
+**What happens:** Forces an immediate anonymous-message panel deployment. Rob-bot resolves all three anonymous-message mappings, removes the previously tracked panel when possible, posts a fresh persistent panel in `anon_messages_panel`, saves its Discord message ID, and privately confirms the current panel, submissions, and staff-audit destinations.
+
+**Parameters:** None.
+
+**Prerequisites:**
+
+- `anon_messages_panel`, `anon_messages_submissions`, and `anon_messages_audit_log` must each resolve to an existing text channel;
+- `anon_messages_audit_log` must be a separate private channel from the panel and submissions destinations, and `@everyone` must not be able to view it;
+- in the panel channel, Rob-bot needs View Channel, Send Messages, Embed Links, Read Message History, and Manage Messages so it can keep the panel sticky and replace the previous tracked panel;
+- members who use the panel must have access to both the mapped panel and submissions channels;
+- actual anonymous posting also requires Rob-bot to be able to View Channel, Send Messages, and Embed Links in both the submissions and audit destinations.
+
+If a required mapping is missing or the audit mapping is public/shared with a public anonymous-message destination, Rob-bot fails closed and asks the administrator to correct the mappings. If panel permissions are insufficient, deployment fails closed and reports that the panel could not be deployed.
+
+**Example usage:**
+
+`/anon deploy`
+
+---
+
+## `/anon sync`
+
+**Syntax:** `/anon sync`
+
+**Permission:** Administrator.
+
+**What happens:** Reconciles durable top-level anonymous-message records against the currently mapped `anon_messages_submissions` channel. Rob-bot checks each tracked Discord message, marks missing messages deleted, rebuilds the contiguous number sequence, and edits only embeds whose `Anonymous Message #N` title needs correction. Replies are ignored by the numbering pass.
+
+The sync is restart-safe because numbering state is stored in the database. When a missing Discord message is discovered, Rob-bot performs another pass so later messages can close the numbering gap. Corrected display numbers are persisted after successful Discord edits.
+
+**Parameters:** None.
+
+**Prerequisite:** `anon_messages_submissions` must resolve to an existing text channel. Rob-bot also needs normal message-history/fetch and edit access in that destination for reconciliation to succeed.
+
+If no tracked top-level anonymous messages remain, Rob-bot reports that there is nothing to sync. Individual Discord fetch/edit failures are logged and do not cause Rob-bot to invent message state.
+
+**Example usage:**
+
+`/anon sync`
 
 ---
 

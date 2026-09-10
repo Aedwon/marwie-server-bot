@@ -19,6 +19,9 @@ class ResourceKey(StrEnum):
     AI_UPDATES = "ai_updates"
     QUIZ_CHANNEL = "quiz_channel"
     ANON_QUESTIONS = "anon_questions"
+    ANON_MESSAGES_PANEL = "anon_messages_panel"
+    ANON_MESSAGES_SUBMISSIONS = "anon_messages_submissions"
+    ANON_MESSAGES_AUDIT_LOG = "anon_messages_audit_log"
     ANALYTICS = "analytics"
     SHOWCASE_FORUM = "showcase_forum"
     APP_OF_WEEK = "app_of_the_week"
@@ -47,6 +50,7 @@ class FeatureName(StrEnum):
     REPUTATION = "reputation"
     QUIZZES = "quizzes"
     ANONYMOUS_QUESTIONS = "anonymous_questions"
+    ANONYMOUS_MESSAGES = "anonymous_messages"
     COWORKING = "coworking"
     AI_UPDATES = "ai_updates"
     ANALYTICS = "analytics"
@@ -69,6 +73,9 @@ RESOURCE_TYPES: dict[ResourceKey, ResourceType] = {
     ResourceKey.AI_UPDATES: ResourceType.CHANNEL,
     ResourceKey.QUIZ_CHANNEL: ResourceType.CHANNEL,
     ResourceKey.ANON_QUESTIONS: ResourceType.CHANNEL,
+    ResourceKey.ANON_MESSAGES_PANEL: ResourceType.CHANNEL,
+    ResourceKey.ANON_MESSAGES_SUBMISSIONS: ResourceType.CHANNEL,
+    ResourceKey.ANON_MESSAGES_AUDIT_LOG: ResourceType.CHANNEL,
     ResourceKey.ANALYTICS: ResourceType.CHANNEL,
     ResourceKey.SHOWCASE_FORUM: ResourceType.CHANNEL,
     ResourceKey.APP_OF_WEEK: ResourceType.CHANNEL,
