@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, cast
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, insert, select
 from sqlalchemy.engine import CursorResult
 
 from marwie_bot.db.models import AnonymousMessage, AnonymousMessagePanel
@@ -54,6 +54,41 @@ class SQLAlchemyAnonymousMessageRepository:
             current = (await session.execute(statement)).scalar_one_or_none()
             return int(current or 0) + 1
 
+    async def create_top_level(
+        self,
+        *,
+        guild_id: int,
+        user_id: int,
+        channel_id: int,
+        content: str,
+    ) -> AnonymousMessageRecord:
+        async with self.database.session() as session:
+            next_number = (
+                select(func.coalesce(func.max(AnonymousMessage.display_number), 0) + 1)
+                .where(
+                    AnonymousMessage.guild_id == guild_id,
+                    AnonymousMessage.kind == AnonymousMessageKind.MESSAGE.value,
+                    AnonymousMessage.deleted_at.is_(None),
+                )
+                .scalar_subquery()
+            )
+            statement = (
+                insert(AnonymousMessage)
+                .values(
+                    guild_id=guild_id,
+                    user_id=user_id,
+                    channel_id=channel_id,
+                    kind=AnonymousMessageKind.MESSAGE.value,
+                    content=content,
+                    display_number=next_number,
+                    reply_to_message_id=None,
+                )
+                .returning(AnonymousMessage)
+            )
+            model = (await session.execute(statement)).scalar_one()
+            await session.commit()
+            return self._message_record(model)
+
     async def create(
         self,
         *,
@@ -66,18 +101,21 @@ class SQLAlchemyAnonymousMessageRepository:
         reply_to_message_id: int | None,
     ) -> AnonymousMessageRecord:
         async with self.database.session() as session:
-            model = AnonymousMessage(
-                guild_id=guild_id,
-                user_id=user_id,
-                channel_id=channel_id,
-                kind=kind.value,
-                content=content,
-                display_number=display_number,
-                reply_to_message_id=reply_to_message_id,
+            statement = (
+                insert(AnonymousMessage)
+                .values(
+                    guild_id=guild_id,
+                    user_id=user_id,
+                    channel_id=channel_id,
+                    kind=kind.value,
+                    content=content,
+                    display_number=display_number,
+                    reply_to_message_id=reply_to_message_id,
+                )
+                .returning(AnonymousMessage)
             )
-            session.add(model)
+            model = (await session.execute(statement)).scalar_one()
             await session.commit()
-            await session.refresh(model)
             return self._message_record(model)
 
     async def attach_message(self, record_id: int, message_id: int) -> AnonymousMessageRecord:

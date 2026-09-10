@@ -4,7 +4,7 @@ import asyncio
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 
 class AnonymousMessageKind(StrEnum):
@@ -81,6 +81,18 @@ class AnonymousMessageRepository(Protocol):
     async def clear_panel(self, guild_id: int) -> bool: ...
 
 
+@runtime_checkable
+class AtomicTopLevelRepository(Protocol):
+    async def create_top_level(
+        self,
+        *,
+        guild_id: int,
+        user_id: int,
+        channel_id: int,
+        content: str,
+    ) -> AnonymousMessageRecord: ...
+
+
 class AnonymousMessageService:
     def __init__(self, repository: AnonymousMessageRepository) -> None:
         self.repository = repository
@@ -116,6 +128,14 @@ class AnonymousMessageService:
     ) -> AnonymousMessageRecord:
         normalized = self._normalize_message(content)
         async with self._number_lock(guild_id):
+            if isinstance(self.repository, AtomicTopLevelRepository):
+                return await self.repository.create_top_level(
+                    guild_id=guild_id,
+                    user_id=user_id,
+                    channel_id=channel_id,
+                    content=normalized,
+                )
+
             display_number = await self.repository.next_display_number(guild_id)
             return await self.repository.create(
                 guild_id=guild_id,
