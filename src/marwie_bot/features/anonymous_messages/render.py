@@ -15,8 +15,7 @@ def build_panel_embed(guild: discord.Guild) -> discord.Embed:
         description=(
             "Have something to say? Share it anonymously.\n\n"
             "Click the button below to post an anonymous message. Your identity is "
-            "**hidden from other members**. Authorized staff can review the submitter "
-            "identity when needed for abuse or safety handling.\n\n"
+            "**hidden from other members**.\n\n"
             "You can also reply anonymously to any anonymous message using its reply button."
         ),
         color=discord.Color.blurple(),
