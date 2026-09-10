@@ -24,10 +24,14 @@ from marwie_bot.features.anonymous_messages.views import (
 
 class _NeverResources:
     async def get(self, *_args: object, **_kwargs: object) -> object:
-        raise AssertionError("button callbacks must not perform resource I/O before opening a modal")
+        raise AssertionError(
+            "button callbacks must not perform resource I/O before opening a modal"
+        )
 
     async def list_for_guild(self, *_args: object, **_kwargs: object) -> object:
-        raise AssertionError("button callbacks must not perform resource I/O before opening a modal")
+        raise AssertionError(
+            "button callbacks must not perform resource I/O before opening a modal"
+        )
 
 
 class _NeverFeatures:
