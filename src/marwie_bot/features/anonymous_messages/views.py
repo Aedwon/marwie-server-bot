@@ -77,10 +77,19 @@ async def resolve_destinations(
     if panel_record is None or submissions_record is None or audit_record is None:
         return None
 
-    return _destinations_from_records(
-        guild,
-        [panel_record, submissions_record, audit_record],
-    )
+    panel = guild.get_channel(panel_record.discord_id)
+    submissions = guild.get_channel(submissions_record.discord_id)
+    audit_log = guild.get_channel(audit_record.discord_id)
+    if not isinstance(panel, discord.TextChannel):
+        return None
+    if not isinstance(submissions, discord.TextChannel):
+        return None
+    if not isinstance(audit_log, discord.TextChannel):
+        return None
+    destinations = AnonymousMessageDestinations(panel, submissions, audit_log)
+    if not audit_channel_is_private(guild, destinations):
+        return None
+    return destinations
 
 
 def channel_allows_bot_output(channel: discord.TextChannel, guild: discord.Guild) -> bool:
