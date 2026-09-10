@@ -41,6 +41,22 @@ _AUTO_SETUP_CONFIRMATION_DETAIL = (
 )
 
 
+class ResourceKeyTransformer(app_commands.Transformer):
+    async def transform(self, _interaction: discord.Interaction, value: str) -> ResourceKey:
+        return ResourceKey(value)
+
+    async def autocomplete(
+        self, _interaction: discord.Interaction, value: int | float | str
+    ) -> list[app_commands.Choice[int | float | str]]:
+        current = str(value).casefold()
+        choices: list[app_commands.Choice[int | float | str]] = [
+            app_commands.Choice(name=key.value, value=key.value)
+            for key in ResourceKey
+            if current in key.value.casefold()
+        ]
+        return choices[:25]
+
+
 def _display_resource(resource: DiscordResource | None) -> str:
     if resource is None:
         return "not configured"
@@ -424,7 +440,7 @@ class ConfigurationCog(commands.Cog):
     async def set_text_channel(
         self,
         interaction: discord.Interaction,
-        key: ResourceKey,
+        key: app_commands.Transform[ResourceKey, ResourceKeyTransformer],
         channel: discord.TextChannel,
     ) -> None:
         await self._set_resource(
@@ -436,7 +452,7 @@ class ConfigurationCog(commands.Cog):
     async def set_voice_channel(
         self,
         interaction: discord.Interaction,
-        key: ResourceKey,
+        key: app_commands.Transform[ResourceKey, ResourceKeyTransformer],
         channel: discord.VoiceChannel,
     ) -> None:
         await self._set_resource(
@@ -448,7 +464,7 @@ class ConfigurationCog(commands.Cog):
     async def set_forum(
         self,
         interaction: discord.Interaction,
-        key: ResourceKey,
+        key: app_commands.Transform[ResourceKey, ResourceKeyTransformer],
         forum: discord.ForumChannel,
     ) -> None:
         await self._set_resource(interaction, key, ResourceType.CHANNEL, forum.id, forum.mention)
@@ -458,7 +474,7 @@ class ConfigurationCog(commands.Cog):
     async def set_category(
         self,
         interaction: discord.Interaction,
-        key: ResourceKey,
+        key: app_commands.Transform[ResourceKey, ResourceKeyTransformer],
         category: discord.CategoryChannel,
     ) -> None:
         await self._set_resource(
@@ -470,7 +486,7 @@ class ConfigurationCog(commands.Cog):
     async def set_role(
         self,
         interaction: discord.Interaction,
-        key: ResourceKey,
+        key: app_commands.Transform[ResourceKey, ResourceKeyTransformer],
         role: discord.Role,
     ) -> None:
         await self._set_resource(interaction, key, ResourceType.ROLE, role.id, role.mention)
