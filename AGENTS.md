@@ -10,7 +10,7 @@ This repository has two independent production lines. Do not treat them as inter
 
 | Branch | Owns | Deployment target |
 | --- | --- | --- |
-| `main` | Discord bot runtime | Bot-Hosting |
+| `main` | Discord bot runtime | Local macOS LaunchAgent |
 | `web/rob-bot-site-production` | Rob-bot website and Control | Vercel production |
 | `vercel-ready-*` | Temporary website review candidates | Vercel Preview |
 

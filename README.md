@@ -221,25 +221,13 @@ These commands replace the stored mapping. They do not require the resource to u
 
 For TikTok Live notifications, `/setup auto` configures both the live-announcement destination and the opt-in Live Notifications role. `/live` falls back to the general `announcements` resource if the dedicated live channel is later removed from configuration. Rob-bot never uses `@everyone` or `@here` for `/live`. Runtime authorization still permits only the configured Mar Wie account to publish a live announcement.
 
-## bot-hosting.net
+## Local macOS hosting
 
-Once the intended branch is deployed, startup should require no code changes:
+Rob-bot production is hosted locally on the owner’s M4 MacBook Air as a macOS LaunchAgent. The service uses Python 3.12, a fresh local SQLite database, external production secrets, persistent logs, crash restart behavior, and AC-only sleep prevention through `caffeinate -s`.
 
-1. Create an **Application** on bot-hosting.net.
-2. Select GitHub source `Aedwon/marwie-server-bot` and the branch you intend to deploy.
-3. Select Python 3.12.
-4. Set the entry file to `main.py`.
-5. Add `DISCORD_TOKEN` as a secret.
-6. Set `ENVIRONMENT=production`.
-7. Set `COMMAND_GUILD_ID` to your Discord server ID for immediate guild-scoped command sync.
-8. Set `MAR_WIE_TIKTOK_URL` to Mar Wie's TikTok profile or LIVE URL if you want the live announcement button.
-9. `MAR_WIE_USER_ID` may be omitted because the accepted Mar Wie ID `703986808962285621` is the default; set it only if the authorized account changes.
-10. Set `ENABLE_MESSAGE_CONTENT=true` only if the matching privileged intent is enabled in Discord.
-11. Leave `DATABASE_URL` unset to use persistent SQLite storage at `data/marwie.db`, or set a PostgreSQL URL.
-12. Start the application and confirm migrations, extension loading and command sync complete in the console.
-13. Run `/setup auto` in Discord and approve the discovery pass. Enable Discord Community only if the second setup plan says a Forum Channel must be created.
+See **[Local macOS hosting](docs/local-hosting.md)** for initial setup, service activation, logs, updates, restart procedures, and fresh-server configuration.
 
-Keep host backups enabled for the SQLite database. The application normalizes ordinary `postgres://` and `postgresql://` URLs to the async PostgreSQL driver automatically.
+The Discord token is stored outside the repository. Because the former Bot-Hosting deployment was deleted, this local deployment starts with a fresh database and requires `/setup auto` after the bot first connects.
 
 ## Reliability notes
 
