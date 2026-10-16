@@ -1,6 +1,7 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 
 import { neon } from '@neondatabase/serverless';
+import { createSqliteTaggedClient } from './sqlite-database.js';
 
 export const SESSION_COOKIE = 'rob_control_session';
 export const CSRF_COOKIE = 'rob_control_csrf';
@@ -19,8 +20,14 @@ export class HttpError extends Error {
 
 export function database() {
   if (!sqlClient) {
+    const sqlitePath = process.env.CONTROL_SQLITE_PATH?.trim();
+    if (sqlitePath) {
+      sqlClient = createSqliteTaggedClient(sqlitePath);
+      return sqlClient;
+    }
+
     const url = process.env.DATABASE_URL || process.env.CONTROL_DATABASE_URL;
-    if (!url) throw new HttpError(503, 'Control database is not configured.');
+    if (!url) throw new HttpError(503, 'Control database is not configured. Set CONTROL_SQLITE_PATH or DATABASE_URL.');
     sqlClient = neon(url);
   }
   return sqlClient;
@@ -44,6 +51,10 @@ function validWakeWebhookUrl(value) {
 }
 
 export async function tryWakeControlWorker() {
+  if (process.env.CONTROL_WORKER_MODE?.trim().toLowerCase() === 'always_on') {
+    return true;
+  }
+
   const webhookUrl = process.env.CONTROL_WAKE_WEBHOOK_URL?.trim();
   if (!webhookUrl || !validWakeWebhookUrl(webhookUrl)) {
     console.error('Control wake delivery skipped: webhook is missing or invalid.');
