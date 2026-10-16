@@ -1,226 +1,226 @@
 # Rob-bot Control Design System
 
 Date: 2026-10-16
-Status: Design-system specification
+Status: Complete design-system specification for redesign planning
 Scope: Rob-bot Control website
 
-## 1. Purpose
+## 1. Purpose and authority
 
-This document defines the reusable visual, interaction, layout, accessibility, and component system for the Rob-bot Control website.
+This document defines the reusable visual, interaction, layout, accessibility, content, and component system for Rob-bot Control.
 
-It turns the current product direction into an implementation-ready design contract.
+It turns the approved product direction into an implementation-ready design contract.
 
-It derives from three inputs:
+It derives from three sources:
 
 1. **Mar Wie course site** for brand language, typography, color, shape, restraint, and visual character.
-2. **Rob-bot Control information architecture decisions** for feature-first organization, MECE sidebar grouping, complete feature ownership, canonical shared resources, and the three-region shell.
+2. **Rob-bot Control information architecture** for feature-first organization, MECE grouping, complete feature ownership, canonical shared resources, and the three-region shell.
 3. **Apple design principles** for clarity, hierarchy, consistency, familiarity, concise task flows, immediate feedback, progressive disclosure, accessibility, and restraint.
 
-The Cloudflare dashboard reference influences compact administrative density and navigation ergonomics. It is not a visual brand source.
+The Cloudflare dashboard reference informs compact administrative density and navigation ergonomics. It is not a visual brand source.
 
-This system does not visually copy Apple or Cloudflare.
-
-## 2. Related decisions
-
-This specification must be read with:
+Read this with:
 
 - `docs/superpowers/decisions/2026-10-16-control-interface-information-architecture.md`
 - `docs/superpowers/decisions/2026-10-16-control-brand-and-visual-direction.md`
 - `docs/superpowers/decisions/2026-10-16-control-apple-design-principles.md`
 
-If an older Control styling decision conflicts with this specification, this specification and the above 2026-10-16 decisions take precedence for the redesign.
-
-## 3. Design principles
-
-### 3.1 Feature first
-
-The user navigates by feature, not implementation concept.
-
-A feature owns its complete normal configuration flow. Tickets owns ticket types, behavior, permissions, messages, and ticket-specific resource bindings. Global Resources exists for cross-feature visibility and troubleshooting, not as a required step.
-
-### 3.2 MECE navigation
-
-Sidebar categories organize features without becoming configuration destinations.
-
-Categories should be mutually exclusive and collectively exhaustive as closely as practical. A feature should have one clear home.
-
-### 3.3 Clarity before decoration
-
-Hierarchy comes from order, alignment, spacing, type, contrast, borders, and state. Decorative treatment must not compensate for weak structure.
-
-Every persistent element must justify its space.
-
-### 3.4 Compact, not cramped
-
-Control is an operations interface. Desktop density should expose useful information efficiently.
-
-Compactness must not reduce legibility, target accessibility, or state clarity.
-
-### 3.5 Brand restraint
-
-Sky blue is the brand accent and information color. It is not a generic selection color.
-
-Neutral structure should dominate the interface. Semantic colors should communicate meaning.
-
-### 3.6 Familiar interactions
-
-Prefer established web controls and native semantics. Avoid custom interaction behavior when a conventional pattern works.
-
-### 3.7 Immediate feedback
-
-Actions must communicate pending, success, conflict, failure, selected, disabled, and destructive states clearly and promptly.
-
-### 3.8 Progressive disclosure
-
-Common configuration is visible. Advanced, destructive, uncommon, and diagnostic configuration is disclosed deliberately.
-
-### 3.9 Accessibility by default
-
-Accessibility is part of every component contract. The target is WCAG 2.2 AA.
-
-### 3.10 Stable shell, adaptive content
-
-Navigation and interaction conventions remain stable between features. The center workspace and right panel adapt to the selected feature.
+If an older Control styling decision conflicts with this specification, the 2026-10-16 design decisions and this specification take precedence for the redesign.
 
 ---
 
-# 4. Token architecture
+# 2. Core principles
 
-Use three token layers:
+## 2.1 Feature first
 
-1. **Primitive tokens**: raw colors, sizes, spacing, radii, durations.
-2. **Semantic tokens**: background, text, border, status, focus, selection.
-3. **Component tokens**: nav row height, shell width, input height, panel padding.
+Users navigate by what they want to configure, not by implementation concepts.
 
-Components should consume semantic or component tokens instead of raw primitives whenever practical.
+A feature owns its complete normal configuration flow. Tickets owns ticket types, behavior, permissions, messages, and ticket-specific Discord resources. Global Resources remains an overview and troubleshooting surface, not a required step.
 
-CSS custom properties are the preferred implementation mechanism.
+## 2.2 MECE navigation
 
-Naming convention:
+Sidebar groups organize features without becoming configuration destinations. Groups should overlap as little as practical, cover the full operator-facing surface, and give each feature one clear home.
+
+## 2.3 Clarity before decoration
+
+Order, alignment, spacing, typography, contrast, borders, and state establish hierarchy before decoration. Every persistent element must justify the space it occupies.
+
+## 2.4 Compact, not cramped
+
+Control is an operations interface. Desktop density is intentionally compact. Compactness must not reduce legibility, accessible targets, or state clarity.
+
+## 2.5 Brand restraint
+
+Neutral structure dominates. Sky blue is brand and information color, not generic selection color. Semantic colors communicate meaning.
+
+## 2.6 Familiarity and consistency
+
+Prefer familiar web controls and native semantics. Similar objects behave the same way across every feature.
+
+## 2.7 Immediate feedback
+
+Actions communicate pending, success, conflict, failure, selected, disabled, and destructive states promptly and locally.
+
+## 2.8 Progressive disclosure
+
+Common settings stay visible. Advanced, destructive, diagnostic, and uncommon settings are disclosed deliberately.
+
+## 2.9 Accessibility by default
+
+Accessibility is part of each component contract. Target WCAG 2.2 AA.
+
+## 2.10 Stable shell, adaptive workspace
+
+Navigation and interaction conventions remain stable while the center workspace and contextual panel adapt to the feature.
+
+---
+
+# 3. Token architecture
+
+Use three layers:
+
+1. **Primitive tokens** for raw colors, spacing, radii, typography, and motion.
+2. **Semantic tokens** for surfaces, text, borders, accents, focus, and states.
+3. **Component tokens** for shell widths, row heights, and control geometry.
+
+Components consume semantic or component tokens instead of raw values wherever practical.
+
+Naming:
 
 ```css
---ds-color-*       /* primitive colors */
---ds-space-*       /* spacing primitives */
---ds-radius-*      /* radius primitives */
---ds-font-*        /* typography primitives */
---ds-duration-*    /* motion primitives */
+--ds-color-*;
+--ds-space-*;
+--ds-radius-*;
+--ds-font-*;
+--ds-duration-*;
 
---surface-*        /* semantic surfaces */
---text-*           /* semantic text */
---border-*         /* semantic borders */
---status-*         /* semantic states */
---focus-*          /* focus semantics */
+--surface-*;
+--text-*;
+--stroke-*;
+--accent-*;
+--status-*;
+--focus-*;
 
---control-*        /* component/layout tokens */
+--control-*;
 ```
-
-Do not encode component names into primitive tokens.
 
 ---
 
-# 5. Color system
+# 4. Color
 
-## 5.1 Light primitives
+## 4.1 Light primitives
 
-These values inherit the course site's paper-and-ink system.
-
-| Token | Value | Purpose |
+| Token | Value | Use |
 |---|---:|---|
-| `--ds-color-paper` | `#fcfcfb` | page background |
+| `--ds-color-paper` | `#fcfcfb` | page |
 | `--ds-color-white` | `#ffffff` | primary surface |
-| `--ds-color-ink` | `#111113` | strongest text / primary action |
-| `--ds-color-ink-hover` | `#2a2a2e` | dark action hover |
+| `--ds-color-ink` | `#111113` | strong text, primary action |
+| `--ds-color-ink-hover` | `#2a2a2e` | primary-action hover |
 | `--ds-color-note` | `#3a3a3f` | strong secondary text |
 | `--ds-color-body` | `#4a4a4f` | body text |
-| `--ds-color-muted` | `#6e6e73` | secondary text |
-| `--ds-color-faint` | `#8a8a8f` | decorative/nonessential text |
-| `--ds-color-line` | `#ebebea` | hairline divider |
-| `--ds-color-field` | `#dcdcda` | input/control border |
-| `--ds-color-soft` | `#f4f4f2` | neutral soft fill |
-| `--ds-color-hover` | `#f5f5f3` | hover fill |
-| `--ds-color-selected` | `#efefec` | selected neutral fill |
-| `--ds-color-selected-line` | `#e4e4e0` | selected inset border |
+| `--ds-color-muted` | `#6e6e73` | tertiary text |
+| `--ds-color-faint` | `#8a8a8f` | nonessential text only |
+| `--ds-color-line` | `#ebebea` | hairline |
+| `--ds-color-field` | `#dcdcda` | control border |
+| `--ds-color-soft` | `#f4f4f2` | secondary surface |
+| `--ds-color-hover` | `#f5f5f3` | neutral hover |
+| `--ds-color-selected` | `#efefec` | neutral selection |
+| `--ds-color-selected-line` | `#e4e4e0` | selected inset stroke |
 
-## 5.2 Brand primitives
+## 4.2 Brand primitives
 
-| Token | Value | Purpose |
+| Token | Value | Use |
 |---|---:|---|
-| `--ds-color-sky` | `#7db9e8` | primary brand accent |
-| `--ds-color-sky-deep` | `#2f6fa3` | accessible blue text/focus on light |
-| `--ds-color-sky-tint` | `#eef6fd` | light information background |
-| `--ds-color-sky-tint-strong` | `#dcebf8` | avatar/info accent background |
-| `--ds-color-sky-dark-surface` | `#14273a` | dark information surface |
+| `--ds-color-sky` | `#7db9e8` | brand accent |
+| `--ds-color-sky-deep` | `#2f6fa3` | accessible info/focus text on light |
+| `--ds-color-sky-tint` | `#eef6fd` | info surface |
+| `--ds-color-sky-tint-strong` | `#dcebf8` | info border/avatar fill |
+| `--ds-color-sky-dark-surface` | `#14273a` | dark info surface |
 
-Sky is for brand identity, informational emphasis, selected data marks, links where blue semantics are appropriate, and focus indication.
+Sky is appropriate for brand identity, informational emphasis, links where blue semantics are appropriate, focused state, and selected data marks. It is not the default navigation selection fill.
 
-Do not use sky blue simply because something is selected in navigation.
+## 4.3 Light semantic states
 
-## 5.3 Semantic status primitives
-
-| Meaning | Foreground | Background | Border |
+| State | Foreground | Background | Border |
 |---|---:|---:|---:|
 | Success / healthy | `#1f7a4d` | `#eaf5ec` | `#cbe5d2` |
 | Warning / attention | `#6b4600` | `#fdf3e1` | `#f3ddb0` |
 | Error / destructive | `#b42318` | `#fdf0ef` | `#f4d3cf` |
 | Informational | `#2f6fa3` | `#eef6fd` | `#dcebf8` |
 
-Additional course colors remain special-purpose only:
+Special-purpose colors remain constrained:
 
-- amber `#e5a00d`: star/rating or explicit amber semantic only
-- Discord `#5865f2`: Discord brand/logo only
-- pink donation palette: not part of general Control semantics
+- `#e5a00d` amber: stars/ratings or a deliberate amber semantic only
+- `#5865f2`: Discord logo/brand only
+- course donation pink: not a general Control accent
 - violet: not a general Control accent
 
-## 5.4 Dark primitives
+## 4.4 Dark primitives and states
 
-Dark is a translation of the light system, not a separate aesthetic.
-
-| Semantic role | Dark value |
+| Role | Value |
 |---|---:|
 | page | `#0f0f11` |
-| surface | `#19191c` |
-| surface raised | `#1b1b1e` |
+| primary surface | `#19191c` |
+| secondary surface | `#1b1b1e` |
 | hover | `#212125` |
-| text strong | `#ececee` |
-| text secondary strong | `#c6c6cb` |
-| text body | `#adadb3` |
-| text muted | `#8b8b91` |
-| text faint | `#737379` |
-| border subtle | `#232327` |
-| border control | `#34343a` |
-| error | `#f97066` |
-| success | `#5fd08a` |
-| info accent | `#7db9e8` |
-| info surface | `#14273a` |
+| selected | `#242428` |
+| strong text | `#ececee` |
+| secondary strong text | `#c6c6cb` |
+| body text | `#adadb3` |
+| muted text | `#8b8b91` |
+| faint text | `#737379` |
+| subtle stroke | `#232327` |
+| control stroke | `#34343a` |
+| selected stroke | `#3d3d43` |
+| brand/info accent | `#7db9e8` |
 
-Dark warning and destructive surfaces may use low-chroma, low-luminance variants derived from the semantic hue, but text contrast must remain AA.
+Dark semantic states:
 
-## 5.5 Semantic color aliases
+| State | Foreground | Background | Border |
+|---|---:|---:|---:|
+| Success / healthy | `#5fd08a` | `#14241a` | `#234832` |
+| Warning / attention | `#f3c568` | `#2a2112` | `#5a421a` |
+| Error / destructive | `#f97066` | `#2b1718` | `#5a2a2c` |
+| Informational | `#7db9e8` | `#14273a` | `#244a69` |
 
-Light theme:
+## 4.5 Semantic aliases
+
+Light:
 
 ```css
---surface-page: var(--ds-color-paper);
---surface-primary: var(--ds-color-white);
---surface-secondary: var(--ds-color-soft);
---surface-hover: var(--ds-color-hover);
---surface-selected: var(--ds-color-selected);
+--surface-page: #fcfcfb;
+--surface-primary: #ffffff;
+--surface-secondary: #f4f4f2;
+--surface-hover: #f5f5f3;
+--surface-selected: #efefec;
 
---text-primary: var(--ds-color-ink);
---text-secondary: var(--ds-color-body);
---text-tertiary: var(--ds-color-muted);
---text-faint: var(--ds-color-faint);
+--text-primary: #111113;
+--text-secondary: #4a4a4f;
+--text-tertiary: #6e6e73;
+--text-faint: #8a8a8f;
 
---border-subtle: var(--ds-color-line);
---border-control: var(--ds-color-field);
---border-selected: var(--ds-color-selected-line);
+--stroke-subtle: #ebebea;
+--stroke-control: #dcdcda;
+--stroke-selected: #e4e4e0;
 
---accent-brand: var(--ds-color-sky);
---accent-info: var(--ds-color-sky-deep);
---focus-ring: var(--ds-color-sky-deep);
+--accent-brand: #7db9e8;
+--accent-info: #2f6fa3;
+--focus-ring: #2f6fa3;
+
+--status-success-fg: #1f7a4d;
+--status-success-bg: #eaf5ec;
+--status-success-stroke: #cbe5d2;
+--status-warning-fg: #6b4600;
+--status-warning-bg: #fdf3e1;
+--status-warning-stroke: #f3ddb0;
+--status-error-fg: #b42318;
+--status-error-bg: #fdf0ef;
+--status-error-stroke: #f4d3cf;
+--status-info-fg: #2f6fa3;
+--status-info-bg: #eef6fd;
+--status-info-stroke: #dcebf8;
 ```
 
-Dark theme:
+Dark:
 
 ```css
 --surface-page: #0f0f11;
@@ -234,28 +234,41 @@ Dark theme:
 --text-tertiary: #8b8b91;
 --text-faint: #737379;
 
---border-subtle: #232327;
---border-control: #34343a;
---border-selected: #3d3d43;
+--stroke-subtle: #232327;
+--stroke-control: #34343a;
+--stroke-selected: #3d3d43;
 
 --accent-brand: #7db9e8;
 --accent-info: #7db9e8;
 --focus-ring: #7db9e8;
+
+--status-success-fg: #5fd08a;
+--status-success-bg: #14241a;
+--status-success-stroke: #234832;
+--status-warning-fg: #f3c568;
+--status-warning-bg: #2a2112;
+--status-warning-stroke: #5a421a;
+--status-error-fg: #f97066;
+--status-error-bg: #2b1718;
+--status-error-stroke: #5a2a2c;
+--status-info-fg: #7db9e8;
+--status-info-bg: #14273a;
+--status-info-stroke: #244a69;
 ```
 
-## 5.6 Contrast rules
+## 4.6 Contrast rules
 
-- Normal essential text must meet WCAG AA contrast.
-- `#8a8a8f` on `#fcfcfb` does not meet 4.5:1 for small text. Use `--text-faint` only for nonessential/decorative metadata, disabled-like presentation, or appropriately large text.
-- `#6e6e73` on `#fcfcfb` is acceptable for normal text and is the preferred light-theme tertiary text color.
-- Dark faint text must not carry required information unless contrast is verified.
-- Color cannot be the sole carrier of state. Pair semantic color with text, icon, shape, or position.
+- Essential normal text meets WCAG AA.
+- `#8a8a8f` on `#fcfcfb` is not valid for essential small text. Use it only for nonessential/decorative metadata or sufficiently large text.
+- `#6e6e73` is the default light tertiary text color for readable secondary information.
+- Dark faint text does not carry required information unless contrast is independently verified for the actual background.
+- Color is never the sole state carrier. Pair color with text, icon, position, or shape.
 
 ---
 
-# 6. Typography
+# 5. Typography
 
-## 6.1 Font families
+## 5.1 Families
 
 ```css
 --font-sans: "Figtree", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -265,23 +278,17 @@ Dark theme:
 
 Figtree weights: 400, 500, 600.
 
+Newsreader: italic 400 only.
+
 Do not depend on 700 for routine UI hierarchy.
 
-Newsreader is italic 400 only and is used sparingly.
+## 5.2 Root and primitive scale
 
-## 6.2 Root size
+Browser root: `16px`.
 
-The browser root remains `16px`.
+Do not change the root size to make the product compact.
 
-All typography tokens use `rem`.
-
-Do not alter the root font size to make the interface compact. Compactness comes from role-based font sizes, spacing, and component sizing.
-
-## 6.3 Primitive type scale
-
-The scale is role-based, not a geometric modular scale.
-
-| Token | rem | px at 16px root |
+| Token | rem | px |
 |---|---:|---:|
 | `--font-size-2xs` | `0.75rem` | 12 |
 | `--font-size-xs` | `0.8125rem` | 13 |
@@ -294,14 +301,14 @@ The scale is role-based, not a geometric modular scale.
 | `--font-size-4xl` | `2rem` | 32 |
 | `--font-size-display` | `2.25rem` | 36 |
 
-`--font-size-display` is reserved for onboarding, empty-state, or exceptional product moments. Routine Control pages should not require it.
+This is role-based instead of a geometric modular scale.
 
-## 6.4 Semantic type roles
+## 5.3 Semantic roles
 
 | Role | Size | Weight | Line height | Tracking |
 |---|---:|---:|---:|---:|
 | Page title | 28px | 500 | 1.2 | `-0.02em` |
-| Major onboarding title | 32–36px | 500 | 1.15 | `-0.025em` |
+| Exceptional/onboarding title | 32–36px | 500 | 1.15 | `-0.025em` |
 | Section title | 18px | 600 | 1.3 | `-0.01em` |
 | Subsection title | 16px | 600 | 1.35 | `-0.005em` |
 | Panel title | 14px | 600 | 1.4 | normal |
@@ -311,302 +318,268 @@ The scale is role-based, not a geometric modular scale.
 | Metadata | 12px | 400/500 | 1.4 | normal |
 | Button | 14px | 500 | 1 | normal |
 | Nav item | 14px | 500 | 1.35 | normal |
-| Nav group label | 12px | 500 | 1.3 | `0.01em` |
+| Nav group | 12px | 500 | 1.3 | `0.01em` |
 | Table header | 12px | 600 | 1.35 | `0.01em` |
-| Code / identifier | 13px | 400 | 1.45 | normal |
+| Code/identifier | 13px | 400 | 1.45 | normal |
 
-Numbers in analytics, tables, counts, timestamps, and metrics should use `font-variant-numeric: tabular-nums`.
+Use tabular numerals for analytics, counts, timestamps, and tables.
 
-## 6.5 Newsreader usage
+## 5.4 Newsreader rule
 
-Allowed:
+Allowed only for:
 
-- one or two meaningful words in onboarding headings
-- selected empty-state headings
+- one or two words in onboarding headings
+- selected meaningful empty states
 - occasional completion/success copy
 - rare brand moments
 
-Not allowed:
+Do not use Newsreader for routine feature titles, settings, navigation, form labels, warnings, errors, or dense operational content.
 
-- routine setting labels
-- table headings
-- nav items
-- feature page titles
-- form labels
-- warnings/errors
-- dense operational content
+## 5.5 Text rules
 
-## 6.6 Text rules
-
-- Use sentence case for navigation, buttons, headings, labels, and alerts unless a proper name requires otherwise.
-- Prefer concise verbs for actions: `Save changes`, `Post announcement`, `Add ticket type`.
-- Avoid cute or vague action labels.
-- Use `text-wrap: balance` for larger headings and `text-wrap: pretty` for explanatory body copy where supported.
-- Avoid all-caps except short data abbreviations or established compact kickers.
-- Error text should explain the correction, not merely say `Invalid`.
+- Sentence case by default.
+- Action labels use direct verbs.
+- `text-wrap: balance` for larger headings where supported.
+- `text-wrap: pretty` for explanatory prose where supported.
+- Avoid all caps except short abbreviations or deliberate compact kickers.
+- Error text tells the user how to recover.
 
 ---
 
-# 7. Spacing
-
-Use a compact 2px/4px-derived scale, with the course site's even spacing philosophy preserved.
+# 6. Spacing
 
 | Token | Value |
 |---|---:|
-| `--space-0` | `0` |
-| `--space-0-5` | `0.125rem` / 2px |
-| `--space-1` | `0.25rem` / 4px |
-| `--space-1-5` | `0.375rem` / 6px |
-| `--space-2` | `0.5rem` / 8px |
-| `--space-2-5` | `0.625rem` / 10px |
-| `--space-3` | `0.75rem` / 12px |
-| `--space-3-5` | `0.875rem` / 14px |
-| `--space-4` | `1rem` / 16px |
-| `--space-4-5` | `1.125rem` / 18px |
-| `--space-5` | `1.25rem` / 20px |
-| `--space-6` | `1.5rem` / 24px |
-| `--space-7` | `1.75rem` / 28px |
-| `--space-8` | `2rem` / 32px |
-| `--space-10` | `2.5rem` / 40px |
-| `--space-12` | `3rem` / 48px |
-| `--space-14` | `3.5rem` / 56px |
-| `--space-16` | `4rem` / 64px |
+| `--space-0` | 0 |
+| `--space-0-5` | 2px |
+| `--space-1` | 4px |
+| `--space-1-5` | 6px |
+| `--space-2` | 8px |
+| `--space-2-5` | 10px |
+| `--space-3` | 12px |
+| `--space-3-5` | 14px |
+| `--space-4` | 16px |
+| `--space-4-5` | 18px |
+| `--space-5` | 20px |
+| `--space-6` | 24px |
+| `--space-7` | 28px |
+| `--space-8` | 32px |
+| `--space-10` | 40px |
+| `--space-12` | 48px |
+| `--space-14` | 56px |
+| `--space-16` | 64px |
 
-Guidelines:
+Rules:
 
-- Use `gap` for component and layout spacing instead of ad hoc child margins.
-- Default field stack gap: 8px.
+- Use `gap` instead of ad hoc child margins.
 - Label-to-control gap: 6px.
+- Field stack gap: 8px.
 - Compact row horizontal padding: 10–12px.
-- Main section separation: 24–32px.
-- Right panel section separation: 16–20px.
-- Avoid the course site's 96px marketing section spacing in Control.
+- Main section gap: 24–32px.
+- Right-panel section gap: 16–20px.
+- Do not transplant 96px marketing-section spacing into Control.
 
 ---
 
-# 8. Sizing and density
+# 7. Density and sizing
 
-## 8.1 Desktop control heights
+| Component | Desktop | Touch/coarse pointer |
+|---|---:|---:|
+| Icon-button target | 32px | 44px |
+| Nav row | 36px | 44px |
+| Input/select | 36px | 44px |
+| Compact button | 36px | 44px |
+| Standard button | 38px | 44px |
+| Standard data row | 40px | 44px minimum when interactive |
+| Prominent action | 40–44px | 44–50px |
 
-| Component | Height |
-|---|---:|
-| Compact icon button | 32px visual, minimum 32px target |
-| Compact nav row | 36px |
-| Compact text/select/input | 36px |
-| Standard button | 38px |
-| Standard row | 40px |
-| Primary prominent action | 40–44px |
-| Touch/mobile control | minimum 44px target |
-
-Desktop visual density may be compact, but coarse-pointer layouts should expand interactive targets to at least 44px where practical.
-
-## 8.2 Hit areas
-
-A visual icon may be 16–18px while its interactive target is 32–36px on desktop and 44px on touch.
-
-Do not shrink hit areas simply to achieve compact appearance.
+Visual icons are usually 16–18px inside larger hit areas.
 
 ---
 
-# 9. Radius system
+# 8. Radius
 
 | Token | Value | Use |
 |---|---:|---|
-| `--radius-xs` | 6px | tooltip, code chip |
-| `--radius-sm` | 8px | compact nav, icon button |
-| `--radius-md` | 10px | compact panels, selects |
-| `--radius-lg` | 12px | inputs, notes, inner panels |
+| `--radius-xs` | 6px | tooltip/code chip |
+| `--radius-sm` | 8px | compact nav/icon button |
+| `--radius-md` | 10px | selects/compact panels |
+| `--radius-lg` | 12px | inputs/notes/inner panels |
 | `--radius-xl` | 16px | medium structural panels |
-| `--radius-card` | 18px | substantial cards where needed |
-| `--radius-shell` | 24px | floating side shells |
-| `--radius-pill` | 999px | tags, chips, primary pill actions where appropriate |
+| `--radius-card` | 18px | substantial cards |
+| `--radius-shell` | 24px | left/right floating shells |
+| `--radius-pill` | 999px | tags/chips/selected branded actions |
 
-Do not make every control pill-shaped.
-
-Pills are appropriate for:
-
-- tags
-- status chips
-- segmented controls
-- primary/secondary actions where the course brand treatment fits
-
-Dense navigation, fields, rows, and context panels should use 8–12px radii.
+Do not make every control pill-shaped. Dense navigation, fields, rows, and context panels use 8–12px radii.
 
 ---
 
-# 10. Border system
+# 9. Strokes and borders
 
 ```css
---border-width-hairline: 1px;
---border-subtle: 1px solid var(--border-subtle);
---border-control: 1px solid var(--border-control);
+--stroke-width-hairline: 1px;
 ```
 
-Use borders to clarify structure, not to decorate every surface.
+Use semantic stroke colors:
 
-Appropriate uses:
+```css
+border: 1px solid var(--stroke-subtle);
+border: 1px solid var(--stroke-control);
+```
 
-- shell boundaries
-- fields
-- tables and row separators
-- popovers/dialogs
-- meaningful context panels
-- status callouts
-- structural group boundaries
+Use borders for shell boundaries, inputs, tables/row separators, floating surfaces, callouts, and structural groups that would otherwise be ambiguous.
 
-Avoid nested bordered boxes when spacing and alignment already establish hierarchy.
+Do not box every settings section.
 
 ---
 
-# 11. Elevation and shadows
+# 10. Elevation
+
+## 10.1 Flat center
 
 The center workspace is primarily flat.
 
-## 11.1 Card shadow
+## 10.2 Card
 
 ```css
---shadow-card: 0 1px 2px rgba(17, 17, 19, 0.04);
+--shadow-card: 0 1px 2px rgba(17,17,19,.04);
 ```
 
-Use only for a true raised card.
+## 10.3 Floating surface
 
-## 11.2 Floating surface shadow
+Light:
 
 ```css
 --shadow-floating:
-  0 0 0 1px var(--shadow-ring),
-  0 4px 10px rgba(17, 17, 19, 0.06),
-  0 24px 48px rgba(17, 17, 19, 0.16);
+  0 0 0 1px rgba(17,17,19,.04),
+  0 4px 10px rgba(17,17,19,.06),
+  0 24px 48px rgba(17,17,19,.16);
 ```
 
-Use for menus, popovers, drawers, and dialogs.
+Dark:
 
-## 11.3 Sidebar shell shadow
+```css
+--shadow-floating:
+  0 0 0 1px rgba(255,255,255,.04),
+  0 4px 10px rgba(0,0,0,.24),
+  0 24px 48px rgba(0,0,0,.44);
+```
+
+## 10.4 Side shell
 
 Light:
 
 ```css
 --shadow-shell:
-  inset 0 1px 0 #fff,
-  0 1px 2px rgba(17, 17, 19, 0.05),
-  0 18px 40px rgba(17, 17, 19, 0.09);
+  inset 0 1px 0 rgba(255,255,255,.95),
+  0 1px 2px rgba(17,17,19,.05),
+  0 18px 40px rgba(17,17,19,.09);
 ```
 
-Dark should use lower-opacity black and a subtle inner highlight appropriate to the dark surface.
+Dark:
 
-Do not place large card shadows throughout the center workspace.
+```css
+--shadow-shell:
+  inset 0 1px 0 rgba(255,255,255,.04),
+  0 1px 2px rgba(0,0,0,.24),
+  0 18px 40px rgba(0,0,0,.34);
+```
+
+Large card shadows are not used throughout the center workspace.
 
 ---
 
-# 12. Motion
-
-## 12.1 Durations
+# 11. Motion
 
 | Token | Value | Use |
 |---|---:|---|
-| `--duration-instant` | 80ms | press feedback |
-| `--duration-fast` | 120ms | hover/color transitions |
-| `--duration-standard` | 160ms | selection, compact disclosure |
-| `--duration-medium` | 200ms | drawer/panel movement |
-| `--duration-slow` | 300ms | dialog/first-load entrance |
-
-## 12.2 Easing
+| `--duration-instant` | 80ms | press |
+| `--duration-fast` | 120ms | hover/color |
+| `--duration-standard` | 160ms | selection/disclosure |
+| `--duration-medium` | 200ms | drawer/panel |
+| `--duration-slow` | 300ms | dialog/one-time entrance |
 
 ```css
---ease-standard: cubic-bezier(.2, .8, .2, 1);
+--ease-standard: cubic-bezier(.2,.8,.2,1);
 --ease-hover: ease;
 ```
 
-## 12.3 Rules
+Rules:
 
-- Hover transitions: 120–150ms.
-- Press feedback may scale to approximately `.98` only on buttons where it feels natural.
-- Drawers/popovers should feel immediate, not theatrical.
-- Do not animate routine same-context navigation with large entrance effects.
-- One-time onboarding/empty-state entrances may use the course site's restrained pop-in treatment.
+- Hover: 120–150ms.
+- Press scale may reach `.98` on buttons when appropriate.
+- Drawers/popovers move quickly and quietly.
+- No large repeated page-transition animations.
+- One-time onboarding/empty-state entrances may use the course site's restrained pop-in.
 - No continuous decorative motion in Control.
-- `prefers-reduced-motion: reduce` disables nonessential animation and minimizes essential transitions.
+- Reduced-motion preference disables nonessential animation and minimizes required transitions.
 
 ---
 
-# 13. Focus and interaction states
+# 12. Focus and interaction states
 
-## 13.1 Focus
-
-Use an explicit focus ring for keyboard focus:
+Default focus-visible treatment:
 
 ```css
 outline: 2px solid var(--focus-ring);
 outline-offset: 2px;
 ```
 
-Large regions may use a 3px ring when needed for visibility.
+Large focusable regions may use 3px.
 
-Do not suppress focus without providing an equally visible replacement.
-
-## 13.2 Standard state sequence
-
-Every interactive component must define:
+Every interactive component defines:
 
 - default
 - hover
 - active/pressed
 - focus-visible
-- selected/checked/current when applicable
+- selected/checked/current if relevant
 - disabled
-- loading when applicable
-- error when applicable
+- loading if relevant
+- error if relevant
 
-Selected and focused are distinct states and may coexist.
+Selected and focused are distinct and can coexist.
 
-## 13.3 Disabled
-
-Disabled controls should retain recognizable structure but reduce prominence. Do not rely solely on opacity if it makes labels unreadable.
-
-Explain why a high-value action is unavailable when the reason is not obvious.
+Disabled controls keep recognizable structure. Do not use opacity so aggressively that labels become unreadable. Explain non-obvious disabled high-value actions.
 
 ---
 
-# 14. Layout system
+# 13. Three-region layout
 
-## 14.1 Three-region desktop shell
-
-Wide desktop layout:
+## 13.1 Wide desktop
 
 ```css
 --control-left-width: 15rem;   /* 240px */
 --control-right-width: 19rem;  /* 304px */
---control-shell-gap: 0.75rem;  /* 12px */
---control-edge-gap: 0.75rem;   /* 12px */
+--control-shell-gap: .75rem;   /* 12px */
+--control-edge-gap: .75rem;    /* 12px */
 ```
-
-Grid:
 
 ```css
 grid-template-columns:
   var(--control-left-width)
-  minmax(0, 1fr)
+  minmax(0,1fr)
   var(--control-right-width);
 ```
 
-The left and right regions are framed/floating shells. The center is not placed inside another floating card.
+Left and right are floating/framed shells. Center remains flat.
 
-## 14.2 Left shell
+## 13.2 Left shell
 
 - width: 240px
 - viewport inset: 12px
-- radius: 24px
-- shell padding: approximately 5px outer frame plus 10–12px internal panel padding
-- sticky/fixed within viewport depending on implementation
-- independent vertical scroll when content exceeds viewport
+- outer radius: 24px
+- outer frame padding: 5px
+- inner panel horizontal padding: 10px
+- inner panel top/bottom padding: 12px
+- independent scroll when required
+- sticky or fixed within viewport, preserving the same visual result
 
-## 14.3 Center workspace
+## 13.3 Center workspace
 
-The center uses available width.
+Center uses available width.
 
-Do not apply one arbitrary global max-width to all feature content.
-
-Use content modes:
+Content modes:
 
 | Mode | Max width | Use |
 |---|---:|---|
@@ -616,60 +589,39 @@ Use content modes:
 | Wide | 72rem / 1152px | tables/analytics |
 | Fluid | none | data-heavy layouts |
 
-Feature pages choose the mode that fits their task.
+Desktop center horizontal padding: 24px by default; may reduce to 20px on constrained desktop and increase to 32px on very wide workspaces.
 
-Main workspace horizontal padding: 20–32px on desktop depending on width.
-
-## 14.4 Right contextual shell
+## 13.4 Right shell
 
 - width: 304px
+- viewport inset: 12px
 - radius: 24px
-- compact vertical layout
-- independent scroll if needed
-- sticky within viewport on wide screens
-- sections separated with whitespace and hairlines, not nested cards by default
+- outer frame padding: 5px
+- inner padding: 14px
+- independent scroll when needed
+- sticky on wide desktop
+- sections use whitespace and hairlines instead of nested cards by default
 
-Right-panel content can include:
+## 13.5 Breakpoints
 
-- resource bindings
-- feature status/health
-- dependencies
-- preview
-- recent activity
-- permission warnings
-- quick actions
-- contextual help
-
-Do not fill the panel artificially when a feature has no useful secondary context.
-
-## 14.5 Responsive breakpoints
-
-| Breakpoint | Behavior |
+| Width | Behavior |
 |---|---|
-| `>= 1200px` | full three-region shell |
-| `900–1199px` | left shell + center; right panel becomes drawer/popover |
-| `< 900px` | left nav becomes drawer; compact top bar appears; right panel is temporary surface |
-| `< 640px` | single-column feature layouts; tables may adapt/scroll; touch targets expand |
+| `>=1200px` | full three-region shell |
+| `900–1199px` | left + center; right becomes drawer/popover |
+| `<900px` | left becomes drawer; compact top bar; right temporary surface |
+| `<640px` | single-column feature layout; touch targets expand |
 
-The 900px breakpoint intentionally aligns with the course site's primary responsive breakpoint.
+The 900px breakpoint intentionally matches the course site's main responsive breakpoint.
 
-## 14.6 Mobile priority
-
-Mobile must preserve full configuration capability where practical. Do not hide essential settings just because the right panel becomes a drawer.
+Essential feature configuration remains available when side regions collapse.
 
 ---
 
-# 15. Left navigation
+# 14. Left navigation
 
-## 15.1 Purpose
+## 14.1 Structure
 
-The navigation is feature-first and compact.
-
-The outer shell is soft and branded. The inner nav is efficient and utilitarian.
-
-## 15.2 Group structure
-
-Initial group direction:
+Feature-first groups:
 
 - Engagement
 - Publishing
@@ -677,851 +629,644 @@ Initial group direction:
 - Insights
 - System
 
-Group labels are organization only. They are not configuration destinations unless a future explicit overview page is designed for a real user task.
+Group labels organize navigation only.
 
-## 15.3 Item geometry
+## 14.2 Geometry
 
 ```css
---nav-row-height: 2.25rem;       /* 36px */
---nav-padding-y: 0.375rem;       /* 6px */
---nav-padding-x: 0.625rem;       /* 10px */
---nav-gap: 0.125rem;             /* 2px */
---nav-radius: 0.5rem;            /* 8px */
---nav-icon-size: 1.0625rem;      /* 17px */
+--nav-row-height: 2.25rem;     /* 36px */
+--nav-padding-y: .375rem;      /* 6px */
+--nav-padding-x: .625rem;      /* 10px */
+--nav-gap: .125rem;            /* 2px */
+--nav-radius: .5rem;           /* 8px */
+--nav-icon-size: 1.0625rem;    /* 17px */
 ```
 
-Allow row height up to 38px when labels or platform rendering require it.
+Rows may reach 38px only when label rendering requires it.
 
-## 15.4 States
+Group label: 12px/500, tertiary or faint text where contrast permits.
 
-Default: transparent.
+Group spacing: 14–16px before a new group and 4px between group label and first item.
 
-Hover: `--surface-hover`.
+## 14.3 States
 
-Selected/current:
+- Default: transparent.
+- Hover: `--surface-hover`.
+- Current: neutral selected fill + stronger text + optional subtle inset stroke.
+- Focus: independent focus ring.
+- No sky-blue active pill.
+- No oversized selected padding.
 
-- neutral selected fill
-- stronger text
-- optional subtle inset hairline
-- no sky-blue pill
-- no oversized padding
-
-Example light selected treatment:
+Preferred light current treatment:
 
 ```css
-background: linear-gradient(#f7f7f5, #efefec);
+background: linear-gradient(#f7f7f5,#efefec);
 box-shadow:
   inset 0 0 0 1px #e4e4e0,
   inset 0 1px 0 #fff,
   0 1px 2px rgba(17,17,19,.06);
 ```
 
-Use this sparingly. A flat `--surface-selected` fill is also valid if the gradient feels too ornamental in implementation.
+A flat `--surface-selected` fill is valid if visual QA finds the gradient too ornamental.
 
-## 15.5 Nested items
+## 14.4 Nested items
 
-Nested items use indentation and optionally one subtle vertical guide.
+Use indentation and, where helpful, one subtle vertical guide. Do not put child items in another rounded container.
 
-Do not place children inside another rounded card.
-
-## 15.6 Collapsible groups
-
-Groups may collapse to manage length.
+## 14.5 Collapsible groups
 
 - remember state when practical
-- group expansion does not change the selected feature
-- collapsing a group containing the current feature must not make orientation ambiguous; the group label should still communicate current membership
+- expanding a group does not change route
+- collapsing the current feature's group must preserve enough group-level state to maintain orientation
 
-## 15.7 Search
+## 14.6 Search
 
-If quick search is retained or added:
-
-- compact 36–38px field
-- searches features/settings/actions, not arbitrary content only
-- keyboard shortcut may be displayed as secondary metadata
-- results should identify feature context
+If present, quick search is 36–38px tall and searches user-facing features, settings, and actions. Results show feature context. Internal keys are secondary metadata, never primary labels.
 
 ---
 
-# 16. Page anatomy
+# 15. Page anatomy
 
-A normal feature page should follow this order:
+Normal feature page order:
 
 1. feature header
 2. operational state and primary action
 3. core configuration/data
-4. advanced or secondary sections
-5. contextual right-panel information
+4. secondary or advanced sections
+5. contextual right-panel support
 
-## 16.1 Feature header
+Routine feature pages do not use decorative hero banners.
 
-Contains:
+## 15.1 Header
 
-- feature title
-- one concise description when useful
-- enabled/disabled/attention state when applicable
-- primary action only when the page has a clear primary action
+Contains feature title, concise description when useful, feature state when applicable, and at most one local primary action.
 
-Do not add decorative hero banners to routine feature pages.
+## 15.2 Sectioning
 
-## 16.2 Sectioning
+Prefer heading + spacing + divider before cards.
 
-Use section headings + spacing + hairline separation before reaching for cards.
+Section gap: 24–32px.
 
-Common section gap: 24–32px.
+## 15.3 Save model
 
-## 16.3 Save model
+When explicit save is used:
 
-When a page uses explicit save:
-
-- dirty state must be visible
-- `Save changes` is the primary action
+- dirty state is visible
+- `Save changes` is primary
 - `Discard` is secondary/tertiary
 - Cmd/Ctrl+S may save when valid and safe
-- navigation away from dirty state requires deliberate protection
-- success may be shown inline without forcing a toast
-- conflicts must explain that server state changed and offer a safe resolution path
+- unsaved navigation is protected
+- success can appear inline
+- conflicts explain that server state changed and provide a safe resolution path
 
 ---
 
-# 17. Buttons
+# 16. Buttons
 
-## 17.1 Variants
+## 16.1 Primary
 
-### Primary
+Single primary action in a local context.
 
-Use for the single primary action in a local context.
+Light: ink background, white text.
 
-Light:
+Dark: light primary-text background, dark page text.
 
-- background: `--text-primary` / ink
-- text: white/paper
+Primary does not default to sky blue.
 
-Dark:
+## 16.2 Secondary
 
-- background: `--text-primary` / light ink
-- text: dark page
+Primary surface + control stroke + primary text.
 
-Primary buttons do not default to sky blue.
+## 16.3 Tertiary
 
-### Secondary
+Transparent, no border, primary or tertiary text according to importance.
 
-- surface background
-- 1px control border
-- primary text
+## 16.4 Destructive
 
-### Tertiary / text
+Use destructive semantics only for destructive actions. A destructive confirmation may use a solid destructive primary action.
 
-- transparent
-- no border
-- primary or tertiary text depending importance
+## 16.5 Geometry
 
-### Destructive
+- compact: 36px
+- standard: 38px
+- prominent: 40–44px desktop
+- touch: at least 44px target
 
-Use semantic destructive styling only when the action is destructive.
+Pill radius is valid for branded primary/secondary actions. Dense toolbar actions use 8–10px radius.
 
-A destructive confirmation dialog may use a solid destructive primary button.
+## 16.6 Loading
 
-## 17.2 Geometry
-
-Compact button: 36px.
-
-Standard button: 38–40px.
-
-Prominent flow action: 44–50px only when the context justifies it.
-
-Pill radius is allowed for primary/secondary branded actions. Dense toolbar buttons may use 8–10px radius instead.
-
-## 17.3 Loading
-
-- preserve button width
-- show spinner + stable action label where space allows
-- set `aria-busy="true"`
-- disable duplicate submission
-- do not replace useful labels with an unlabeled spinner
+Preserve width, show spinner plus useful label where possible, set `aria-busy`, and prevent duplicate submission.
 
 ---
 
-# 18. Form controls
+# 17. Form controls
 
-## 18.1 Inputs
+## 17.1 Inputs/selects
 
 Desktop:
 
 - height: 36px
-- radius: 10–12px
-- font: 14px for compact UI
+- radius: 10px
+- font: 14px
 - horizontal padding: 10–12px
 
-Mobile/touch:
+Touch/mobile:
 
-- minimum visual/interactive height: 44px
-- text inputs use 16px font to prevent iOS zoom
+- minimum target: 44px
+- text inputs: 16px to avoid iOS zoom behavior
 
-## 18.2 Labels
+## 17.2 Labels
 
-Labels are always explicit.
+Always explicit. Placeholder is a hint, not a label.
 
-Placeholder text is a hint/example, not a substitute for a label.
+## 17.3 Validation
 
-Required/optional state should be understandable without relying on color.
+- validate at a useful time
+- error appears beside affected control/group
+- text explains how to recover
+- use `aria-invalid` and associated description
+- do not unexpectedly move focus
 
-## 18.3 Validation
+## 17.4 Selects/comboboxes
 
-- validate at a useful time, not aggressively on every keystroke unless necessary
-- show error beside the affected control/group
-- error text states how to fix the issue
-- use `aria-invalid` and associated descriptions
-- move focus only when it helps recovery and does not surprise the user
+Use native `<select>` when sufficient. Use custom combobox only for search, grouping, resource metadata, or large sets.
 
-## 18.4 Selects and comboboxes
+Discord selectors should filter invalid resource kinds before selection where practical and display enough context to identify the resource.
 
-Use native `<select>` when its behavior is sufficient.
+## 17.5 Checkboxes/radios
 
-Use a custom combobox only when search, grouped resources, metadata, or large option sets require it.
+Use native semantics and label hit area. Do not substitute a switch unless the setting is genuinely binary and immediate.
 
-Discord resource selectors should display resource type/context and exclude invalid resources before selection where practical.
+## 17.6 Switches
 
-## 18.5 Checkbox and radio
+Visual control may be compact. Container target is at least 36px desktop and 44px touch. Label state in text when ambiguity exists.
 
-Use familiar native semantics and large enough label hit areas.
+## 17.7 Textareas
 
-Do not use a switch when the choice is not an immediate on/off setting.
-
-## 18.6 Switch
-
-Switches are for binary feature or behavior state that takes effect as a setting.
-
-Visual switch may remain compact, but the containing hit area should be at least 36px desktop and 44px touch.
-
-Label the state in text when ambiguity is possible.
-
-## 18.7 Textareas
-
-Use for message bodies, descriptions, explanations, and long text.
-
-Show character limits when they matter before submission.
-
-Resize behavior should not break the page layout.
+Use for long text. Show meaningful limits before submission. Resizing must not break the shell.
 
 ---
 
-# 19. Segmented controls
+# 18. Segmented controls
 
-Use for a small set of mutually exclusive peer modes, such as Light / Dark / System or chart ranges when a segmented treatment is more appropriate than tabs.
+Use for a small set of mutually exclusive peer modes, such as Light / Dark / System or compact range choices.
 
-Track:
-
-- soft neutral background
+- soft neutral track
 - 3px internal padding
-- selected option on raised surface
+- selected option on raised primary surface
 - compact height
 
-Do not use segmented controls for unrelated navigation destinations.
+Do not use segmented controls for unrelated destinations.
 
 ---
 
-# 20. Tables and lists
+# 19. Tables and lists
 
-## 20.1 Default preference
+Use lists/tables for repeated operational data instead of card grids.
 
-Use lists/tables for repeated operational data instead of building a grid of cards.
+Geometry:
 
-## 20.2 Table geometry
-
-- header height: 32–36px
+- header: 32–36px
 - standard row: 40px
 - dense row: 36px when content permits
-- horizontal cell padding: 10–12px
+- cell horizontal padding: 10–12px
 - subtle row separators
 - no zebra striping by default
-- hover only for interactive rows
+- hover only when row is interactive
 
-## 20.3 Selection
+Persistent selected rows stay selected when they represent current navigation/context. Transient actions do not leave selection behind.
 
-Persistent selected rows should remain visibly selected when they represent navigation/current context.
+Sort direction is conveyed by icon plus accessible text. Empty filtered state distinguishes `no data` from `no results`.
 
-Transient action rows should not remain selected after the action unless selection itself is state.
-
-## 20.4 Sorting/filtering
-
-- indicate sort direction in text/accessible label and icon
-- preserve current filter state across relevant navigation when useful
-- empty filtered states should distinguish `no data exists` from `no results match`
-
-## 20.5 Overflow
-
-Prefer responsive column prioritization before horizontal scroll, but do not hide critical data.
-
-On small screens, allow a controlled horizontal scroll or convert records to compact stacked rows when that preserves comprehension.
+On small screens, prioritize columns, then use controlled horizontal scroll or compact stacked rows without hiding critical data.
 
 ---
 
-# 21. Cards and panels
-
-## 21.1 Structural rule
+# 20. Cards and panels
 
 A card must represent a meaningful object, summary, or independent action area.
 
-Do not put every settings section inside a card.
-
-## 21.2 Card types
-
 ### Flat section
 
-No outer card. Uses section heading, spacing, and divider.
-
-Default for most settings.
+No card. Heading + spacing + optional divider. Default for settings.
 
 ### Structural panel
 
-Border + 12–16px radius. No or minimal shadow.
-
-Use for grouped content that needs a boundary.
+1px subtle stroke, 12–16px radius, no or minimal shadow.
 
 ### Raised card
 
-18px radius + minimal card shadow.
-
-Use rarely for genuinely independent objects or dashboards.
+18px radius + `--shadow-card`. Rare.
 
 ### Floating shell
 
-24px radius + shell elevation.
+24px radius + `--shadow-shell`. Reserved for left/right side regions and deliberate floating surfaces.
 
-Reserved for left/right side regions and temporary floating surfaces.
+No card-inside-card hierarchy unless the inner object is truly independent.
 
 ---
 
-# 22. Contextual right panel
+# 21. Contextual right panel
 
-## 22.1 Purpose
+The right panel supports the center task and never becomes an unrelated dashboard.
 
-The right panel supports the center task. It never becomes a second unrelated dashboard.
+Approved patterns:
 
-## 22.2 Approved content patterns
+- resource bindings
+- health/readiness
+- dependencies
+- Discord/output preview
+- permission warnings
+- recent activity
+- quick actions
+- concise contextual help
 
-### Resource bindings
+Section treatment:
 
-Example: Tickets shows panel channel, category, and logs channel.
-
-The controls edit canonical mapping state directly.
-
-### Health
-
-Show configured/incomplete/healthy/degraded with concise supporting detail.
-
-### Dependencies
-
-Show missing permissions, missing resource, unavailable bot capability, or required prerequisite.
-
-### Preview
-
-Use when the feature produces visual Discord output, such as announcements.
-
-### Activity
-
-Show the few most relevant recent events, with a route to full Activity if needed.
-
-### Contextual help
-
-Short task-specific guidance only. Avoid generic documentation walls.
-
-## 22.3 Section treatment
-
-- panel padding: 14–16px
-- section heading: 13–14px / 600
+- inner padding: 14px
+- section title: 13–14px/600
 - section gap: 16–20px
 - hairline separator where needed
-- no nested card per section by default
+- no per-section nested card by default
+
+Do not fill the panel artificially when a feature has no useful secondary context.
 
 ---
 
-# 23. Status, feedback, and callouts
+# 22. Status and feedback
 
-## 23.1 Status chip
+## 22.1 Status chips
 
-Use for concise state such as:
+Allowed for concise states such as Enabled, Disabled, Healthy, Needs setup, Degraded, Draft.
 
-- Enabled
-- Disabled
-- Healthy
-- Needs setup
-- Degraded
-- Draft
+Compact and semantic, never decorative.
 
-Chips are compact and semantic. Do not use them as decorative labels.
+## 22.2 Inline success
 
-## 23.2 Inline success
+Use near the changed area when acknowledgement matters.
 
-Use a concise message near the changed area when persistence succeeds and the acknowledgement matters.
+## 22.3 Warning
 
-## 23.3 Warning callout
+Use warning tokens for actionable caution. State consequence and next action.
 
-Use amber semantic surface for actionable caution.
+## 22.4 Error
 
-Warnings explain consequence and next action.
+Operation-level errors use error callout. Field errors remain beside fields.
 
-## 23.4 Error callout
+## 22.5 Toast
 
-Use red semantic treatment for operation-level failure that cannot be tied to one field.
-
-Field errors stay beside fields.
-
-## 23.5 Toasts
-
-Toasts may acknowledge lightweight transient success.
-
-Toasts must not be the only presentation of:
-
-- validation error
-- destructive failure
-- permission problem
-- unresolved conflict
-- required next step
+Toast may acknowledge lightweight transient success. It is never the only presentation of validation failure, destructive failure, permission problem, conflict, or required next step.
 
 ---
 
-# 24. Dialogs, popovers, and drawers
+# 23. Dialogs, popovers, drawers, menus, tooltips
 
-## 24.1 Dialog
+## 23.1 Dialog
 
 Prefer native `<dialog>` where practical.
 
-Use for:
+Use for destructive confirmation, focused short workflows, and decisions requiring an explicit response.
 
-- destructive confirmation
-- focused short workflow
-- critical decision requiring explicit response
+Typical width: 360–480px.
 
-Dialog width should fit content, commonly 360–480px.
+Do not modalize information that works inline.
 
-Do not use a modal for information that can live inline.
+## 23.2 Popover
 
-## 24.2 Popover
+Use for lightweight contextual menus, selectors, and option surfaces. Radius 8–12px with floating shadow.
 
-Use for lightweight contextual menus, selectors, or small option surfaces.
+## 23.3 Drawer
 
-Popover uses floating shadow and 8–12px radius.
+Used for responsive navigation and right-panel content.
 
-## 24.3 Drawer
+A modal drawer:
 
-Use for responsive navigation and contextual right-panel content when there is insufficient horizontal space.
+- traps focus
+- closes on Escape
+- restores focus to trigger
+- has an accessible name
+- does not silently discard unsaved state
 
-Drawer must:
-
-- trap focus when modal
-- close on Escape
-- restore focus to trigger
-- have an accessible name
-- avoid losing unsaved state when closed accidentally
-
----
-
-# 25. Menus
-
-Menus should be compact and action-oriented.
+## 23.4 Menu
 
 - row height: 34–36px
+- outer padding: 6px
 - radius: 8–10px
-- padding: 6px outer
-- destructive actions separated or clearly marked
-- keyboard navigation supported
-- avoid placing common primary actions only inside overflow menus
+- keyboard operable
+- destructive actions visually separated or clearly marked
+- common primary actions are not hidden only in overflow
 
----
-
-# 26. Tooltips
-
-Tooltips explain unfamiliar icons or terse technical terms.
+## 23.5 Tooltip
 
 - radius: 6px
-- concise text
-- not required to understand primary workflow
-- available by keyboard focus as well as hover
-- never contain essential interactive content
-
-For more substantial help, use popover/help text instead.
+- concise
+- available by keyboard focus and hover
+- no essential interactive content
+- never required to understand primary workflow
 
 ---
 
-# 27. Search and command surfaces
+# 24. Search and command surfaces
 
-Search should help users locate features, settings, and actions using user-facing terminology.
+Search uses user-facing terms and can locate features, settings, and actions.
 
-Results should include enough hierarchy to disambiguate duplicate terms.
+Results show hierarchy, e.g. `Logs channel → Tickets › Discord resources`.
 
-Example:
-
-`Logs channel` → `Tickets › Discord resources`
-
-Do not expose internal key names such as `ticket_logs` as the primary label unless shown as developer metadata.
+Internal keys such as `ticket_logs` are secondary developer metadata only.
 
 ---
 
-# 28. Empty states
+# 25. Empty, loading, error, and destructive states
 
-Empty states distinguish:
+## 25.1 Empty
 
-- no data has ever existed
-- feature is disabled
-- setup is incomplete
-- current filters return no results
+Distinguish:
+
+- no data ever existed
+- feature disabled
+- setup incomplete
+- filter has no matches
 - data failed to load
 
-Mascot use is allowed only for meaningful empty/onboarding/success states, not every empty table.
+Include a clear next action when one exists.
 
-Empty states include a clear next action when one exists.
+Mascot is reserved for meaningful onboarding/empty/success states, not every empty table.
 
----
+## 25.2 Loading
 
-# 29. Loading and skeletons
+Use skeletons when structure is predictable and spinners for action-level indeterminate waits.
 
-Prefer skeletons when the structure is predictable.
+Refresh only the changing region when possible. Preserve valid previous data during background refresh when safe.
 
-Use compact shimmer/neutral skeleton bars without excessive animation.
+## 25.3 Error copy
 
-Use spinners for indeterminate action-level waits.
-
-Avoid replacing an entire stable page with a loading screen when only one region is refreshing.
-
-Preserve previous valid data during background refresh when safe, and indicate that refresh is in progress.
-
----
-
-# 30. Error states
-
-Errors should answer:
+Answer:
 
 1. what failed
-2. what remains safe/unchanged
+2. what remained safe/unchanged
 3. what the user can do next
 
-Examples:
+Example: `Couldn’t save ticket types. Your unsaved changes are still here. Try again.`
 
-- `Couldn’t save ticket types. Your unsaved changes are still here. Try again.`
-- `Rob-bot can’t post in #announcements. Give the bot Send Messages permission or choose another channel.`
+## 25.4 Destructive actions
 
-Avoid internal error codes in the primary message. A reference identifier may appear as secondary detail for support.
-
----
-
-# 31. Destructive actions
-
-Destructive actions include deletion, disabling behavior with meaningful consequences, compromised-account enforcement configuration, and irreversible publication where applicable.
-
-Requirements:
-
-- label consequence clearly
-- distinguish destructive action visually
-- confirm when consequence is substantial or difficult to reverse
+- name the object/consequence
+- distinguish destructive intent
+- confirm substantial or difficult-to-reverse effects
 - avoid generic `Are you sure?`
-- name the affected object in the confirmation
-- preserve auditability where the product already supports it
+- preserve auditability when the product supports it
 
 ---
 
-# 32. Icons
+# 26. Icons and mascot
 
 Use one coherent line-icon family or internally consistent SVG set.
 
-Guidelines:
+- routine icons: 16–18px
+- consistent stroke treatment
+- icons support labels instead of replacing them unless meaning is universally familiar and an accessible name exists
+- official brand marks may retain brand color
+- no multicolor decorative icon system
 
-- routine nav/action icons: 16–18px
-- stroke should remain visually consistent across the set
-- icons support labels instead of replacing them unless the meaning is universally familiar and an accessible name is present
-- brand logos keep official brand color where appropriate
-- do not introduce multicolor decorative icons throughout the admin interface
-
-The pixel mascot is not the general icon system.
-
----
-
-# 33. Mascot and illustration
-
-The pixel-cloud mascot is deliberately minimal.
+Pixel cloud mascot usage is minimal:
 
 Allowed:
 
 - brand identity
-- onboarding
-- first-run setup
+- onboarding/first run
 - meaningful empty state
-- occasional success/completion
+- occasional completion/success
 
-Not allowed by default:
+Not default:
 
 - routine feature headers
 - nav decoration
-- every right-panel section
+- right-panel decoration
 - tables
-- repeated setting cards
+- repeated settings
 
-Pixel art must preserve crisp edges.
-
-The course site's moving sky background is not used behind Control.
+Pixel art preserves crisp edges. The moving-sky background is not used behind Control.
 
 ---
 
-# 34. Charts and analytics
+# 27. Charts and analytics
 
 Charts prioritize data over framing.
 
 Requirements:
 
-- strongest visual emphasis on the data
-- axes/descriptions secondary
+- data is visually strongest
+- axes/descriptions are secondary
 - consistent series colors
-- semantic labels independent of color
-- accessible summary/description
-- tabular numerals for metric values
-- concise date/time formats without ambiguity
-- compact chart padding to maximize useful plot area
+- labels/meaning do not depend on color
+- accessible summary and value context
+- tabular numerals
+- unambiguous date/time formatting
+- compact plot padding
 
-Do not place each metric inside a large decorative card when a compact metric row or grid is clearer.
-
----
-
-# 35. Discord preview pattern
-
-Features that publish Discord content may use a preview in the right panel or center when preview is central to the task.
-
-Preview must be visually identifiable as a preview and should not imitate Discord so closely that users confuse it for live content.
-
-It should reflect:
-
-- message text
-- mentions
-- embed title/body/footer
-- color accent
-- image when supplied
-
-Preview errors or unsupported states should appear beside the relevant editor field, not only inside preview.
+Prefer compact metric rows/grids over oversized metric cards.
 
 ---
 
-# 36. Resource binding pattern
+# 28. Discord preview
+
+Publishing features may show a Discord preview in the right panel or center when preview is central to the task.
+
+Preview is clearly labeled as preview and must not be so literal that it can be mistaken for live content.
+
+Reflect message text, mentions, embed title/body/footer, color accent, and supplied image where supported.
+
+Validation appears beside editor fields, not only in preview.
+
+---
+
+# 29. Resource bindings
 
 Resource bindings include channels, roles, and categories.
 
-Feature-local binding is the preferred editing surface.
+Feature-local editing is preferred. Each binding shows:
 
-Each binding should show:
-
-- human-facing label
+- user-facing label
 - current Discord resource
 - resource type
-- missing/deleted/permission state when relevant
+- missing/deleted/permission state if relevant
 - edit control
 
-The global Resources view shows the same canonical values across features.
+The global Resources view displays the exact same canonical state.
 
-No duplicated mapping state is permitted.
+No duplicate mapping state is permitted.
 
 ---
 
-# 37. Permission and dependency pattern
+# 30. Permissions and dependencies
 
-Missing permissions or dependencies appear at the affected feature.
+Show issues at the affected feature.
 
-Use three levels:
+Three levels:
 
-1. **Informational**: feature works, but optional capability is absent.
-2. **Attention**: feature is partially degraded.
+1. **Informational**: feature works, optional capability absent.
+2. **Attention**: partial degradation.
 3. **Blocking**: action/configuration cannot function.
 
-State should include the specific resource or permission and a direct recovery action where possible.
+State names the missing resource or permission and gives a direct recovery action where possible.
 
 ---
 
-# 38. Activity pattern
+# 31. Activity
 
 Activity is chronological and concise.
 
-Each event may include:
+Each event may include action, actor, timestamp, status, and failure reason/reference.
 
-- action summary
-- actor
-- timestamp
-- state: queued / in progress / completed / failed / rejected
-- failure reason/reference when applicable
+Statuses: queued, in progress, completed, failed, rejected.
 
-Use relative time in compact lists with full absolute timestamp available on hover/focus/detail.
+Compact lists may use relative time with full absolute timestamp available on focus/hover/detail.
 
 ---
 
-# 39. Theme behavior
+# 32. Theme behavior
 
-Theme options:
-
-- Light
-- Dark
-- System
+Modes: Light, Dark, System.
 
 Default: System.
 
-Light is the canonical branded expression.
+Light is the canonical branded expression. Dark is a faithful token translation, not a different aesthetic.
 
-System follows OS preference live when practical.
+System follows OS preference live where practical. Explicit user choice persists locally.
 
-User choice is persisted locally.
-
-Theme changes should not alter information architecture, density, or component dimensions.
+Theme changes do not alter layout, density, or component dimensions.
 
 ---
 
-# 40. Accessibility
+# 33. Accessibility
 
-## 40.1 Standard
+Target: WCAG 2.2 AA.
 
-Target WCAG 2.2 AA.
-
-## 40.2 Keyboard
-
-All interactive behavior must be keyboard-operable.
-
-Expected support includes:
+## 33.1 Keyboard
 
 - logical Tab order
-- Enter/Space activation where appropriate
+- Enter/Space activation as appropriate
 - Escape for dismissible modal surfaces
-- arrow-key behavior for components whose ARIA pattern requires it
-- Cmd/Ctrl+S save where explicitly supported
+- arrow-key behavior where the ARIA pattern requires it
+- Cmd/Ctrl+S only where explicitly supported
 
-## 40.3 Screen readers
+## 33.2 Screen readers
 
-- landmarks for navigation/main/context where appropriate
+- semantic landmarks
 - one clear page heading
 - explicit field labels
 - `aria-current` for current navigation
-- live regions only for meaningful asynchronous updates
-- status labels that do not depend on icon/color
-- charts described with useful value context
+- live regions only for meaningful async updates
+- state labels independent of icon/color
+- charts provide value and contextual descriptions
 
-## 40.4 Target size
+## 33.3 Targets
 
-Compact desktop controls may use 32–40px visible geometry when pointer precision is expected.
+Compact desktop visual geometry may be 32–40px when a precise pointer is expected. Coarse-pointer/touch targets expand to at least 44px where practical. Critical icon-only controls never use tiny hit areas.
 
-On coarse-pointer/touch layouts, targets should expand toward at least 44px.
+## 33.4 Motion
 
-No critical control may have a tiny icon-only hit target.
+Respect reduced motion.
 
-## 40.5 Motion
+## 33.5 Zoom/reflow
 
-Respect reduced-motion preferences.
+Usable at 200% browser zoom without loss of functionality.
 
-## 40.6 Zoom/reflow
+## 33.6 Contrast
 
-The interface must remain usable at 200% browser zoom and should reflow without losing functionality.
-
-## 40.7 Contrast
-
-Do not use the faint token for essential small text.
-
-Focus, form boundaries, state indicators, and text must meet applicable contrast requirements.
+Essential text, focus indicators, form boundaries, and meaningful states meet applicable AA contrast. Faint colors do not carry essential small text.
 
 ---
 
-# 41. Responsive behavior
+# 34. Responsive behavior
 
-## 41.1 Wide desktop
+### Wide desktop
 
-Three regions visible.
+All three regions visible.
 
-## 41.2 Medium desktop/tablet landscape
+### Medium 900–1199px
 
-Right context collapses to a drawer. The center retains full task capability.
+Right context becomes drawer. Center retains complete normal task capability.
 
-## 41.3 Narrow/tablet/mobile
+### Narrow <900px
 
-Left nav becomes a drawer. A compact top bar provides:
+Left nav becomes drawer. Compact top bar provides menu trigger, current feature/product orientation, and only an essential contextual action if needed. Right context remains reachable through a labeled trigger.
 
-- menu trigger
-- current feature or product identity
-- contextual action when essential
+### Small <640px
 
-Right context remains accessible through a clearly labeled trigger.
-
-## 41.4 Small-screen forms
-
-- fields become full width
-- paired controls stack when necessary
-- button groups wrap/stack without losing hierarchy
-- input text remains at least 16px where browser zoom behavior requires it
+- single-column feature layouts
+- paired controls stack
+- buttons wrap/stack while preserving primary hierarchy
+- text inputs use 16px
+- touch targets expand
+- tables prioritize columns then scroll or transform without hiding critical data
 
 ---
 
-# 42. Content design
+# 35. Content design
 
-## 42.1 Voice
+Voice: plain, calm, competent, non-technical where possible.
 
-Plain, calm, competent, non-technical where possible.
+Use user-goal terms instead of implementation terms. Prefer `Ticket logs channel` over `ticket_logs`.
 
-## 42.2 Labels
+Buttons use direct verbs: `Save changes`, `Add source`, `Post announcement`, `Retry`, `Choose channel`.
 
-Use user-goal terminology instead of implementation terminology.
+Avoid vague labels such as `Proceed`, `Submit`, or `Okay` when a specific action name exists.
 
-Prefer `Ticket logs channel` over `ticket_logs`.
+Errors state what happened and what to do next. Do not blame or scold.
 
-## 42.3 Buttons
-
-Use verbs or clear verb phrases.
-
-Good:
-
-- Save changes
-- Add source
-- Post announcement
-- Retry
-- Choose channel
-
-Avoid:
-
-- Proceed
-- Submit
-- Okay
-- Do it
-
-unless the context makes them unambiguous.
-
-## 42.4 Errors
-
-State what happened and what to do next.
-
-Do not scold.
-
-## 42.5 Help
-
-Put short help next to the setting it explains. Link to deeper documentation only when the explanation cannot remain concise.
+Help is placed near the setting it explains. Deeper docs are linked only when inline explanation would become too long.
 
 ---
 
-# 43. Component composition rules
+# 36. Apple principles as review constraints
 
-1. Do not nest cards inside cards unless the inner object is truly independent.
-2. Do not place two visually primary buttons side by side.
-3. Do not use blue simply to increase visual interest.
-4. Do not move essential configuration into the right panel solely for symmetry.
-5. Do not make the user visit Resources to complete routine feature setup.
-6. Do not hide ordinary settings under `Advanced` to keep a screen visually empty.
-7. Do not add a custom interaction if a familiar native/web pattern is sufficient.
-8. Do not use a modal when inline editing is practical.
-9. Do not use a tooltip for required instructions.
-10. Do not use a toast as the sole presentation of an important error.
+Apply Apple's fundamentals without copying Apple's UI:
+
+- **Clarity:** primary task, interactive elements, and results are obvious.
+- **Hierarchy:** order, spacing, alignment, and contrast communicate importance.
+- **Consistency:** comparable components behave identically across features.
+- **Familiarity:** use established web interaction patterns unless deviation clearly improves the task.
+- **Concision:** reduce redundant content and unnecessary steps.
+- **Feedback:** actions produce immediate, proportionate, understandable responses.
+- **Progressive disclosure:** advanced detail appears when useful.
+- **Directness:** edit relevant objects in context when practical.
+- **Reversibility/safety:** recovery is easy where possible; destructive intent is explicit.
+- **Accessibility/inclusion:** the product works with keyboard, assistive technology, touch, reduced motion, and plain language.
+
+These are behavior and usability constraints, not instructions to mimic native Apple Settings, materials, glass, navigation bars, or control styling.
 
 ---
 
-# 44. Feature-page examples
+# 37. Component composition rules
 
-## 44.1 Tickets
+1. Do not nest cards unless the inner object is independently meaningful.
+2. Do not place two visually primary actions side by side.
+3. Do not use blue merely to increase visual interest.
+4. Do not move essential configuration to the right panel for symmetry.
+5. Do not require Resources for routine feature setup.
+6. Do not hide ordinary settings under Advanced just to make a page sparse.
+7. Do not invent custom interaction when a familiar pattern is sufficient.
+8. Do not use modal UI when inline editing is practical.
+9. Do not use tooltips for required instructions.
+10. Do not use toast as the sole presentation of an important failure.
+11. Do not use mascot/illustration to fill unused space.
+12. Do not shrink the root font size to create density.
+
+---
+
+# 38. Feature composition examples
+
+## Tickets
 
 Center:
 
-- feature status
+- feature state
 - ticket types
 - panel behavior
 - lifecycle behavior
-- permissions/claim/close/reopen settings when configurable
+- claim/close/reopen configuration where supported
 - user-facing messages
 - advanced settings
 
@@ -1531,15 +1276,15 @@ Right:
 - ticket panel channel
 - ticket logs channel
 - health/readiness
-- recent ticket activity if useful
+- relevant recent activity
 
-## 44.2 Announcements
+## Announcements
 
 Center:
 
 - message composer
 - embed fields
-- color/image configuration
+- color/image
 - mention behavior
 - post action
 
@@ -1549,112 +1294,31 @@ Right:
 - Discord preview
 - permission/status
 
-## 44.3 Reputation
+## Reputation
 
-Center:
+Center: enablement, thresholds, earning/behavior rules.
 
-- enable state
-- thresholds
-- earning/behavior rules
+Right: tier role bindings and health.
 
-Right:
+## Quizzes
 
-- tier role bindings
-- health/readiness
+Center: enablement, schedule, question bank, editing.
 
-## 44.4 Quizzes
+Right: quiz channel, scheduler status, last/next run.
 
-Center:
+## Analytics
 
-- enable state
-- schedule
-- question bank
-- question editing
+Center: date range, metrics, chart/table data, reporting settings.
 
-Right:
+Right: report destination, collection status, latest report/activity.
 
-- quiz channel
-- scheduler status
-- last/next run
-
-## 44.5 Analytics
-
-Center:
-
-- date range
-- metrics
-- chart/table data
-- reporting settings
-
-Right:
-
-- report destination
-- collection status
-- most recent report/activity
-
-These examples define composition patterns, not final feature scope.
+Examples define composition patterns, not final business scope.
 
 ---
 
-# 45. Design QA checklist
+# 39. Canonical token starter
 
-Every implementation should be reviewed against the following.
-
-## Information architecture
-
-- Is the screen owned by one clear feature?
-- Can the normal task be completed without leaving the feature?
-- Are shared resources canonical instead of duplicated?
-
-## Hierarchy
-
-- Is the main task obvious?
-- Is the center visually dominant over the right panel?
-- Are related controls grouped by alignment/spacing before card borders?
-
-## Density
-
-- Are nav rows compact?
-- Are forms/tables efficient without feeling cramped?
-- Is there unnecessary vertical padding?
-
-## Brand
-
-- Does the page feel consistent with the Mar Wie course visual language?
-- Is sky blue restrained and meaningful?
-- Is Newsreader used only in approved moments?
-- Is the mascot minimal?
-
-## Apple principles
-
-- Is the interface clear and concise?
-- Are familiar interactions used consistently?
-- Does feedback appear immediately and locally?
-- Are advanced details progressively disclosed?
-- Are destructive actions clear and recoverable where possible?
-
-## Accessibility
-
-- Keyboard complete?
-- Visible focus?
-- AA contrast?
-- Semantic labels?
-- No color-only meaning?
-- Reduced motion?
-- Touch targets appropriate on touch layouts?
-
-## Responsive
-
-- Three-region wide layout works?
-- Right panel becomes usable drawer?
-- Left navigation becomes usable drawer?
-- Main task still works without side regions visible?
-
----
-
-# 46. Implementation token starter
-
-The final implementation may organize files differently, but the semantic contract should approximately expose:
+This is the canonical token baseline for implementation. File organization may differ, but semantic values and relationships must remain equivalent unless a later design decision supersedes them.
 
 ```css
 :root {
@@ -1671,21 +1335,32 @@ The final implementation may organize files differently, but the semantic contra
   --text-tertiary: #6e6e73;
   --text-faint: #8a8a8f;
 
-  --border-subtle: #ebebea;
-  --border-control: #dcdcda;
-  --border-selected: #e4e4e0;
+  --stroke-subtle: #ebebea;
+  --stroke-control: #dcdcda;
+  --stroke-selected: #e4e4e0;
 
   --accent-brand: #7db9e8;
   --accent-info: #2f6fa3;
   --focus-ring: #2f6fa3;
 
-  --status-success: #1f7a4d;
-  --status-error: #b42318;
-  --status-warning: #6b4600;
+  --status-success-fg: #1f7a4d;
+  --status-success-bg: #eaf5ec;
+  --status-success-stroke: #cbe5d2;
+  --status-warning-fg: #6b4600;
+  --status-warning-bg: #fdf3e1;
+  --status-warning-stroke: #f3ddb0;
+  --status-error-fg: #b42318;
+  --status-error-bg: #fdf0ef;
+  --status-error-stroke: #f4d3cf;
+  --status-info-fg: #2f6fa3;
+  --status-info-bg: #eef6fd;
+  --status-info-stroke: #dcebf8;
 
-  --font-sans: "Figtree", system-ui, sans-serif;
+  --font-sans: "Figtree", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-serif: "Newsreader", Georgia, serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
+  --radius-xs: 6px;
   --radius-sm: 8px;
   --radius-md: 10px;
   --radius-lg: 12px;
@@ -1696,15 +1371,17 @@ The final implementation may organize files differently, but the semantic contra
 
   --control-left-width: 15rem;
   --control-right-width: 19rem;
-  --control-shell-gap: 0.75rem;
-  --control-edge-gap: 0.75rem;
+  --control-shell-gap: .75rem;
+  --control-edge-gap: .75rem;
   --control-nav-row: 2.25rem;
   --control-input-height: 2.25rem;
 
+  --duration-instant: 80ms;
   --duration-fast: 120ms;
   --duration-standard: 160ms;
   --duration-medium: 200ms;
-  --ease-standard: cubic-bezier(.2, .8, .2, 1);
+  --duration-slow: 300ms;
+  --ease-standard: cubic-bezier(.2,.8,.2,1);
 }
 
 [data-theme="dark"] {
@@ -1721,79 +1398,142 @@ The final implementation may organize files differently, but the semantic contra
   --text-tertiary: #8b8b91;
   --text-faint: #737379;
 
-  --border-subtle: #232327;
-  --border-control: #34343a;
-  --border-selected: #3d3d43;
+  --stroke-subtle: #232327;
+  --stroke-control: #34343a;
+  --stroke-selected: #3d3d43;
 
   --accent-brand: #7db9e8;
   --accent-info: #7db9e8;
   --focus-ring: #7db9e8;
 
-  --status-success: #5fd08a;
-  --status-error: #f97066;
+  --status-success-fg: #5fd08a;
+  --status-success-bg: #14241a;
+  --status-success-stroke: #234832;
+  --status-warning-fg: #f3c568;
+  --status-warning-bg: #2a2112;
+  --status-warning-stroke: #5a421a;
+  --status-error-fg: #f97066;
+  --status-error-bg: #2b1718;
+  --status-error-stroke: #5a2a2c;
+  --status-info-fg: #7db9e8;
+  --status-info-bg: #14273a;
+  --status-info-stroke: #244a69;
 }
 ```
 
-This starter is a contract reference, not authorization to paste it blindly into the current stylesheet. Implementation should reconcile existing CSS safely through a dedicated plan.
+---
+
+# 40. Design QA checklist
+
+## IA
+
+- One clear feature owner?
+- Normal task completable without leaving feature?
+- Shared resources canonical?
+
+## Hierarchy
+
+- Main task obvious?
+- Center dominates right context?
+- Alignment/spacing used before extra cards?
+
+## Density
+
+- Nav rows compact?
+- Forms/tables efficient without being cramped?
+- Unnecessary vertical padding removed?
+
+## Brand
+
+- Mar Wie paper-and-ink character preserved?
+- Sky blue restrained and meaningful?
+- Newsreader rare?
+- Mascot minimal?
+
+## Apple principles
+
+- Clear and concise?
+- Familiar and consistent interactions?
+- Immediate local feedback?
+- Progressive disclosure appropriate?
+- Destructive actions clear and safe?
+
+## Accessibility
+
+- Keyboard complete?
+- Focus visible?
+- AA contrast?
+- Semantic labels?
+- No color-only state?
+- Reduced motion supported?
+- Touch targets expanded appropriately?
+
+## Responsive
+
+- Three-region wide layout works?
+- Right drawer works?
+- Left drawer works?
+- Main task remains complete when side regions are hidden?
 
 ---
 
-# 47. What is intentionally not specified here
+# 41. Out of scope
 
-This design system does not finalize:
+This system does not determine:
 
 - feature business logic
-- which existing settings remain in V1
-- backend data shape
-- API behavior
+- which existing settings remain in the redesign
+- backend/API shape
 - exact icon library
-- final copy for every page
+- final copy for every screen
 - final illustration assets
 
-Those belong to feature specifications or implementation plans.
-
-The visual and interaction rules in this document are complete enough to design and implement the Control redesign consistently.
+Those belong to feature specifications and implementation plans.
 
 ---
 
-# 48. Definition of design-system completeness
+# 42. Completeness definition
 
-The Control design system is considered complete for redesign planning when all of the following exist in this document:
+This design system is complete for redesign planning because it defines:
 
-- visual principles
-- Apple-derived usability principles
-- color primitives and semantic mappings
-- light/dark theme rules
-- typography scale and semantic roles
-- spacing scale
-- density and sizing
+- product and usability principles
+- Apple-derived review constraints
+- light/dark color primitives and semantic aliases
+- exact semantic status colors
+- typography scale and roles
+- spacing
+- density and target sizing
 - radii
-- borders
-- shadows/elevation
+- borders/strokes
+- exact light/dark elevation
 - motion
-- breakpoints/layout
-- navigation
+- focus and interaction states
+- breakpoints and three-region layout
+- compact feature-first navigation
+- page anatomy and save behavior
 - buttons
 - form controls
 - segmented controls
 - tables/lists
 - cards/panels
 - contextual right panel
-- status/feedback
-- dialogs/popovers/drawers
-- menus/tooltips
+- feedback/callouts
+- dialogs/popovers/drawers/menus/tooltips
 - search
 - empty/loading/error/destructive states
-- icons/mascot
-- charts
-- previews
+- icons and mascot
+- analytics/charts
+- Discord previews
 - resource bindings
 - permissions/dependencies
 - activity
-- responsive behavior
-- content design
+- theme behavior
 - accessibility
-- composition rules
-- QA checklist
+- responsive rules
+- content design
+- component composition rules
+- feature composition examples
+- canonical implementation tokens
+- QA gates
 
-Any later change to these foundations should update this spec or append a superseding decision instead of silently drifting in implementation.
+Any later change to these foundations must update this specification or append a superseding decision instead of silently drifting in implementation.
