@@ -20,6 +20,7 @@
 ## Global Constraints
 
 - The October 16 design system is Control-wide and supersedes older visual/layout guidance.
+- The September refinement plan's constraint that routine resource editing remains Mappings-only is superseded for this completion run by the October feature-ownership decision. Resource state remains canonical and shared; it is not duplicated.
 - Keep every existing canonical Control URL valid. Navigation labels/grouping may change without breaking deep links.
 - Preserve one canonical resource state. Feature-local resource editing and the global Resources view must read/write the same mapping values.
 - Do not duplicate save state or create a second mapping store.
@@ -99,15 +100,19 @@ Any current production mapping without a feature page, including Anonymous Messa
 
 ---
 
-### Task 1: Reconcile onto the current website-production baseline
+### Task 1: Lock the completion decision and reconcile onto the current website-production baseline
 
-**Files:** branch/worktree only unless conflicts require source edits.
+**Files:**
+- Create: `docs/superpowers/decisions/2026-10-17-control-redesign-completion.md`
+- Branch/worktree only unless reconciliation conflicts require source edits
 
 **Interfaces:**
 - Consumes: current `origin/web/rob-bot-site-production`, verified Control commits `1e3a8ae...` and `2b478e6...`
-- Produces: isolated `web/control-redesign-completion-r1` worktree with all current production hotfixes plus the already-verified Control refinement work
+- Produces: durable navigation/resource-ownership decision plus isolated `web/control-redesign-completion-r1` worktree with current production hotfixes and verified Control refinement work
 
 - [ ] Read current `AGENTS.md`, `CLAUDE.md`, this plan, linked spec, and linked decisions from authoritative refs.
+- [ ] Record the user-approved completion boundary in `2026-10-17-control-redesign-completion.md`: exact navigation matrix above, preserved URLs, Moderation under Support & Safety, Ticket handling + Events under secondary Playbooks, no speculative Bot settings, and feature-local editing of the same canonical resource state exposed by Resources.
+- [ ] State explicitly in that decision that it supersedes the older Mappings-only routine-editing assumption while preserving canonical storage and existing safety semantics.
 - [ ] Create an isolated worktree/branch `web/control-redesign-completion-r1` from the latest `origin/web/rob-bot-site-production` using `superpowers:using-git-worktrees`.
 - [ ] Port the already-verified Control refinements without overwriting newer production mapping/resource changes. Reconcile `control-mappings.js`, page-save contracts, and tests deliberately instead of using an indiscriminate conflict strategy.
 - [ ] Add/retain Anonymous Messages mapping keys and compromised-account-trap behavior present in current production/local hosting state.
@@ -120,7 +125,7 @@ Any current production mapping without a feature page, including Anonymous Messa
 - Create: `web-tests/control-redesign-completion.test.js`
 - Modify: `web-tests/control-routing.test.js`
 - Modify: `web-tests/control-foundation-contract.test.js`
-- Modify: `web-tests/control-page-save.test.js` or the existing page-save owner test
+- Modify: the existing page-save ownership test
 - Modify: existing domain tests as needed for route-specific contracts
 
 **Interfaces:**
@@ -231,7 +236,7 @@ Any current production mapping without a feature page, including Anonymous Messa
 - Modify: relevant Content tests
 
 - [ ] Recompose Feeds with source management in center and AI-updates destination/readiness context.
-- [ ] Move Announcement destination, permissions/readiness, and Discord preview into the contextual right region while keeping composer/embed editing in center. Preserve all Task 5/6 announcement safety contracts.
+- [ ] Move Announcement destination, permissions/readiness, and Discord preview into the contextual right region while keeping composer/embed editing in center. Preserve all prior announcement safety contracts.
 - [ ] Recompose Live with publishing controls in center and live destination + ping role context.
 - [ ] Keep immediate publishing state out of revision-aware page-save drafts except canonical settings/resources.
 - [ ] Run focused Publishing tests to GREEN.
