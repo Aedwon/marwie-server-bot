@@ -60,7 +60,7 @@ function formatAccuracy(value) {
 
 function metricDefinition(label, value) {
   return `
-    <div class="analytics-stat">
+    <div class="control-stat-row">
       <dt>${escapeHtml(label)}</dt>
       <dd>${escapeHtml(value)}</dd>
     </div>`;
@@ -210,7 +210,7 @@ function analyticsReportMarkup(snapshot, requestedRange) {
   }
 
   return `
-    <section class="analytics-dashboard" data-active-analytics-range="${escapeHtml(selectedRange)}">
+    <section class="control-feature-body" data-active-analytics-range="${escapeHtml(selectedRange)}">
       <div class="analytics-range-row">
         <section class="analytics-period" aria-label="Selected analytics range">
           <span><strong>From</strong> ${escapeHtml(formatPeriod(projection.period_start))}</span>
@@ -218,7 +218,7 @@ function analyticsReportMarkup(snapshot, requestedRange) {
         </section>
         ${rangeControlsMarkup(snapshot, selectedRange)}
       </div>
-      <dl class="analytics-metrics" aria-label="Selected period operational metrics">
+      <dl class="control-stat-list" aria-label="Selected period operational metrics">
         ${metricDefinition('Moderation cases', projection.moderation_cases ?? 0)}
         ${metricDefinition('Tickets opened', projection.tickets_opened ?? 0)}
         ${metricDefinition('Tickets closed', projection.tickets_closed ?? 0)}

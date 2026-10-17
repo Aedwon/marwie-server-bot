@@ -373,8 +373,8 @@ function feedsMarkup(config, state, snapshot) {
     <section class="control-page content-page content-page-compact" data-page-key="/control/content/feeds">
       ${contentHeaderMarkup(config, state, 'Manage authoritative RSS and Atom sources. Automatic polling remains scheduled by Rob-bot.')}
       ${statusMarkup(state)}
-      <section class="content-admin-surface">
-        <div class="content-card-heading">
+      <section class="control-section">
+        <div class="control-section-heading">
           <div><h2>Sources</h2><p>Destination: ${escapeHtml(mapping)}. Change the destination in Mappings.</p></div>
           ${state.mode === 'edit' ? '<button class="control-button control-button-secondary" type="button" data-source-add>Add source</button>' : ''}
         </div>
@@ -497,8 +497,8 @@ function announcementMarkup(config, state, snapshot) {
       ${statusMarkup(state)}
       ${settingsActionsMarkup(state)}
       <div class="content-announcement-layout">
-        <section class="content-admin-surface content-announcement-composer">
-          <div class="content-card-heading"><div><h2>Announcement builder</h2><p>Composer values are local until you post.</p></div><button class="content-clear-action" type="button" data-announcement-clear>Clear all</button></div>
+        <section class="control-section content-announcement-composer">
+          <div class="control-section-heading"><div><h2>Announcement builder</h2><p>Composer values are local until you post.</p></div><button class="content-clear-action" type="button" data-announcement-clear>Clear all</button></div>
           <label>Destination channel<select data-announcement-destination>${destinationOptions || '<option value="">No permitted text channels</option>'}</select></label>
           <label>Message / mentions<textarea maxlength="2000" rows="4" data-announcement-message placeholder="Literal Discord syntax: <@123>, <@&456>, <#789>, @everyone, @here">${escapeHtml(composer.message)}</textarea><span class="content-field-counter" data-announcement-counter="message">${announcementRemaining(composer.message, 2000)}</span></label>
           <label>Title<input type="text" maxlength="256" data-announcement-title value="${escapeHtml(composer.title)}"><span class="content-field-counter" data-announcement-counter="title">${announcementRemaining(composer.title, 256)}</span></label>
@@ -510,7 +510,7 @@ function announcementMarkup(config, state, snapshot) {
           <label>Image URL <span class="content-field-meta">1 max</span><input type="url" maxlength="1000" data-announcement-image value="${escapeHtml(composer.imageUrl)}" placeholder="https://example.com/image.png"></label>
           <p class="content-note">Message alone is postable. An embed is created only when Title and/or Body has content. Footer, color, and image apply only to that embed.</p>
         </section>
-        <section class="content-admin-surface content-announcement-preview-card">
+        <section class="control-section content-announcement-preview">
           <div class="content-preview-heading"><div><h2>Preview</h2><p>Final Discord rendering before publish.</p></div><button class="control-button control-button-primary content-announcement-post" type="button" data-announcement-send${canPost ? '' : ' disabled'}>Post</button></div>
           <div class="discord-preview-shell" data-announcement-preview>${announcementPreviewMarkup(snapshot, composer)}</div>
         </section>
@@ -528,8 +528,8 @@ function liveMarkup(config, state, snapshot) {
       ${contentHeaderMarkup(config, state, 'Post the configured live-host notice to the mapped Live destination.')}
       ${statusMarkup(state)}
       ${settingsActionsMarkup(state)}
-      <section class="content-admin-surface content-live-dispatch" aria-labelledby="live-dispatch-heading">
-        <div class="content-card-heading"><div><h2 id="live-dispatch-heading">Live notice</h2><p>Review each dispatch step before publishing.</p></div></div>
+      <section class="control-section content-live-dispatch" aria-labelledby="live-dispatch-heading">
+        <div class="control-section-heading"><div><h2 id="live-dispatch-heading">Live notice</h2><p>Review each dispatch step before publishing.</p></div></div>
         <ol class="content-dispatch-flow">
           <li><span class="content-dispatch-number">1</span><div><strong>Destination</strong><p>${escapeHtml(destination)}</p></div></li>
           <li><span class="content-dispatch-number">2</span><label>Topic<input type="text" maxlength="200" data-live-topic placeholder="Optional stream topic"><small>Optional. Included with the configured live-host notice.</small></label></li>

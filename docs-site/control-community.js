@@ -140,17 +140,17 @@ function reputationMarkup(state, snapshot) {
     return `<section class="control-page community-page" data-page-key="${REPUTATION}">
       ${header}${statusMarkup(state)}
       <fieldset class="community-fieldset community-tier-fieldset"><legend>Tier thresholds</legend><p>Use strictly increasing values from 1 to 100000.</p>
-        <div class="community-tier-editor">${['builder', 'contributor', 'mentor'].map(key => `<label class="community-threshold-field"><strong class="community-threshold-label">${escapeHtml(key[0].toUpperCase() + key.slice(1))}</strong><input class="community-threshold-input" type="number" min="1" max="100000" step="1" inputmode="numeric" data-community-threshold="${key}" value="${escapeHtml(value.thresholds[key])}"></label>`).join('')}</div>
+        <div class="control-field-grid">${['builder', 'contributor', 'mentor'].map(key => `<label class="community-threshold-field"><strong class="community-threshold-label">${escapeHtml(key[0].toUpperCase() + key.slice(1))}</strong><input class="community-threshold-input" type="number" min="1" max="100000" step="1" inputmode="numeric" data-community-threshold="${key}" value="${escapeHtml(value.thresholds[key])}"></label>`).join('')}</div>
         ${error ? `<p class="community-field-error" role="alert">${escapeHtml(error)}</p>` : ''}
       </fieldset>${saveBar(state)}</section>`;
   }
   return `<section class="control-page community-page" data-page-key="${REPUTATION}">${header}${statusMarkup(state)}
-    <section class="community-tier-section" aria-labelledby="reputation-tier-heading"><div class="community-section-heading"><div><h2 id="reputation-tier-heading">Tier progression</h2><p>Reputation thresholds increase from Builder through Mentor.</p></div></div><div class="community-tier-progression" role="list">${[['Builder', value.thresholds.builder], ['Contributor', value.thresholds.contributor], ['Mentor', value.thresholds.mentor]].map(([label, threshold]) => `<div class="community-tier-step" role="listitem"><strong>${escapeHtml(label)}</strong><span class="community-tier-value">${escapeHtml(threshold)} pts</span></div>`).join('')}</div></section>
+    <section class="community-tier-section" aria-labelledby="reputation-tier-heading"><div class="community-section-heading"><div><h2 id="reputation-tier-heading">Tier progression</h2><p>Reputation thresholds increase from Builder through Mentor.</p></div></div><div class="control-step-list" role="list">${[['Builder', value.thresholds.builder], ['Contributor', value.thresholds.contributor], ['Mentor', value.thresholds.mentor]].map(([label, threshold]) => `<div class="community-tier-step" role="listitem"><strong>${escapeHtml(label)}</strong><span class="community-tier-value">${escapeHtml(threshold)} pts</span></div>`).join('')}</div></section>
     </section>`;
 }
 
 function questionEditor(question, index, error) {
-  return `<article class="community-question-card" data-question-index="${index}">
+  return `<article class="control-list-row" data-question-index="${index}">
     <div class="community-question-heading"><strong>${question.id == null ? 'New question' : `Question ${escapeHtml(question.id)}`}</strong>${question.id == null ? '<button class="control-button control-button-secondary" type="button" data-community-remove-question>Remove draft</button>' : `<label class="community-inline-toggle control-feature-toggle control-feature-toggle-editing"><input type="checkbox" data-question-field="enabled"${question.enabled ? ' checked' : ''} aria-label="Include in rotation"><span class="control-feature-toggle-track" aria-hidden="true"></span><span class="control-feature-toggle-copy">Include in rotation</span></label>`}</div>
     <div class="community-form-grid">
       <label>Category<input maxlength="50" data-question-field="category" value="${escapeHtml(question.category)}"></label>
@@ -173,13 +173,13 @@ function quizzesMarkup(state, snapshot) {
   );
   if (state.mode === 'edit') {
     return `<section class="control-page community-page" data-page-key="${QUIZZES}">${header}${statusMarkup(state)}
-      <div class="community-section-grid"><label class="community-field-card">Interval in hours<input type="number" min="1" max="720" step="1" data-community-field="intervalHours" value="${value.intervalHours == null ? '' : escapeHtml(value.intervalHours)}" placeholder="24"><small>Between 1 and 720 hours. Leave blank if automatic scheduling is not configured.</small>${state.errors?.intervalHours ? `<span class="community-field-error" role="alert">${escapeHtml(state.errors.intervalHours)}</span>` : ''}</label></div>
+      <div class="control-section-stack"><label class="control-field-group">Interval in hours<input type="number" min="1" max="720" step="1" data-community-field="intervalHours" value="${value.intervalHours == null ? '' : escapeHtml(value.intervalHours)}" placeholder="24"><small>Between 1 and 720 hours. Leave blank if automatic scheduling is not configured.</small>${state.errors?.intervalHours ? `<span class="community-field-error" role="alert">${escapeHtml(state.errors.intervalHours)}</span>` : ''}</label></div>
       <section class="community-question-section"><div class="community-section-heading"><div><h2>Question bank</h2><p>${count} question${count === 1 ? '' : 's'} in this server.</p></div><button class="control-button control-button-secondary" type="button" data-community-add-question>Add question</button></div><div class="community-question-list">${value.questions.map((question, index) => questionEditor(question, index, state.errors?.[`question_${index}`])).join('')}</div></section>
       ${saveBar(state)}</section>`;
   }
   const enabledCount = value.questions.filter(question => question.enabled).length;
   return `<section class="control-page community-page" data-page-key="${QUIZZES}">${header}${statusMarkup(state)}
-    <section class="community-ops-section" aria-labelledby="quiz-snapshot-heading"><div class="community-section-heading"><div><h2 id="quiz-snapshot-heading">Operational snapshot</h2><p>Current quiz cadence and question-bank readiness.</p></div></div><dl class="community-ops-snapshot"><div><dt>Schedule</dt><dd>${value.intervalHours == null ? 'Not configured' : `Every ${escapeHtml(value.intervalHours)} hours`}</dd></div><div><dt>Last posted</dt><dd>${escapeHtml(timestampLabel(value.lastPostedAt))}</dd></div><div><dt>Questions</dt><dd>${count}</dd></div><div><dt>Enabled</dt><dd>${enabledCount}</dd></div></dl></section>
+    <section class="community-ops-section" aria-labelledby="quiz-snapshot-heading"><div class="community-section-heading"><div><h2 id="quiz-snapshot-heading">Operational snapshot</h2><p>Current quiz cadence and question-bank readiness.</p></div></div><dl class="control-definition-list"><div><dt>Schedule</dt><dd>${value.intervalHours == null ? 'Not configured' : `Every ${escapeHtml(value.intervalHours)} hours`}</dd></div><div><dt>Last posted</dt><dd>${escapeHtml(timestampLabel(value.lastPostedAt))}</dd></div><div><dt>Questions</dt><dd>${count}</dd></div><div><dt>Enabled</dt><dd>${enabledCount}</dd></div></dl></section>
     </section>`;
 }
 

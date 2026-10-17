@@ -4,8 +4,9 @@ import fs from 'node:fs';
 
 const read = path => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('Stage 3 app registers every canonical domain module and stylesheet', () => {
+test('Stage 3 app registers every canonical domain module and one canonical feature stylesheet', () => {
   const app = read('docs-site/control-app.js');
+  const html = read('docs-site/control.html');
   for (const token of [
     'registerCommunityPages',
     'registerContentPages',
@@ -13,12 +14,9 @@ test('Stage 3 app registers every canonical domain module and stylesheet', () =>
     'registerAnalyticsPage',
     'registerMappingPages',
     'workflowPageMarkup',
-    '/control-community.css?v=1',
-    '/control-content.css?v=2',
-    '/control-utilities.css?v=1',
-    '/control-analytics-workflows.css?v=1',
-    '/control-mappings.css?v=1',
   ]) assert.match(app, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.doesNotMatch(app, /installDomainStyles/);
+  assert.match(html, /\/control-features\.css\?v=1/);
 });
 
 test('commands-only operations stay out of canonical feature page modules', () => {
