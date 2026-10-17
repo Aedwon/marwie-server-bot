@@ -467,7 +467,7 @@ export function mappingPageMarkup({ pageKey, state, snapshot } = {}) {
     <section class="control-page mapping-page" data-page-key="${escapeHtml(pageKey)}">
       <header class="mapping-page-header">
         <div><h1>${escapeHtml(config.title)}</h1><p>Current Discord resources and their connection health.</p></div>
-        <button class="control-button control-button-primary" type="button" data-mapping-edit>Edit settings</button>
+        <button class="control-button control-button-primary control-edit-settings-button" type="button" data-mapping-edit>Edit settings</button>
       </header>
       ${statusMarkup}
       <div class="mapping-table-wrap">

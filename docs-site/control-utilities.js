@@ -369,7 +369,7 @@ function pageHeader(title, description, state, feature = null) {
       editAttribute: 'data-utility-edit',
       toggleAttribute: feature.toggleAttribute || '',
     })
-    : (editing ? '' : '<button class="control-button control-button-primary" type="button" data-utility-edit>Edit settings</button>');
+    : (editing ? '' : '<button class="control-button control-button-primary control-edit-settings-button" type="button" data-utility-edit>Edit settings</button>');
   return `
     <header class="utility-page-header"><div><h1>${escapeHtml(title)}</h1><p>${escapeHtml(description)}</p></div>${actions}</header>
     ${pageFeedback(state)}`;

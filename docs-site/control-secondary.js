@@ -1,3 +1,5 @@
+import { taskIndicatorMarkup } from './control-components.js';
+
 const COMMAND_TASKS = Object.freeze([
   Object.freeze({
     key: 'reputation-award',
@@ -39,6 +41,22 @@ function statusLabel(value) {
     failed: 'Failed',
     rejected: 'Rejected',
   })[String(value)] || 'Unknown';
+}
+
+function activityIndicatorState(value) {
+  return ({
+    queued: 'queued',
+    claimed: 'running',
+    completed: 'completed',
+    failed: 'failed',
+    rejected: 'failed',
+  })[String(value)] || null;
+}
+
+function activityStatusMarkup(value) {
+  const label = statusLabel(value);
+  const state = activityIndicatorState(value);
+  return state ? taskIndicatorMarkup({ state, size: 16, label }) : escapeHtml(label);
 }
 
 function actorLabel(actor, currentActorId) {
@@ -89,7 +107,7 @@ function activityItemMarkup(item, currentActorId) {
     <p class="control-activity-summary">${escapeHtml(item?.summary || 'Performed a Control action')}</p>
     <div class="control-activity-meta">
       <span><span class="control-activity-meta-label">Actor</span> ${escapeHtml(actorLabel(item?.actor, currentActorId))}</span>
-      <span><span class="control-activity-meta-label">Status</span> <span class="control-activity-status">${escapeHtml(statusLabel(item?.status))}</span></span>
+      <span><span class="control-activity-meta-label">Status</span> <span class="control-activity-status">${activityStatusMarkup(item?.status)}</span></span>
       <span><span class="control-activity-meta-label">Time</span> <time datetime="${escapeHtml(timestamp)}">${escapeHtml(timestampLabel(timestamp))}</time></span>
     </div>
     ${activityFailureMarkup(item?.failure)}
@@ -110,7 +128,7 @@ export function activityPageMarkup(state = {}) {
   let body = '';
 
   if ((phase === 'idle' || phase === 'loading') && items.length === 0) {
-    body = '<p class="control-activity-loading" role="status">Loading activity…</p>';
+    body = `<p class="control-activity-loading" role="status">${taskIndicatorMarkup({ state: 'running', size: 18, label: 'Loading activity…' })}</p>`;
   } else if (phase === 'error' && items.length === 0) {
     body = activityErrorMarkup(state.error || 'Activity could not be loaded.');
   } else if (phase === 'ready' && items.length === 0) {
@@ -119,7 +137,10 @@ export function activityPageMarkup(state = {}) {
     body = `<ol class="control-activity-list">${items.map(item => activityItemMarkup(item, state.actorId)).join('')}</ol>`;
     if (state.error) body += activityErrorMarkup(state.error);
     if (state.nextCursor) {
-      body += `<div class="control-activity-pagination"><button type="button" class="control-secondary-button" data-activity-load-more${state.loadingMore ? ' disabled aria-disabled="true"' : ''}>${state.loadingMore ? 'Loading…' : 'Load more'}</button></div>`;
+      const loadMoreLabel = state.loadingMore
+        ? taskIndicatorMarkup({ state: 'running', size: 16, label: 'Loading…' })
+        : 'Load more';
+      body += `<div class="control-activity-pagination"><button type="button" class="control-secondary-button" data-activity-load-more${state.loadingMore ? ' disabled aria-disabled="true"' : ''}>${loadMoreLabel}</button></div>`;
     }
   }
 
