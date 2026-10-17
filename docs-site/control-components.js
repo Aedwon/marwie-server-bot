@@ -83,22 +83,27 @@ export function featureHeaderActionsMarkup({
 }
 
 export function navigationMarkup(model) {
-  const primary = model.primary.map(domain => {
-    const children = domain.children.map(child => `
-      <a href="${child.path}" data-nav-path="${child.path}"${child.current ? ' aria-current="page"' : ''}>${escapeHtml(child.label)}</a>`).join('');
-    return `<section class="control-nav-domain${domain.expanded ? ' control-nav-domain-open' : ''}${domain.current ? ' control-nav-domain-current' : ''}" data-domain="${domain.key}">
-      <button type="button" data-domain-select="${domain.key}" aria-expanded="${domain.expanded ? 'true' : 'false'}">
-        ${domain.current ? '<span class="control-nav-marker" aria-hidden="true"></span>' : ''}<span>${escapeHtml(domain.label)}</span>
+  const primary = model.primary.map(group => {
+    const children = group.children.map(child => {
+      const matchDomain = child.matchDomain ? ` data-nav-match-domain="${escapeHtml(child.matchDomain)}"` : '';
+      return `
+      <a href="${child.path}" data-nav-path="${child.path}" data-nav-key="${escapeHtml(child.key)}"${matchDomain}${child.current ? ' aria-current="page"' : ''}>${escapeHtml(child.label)}</a>`;
+    }).join('');
+    return `<section class="control-nav-domain${group.expanded ? ' control-nav-domain-open' : ''}${group.current ? ' control-nav-domain-current' : ''}" data-domain="${group.key}">
+      <button type="button" data-domain-select="${group.key}" aria-expanded="${group.expanded ? 'true' : 'false'}">
+        <span>${escapeHtml(group.label)}</span>
       </button>
-      <div class="control-nav-children"${domain.expanded ? '' : ' hidden'}>${children}</div>
+      <div class="control-nav-children"${group.expanded ? '' : ' hidden'}>${children}</div>
     </section>`;
   }).join('');
 
   const secondary = model.secondary.map(item => `
-    <a href="${item.path}" data-nav-path="${item.path}"${item.current ? ' aria-current="page"' : ''}>${escapeHtml(item.label)}</a>`).join('');
+    <a href="${item.path}" data-nav-path="${item.path}">${escapeHtml(item.label)}</a>`).join('');
+  const playbooks = secondary
+    ? `<div class="control-playbooks"><p class="control-nav-group-label">Playbooks</p><nav class="control-secondary-nav" aria-label="Control playbooks">${secondary}</nav></div>`
+    : '';
 
-  return `<nav class="control-primary-nav" aria-label="Control destinations">${primary}</nav>
-    <nav class="control-secondary-nav" aria-label="Control reference and history">${secondary}</nav>`;
+  return `<nav class="control-primary-nav" aria-label="Control destinations">${primary}</nav>${playbooks}`;
 }
 
 export function identityMarkup(session, guild) {
