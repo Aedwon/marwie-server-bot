@@ -19,15 +19,25 @@ export function hydrateControlPages(snapshot, revisions = {}) {
   }
 }
 
-export function renderRegisteredControlPage(pageKey, context = {}) {
-  const definition = registeredControlPage(pageKey);
-  if (!definition || typeof definition.render !== 'function') return null;
-  return definition.render({
+function pageContext(pageKey, context = {}) {
+  return {
     pageKey,
     state: controlState.get(pageKey),
     store: controlState,
     ...context,
-  });
+  };
+}
+
+export function renderRegisteredControlPage(pageKey, context = {}) {
+  const definition = registeredControlPage(pageKey);
+  if (!definition || typeof definition.render !== 'function') return null;
+  return definition.render(pageContext(pageKey, context));
+}
+
+export function renderRegisteredControlContext(pageKey, context = {}) {
+  const definition = registeredControlPage(pageKey);
+  if (!definition || typeof definition.renderContext !== 'function') return '';
+  return definition.renderContext(pageContext(pageKey, context)) || '';
 }
 
 export function installRegisteredControlPage(pageKey, root, context = {}) {
@@ -35,10 +45,7 @@ export function installRegisteredControlPage(pageKey, root, context = {}) {
   if (!definition || typeof definition.install !== 'function') return () => {};
   return definition.install({
     root,
-    pageKey,
-    state: controlState.get(pageKey),
-    store: controlState,
-    ...context,
+    ...pageContext(pageKey, context),
   }) || (() => {});
 }
 
