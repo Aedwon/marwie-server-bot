@@ -490,7 +490,7 @@ function suggestionMarkup(pageKey, snapshot) {
       <div class="mapping-suggestions-heading">
         <div>
           <h2>Suggested mappings</h2>
-          <p>Review only the resources owned by Mappings. Nothing is changed until you apply the reviewed plan.</p>
+          <p>Review suggested Discord resources. Nothing changes until you apply the reviewed plan.</p>
         </div>
         <button class="control-button control-button-primary" type="button" data-mapping-review>${open ? 'Close review' : 'Review suggested mappings'}</button>
       </div>
@@ -514,11 +514,20 @@ function destructiveMappingMarkup(pageKey, state) {
     </aside>`;
 }
 
+function resourcesTabsMarkup(pageKey) {
+  const items = [
+    ['/control/mappings/channels', 'Channels'],
+    ['/control/mappings/roles', 'Roles'],
+    ['/control/mappings/categories', 'Categories'],
+  ];
+  return `<nav class="mapping-resource-tabs" aria-label="Resource types">${items.map(([path, label]) => `<a href="${path}" data-nav-path="${path}"${path === pageKey ? ' aria-current="page"' : ''}>${label}</a>`).join('')}</nav>`;
+}
+
 export function mappingPageMarkup({ pageKey, state, snapshot } = {}) {
   const config = MAPPING_PAGE_CONFIGS[pageKey];
   if (!config) return '';
   if (!state?.persisted) {
-    return `<section class="control-page mapping-page"><h1>${escapeHtml(config.title)}</h1><p>Load current server state to manage these mappings.</p></section>`;
+    return `<section class="control-page mapping-page"><h1>Resources</h1>${resourcesTabsMarkup(pageKey)}<h2>${escapeHtml(config.title)}</h2><p>Load current server state to manage these Discord resources.</p></section>`;
   }
 
   const statusMarkup = state.saveError
@@ -531,7 +540,8 @@ export function mappingPageMarkup({ pageKey, state, snapshot } = {}) {
     return `
       <section class="control-page mapping-page" data-page-key="${escapeHtml(pageKey)}">
         <header class="mapping-page-header">
-          <div><h1>${escapeHtml(config.title)}</h1><p>Choose current Discord resources, then save all changes together.</p></div>
+          <div><h1>Resources</h1><p>Choose current Discord resources, then save all changes together.</p></div>
+        ${resourcesTabsMarkup(pageKey)}
         </header>
         ${statusMarkup}
         <div class="mapping-edit-grid">
@@ -549,7 +559,8 @@ export function mappingPageMarkup({ pageKey, state, snapshot } = {}) {
   return `
     <section class="control-page mapping-page" data-page-key="${escapeHtml(pageKey)}">
       <header class="mapping-page-header">
-        <div><h1>${escapeHtml(config.title)}</h1><p>Current Discord resources and their connection health.</p></div>
+        <div><h1>Resources</h1><p>Current Discord resources and their connection health.</p></div>
+        ${resourcesTabsMarkup(pageKey)}
         <button class="control-button control-button-primary control-edit-settings-button" type="button" data-mapping-edit>Edit settings</button>
       </header>
       ${statusMarkup}

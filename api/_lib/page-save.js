@@ -1,19 +1,21 @@
+import { featureOwnsResource } from '../../docs-site/control-resource-contract.js';
+
 const MAX_CHANGES = 50;
 const MAX_PAYLOAD_BYTES = 64 * 1024;
 
 export const PAGE_SAVE_ACTIONS_BY_PAGE = Object.freeze({
-  '/control/community/reputation': Object.freeze(['set_feature', 'set_reputation_thresholds']),
-  '/control/community/quizzes': Object.freeze(['set_feature', 'set_quiz_schedule', 'add_quiz_question']),
-  '/control/community/voice-coworking': Object.freeze(['set_feature']),
-  '/control/community/showcase': Object.freeze(['set_feature']),
-  '/control/content/feeds': Object.freeze(['set_feature', 'upsert_ai_source', 'disable_ai_source']),
-  '/control/content/announcements': Object.freeze(['set_feature']),
-  '/control/content/live': Object.freeze(['set_feature']),
-  '/control/utilities/ticket-configuration': Object.freeze(['set_feature', 'upsert_ticket_type', 'disable_ticket_type']),
-  '/control/utilities/notification-roles': Object.freeze(['save_notification_panel']),
-  '/control/utilities/anonymous-questions': Object.freeze(['set_feature']),
-  '/control/analytics': Object.freeze(['set_feature']),
-  '/control/workflows/moderation': Object.freeze(['set_feature']),
+  '/control/community/reputation': Object.freeze(['set_feature', 'set_reputation_thresholds', 'set_resource', 'clear_resource']),
+  '/control/community/quizzes': Object.freeze(['set_feature', 'set_quiz_schedule', 'add_quiz_question', 'set_resource', 'clear_resource']),
+  '/control/community/voice-coworking': Object.freeze(['set_feature', 'set_resource', 'clear_resource']),
+  '/control/community/showcase': Object.freeze(['set_feature', 'set_resource', 'clear_resource']),
+  '/control/content/feeds': Object.freeze(['set_feature', 'upsert_ai_source', 'disable_ai_source', 'set_resource', 'clear_resource']),
+  '/control/content/announcements': Object.freeze(['set_feature', 'set_resource', 'clear_resource']),
+  '/control/content/live': Object.freeze(['set_feature', 'set_resource', 'clear_resource']),
+  '/control/utilities/ticket-configuration': Object.freeze(['set_feature', 'upsert_ticket_type', 'disable_ticket_type', 'set_resource', 'clear_resource']),
+  '/control/utilities/notification-roles': Object.freeze(['save_notification_panel', 'set_resource', 'clear_resource']),
+  '/control/utilities/anonymous-questions': Object.freeze(['set_feature', 'set_resource', 'clear_resource']),
+  '/control/analytics': Object.freeze(['set_feature', 'set_resource', 'clear_resource']),
+  '/control/workflows/moderation': Object.freeze(['set_feature', 'set_resource', 'clear_resource']),
   '/control/workflows/ticket-handling': Object.freeze([]),
   '/control/workflows/events': Object.freeze([]),
   '/control/mappings/channels': Object.freeze(['set_resource', 'clear_resource']),
@@ -82,13 +84,17 @@ function requireOwnership(pageKey, actionType, payload, HttpError) {
 
   if (actionType === 'set_resource' || actionType === 'clear_resource') {
     const key = String(payload.key || '');
-    const expected = pageKey === '/control/mappings/roles'
-      ? ROLE_RESOURCE_KEYS
-      : pageKey === '/control/mappings/categories'
-        ? CATEGORY_RESOURCE_KEYS
-        : CHANNEL_RESOURCE_KEYS;
-    if (!expected.has(key)) {
-      throw new HttpError(400, 'That Discord mapping is not owned by this Mappings page.');
+    if (pageKey.startsWith('/control/mappings/')) {
+      const expected = pageKey === '/control/mappings/roles'
+        ? ROLE_RESOURCE_KEYS
+        : pageKey === '/control/mappings/categories'
+          ? CATEGORY_RESOURCE_KEYS
+          : CHANNEL_RESOURCE_KEYS;
+      if (!expected.has(key)) {
+        throw new HttpError(400, 'That Discord resource is not owned by this Resources page.');
+      }
+    } else if (!featureOwnsResource(pageKey, key)) {
+      throw new HttpError(400, 'That Discord resource is owned by a different Control page.');
     }
   }
 }

@@ -288,7 +288,9 @@ test('mapping page markup uses read then edit state, visible health text, labels
   store.hydrate(pageKey, baseSnapshot(), 'f'.repeat(64));
 
   const readMarkup = mappingPageMarkup({ pageKey, state: store.get(pageKey), snapshot: baseSnapshot() });
-  assert.match(readMarkup, /<h1>Channels<\/h1>/);
+  assert.match(readMarkup, /<h1>Resources<\/h1>/);
+  assert.match(readMarkup, /mapping-resource-tabs/);
+  assert.doesNotMatch(readMarkup, /mapping-resource-heading/);
   assert.match(readMarkup, />Edit settings</);
   assert.match(readMarkup, />Connected</);
   assert.match(readMarkup, />Not connected</);

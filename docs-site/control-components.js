@@ -98,7 +98,7 @@ export function navigationMarkup(model) {
   }).join('');
 
   const secondary = model.secondary.map(item => `
-    <a href="${item.path}" data-nav-path="${item.path}">${escapeHtml(item.label)}</a>`).join('');
+    <a href="${item.path}" data-nav-path="${item.path}"${item.current ? ' aria-current="page"' : ''}>${escapeHtml(item.label)}</a>`).join('');
   const playbooks = secondary
     ? `<div class="control-playbooks"><p class="control-nav-group-label">Playbooks</p><nav class="control-secondary-nav" aria-label="Control playbooks">${secondary}</nav></div>`
     : '';

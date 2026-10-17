@@ -156,7 +156,7 @@ test('sidebar hierarchy is account, navigation, branding, then Appearance', () =
   );
 });
 
-test('appearance defaults to Dark and resolves Dark, Light and System correctly', async () => {
+test('appearance defaults to System and resolves Dark, Light and System correctly', async () => {
   const {
     installThemeControls,
     resolveThemePreference,
@@ -164,11 +164,11 @@ test('appearance defaults to Dark and resolves Dark, Light and System correctly'
 
   assert.deepEqual(
     resolveThemePreference(null, false),
-    { preference: 'dark', theme: 'dark' },
+    { preference: 'system', theme: 'light' },
   );
   assert.deepEqual(
     resolveThemePreference(null, true),
-    { preference: 'dark', theme: 'dark' },
+    { preference: 'system', theme: 'dark' },
   );
   assert.deepEqual(
     resolveThemePreference('dark', false),
@@ -212,9 +212,9 @@ test('appearance defaults to Dark and resolves Dark, Light and System correctly'
     storage,
   });
 
-  assert.equal(root.dataset.preference, 'dark');
-  assert.equal(root.dataset.theme, 'dark');
-  assert.equal(dark.getAttribute('aria-pressed'), 'true');
+  assert.equal(root.dataset.preference, 'system');
+  assert.equal(root.dataset.theme, 'light');
+  assert.equal(system.getAttribute('aria-pressed'), 'true');
 
   await light.emit('click');
   assert.equal(storage.getItem('rob-doc-theme'), 'light');
@@ -249,11 +249,11 @@ test('appearance controls are ordered Dark, Light, System', () => {
 
   assert.match(
     controlHtml,
-    /<html[^>]*data-theme=["']dark["'][^>]*data-preference=["']dark["']/,
+    /<html[^>]*data-theme=["']light["'][^>]*data-preference=["']system["']/,
   );
   assert.match(
     controlHtml,
-    /localStorage\.getItem\(['"]rob-doc-theme['"]\)\s*\|\|\s*['"]dark['"]/,
+    /localStorage\.getItem\(['"]rob-doc-theme['"]\)\s*\|\|\s*['"]system['"]/,
   );
 });
 

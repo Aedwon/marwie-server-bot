@@ -679,7 +679,7 @@ html[data-theme="dark"] {
 .control-nav-group-label {
   margin: 0 10px 4px;
   color: var(--text-tertiary);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   line-height: 1.3;
   letter-spacing: .01em;
@@ -767,3 +767,94 @@ html[data-theme="dark"] {
   }
 }
 
+
+
+/* Completion context and route cleanup */
+.community-mappings,
+.content-mappings,
+.content-mapping-section,
+.utility-mapping-section,
+.analytics-channel-summary,
+.analytics-mapping-section {
+  display: none !important;
+}
+
+.control-context-section { display: grid; gap: 12px; }
+.control-context-section h2 { margin: 0; font-size: 16px; line-height: 1.25; font-weight: 600; }
+.control-context-section > p { margin: -4px 0 2px; color: var(--text-secondary); font-size: 13px; line-height: 1.45; }
+.control-resource-row { display: grid; gap: 6px; padding: 11px 0; border-bottom: 1px solid var(--stroke-subtle); }
+.control-resource-row:last-child { border-bottom: 0; }
+.control-resource-row > div { display: grid; gap: 2px; min-width: 0; }
+.control-resource-row strong { font-size: 14px; line-height: 1.3; font-weight: 500; }
+.control-resource-row small { color: var(--text-secondary); font-size: 13px; line-height: 1.35; overflow-wrap: anywhere; }
+.control-resource-status { justify-self: start; color: var(--text-secondary); font-size: 13px; line-height: 1.3; }
+.control-resource-status[data-tone="good"] { color: var(--status-success-fg); }
+.control-resource-status[data-tone="bad"] { color: var(--status-error-fg); }
+.control-resource-status[data-tone="info"] { color: var(--status-info-fg); }
+.control-resource-field { display: grid; gap: 7px; }
+.control-resource-field > span { font-size: 13px; line-height: 1.3; font-weight: 500; }
+.control-resource-field select { width: 100%; min-height: 38px; }
+.control-resource-confirm { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: start; color: var(--text-secondary); font-size: 13px; line-height: 1.4; }
+.control-resource-error { color: var(--status-error-fg); font-size: 13px; line-height: 1.4; }
+.workflow-feature-settings { display: grid; gap: 14px; margin: 18px 0 28px; padding: 16px 0; border-block: 1px solid var(--stroke-subtle); }
+.workflow-feature-settings > label { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.workflow-feature-settings > label > span { display: grid; gap: 3px; }
+.workflow-feature-settings small { color: var(--text-secondary); font-size: 13px; line-height: 1.4; }
+.workflow-feature-settings > div { display: flex; gap: 8px; justify-content: flex-end; }
+.workflow-feature-state { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 16px 0 28px; padding-block: 12px; border-block: 1px solid var(--stroke-subtle); }
+
+
+/* Final visual-review shell polish */
+.control-nav-domain-open > button { background: transparent; }
+.control-nav-domain-current > button { background: color-mix(in srgb, currentColor 5.5%, transparent); }
+.control-commands-page, .control-activity-page { border-top: 0; padding-top: 0; }
+@media (max-width: 639px) {
+  .control-context-shell { inset: 0 !important; width: 100vw !important; max-width: none !important; height: 100dvh !important; border-radius: 0 !important; }
+  .control-context-close { display: inline-flex !important; align-items: center; justify-content: center; }
+}
+
+
+/* Final mobile visual fixes */
+@media (max-width: 639px) {
+  .control-changes-tray-mount {
+    left: 12px !important;
+    right: 12px !important;
+    bottom: max(12px, env(safe-area-inset-bottom)) !important;
+    max-width: none !important;
+    display: flex;
+    justify-content: flex-end;
+    box-sizing: border-box;
+  }
+
+  .control-changes-tray {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .control-changes-tray-compact {
+    width: max-content;
+    max-width: 100%;
+    white-space: nowrap;
+  }
+
+  .control-context-shell {
+    z-index: 100;
+    overflow: auto;
+  }
+
+  .control-context-head {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex !important;
+    background: var(--surface-primary);
+  }
+
+  .control-context-close {
+    display: inline-flex !important;
+    min-width: 64px;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+  }
+}

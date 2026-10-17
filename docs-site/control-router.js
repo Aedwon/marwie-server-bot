@@ -11,7 +11,7 @@ const definition = [
     ['live', 'Live'],
   ]],
   ['utilities', 'Utilities', [
-    ['ticket-configuration', 'Ticket configuration'],
+    ['ticket-configuration', 'Tickets'],
     ['notification-roles', 'Notification roles'],
     ['anonymous-questions', 'Anonymous Questions'],
   ]],

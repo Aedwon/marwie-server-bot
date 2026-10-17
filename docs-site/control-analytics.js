@@ -4,6 +4,8 @@ import {
   registeredControlPage,
 } from './control-page-registry.js';
 import { featureHeaderActionsMarkup } from './control-components.js';
+import { featureResourceKeys } from './control-resource-contract.js';
+import { withResourceBindings } from './control-resource-bindings.js';
 
 export const ANALYTICS_PAGE_KEY = '/control/analytics';
 
@@ -235,7 +237,7 @@ function reportingMarkup(state, snapshot, enabled) {
     <section class="analytics-settings" aria-labelledby="analytics-settings-title">
       <div class="analytics-section-heading">
         <div><h2 id="analytics-settings-title">Reporting</h2><p>${state.mode === 'edit' ? 'Use the feature switch in the page header, then save or discard below.' : enabled ? 'Aggregate reporting is enabled.' : 'Aggregate reporting is disabled.'}</p></div>
-        <a class="control-inline-action" href="/control/mappings/channels">Manage mappings</a>
+        <a class="control-inline-action" href="/control/mappings/channels">Resource details</a>
       </div>
       <div class="control-summary-table-wrap analytics-reporting-table-wrap">
         <table class="control-summary-table analytics-reporting-table">
@@ -296,7 +298,7 @@ export function createAnalyticsPageDefinition() {
 
 export function registerAnalyticsPage() {
   if (!registeredControlPage(ANALYTICS_PAGE_KEY)) {
-    registerControlPage(createAnalyticsPageDefinition());
+    registerControlPage(withResourceBindings(createAnalyticsPageDefinition(), featureResourceKeys(ANALYTICS_PAGE_KEY)));
   }
 }
 

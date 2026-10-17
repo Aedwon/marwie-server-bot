@@ -11,7 +11,7 @@ import { createChangesTrayController } from './control-tray.js';
 import { createNavigationState, installDrawerController, navigationModel } from './control-navigation.js';
 import { navGroupForPath, resolveControlRoute } from './control-router.js';
 import { createActivityController, installActivityPage } from './control-secondary.js';
-import { workflowPageMarkup } from './control-workflows.js';
+import { registerWorkflowPages, workflowPageMarkup } from './control-workflows.js';
 import {
   controlState,
   hydrateControlPages,
@@ -79,6 +79,7 @@ registerCommunityPages();
 registerContentPages();
 registerUtilitiesPages();
 registerAnalyticsPage();
+registerWorkflowPages();
 registerMappingPages();
 
 const changesTray = createChangesTrayController({

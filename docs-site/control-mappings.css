@@ -226,3 +226,46 @@
 .mapping-status-text[data-tone="neutral"] { color: var(--muted); }
 [data-theme="dark"] .mapping-status-text[data-tone="good"] { color: #30d158; }
 [data-theme="dark"] .mapping-status-text[data-tone="bad"] { color: #ff453a; }
+
+
+.mapping-resource-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 18px 0 22px;
+  padding-bottom: 1px;
+  border-bottom: 1px solid var(--stroke-subtle);
+}
+
+.mapping-resource-tabs a {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 9px 9px 0 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.mapping-resource-tabs a:hover {
+  color: var(--text-primary);
+  background: var(--surface-secondary);
+}
+
+.mapping-resource-tabs a[aria-current="page"] {
+  color: var(--text-primary);
+  box-shadow: inset 0 -2px 0 var(--text-primary);
+}
+
+.mapping-resource-heading {
+  margin: 0 0 14px;
+  font-size: 20px;
+  line-height: 1.25;
+  font-weight: 600;
+}
+
+@media (max-width: 639px) {
+  .mapping-resource-tabs { overflow-x: auto; }
+  .mapping-resource-tabs a { min-height: 44px; }
+}
