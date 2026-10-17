@@ -59,9 +59,6 @@ export function changesTrayMarkup({ expanded = false, status = {}, dirtyPages = 
       <span>${escapeHtml(message)}</span>
     </div>
     <div class="control-tray-summary" aria-label="Unsaved changes by Control section">${groupMarkup}</div>
-    <div class="control-tray-actions">
-      <button class="control-button control-button-primary" type="button" data-control-tray-save-all disabled title="Bulk save execution is not enabled yet. Save from each edited page.">Save all changes</button>
-    </div>
   </section>`;
 }
 
