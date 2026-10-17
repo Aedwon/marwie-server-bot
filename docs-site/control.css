@@ -437,13 +437,17 @@ button { color: inherit; }
 .control-task-indicator-check { fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .control-task-status[data-state="queued"] .control-task-indicator-active { display: none; }
 .control-task-status[data-state="running"] .control-task-indicator-orbit { transform-origin: 12px 12px; animation: control-indicator-orbit 1.45s linear infinite; }
-.control-task-status[data-state="running"] .control-task-indicator-active { animation: control-indicator-breathe 1.45s ease-in-out infinite; }
+.control-task-status[data-state="running"] .control-task-indicator-active { animation: control-indicator-breathe 1.45s cubic-bezier(.45, 0, .2, 1) infinite; }
 .control-task-status[data-state="completed"] .control-task-indicator-track, .control-task-status[data-state="completed"] .control-task-indicator-active { opacity: 0; }
 .control-task-status[data-state="completed"] .control-task-indicator-complete, .control-task-status[data-state="completed"] .control-task-indicator-check { opacity: 1; transition: opacity var(--duration-medium) ease; }
 .control-task-status[data-state="blocked"] .control-task-indicator-active { stroke: var(--status-warning-fg); }
 .control-task-status[data-state="failed"] .control-task-indicator-active { stroke: var(--status-error-fg); }
 @keyframes control-indicator-orbit { to { transform: rotate(360deg); } }
-@keyframes control-indicator-breathe { 0%, 100% { stroke-dasharray: 18 82; } 50% { stroke-dasharray: 42 58; } }
+@keyframes control-indicator-breathe {
+  0%, 100% { stroke-dasharray: 18 82; }
+  33% { stroke-dasharray: 28 72; }
+  66% { stroke-dasharray: 22 78; }
+}
 
 .workflow-feature-settings { display: grid; gap: 14px; margin: 18px 0 28px; padding: 16px 0; border-block: 1px solid var(--stroke-subtle); }
 .workflow-feature-settings > label { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
