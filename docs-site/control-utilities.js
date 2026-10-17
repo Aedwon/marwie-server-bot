@@ -4,6 +4,8 @@ import {
   registeredControlPage,
 } from './control-page-registry.js';
 import { featureHeaderActionsMarkup } from './control-components.js';
+import { featureResourceKeys } from './control-resource-contract.js';
+import { withResourceBindings } from './control-resource-bindings.js';
 
 const TICKET_PAGE = '/control/utilities/ticket-configuration';
 const NOTIFICATION_PAGE = '/control/utilities/notification-roles';
@@ -11,8 +13,8 @@ const ANONYMOUS_PAGE = '/control/utilities/anonymous-questions';
 
 export const UTILITY_PAGE_CONFIGS = Object.freeze({
   [TICKET_PAGE]: Object.freeze({
-    title: 'Ticket configuration',
-    description: 'Manage the ticket feature and ticket types.',
+    title: 'Tickets',
+    description: 'Manage ticket intake and ticket types.',
   }),
   [NOTIFICATION_PAGE]: Object.freeze({
     title: 'Notification roles',
@@ -54,23 +56,7 @@ function resourceState(row) {
   return { label: 'Not connected', tone: 'neutral' };
 }
 
-function resourceSummaryMarkup(snapshot, items, manageHref = '/control/mappings/channels') {
-  return `
-    <section class="utility-section utility-mapping-section" aria-labelledby="utility-mappings-heading">
-      <div class="utility-section-heading"><div><h2 id="utility-mappings-heading">Discord mappings</h2><p>Mappings owns these resource connections. They are read-only here.</p></div><a class="control-inline-action" href="${escapeHtml(manageHref)}">Manage mappings</a></div>
-      <div class="control-summary-table-wrap">
-        <table class="control-summary-table utility-resource-table">
-          <thead><tr><th>Resource</th><th>Current</th><th>Status</th></tr></thead>
-          <tbody>${items.map(item => {
-            const row = resourceFor(snapshot, item.key);
-            const state = resourceState(row);
-            const current = row?.id && row.exists ? (row.name || 'Connected Discord resource') : row?.id ? 'Previously connected resource is unavailable' : 'No resource connected';
-            return `<tr><th scope="row">${escapeHtml(item.label)}</th><td>${escapeHtml(current)}</td><td class="control-status-text" data-tone="${state.tone}">${escapeHtml(state.label.replace(' / stale', ''))}</td></tr>`;
-          }).join('')}</tbody>
-        </table>
-      </div>
-    </section>`;
-}
+function resourceSummaryMarkup() { return ''; }
 
 function cloneTicketState(value) {
   return {
@@ -338,7 +324,7 @@ export function createUtilitiesPageDefinition(pageKey) {
 export function registerUtilitiesPages() {
   for (const pageKey of Object.keys(UTILITY_PAGE_CONFIGS)) {
     if (!registeredControlPage(pageKey)) {
-      registerControlPage(createUtilitiesPageDefinition(pageKey));
+      registerControlPage(withResourceBindings(createUtilitiesPageDefinition(pageKey), featureResourceKeys(pageKey)));
     }
   }
 }
@@ -369,7 +355,7 @@ function pageHeader(title, description, state, feature = null) {
       editAttribute: 'data-utility-edit',
       toggleAttribute: feature.toggleAttribute || '',
     })
-    : (editing ? '' : '<button class="control-button control-button-primary" type="button" data-utility-edit>Edit settings</button>');
+    : (editing ? '' : '<button class="control-button control-button-primary control-edit-settings-button" type="button" data-utility-edit>Edit settings</button>');
   return `
     <header class="utility-page-header"><div><h1>${escapeHtml(title)}</h1><p>${escapeHtml(description)}</p></div>${actions}</header>
     ${pageFeedback(state)}`;
@@ -457,12 +443,12 @@ function ticketEditRows(state) {
 }
 
 function ticketPageMarkup({ state, snapshot } = {}) {
-  if (!state?.persisted) return '<section class="control-page utility-page"><h1>Ticket configuration</h1><p>Load current server state to manage tickets.</p></section>';
+  if (!state?.persisted) return '<section class="control-page utility-page"><h1>Tickets</h1><p>Load current server state to manage tickets.</p></section>';
   const editing = state.mode === 'edit';
   const enabled = editing ? state.draft.enabled : state.persisted.enabled;
   return `
     <section class="control-page utility-page" data-page-key="${TICKET_PAGE}">
-      ${pageHeader('Ticket configuration', 'Manage the ticket feature and ticket types.', state, { label: 'Tickets', enabled, toggleAttribute: 'data-utility-feature="tickets"' })}
+      ${pageHeader('Tickets', 'Manage ticket intake and ticket types.', state, { label: 'Tickets', enabled, toggleAttribute: 'data-utility-feature="tickets"' })}
       <section class="utility-section" aria-labelledby="ticket-types-heading">
         <div class="utility-section-heading">
           <div><h2 id="ticket-types-heading">Ticket types</h2><p>Create, edit, disable, or re-enable the choices shown to members. Disabled ticket types stay visible.</p></div>
@@ -633,14 +619,16 @@ function notificationRead(state, snapshot) {
     return '<p class="utility-empty">No notification role panel is configured.</p>';
   }
   const roles = new Map((snapshot?.roles || []).map(role => [String(role.id), role]));
+  const buttons = panel.buttons.map(item => {
+    const role = roles.get(String(item.role_id));
+    return `<article class="utility-notification-button-summary"><strong>${escapeHtml(item.label)}</strong><dl><div><dt>Role</dt><dd>${escapeHtml(role?.name || `Role ${item.role_id}`)}</dd></div><div><dt>Emoji</dt><dd>${escapeHtml(item.emoji || 'None')}</dd></div><div><dt>Style</dt><dd>${escapeHtml(item.style)}</dd></div></dl></article>`;
+  }).join('');
   return `
-    <div class="control-summary-table-wrap utility-panel-summary-wrap">
-      <table class="control-summary-table utility-panel-summary">
-        <thead><tr><th>Panel field</th><th>Configuration</th></tr></thead>
-        <tbody><tr><th scope="row">Title</th><td>${escapeHtml(panel.title || 'Not configured')}</td></tr><tr><th scope="row">Description</th><td>${escapeHtml(panel.description || 'Not configured')}</td></tr></tbody>
-      </table>
-    </div>
-    ${panel.buttons.length ? `<div class="utility-subheading"><h3>Buttons</h3><p>${panel.buttons.length} configured self-role button${panel.buttons.length === 1 ? '' : 's'}.</p></div><div class="control-summary-table-wrap"><table class="control-summary-table utility-button-summary"><thead><tr><th>Label</th><th>Role</th><th>Emoji</th><th>Style</th></tr></thead><tbody>${panel.buttons.map(item => { const role = roles.get(String(item.role_id)); return `<tr><th scope="row">${escapeHtml(item.label)}</th><td>${escapeHtml(role?.name || `Role ${item.role_id}`)}</td><td>${escapeHtml(item.emoji || 'None')}</td><td>${escapeHtml(item.style)}</td></tr>`; }).join('')}</tbody></table></div>` : ''}`;
+    <dl class="utility-panel-summary-list">
+      <div><dt>Title</dt><dd>${escapeHtml(panel.title || 'Not configured')}</dd></div>
+      <div><dt>Description</dt><dd>${escapeHtml(panel.description || 'Not configured')}</dd></div>
+    </dl>
+    ${panel.buttons.length ? `<div class="utility-subheading"><h3>Buttons</h3><p>${panel.buttons.length} configured self-role button${panel.buttons.length === 1 ? '' : 's'}.</p></div><div class="utility-notification-button-list">${buttons}</div>` : ''}`;
 }
 
 function notificationButtonRows(state, snapshot) {
@@ -695,7 +683,7 @@ function notificationPageMarkup({ state, snapshot } = {}) {
       ${pageHeader('Notification roles', 'Manage the self-assignable role panel.', state)}
       <section class="utility-section" aria-labelledby="notification-panel-heading">
         <div class="utility-section-heading">
-          <div><h2 id="notification-panel-heading">Panel</h2><p>Destination wiring stays in Mappings.</p></div>
+          <div><h2 id="notification-panel-heading">Panel</h2><p>Destination wiring is configured in Context.</p></div>
         </div>
         ${editing ? `
           <div class="utility-notification-layout">

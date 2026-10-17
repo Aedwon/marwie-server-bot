@@ -1,3 +1,7 @@
+import { registerControlPage, registeredControlPage } from './control-page-registry.js';
+import { featureResourceKeys } from './control-resource-contract.js';
+import { withResourceBindings } from './control-resource-bindings.js';
+
 function escapeHtml(value) {
   return String(value ?? '')
     .replaceAll('&', '&amp;')
@@ -57,7 +61,7 @@ export const WORKFLOW_PAGE_CONFIGS = Object.freeze({
     stages: Object.freeze([
       Object.freeze({
         title: 'Prepare',
-        body: 'Keep ticket types in Ticket configuration and Discord destinations in Mappings before publishing the member entry point.',
+        body: 'Keep ticket types and Discord resources configured in Tickets before publishing the member entry point.',
         points: Object.freeze([
           'The ticket panel needs an existing ticket_panel text channel and at least one enabled ticket type.',
           'Each /ticket-panel post invocation sends a new panel message; it does not edit an older one.',
@@ -105,7 +109,7 @@ export const WORKFLOW_PAGE_CONFIGS = Object.freeze({
         title: 'Prepare',
         body: 'Verify the feature state and destination before drafting the event communication.',
         points: Object.freeze([
-          'Announcements and Live keep their own feature state; Discord destinations stay in Mappings.',
+          'Announcements and Live keep their own feature state; Discord destinations are configured in Context.',
           'Live needs live_announcements or the fallback announcements mapping and permission to send messages and embeds.',
         ]),
         links: Object.freeze([
@@ -177,4 +181,78 @@ export function workflowPageMarkup(pageKey) {
         ${config.stages.map(stageMarkup).join('')}
       </ol>
     </article>`;
+}
+
+
+// Control redesign completion: Moderation is configurable; other workflows remain guidance-only.
+const MODERATION_PAGE = '/control/workflows/moderation';
+
+function moderationEnabled(snapshot) {
+  return Boolean((snapshot?.features || []).find(item => item?.name === 'moderation')?.enabled);
+}
+
+function createModerationPageDefinition() {
+  return {
+    pageKey: MODERATION_PAGE,
+    selectPersisted(snapshot) {
+      return { enabled: moderationEnabled(snapshot) };
+    },
+    cloneDraft(value) {
+      return { enabled: Boolean(value?.enabled) };
+    },
+    validateDraft() {
+      return {};
+    },
+    diffDraft(persisted, draft) {
+      if (Boolean(persisted?.enabled) === Boolean(draft?.enabled)) return [];
+      return [{ action_type: 'set_feature', payload: { feature: 'moderation', enabled: Boolean(draft?.enabled) } }];
+    },
+    render({ state } = {}) {
+      const base = workflowPageMarkup(MODERATION_PAGE);
+      if (!state?.persisted) return base;
+      const enabled = state.mode === 'edit' ? state.draft.enabled : state.persisted.enabled;
+      const controls = state.mode === 'edit'
+        ? `<section class="workflow-feature-settings"><label><span><strong>Moderation</strong><small>Enable Rob-bot moderation actions for this server.</small></span><input type="checkbox" data-workflow-enabled${enabled ? ' checked' : ''}></label><div><button class="control-button control-button-primary" type="button" data-workflow-save${state.dirty && !Object.keys(state.errors || {}).length && state.status !== 'saving' ? '' : ' disabled'}>${state.status === 'saving' ? 'Saving…' : 'Save changes'}</button><button class="control-button control-button-secondary" type="button" data-workflow-discard${state.status === 'saving' ? ' disabled' : ''}>Discard</button></div></section>`
+        : `<div class="workflow-feature-state"><span>${enabled ? 'Enabled' : 'Disabled'}</span><button class="control-button control-button-secondary" type="button" data-workflow-edit>Edit settings</button></div>`;
+      return base.replace('</header>', `</header>${controls}`);
+    },
+    install({ root, store, pageKey, onSave, rerender } = {}) {
+      const onClick = event => {
+        if (event.target.closest?.('[data-workflow-edit]')) {
+          store.beginEdit(pageKey);
+          rerender?.();
+          return;
+        }
+        if (event.target.closest?.('[data-workflow-discard]')) {
+          store.discard(pageKey);
+          rerender?.();
+          return;
+        }
+        if (event.target.closest?.('[data-workflow-save]') && store.canSave(pageKey)) {
+          onSave?.(pageKey, store.buildSaveRequest(pageKey));
+        }
+      };
+      const onChange = event => {
+        const toggle = event.target.closest?.('[data-workflow-enabled]');
+        if (!toggle) return;
+        store.updateDraft(pageKey, draft => { draft.enabled = Boolean(toggle.checked); });
+        rerender?.();
+      };
+      root.addEventListener('click', onClick);
+      root.addEventListener('change', onChange);
+      return () => {
+        root.removeEventListener('click', onClick);
+        root.removeEventListener('change', onChange);
+      };
+    },
+  };
+}
+
+export function registerWorkflowPages() {
+  if (!registeredControlPage(MODERATION_PAGE)) {
+    registerControlPage(withResourceBindings(
+      createModerationPageDefinition(),
+      featureResourceKeys(MODERATION_PAGE),
+    ));
+  }
 }

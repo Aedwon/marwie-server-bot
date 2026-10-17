@@ -61,6 +61,29 @@ test('reputation page accepts its feature toggle and thresholds in one logical s
   assert.equal(result.changes.length, 2);
 });
 
+test('feature pages and Resources mutate the same canonical resource keys without cross-page ownership', () => {
+  const snowflake = '1546719767929552997';
+  const feature = validate({
+    page_key: '/control/utilities/notification-roles',
+    base_revision: 'a'.repeat(64),
+    changes: [{ action_type: 'set_resource', payload: { key: 'role_panel', discord_id: snowflake } }],
+  });
+  assert.deepEqual(feature.changes[0].payload, { key: 'role_panel', discord_id: snowflake });
+
+  const resources = validate({
+    page_key: '/control/mappings/channels',
+    base_revision: 'a'.repeat(64),
+    changes: [{ action_type: 'set_resource', payload: { key: 'role_panel', discord_id: snowflake } }],
+  });
+  assert.deepEqual(resources.changes[0].payload, { key: 'role_panel', discord_id: snowflake });
+
+  assert.throws(() => validate({
+    page_key: '/control/community/quizzes',
+    base_revision: 'a'.repeat(64),
+    changes: [{ action_type: 'set_resource', payload: { key: 'role_panel', discord_id: snowflake } }],
+  }), error => error instanceof HttpError && error.status === 400);
+});
+
 test('channels Mappings page owns compromised account trap direct mapping', () => {
   const snowflake = '1546719767929552997';
   const result = validate({

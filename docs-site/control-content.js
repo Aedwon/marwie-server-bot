@@ -4,6 +4,8 @@ import {
   registeredControlPage,
 } from './control-page-registry.js';
 import { featureHeaderActionsMarkup } from './control-components.js';
+import { featureResourceKeys } from './control-resource-contract.js';
+import { withResourceBindings } from './control-resource-bindings.js';
 
 export const CONTENT_PAGE_CONFIGS = Object.freeze({
   '/control/content/feeds': Object.freeze({
@@ -597,7 +599,7 @@ export function createContentPageDefinition(pageKey) {
 
 export function registerContentPages() {
   for (const pageKey of Object.keys(CONTENT_PAGE_CONFIGS)) {
-    if (!registeredControlPage(pageKey)) registerControlPage(createContentPageDefinition(pageKey));
+    if (!registeredControlPage(pageKey)) registerControlPage(withResourceBindings(createContentPageDefinition(pageKey), featureResourceKeys(pageKey)));
   }
 }
 

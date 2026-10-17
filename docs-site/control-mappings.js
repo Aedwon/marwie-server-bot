@@ -18,6 +18,9 @@ const CHANNEL_KEYS = Object.freeze([
   'ai_updates',
   'quiz_channel',
   'anon_questions',
+  'anon_messages_panel',
+  'anon_messages_submissions',
+  'anon_messages_audit_log',
   'analytics',
   'showcase_forum',
   'app_of_the_week',
@@ -72,6 +75,9 @@ export const MAPPING_RESOURCE_DEFINITIONS = Object.freeze({
   ai_updates: Object.freeze({ label: 'AI updates', group: 'channels', kind: 'text' }),
   quiz_channel: Object.freeze({ label: 'Quiz channel', group: 'channels', kind: 'text' }),
   anon_questions: Object.freeze({ label: 'Anonymous questions', group: 'channels', kind: 'text' }),
+  anon_messages_panel: Object.freeze({ label: 'Anonymous message panel', group: 'channels', kind: 'text' }),
+  anon_messages_submissions: Object.freeze({ label: 'Anonymous submissions', group: 'channels', kind: 'text' }),
+  anon_messages_audit_log: Object.freeze({ label: 'Anonymous audit log', group: 'channels', kind: 'text' }),
   analytics: Object.freeze({ label: 'Analytics', group: 'channels', kind: 'text' }),
   showcase_forum: Object.freeze({ label: 'Showcase forum', group: 'channels', kind: 'forum' }),
   app_of_the_week: Object.freeze({ label: 'App of the week', group: 'channels', kind: 'text' }),
@@ -484,7 +490,7 @@ function suggestionMarkup(pageKey, snapshot) {
       <div class="mapping-suggestions-heading">
         <div>
           <h2>Suggested mappings</h2>
-          <p>Review only the resources owned by Mappings. Nothing is changed until you apply the reviewed plan.</p>
+          <p>Review suggested Discord resources. Nothing changes until you apply the reviewed plan.</p>
         </div>
         <button class="control-button control-button-primary" type="button" data-mapping-review>${open ? 'Close review' : 'Review suggested mappings'}</button>
       </div>
@@ -508,11 +514,20 @@ function destructiveMappingMarkup(pageKey, state) {
     </aside>`;
 }
 
+function resourcesTabsMarkup(pageKey) {
+  const items = [
+    ['/control/mappings/channels', 'Channels'],
+    ['/control/mappings/roles', 'Roles'],
+    ['/control/mappings/categories', 'Categories'],
+  ];
+  return `<nav class="mapping-resource-tabs" aria-label="Resource types">${items.map(([path, label]) => `<a href="${path}" data-nav-path="${path}"${path === pageKey ? ' aria-current="page"' : ''}>${label}</a>`).join('')}</nav>`;
+}
+
 export function mappingPageMarkup({ pageKey, state, snapshot } = {}) {
   const config = MAPPING_PAGE_CONFIGS[pageKey];
   if (!config) return '';
   if (!state?.persisted) {
-    return `<section class="control-page mapping-page"><h1>${escapeHtml(config.title)}</h1><p>Load current server state to manage these mappings.</p></section>`;
+    return `<section class="control-page mapping-page"><h1>Resources</h1>${resourcesTabsMarkup(pageKey)}<h2>${escapeHtml(config.title)}</h2><p>Load current server state to manage these Discord resources.</p></section>`;
   }
 
   const statusMarkup = state.saveError
@@ -525,7 +540,8 @@ export function mappingPageMarkup({ pageKey, state, snapshot } = {}) {
     return `
       <section class="control-page mapping-page" data-page-key="${escapeHtml(pageKey)}">
         <header class="mapping-page-header">
-          <div><h1>${escapeHtml(config.title)}</h1><p>Choose current Discord resources, then save all changes together.</p></div>
+          <div><h1>Resources</h1><p>Choose current Discord resources, then save all changes together.</p></div>
+        ${resourcesTabsMarkup(pageKey)}
         </header>
         ${statusMarkup}
         <div class="mapping-edit-grid">
@@ -543,8 +559,9 @@ export function mappingPageMarkup({ pageKey, state, snapshot } = {}) {
   return `
     <section class="control-page mapping-page" data-page-key="${escapeHtml(pageKey)}">
       <header class="mapping-page-header">
-        <div><h1>${escapeHtml(config.title)}</h1><p>Current Discord resources and their connection health.</p></div>
-        <button class="control-button control-button-primary" type="button" data-mapping-edit>Edit settings</button>
+        <div><h1>Resources</h1><p>Current Discord resources and their connection health.</p></div>
+        ${resourcesTabsMarkup(pageKey)}
+        <button class="control-button control-button-primary control-edit-settings-button" type="button" data-mapping-edit>Edit settings</button>
       </header>
       ${statusMarkup}
       <div class="mapping-table-wrap">

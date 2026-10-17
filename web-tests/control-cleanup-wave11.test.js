@@ -39,7 +39,7 @@ test('Wave 11 keeps only approved IA routes and one canonical home per capabilit
     'anonymous-questions', 'moderation', 'ticket-handling', 'events',
     'channels', 'roles', 'categories',
   ]) assert.match(router, new RegExp(`['\"]${required}['\"]`));
-  assert.doesNotMatch(router, /overview|features|setup|settings|system|advanced|publishing|build-help|message-logs/);
+  assert.doesNotMatch(router, /overview|features|setup|settings|advanced|build-help|message-logs/);
 });
 
 test('Commands-only operations are not exposed through the browser action API', () => {

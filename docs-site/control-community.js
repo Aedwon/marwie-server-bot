@@ -4,6 +4,8 @@ import {
   registeredControlPage,
 } from './control-page-registry.js';
 import { featureHeaderActionsMarkup } from './control-components.js';
+import { featureResourceKeys } from './control-resource-contract.js';
+import { withResourceBindings } from './control-resource-bindings.js';
 
 const REPUTATION = '/control/community/reputation';
 const QUIZZES = '/control/community/quizzes';
@@ -93,28 +95,7 @@ function sameQuestionContent(left, right) {
     && left.explanation === right.explanation;
 }
 
-function mappingSummary(snapshot, groups) {
-  const rows = resourcesByKey(snapshot);
-  return groups.map(group => `
-    <div class="community-mapping-group">
-      <div class="community-mapping-heading">
-        <strong>${escapeHtml(group.label)}</strong>
-        <a class="control-inline-action" href="${escapeHtml(group.href)}">Manage mappings</a>
-      </div>
-      <div class="control-summary-table-wrap">
-        <table class="control-summary-table">
-          <thead><tr><th>Resource</th><th>Current</th><th>Status</th></tr></thead>
-          <tbody>${group.keys.map(key => {
-            const row = rows.get(key);
-            const current = row?.id && row?.exists ? row.name || 'Connected Discord resource' : row?.id ? 'Previously connected resource is unavailable' : 'No resource connected';
-            const status = row?.id && row?.exists ? 'Connected' : row?.id ? 'Unavailable' : 'Not connected';
-            const tone = row?.id && row?.exists ? 'good' : row?.id ? 'bad' : 'neutral';
-            return `<tr><th scope="row">${escapeHtml(key.replaceAll('_', ' '))}</th><td>${escapeHtml(current)}</td><td class="control-status-text" data-tone="${tone}">${escapeHtml(status)}</td></tr>`;
-          }).join('')}</tbody>
-        </table>
-      </div>
-    </div>`).join('');
-}
+function mappingSummary() { return ''; }
 
 function statusMarkup(state) {
   if (state?.saveError) return `<p class="community-message" role="alert">${escapeHtml(state.saveError)}</p>`;
@@ -150,7 +131,7 @@ function reputationMarkup(state, snapshot) {
   const mappings = mappingSummary(snapshot, [{ label: 'Reputation roles', href: '/control/mappings/roles', keys: ['builder_role', 'contributor_role', 'mentor_role'] }]);
   const header = pageHeader(
     'Reputation',
-    state.mode === 'edit' ? 'Configure the feature and tier thresholds. Discord roles stay in Mappings.' : 'Current reputation status and tier thresholds.',
+    state.mode === 'edit' ? 'Configure the feature and tier thresholds. Discord roles are configured in Context.' : 'Current reputation status and tier thresholds.',
     state,
     [{ label: 'Reputation', enabled: value.enabled, toggleAttribute: 'data-community-field="enabled"' }],
   );
@@ -161,11 +142,11 @@ function reputationMarkup(state, snapshot) {
       <fieldset class="community-fieldset community-tier-fieldset"><legend>Tier thresholds</legend><p>Use strictly increasing values from 1 to 100000.</p>
         <div class="community-tier-editor">${['builder', 'contributor', 'mentor'].map(key => `<label class="community-threshold-field"><strong class="community-threshold-label">${escapeHtml(key[0].toUpperCase() + key.slice(1))}</strong><input class="community-threshold-input" type="number" min="1" max="100000" step="1" inputmode="numeric" data-community-threshold="${key}" value="${escapeHtml(value.thresholds[key])}"></label>`).join('')}</div>
         ${error ? `<p class="community-field-error" role="alert">${escapeHtml(error)}</p>` : ''}
-      </fieldset>${saveBar(state)}<section class="community-mappings"><h2>Discord mappings</h2>${mappings}</section></section>`;
+      </fieldset>${saveBar(state)}</section>`;
   }
   return `<section class="control-page community-page" data-page-key="${REPUTATION}">${header}${statusMarkup(state)}
     <section class="community-tier-section" aria-labelledby="reputation-tier-heading"><div class="community-section-heading"><div><h2 id="reputation-tier-heading">Tier progression</h2><p>Reputation thresholds increase from Builder through Mentor.</p></div></div><div class="community-tier-progression" role="list">${[['Builder', value.thresholds.builder], ['Contributor', value.thresholds.contributor], ['Mentor', value.thresholds.mentor]].map(([label, threshold]) => `<div class="community-tier-step" role="listitem"><strong>${escapeHtml(label)}</strong><span class="community-tier-value">${escapeHtml(threshold)} pts</span></div>`).join('')}</div></section>
-    <section class="community-mappings"><h2>Discord mappings</h2>${mappings}</section></section>`;
+    </section>`;
 }
 
 function questionEditor(question, index, error) {
@@ -186,7 +167,7 @@ function quizzesMarkup(state, snapshot) {
   const mappings = mappingSummary(snapshot, [{ label: 'Quiz channel', href: '/control/mappings/channels', keys: ['quiz_channel'] }]);
   const header = pageHeader(
     'Quizzes',
-    state.mode === 'edit' ? 'Configure scheduling and maintain the question bank. The quiz channel stays in Mappings.' : 'Current schedule and question-bank status.',
+    state.mode === 'edit' ? 'Configure scheduling and maintain the question bank. The quiz channel is configured in Context.' : 'Current schedule and question-bank status.',
     state,
     [{ label: 'Scheduled quizzes', enabled: value.enabled, toggleAttribute: 'data-community-field="enabled"' }],
   );
@@ -194,12 +175,12 @@ function quizzesMarkup(state, snapshot) {
     return `<section class="control-page community-page" data-page-key="${QUIZZES}">${header}${statusMarkup(state)}
       <div class="community-section-grid"><label class="community-field-card">Interval in hours<input type="number" min="1" max="720" step="1" data-community-field="intervalHours" value="${value.intervalHours == null ? '' : escapeHtml(value.intervalHours)}" placeholder="24"><small>Between 1 and 720 hours. Leave blank if automatic scheduling is not configured.</small>${state.errors?.intervalHours ? `<span class="community-field-error" role="alert">${escapeHtml(state.errors.intervalHours)}</span>` : ''}</label></div>
       <section class="community-question-section"><div class="community-section-heading"><div><h2>Question bank</h2><p>${count} question${count === 1 ? '' : 's'} in this server.</p></div><button class="control-button control-button-secondary" type="button" data-community-add-question>Add question</button></div><div class="community-question-list">${value.questions.map((question, index) => questionEditor(question, index, state.errors?.[`question_${index}`])).join('')}</div></section>
-      ${saveBar(state)}<section class="community-mappings"><h2>Discord mappings</h2>${mappings}</section></section>`;
+      ${saveBar(state)}</section>`;
   }
   const enabledCount = value.questions.filter(question => question.enabled).length;
   return `<section class="control-page community-page" data-page-key="${QUIZZES}">${header}${statusMarkup(state)}
     <section class="community-ops-section" aria-labelledby="quiz-snapshot-heading"><div class="community-section-heading"><div><h2 id="quiz-snapshot-heading">Operational snapshot</h2><p>Current quiz cadence and question-bank readiness.</p></div></div><dl class="community-ops-snapshot"><div><dt>Schedule</dt><dd>${value.intervalHours == null ? 'Not configured' : `Every ${escapeHtml(value.intervalHours)} hours`}</dd></div><div><dt>Last posted</dt><dd>${escapeHtml(timestampLabel(value.lastPostedAt))}</dd></div><div><dt>Questions</dt><dd>${count}</dd></div><div><dt>Enabled</dt><dd>${enabledCount}</dd></div></dl></section>
-    <section class="community-mappings"><h2>Discord mappings</h2>${mappings}</section></section>`;
+    </section>`;
 }
 
 function voiceCoworkingMarkup(state, snapshot) {
@@ -209,11 +190,11 @@ function voiceCoworkingMarkup(state, snapshot) {
   ]);
   const header = pageHeader(
     'Voice & Coworking',
-    state.mode === 'edit' ? 'Manage Temporary voice. Other voice and coworking resources stay in Mappings.' : 'Current Temporary voice state and category mapping.',
+    state.mode === 'edit' ? 'Manage Temporary voice. Other voice and coworking resources are configured in Context.' : 'Current Temporary voice state and category mapping.',
     state,
     [{ label: 'Temporary voice', enabled: value.voiceEnabled, toggleAttribute: 'data-community-field="voiceEnabled"' }],
   );
-  return `<section class="control-page community-page" data-page-key="${VOICE_COWORKING}">${header}${statusMarkup(state)}${state.mode === 'edit' ? saveBar(state) : ''}<section class="community-mappings"><h2>Discord mappings</h2>${mappings}</section></section>`;
+  return `<section class="control-page community-page" data-page-key="${VOICE_COWORKING}">${header}${statusMarkup(state)}${state.mode === 'edit' ? saveBar(state) : ''}</section>`;
 }
 
 function showcaseMarkup(state, snapshot) {
@@ -221,11 +202,11 @@ function showcaseMarkup(state, snapshot) {
   const mappings = mappingSummary(snapshot, [{ label: 'Showcase resources', href: '/control/mappings/channels', keys: ['showcase_forum', 'app_of_the_week', 'collab_lfg'] }]);
   const header = pageHeader(
     'Showcase',
-    state.mode === 'edit' ? 'Manage Showcase behavior here. Forum and destination channels stay in Mappings.' : 'Current Showcase status and Discord wiring health.',
+    state.mode === 'edit' ? 'Manage Showcase behavior here. Forum and destination channels are configured in Context.' : 'Current Showcase status and Discord wiring health.',
     state,
     [{ label: 'Showcase', enabled: value.enabled, toggleAttribute: 'data-community-field="enabled"' }],
   );
-  return `<section class="control-page community-page" data-page-key="${SHOWCASE}">${header}${statusMarkup(state)}${state.mode === 'edit' ? saveBar(state) : ''}<section class="community-mappings"><h2>Discord mappings</h2>${mappings}</section></section>`;
+  return `<section class="control-page community-page" data-page-key="${SHOWCASE}">${header}${statusMarkup(state)}${state.mode === 'edit' ? saveBar(state) : ''}</section>`;
 }
 
 function renderPage(pageKey, state, snapshot) {
@@ -337,7 +318,7 @@ export function createCommunityPageDefinition(pageKey) {
 
 export function registerCommunityPages() {
   for (const pageKey of Object.keys(COMMUNITY_PAGE_CONFIGS)) {
-    if (!registeredControlPage(pageKey)) registerControlPage(createCommunityPageDefinition(pageKey));
+    if (!registeredControlPage(pageKey)) registerControlPage(withResourceBindings(createCommunityPageDefinition(pageKey), featureResourceKeys(pageKey)));
   }
 }
 

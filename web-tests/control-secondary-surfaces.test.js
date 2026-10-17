@@ -100,13 +100,35 @@ test('Activity markup is semantic, human-readable, and keeps raw backend data ou
 });
 
 test('Activity renders local loading, empty, error, and terminal pagination states', () => {
-  assert.match(activityPageMarkup({ phase: 'loading', items: [] }), /role="status"[^>]*>Loading activity/);
+  const loading = activityPageMarkup({ phase: 'loading', items: [] });
+  assert.match(loading, /role="status"/);
+  assert.match(loading, /data-task-indicator[^>]*data-state="running"[^>]*data-size="18"/);
+  assert.match(loading, /Loading activity…/);
   assert.match(activityPageMarkup({ phase: 'ready', items: [], nextCursor: null }), /No administrative activity yet/);
   const error = activityPageMarkup({ phase: 'error', items: [], error: 'Activity could not be loaded.' });
   assert.match(error, /role="alert"/);
   assert.match(error, /data-activity-retry/);
   const terminal = activityPageMarkup({ phase: 'ready', items: [{ id: 'a', actor: { id: '1' }, summary: 'Updated a mapping', status: 'completed', timestamp: '2026-08-29T12:00:00Z', failure: null }], nextCursor: null });
   assert.doesNotMatch(terminal, /data-activity-load-more/);
+});
+
+test('Activity uses the canonical indicator for genuine queued, running, completed, and pagination async states', () => {
+  const rows = activityPageMarkup({
+    phase: 'ready',
+    items: [
+      { id: 'q', actor: { id: '1' }, summary: 'Queued work', status: 'queued', timestamp: '2026-08-29T12:00:00Z', failure: null },
+      { id: 'r', actor: { id: '1' }, summary: 'Running work', status: 'claimed', timestamp: '2026-08-29T12:01:00Z', failure: null },
+      { id: 'd', actor: { id: '1' }, summary: 'Finished work', status: 'completed', timestamp: '2026-08-29T12:02:00Z', failure: null },
+    ],
+    nextCursor: 'next',
+    loadingMore: true,
+  });
+  assert.match(rows, /data-state="queued"[^>]*data-size="16"/);
+  assert.match(rows, /data-state="running"[^>]*data-size="16"/);
+  assert.match(rows, /data-state="completed"[^>]*data-size="16"/);
+  assert.match(rows, /data-activity-load-more[^>]*disabled[^>]*>[\s\S]*data-state="running"[^>]*data-size="16"/);
+  assert.equal((rows.match(/In progress/g) || []).length, 1);
+  assert.equal((rows.match(/Completed/g) || []).length, 1);
 });
 
 test('Activity controller performs one initial load and appends later pages in API order', async () => {

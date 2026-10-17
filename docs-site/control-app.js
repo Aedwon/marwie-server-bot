@@ -6,16 +6,18 @@ import { registerCommunityPages } from './control-community.js';
 import { registerMappingPages } from './control-mappings.js';
 import { registerUtilitiesPages } from './control-utilities.js';
 import { installThemeControls } from './control-theme.js';
+import { installContextDrawerController, syncContextAvailability } from './control-layout.js';
 import { createChangesTrayController } from './control-tray.js';
 import { createNavigationState, installDrawerController, navigationModel } from './control-navigation.js';
-import { resolveControlRoute } from './control-router.js';
+import { navGroupForPath, resolveControlRoute } from './control-router.js';
 import { createActivityController, installActivityPage } from './control-secondary.js';
-import { workflowPageMarkup } from './control-workflows.js';
+import { registerWorkflowPages, workflowPageMarkup } from './control-workflows.js';
 import {
   controlState,
   hydrateControlPages,
   installControlStateGuards,
   installRegisteredControlPage,
+  renderRegisteredControlContext,
   renderRegisteredControlPage,
 } from './control-page-registry.js';
 import {
@@ -29,7 +31,8 @@ import {
 const ROUTE_KEY = 'rob-control-last-route';
 const DOMAIN_ROUTE_KEY = 'rob-control-last-domain-routes';
 const EXPANDED_KEY = 'rob-control-expanded-domain';
-const NARROW_QUERY = '(max-width: 944px)';
+const NAV_QUERY = '(max-width: 899px)';
+const CONTEXT_QUERY = '(max-width: 1199px)';
 
 const shell = {
   nav: document.querySelector('#controlNavContent'),
@@ -39,7 +42,14 @@ const shell = {
   main: document.querySelector('#controlMain'),
   identity: document.querySelector('#controlIdentity'),
   tray: document.querySelector('#controlChangesTray'),
+  contextDrawer: document.querySelector('#controlContextDrawer'),
+  context: document.querySelector('#controlContext'),
+  contextButton: document.querySelector('#controlContextButton'),
+  contextClose: document.querySelector('#controlContextClose'),
 };
+
+const navMedia = matchMedia(NAV_QUERY);
+const contextMedia = matchMedia(CONTEXT_QUERY);
 
 let session = null;
 let guild = null;
@@ -69,6 +79,7 @@ registerCommunityPages();
 registerContentPages();
 registerUtilitiesPages();
 registerAnalyticsPage();
+registerWorkflowPages();
 registerMappingPages();
 
 const changesTray = createChangesTrayController({
@@ -101,12 +112,19 @@ function navigationDomainSections() {
 
 function syncNavigationCurrentState() {
   shell.nav.querySelectorAll('[data-nav-path]').forEach(link => {
-    if (link.dataset.navPath === navState.current.path) link.setAttribute('aria-current', 'page');
+    if (link.dataset.navKey === 'resources') {
+      const remembered = navState.lastByDomain.mappings || '/control/mappings/channels';
+      link.href = remembered;
+      link.dataset.navPath = remembered;
+    }
+    const matchesDomain = link.dataset.navMatchDomain && link.dataset.navMatchDomain === navState.current.domain;
+    if (matchesDomain || link.dataset.navPath === navState.current.path) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
   });
 
+  const currentGroup = navGroupForPath(navState.current.path)?.key || null;
   navigationDomainSections().forEach(section => {
-    const current = section.dataset.domain === navState.current.domain;
+    const current = section.dataset.domain === currentGroup;
     section.classList.toggle('control-nav-domain-current', current);
     const button = section.querySelector('[data-domain-select]');
     const existingMarker = button?.querySelector('.control-nav-marker');
@@ -167,7 +185,7 @@ function revealNavigationDomain(domainKey) {
 }
 
 function renderNavigation() {
-  shell.nav.innerHTML = navigationMarkup(navigationModel(navState.current, navState.expandedDomain));
+  shell.nav.innerHTML = navigationMarkup(navigationModel(navState.current, navState.expandedDomain, navState.lastByDomain));
   shell.nav.querySelectorAll('a[href^="/control/"]').forEach(link => {
     link.addEventListener('click', event => {
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -216,6 +234,17 @@ function renderMain() {
     ? renderRegisteredControlPage(pageKey, { snapshot: guildState })
     : null;
   const workflowMarkup = session?.authenticated ? workflowPageMarkup(pageKey) : '';
+  const contextMarkup = session?.authenticated
+    ? renderRegisteredControlContext(pageKey, { snapshot: guildState })
+    : '';
+
+  syncContextAvailability({
+    drawer: shell.contextDrawer,
+    trigger: shell.contextButton,
+    root: shell.context,
+    markup: contextMarkup,
+    mediaQuery: contextMedia,
+  });
 
   shell.main.replaceChildren?.();
   shell.main.innerHTML = registeredMarkup ?? (workflowMarkup || pageMarkup(navState.current, {
@@ -229,6 +258,7 @@ function renderMain() {
   if (registeredMarkup !== null) {
     removePageInteractions = installRegisteredControlPage(pageKey, shell.main, {
       snapshot: guildState,
+      contextRoot: shell.context,
       onSave: requestRegisteredPageSave,
       onApplySuggestions: requestMappingSuggestions,
       onAction: requestContentAction,
@@ -250,7 +280,8 @@ function navigate(path, { replace = false } = {}) {
   }
   syncNavigationCurrentState();
   renderMain();
-  if (matchMedia(NARROW_QUERY).matches) shell.close.click();
+  if (navMedia.matches) shell.close.click();
+  if (contextMedia.matches && shell.contextDrawer?.dataset.open === 'true') shell.contextClose?.click();
 }
 
 function setStatus(message, tone = '') {
@@ -440,7 +471,13 @@ installDrawerController({
   drawer: shell.drawer,
   trigger: shell.menu,
   closeButton: shell.close,
-  mediaQuery: matchMedia(NARROW_QUERY),
+  mediaQuery: navMedia,
+});
+installContextDrawerController({
+  drawer: shell.contextDrawer,
+  trigger: shell.contextButton,
+  closeButton: shell.contextClose,
+  mediaQuery: contextMedia,
 });
 installThemeControls({
   root: document.documentElement,

@@ -37,12 +37,12 @@ test('global changes tray is one compact/expanded surface and only minimize coll
   assert.equal(expanded.includes('Server state is current'), true);
   assert.equal(expanded.includes('Community'), true);
   assert.equal(expanded.includes('Content'), true);
-  assert.equal(expanded.includes('Save all changes'), true);
+  assert.equal(expanded.includes('Save all changes'), false);
+  assert.equal(expanded.includes('data-control-tray-save-all'), false);
   assert.equal(expanded.toLowerCase().includes('unsaved-dot'), false);
   assert.equal(expanded.toLowerCase().includes('pending-badge'), false);
 
   assert.equal(nextTrayExpandedState(true, 'content'), true);
-  assert.equal(nextTrayExpandedState(true, 'save-all'), true);
   assert.equal(nextTrayExpandedState(true, 'minimize'), false);
   assert.equal(nextTrayExpandedState(false, 'expand'), true);
 });

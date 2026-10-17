@@ -1,68 +1,62 @@
 import {
-  CONTROL_DOMAINS,
-  SECONDARY_DESTINATIONS,
+  CONTROL_NAV_GROUPS,
+  CONTROL_PLAYBOOKS,
   destinationForDomain,
   destinationForPath,
+  navGroupForPath,
 } from './control-router.js';
 
-const EXPANDABLE_DOMAINS = new Set(CONTROL_DOMAINS.filter(item => !item.direct).map(item => item.key));
+const NAV_GROUP_KEYS = new Set(CONTROL_NAV_GROUPS.map(item => item.key));
+const DEFAULT_GROUP = 'engagement';
 
 export function createNavigationState({ currentPath, lastByDomain = {}, expandedDomain = null } = {}) {
   let current = destinationForPath(currentPath) || destinationForDomain('community', lastByDomain);
   const memory = { ...lastByDomain };
-  if (current?.domain && EXPANDABLE_DOMAINS.has(current.domain)) memory[current.domain] = current.path;
-  let expanded = EXPANDABLE_DOMAINS.has(current?.domain)
-    ? current.domain
-    : EXPANDABLE_DOMAINS.has(expandedDomain)
-      ? expandedDomain
-      : 'community';
+  if (current?.domain) memory[current.domain] = current.path;
+  let expanded = navGroupForPath(current?.path)?.key
+    || (NAV_GROUP_KEYS.has(expandedDomain) ? expandedDomain : DEFAULT_GROUP);
 
   return {
     get current() { return current; },
     get expandedDomain() { return expanded; },
     get lastByDomain() { return { ...memory }; },
-    revealDomain(domainKey) {
-      if (!EXPANDABLE_DOMAINS.has(domainKey)) return current;
-      expanded = domainKey;
+    revealDomain(groupKey) {
+      if (!NAV_GROUP_KEYS.has(groupKey)) return current;
+      expanded = groupKey;
       return current;
     },
     select(path) {
       const next = destinationForPath(path);
       if (!next) return current;
       current = next;
-      if (next.domain && EXPANDABLE_DOMAINS.has(next.domain)) {
-        memory[next.domain] = next.path;
-      }
+      if (next.domain) memory[next.domain] = next.path;
+      expanded = navGroupForPath(next.path)?.key || expanded;
       return current;
     },
   };
 }
 
-export function navigationModel(current, expandedDomain = 'community') {
-  const expanded = EXPANDABLE_DOMAINS.has(expandedDomain) ? expandedDomain : 'community';
-  const primaryDomains = CONTROL_DOMAINS.filter(domain => !domain.direct);
-  const directDomains = CONTROL_DOMAINS.filter(domain => domain.direct);
+function targetForItem(item, lastByDomain) {
+  if (item.key !== 'resources') return item.path;
+  const remembered = destinationForPath(lastByDomain?.mappings);
+  return remembered?.domain === 'mappings' ? remembered.path : item.path;
+}
+
+export function navigationModel(current, expandedDomain = DEFAULT_GROUP, lastByDomain = {}) {
+  const expanded = NAV_GROUP_KEYS.has(expandedDomain) ? expandedDomain : (navGroupForPath(current?.path)?.key || DEFAULT_GROUP);
   return {
-    primary: primaryDomains.map(domain => ({
-      key: domain.key,
-      label: domain.label,
-      path: domain.path,
-      direct: false,
-      expanded: domain.key === expanded,
-      current: current?.domain === domain.key,
-      children: domain.children.map(child => ({ ...child, current: current?.path === child.path })),
+    primary: CONTROL_NAV_GROUPS.map(group => ({
+      key: group.key,
+      label: group.label,
+      expanded: group.key === expanded,
+      current: group.items.some(item => (item.matchPaths || [item.path]).includes(current?.path)),
+      children: group.items.map(item => {
+        const targetPath = targetForItem(item, lastByDomain);
+        const currentItem = (item.matchPaths || [item.path]).includes(current?.path);
+        return { ...item, path: targetPath, current: currentItem };
+      }),
     })),
-    secondary: [
-      ...directDomains.map(domain => ({
-        key: domain.key,
-        label: domain.label,
-        path: domain.path,
-        domain: domain.key,
-        kind: 'secondary',
-        current: current?.path === domain.path,
-      })),
-      ...SECONDARY_DESTINATIONS.map(item => ({ ...item, current: current?.path === item.path })),
-    ],
+    secondary: CONTROL_PLAYBOOKS.map(item => ({ ...item, current: current?.path === item.path })),
   };
 }
 

@@ -32,13 +32,16 @@ test('commands-only operations stay out of canonical feature page modules', () =
   assert.equal(utilities.includes('Post ticket panel'), false);
 });
 
-test('Analytics and Workflows preserve final Stage 3 presentation ownership', () => {
+test('Analytics and Support & Safety preserve final presentation ownership', () => {
   const analytics = read('docs-site/control-analytics.js');
   const workflows = read('docs-site/control-workflows.js');
   assert.match(analytics, /<dl/);
   assert.equal(analytics.includes('Build Help'), false);
   assert.equal(analytics.includes('correct-answer count'), false);
   assert.equal(workflows.includes('control-eyebrow'), false);
-  assert.equal(workflows.includes('<button'), false);
+  assert.match(workflows, /registerWorkflowPages/);
+  assert.match(workflows, /createModerationPageDefinition/);
+  assert.match(workflows, /ticket-handling/);
+  assert.match(workflows, /events/);
   assert.equal(workflows.includes('data-control-field'), false);
 });

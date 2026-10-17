@@ -57,7 +57,7 @@ test('Voice & Coworking exposes one Temporary voice owner and never writes cowor
   assert.doesNotMatch(markup, /data-community-field="coworkingEnabled"/);
   assert.doesNotMatch(markup, /Voice channels/);
   assert.doesNotMatch(markup, /create_workspace_voice|coworking_lounge/);
-  assert.match(markup, /Temporary voice category/);
+  assert.doesNotMatch(markup, /Temporary voice category/);
 });
 
 test('Analytics dashboard defaults to 7d and renders only real supplied range series', () => {

@@ -9,6 +9,50 @@ export function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
+const TASK_INDICATOR_SIZES = new Set([16, 18, 22]);
+const TASK_INDICATOR_STATES = new Set(['queued', 'running', 'progress', 'completed', 'blocked', 'failed']);
+
+function taskIndicatorDefaultLabel(state, progress) {
+  if (state === 'progress') return `In progress ${progress}%`;
+  return ({
+    queued: 'Queued',
+    running: 'In progress',
+    completed: 'Completed',
+    blocked: 'Blocked',
+    failed: 'Failed',
+  })[state];
+}
+
+export function taskIndicatorMarkup({ state = 'queued', size = 22, progress = null, label = '' } = {}) {
+  const normalizedState = String(state || '').trim().toLowerCase();
+  const normalizedSize = Number(size);
+  if (!TASK_INDICATOR_STATES.has(normalizedState)) throw new TypeError(`Unsupported task indicator state: ${state}`);
+  if (!TASK_INDICATOR_SIZES.has(normalizedSize)) throw new TypeError(`Unsupported task indicator size: ${size}`);
+
+  let normalizedProgress = null;
+  if (normalizedState === 'progress') {
+    normalizedProgress = Number(progress);
+    if (!Number.isFinite(normalizedProgress)) throw new TypeError('Determinate progress requires a finite progress value.');
+    normalizedProgress = Math.max(0, Math.min(100, normalizedProgress));
+  }
+
+  const progressAttribute = normalizedProgress === null ? '' : ` data-progress="${normalizedProgress}"`;
+  const dash = normalizedProgress === null ? '18 82' : `${normalizedProgress} ${100 - normalizedProgress}`;
+  const visibleLabel = String(label || taskIndicatorDefaultLabel(normalizedState, normalizedProgress));
+
+  return `<span class="control-task-status" data-task-indicator data-state="${normalizedState}" data-size="${normalizedSize}"${progressAttribute}>
+    <svg class="control-task-indicator" width="${normalizedSize}" height="${normalizedSize}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <circle class="control-task-indicator-track" cx="12" cy="12" r="8.5" fill="none" stroke-width="2.7273" pathLength="100"></circle>
+      <g class="control-task-indicator-orbit">
+        <circle class="control-task-indicator-active" cx="12" cy="12" r="8.5" fill="none" stroke-width="2.7273" pathLength="100" stroke-dasharray="${dash}"></circle>
+      </g>
+      <circle class="control-task-indicator-complete" cx="12" cy="12" r="12"></circle>
+      <path class="control-task-indicator-check" d="M7.1 12.1 10.4 15.4 17 8.8"></path>
+    </svg>
+    <span class="control-task-indicator-label">${escapeHtml(visibleLabel)}</span>
+  </span>`;
+}
+
 export function featureHeaderActionsMarkup({
   label = 'Feature',
   enabled = false,
@@ -39,22 +83,27 @@ export function featureHeaderActionsMarkup({
 }
 
 export function navigationMarkup(model) {
-  const primary = model.primary.map(domain => {
-    const children = domain.children.map(child => `
-      <a href="${child.path}" data-nav-path="${child.path}"${child.current ? ' aria-current="page"' : ''}>${escapeHtml(child.label)}</a>`).join('');
-    return `<section class="control-nav-domain${domain.expanded ? ' control-nav-domain-open' : ''}${domain.current ? ' control-nav-domain-current' : ''}" data-domain="${domain.key}">
-      <button type="button" data-domain-select="${domain.key}" aria-expanded="${domain.expanded ? 'true' : 'false'}">
-        ${domain.current ? '<span class="control-nav-marker" aria-hidden="true"></span>' : ''}<span>${escapeHtml(domain.label)}</span>
+  const primary = model.primary.map(group => {
+    const children = group.children.map(child => {
+      const matchDomain = child.matchDomain ? ` data-nav-match-domain="${escapeHtml(child.matchDomain)}"` : '';
+      return `
+      <a href="${child.path}" data-nav-path="${child.path}" data-nav-key="${escapeHtml(child.key)}"${matchDomain}${child.current ? ' aria-current="page"' : ''}>${escapeHtml(child.label)}</a>`;
+    }).join('');
+    return `<section class="control-nav-domain${group.expanded ? ' control-nav-domain-open' : ''}${group.current ? ' control-nav-domain-current' : ''}" data-domain="${group.key}">
+      <button type="button" data-domain-select="${group.key}" aria-expanded="${group.expanded ? 'true' : 'false'}">
+        <span>${escapeHtml(group.label)}</span>
       </button>
-      <div class="control-nav-children"${domain.expanded ? '' : ' hidden'}>${children}</div>
+      <div class="control-nav-children"${group.expanded ? '' : ' hidden'}>${children}</div>
     </section>`;
   }).join('');
 
   const secondary = model.secondary.map(item => `
     <a href="${item.path}" data-nav-path="${item.path}"${item.current ? ' aria-current="page"' : ''}>${escapeHtml(item.label)}</a>`).join('');
+  const playbooks = secondary
+    ? `<div class="control-playbooks"><p class="control-nav-group-label">Playbooks</p><nav class="control-secondary-nav" aria-label="Control playbooks">${secondary}</nav></div>`
+    : '';
 
-  return `<nav class="control-primary-nav" aria-label="Control destinations">${primary}</nav>
-    <nav class="control-secondary-nav" aria-label="Control reference and history">${secondary}</nav>`;
+  return `<nav class="control-primary-nav" aria-label="Control destinations">${primary}</nav>${playbooks}`;
 }
 
 export function identityMarkup(session, guild) {

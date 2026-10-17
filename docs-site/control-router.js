@@ -11,7 +11,7 @@ const definition = [
     ['live', 'Live'],
   ]],
   ['utilities', 'Utilities', [
-    ['ticket-configuration', 'Ticket configuration'],
+    ['ticket-configuration', 'Tickets'],
     ['notification-roles', 'Notification roles'],
     ['anonymous-questions', 'Anonymous Questions'],
   ]],
@@ -63,6 +63,58 @@ export const CONTROL_FALLBACK_PATH = '/control/community/reputation';
 const DESTINATION_BY_PATH = new Map(CONTROL_DESTINATIONS.map(item => [item.path, item]));
 const DOMAIN_BY_KEY = new Map(CONTROL_DOMAINS.map(item => [item.key, item]));
 
+function navItem(path, label, options = {}) {
+  const destination = DESTINATION_BY_PATH.get(path);
+  if (!destination) throw new Error(`Unknown Control navigation path: ${path}`);
+  return Object.freeze({ ...destination, label, ...options });
+}
+
+const MAPPING_PATHS = Object.freeze([
+  '/control/mappings/channels',
+  '/control/mappings/roles',
+  '/control/mappings/categories',
+]);
+
+export const CONTROL_NAV_GROUPS = Object.freeze([
+  Object.freeze({ key: 'engagement', label: 'Engagement', items: Object.freeze([
+    navItem('/control/community/reputation', 'Reputation'),
+    navItem('/control/community/quizzes', 'Quizzes'),
+    navItem('/control/community/voice-coworking', 'Voice & Coworking'),
+    navItem('/control/community/showcase', 'Showcase'),
+    navItem('/control/utilities/notification-roles', 'Notification roles'),
+  ]) }),
+  Object.freeze({ key: 'publishing', label: 'Publishing', items: Object.freeze([
+    navItem('/control/content/feeds', 'Feeds'),
+    navItem('/control/content/announcements', 'Announcements'),
+    navItem('/control/content/live', 'Live'),
+  ]) }),
+  Object.freeze({ key: 'support-safety', label: 'Support & Safety', items: Object.freeze([
+    navItem('/control/utilities/ticket-configuration', 'Tickets'),
+    navItem('/control/utilities/anonymous-questions', 'Anonymous Questions'),
+    navItem('/control/workflows/moderation', 'Moderation'),
+  ]) }),
+  Object.freeze({ key: 'insights', label: 'Insights', items: Object.freeze([
+    navItem('/control/analytics', 'Analytics'),
+    navItem('/control/activity', 'Activity'),
+  ]) }),
+  Object.freeze({ key: 'system', label: 'System', items: Object.freeze([
+    navItem('/control/mappings/channels', 'Resources', { key: 'resources', matchPaths: MAPPING_PATHS, matchDomain: 'mappings' }),
+    navItem('/control/commands', 'Commands'),
+  ]) }),
+]);
+
+export const CONTROL_PLAYBOOKS = Object.freeze([
+  navItem('/control/workflows/ticket-handling', 'Ticket handling', { kind: 'playbook' }),
+  navItem('/control/workflows/events', 'Events', { kind: 'playbook' }),
+]);
+
+const NAV_GROUP_BY_PATH = new Map();
+for (const group of CONTROL_NAV_GROUPS) {
+  for (const item of group.items) {
+    for (const path of item.matchPaths || [item.path]) NAV_GROUP_BY_PATH.set(path, group);
+  }
+}
+
 function normalizePath(pathname) {
   const raw = String(pathname || '/control').split(/[?#]/, 1)[0] || '/control';
   if (raw === '/') return '/control';
@@ -71,6 +123,10 @@ function normalizePath(pathname) {
 
 export function destinationForPath(pathname) {
   return DESTINATION_BY_PATH.get(normalizePath(pathname)) || null;
+}
+
+export function navGroupForPath(pathname) {
+  return NAV_GROUP_BY_PATH.get(normalizePath(pathname)) || null;
 }
 
 export function firstDestinationForDomain(domainKey) {

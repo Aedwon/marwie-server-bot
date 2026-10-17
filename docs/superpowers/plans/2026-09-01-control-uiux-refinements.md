@@ -8,6 +8,16 @@
 
 **Tech Stack:** Vanilla ES modules/CSS, Node `node:test`, Vercel API handlers, Python/discord.py control-plane executor, pytest.
 
+**Control redesign authority:** `docs/superpowers/specs/2026-10-16-control-design-system.md`, together with `docs/superpowers/decisions/2026-10-16-control-interface-information-architecture.md`, `docs/superpowers/decisions/2026-10-16-control-brand-and-visual-direction.md`, and `docs/superpowers/decisions/2026-10-16-control-apple-design-principles.md`. These newer records govern Control-wide visual, token, layout, interaction, and accessibility decisions and take precedence over older styling guidance in this plan where they conflict.
+
+**Async indicator spec:** `docs/superpowers/specs/2026-10-17-control-async-task-indicator.md`.
+
+**Async indicator decision:** `docs/superpowers/decisions/2026-10-17-control-async-task-indicator.md`.
+
+**Prerequisite:** Task 7 consumes the canonical semantic token foundation from the Control design system. If that token foundation has not yet landed in the implementation branch, establish/reconcile it first; do not invent indicator-local raw fallbacks or a parallel palette.
+
+**Execution readiness:** Tasks 1–8 are fully specified and may be executed sequentially using this plan and the referenced canonical records. Do not invent substitute behavior when a canonical decision exists; if implementation discovers a real contradiction or missing requirement, stop and return to planning instead of improvising.
+
 ---
 
 ## Task 1: Lock UI contracts in focused RED tests
@@ -21,7 +31,8 @@
 2. Add tests that feature pages use one top-right accessible feature state control beside `Edit settings`, with no visible `Feature status` label/card in read mode.
 3. Add Mappings render tests requiring semantic `<table>`, explicit headers, plain status text with no badge/pill/dot wrapper, and deliberate `Manage mappings` actions in cross-page summaries.
 4. Add Announcement tests for split composer/preview markup, raw mention preservation, preview mention resolution, destination selection, clear-preserves-destination behavior, field limits/counters, image URL, optional embed construction, and message-only posting.
-5. Run focused Node tests and verify they fail for the expected missing behavior before production edits.
+5. Add shared async-indicator contract tests covering the approved 22 px / 2.5 px reference geometry, proportional SVG scaling, `pathLength="100" , seamless indeterminate motion, real determinate progress, filled-green/white-check completion, visible status copy, and reduced-motion fallback.
+6. Run focused Node tests and verify they fail for the expected missing behavior before production edits.
 
 ## Task 2: Add the shared global status/changes tray
 
@@ -32,7 +43,7 @@
 - Modify: `docs-site/control.css`
 
 1. Render the shell status and existing `controlState.dirtyPages()` into one persistent bottom-right tray mount. Remove the old repeated top workspace status presentation.
-2. Implement compact and expanded states as one DOM surface. Compact shows one line with pending-change count; expanded shows one header, server freshness/connection state, grouped dirty-page counts, and a visible but non-operational bulk-save affordance because execution semantics remain under discussion.
+2. Implement compact and expanded states as one DOM surface. Compact shows one line with pending-change count; expanded shows one header, server freshness/connection state, and grouped dirty-page counts. **Do not show or implement a bulk-save control.** Saving remains page-local under the existing approved save/conflict semantics.
 3. Keep expanded state open during internal interaction; only the explicit `−` control minimizes it.
 4. Use restrained width/height/radius/shadow spring-morph transitions plus delayed content settling; disable/near-disable them under `prefers-reduced-motion`.
 5. Re-render tray after hydration, draft/page-state events, saves, conflicts, navigation, and status changes without duplicating page state.
@@ -105,7 +116,32 @@
 5. Keep consequence confirmation based on real allowed mentions and preserve CSRF/idempotency/authorization at the existing browser action layer.
 6. Run focused JS and Python validation/executor tests to GREEN.
 
-## Task 7: Integrated verification and visual review
+## Task 7: Add the canonical async task indicator and smooth loading motion
+
+
+**Files:**
+- Modify: `docs-site/control-components.js`
+- Modify: `docs-site/control.css`
+- Modify: `web-tests/control-uiux-refinements.test.js`
+- Conditional: modify an existing feature module (`docs-site/control-app.js`, `control-community.js`, `control-content.js`, `control-mappings.js`, `control-analytics.js`, `control-utilities.js`, or `control-secondary.js`) only when that module already exposes a genuine async state that should consume the shared primitive.
+- Conditional: modify `web-tests/control-secondary-surfaces.test.js` only when a corresponding secondary-surface consumer changes.
+
+**Interfaces:**
+- Produce: `taskIndicatorMarkup({ state, progress = null, size = 22, label = '' } = {})` from `docs-site/control-components.js`.
+- `state` accepts `queued`, `running`, `progress`, `done`, `failed`, or `blocked`. `progress` is meaningful only for `progress` and is clamped to `0..100`. `size` accepts only **22, 18, or 16** pixels; it is not user-configurable. Consumers use the smallest approved context-appropriate size.
+- Consumers keep their existing visible status copy and state ownership. The shared indicator supplements the owning row/action and must not create a second status surface.
+
+1. Extend the focused RED tests so `taskIndicatorMarkup()` requires a 24 x 24 SVG with `cx=12`, `cy=12`, `r=8.5`, `pathLength="100"`, approximately `2.7273` SVG-unit stroke geometry, and no `vector-effect: non-scaling-stroke`; at 22 px this must render as 2.5 px and scale naturally at the approved 18 px and 16 px sizes.
+2. Add tests for the indeterminate running contract: the meter uses a rounded short arc, the orbit is a continuous **1.45 s linear** rotation, arc length breathes separately through approximately `18 82 -> 28 72 -> 22 78 -> 18 82`, and there is no dash-offset reset that produces a visible snap.
+3. Add tests for determinate progress: start at 12 o'clock, render the real percentage through `pathLength="100"`, disable orbit/breathing, clamp input to `0..100`, and never synthesize progress between server updates.
+4. Add tests for completion: the final state is a **full-diameter solid circle using `--status-success-fg`** with a proportionally scaled white check, not a green outline or raw hex color. The resolve → fill → check sequence uses the existing **`--duration-medium` (200 ms)** token. Keep it quiet with no glow, bounce, confetti, or exaggerated overshoot.
+5. Implement `taskIndicatorMarkup()` and the shared CSS classes/animations. Use one SVG geometry for all sizes so the locked `2.5 / 22` stroke-to-diameter ratio scales automatically; do not hardcode 2.5 px on smaller indicators.
+   Consume the canonical design-system semantic tokens (`--stroke-subtle`, `--status-info-fg`, `--status-success-fg`, `--status-warning-fg`, `--status-error-fg`) through component aliases only if useful. Do not introduce raw palette values or another token layer. Support only the approved 22 px, 18 px, and 16 px rendered sizes. Dark mode inherits the canonical dark semantic tokens.
+6. Under `prefers-reduced-motion: reduce`, stop orbit and arc-length breathing and show a stable partial active arc for unknown-duration running work. Determinate progress remains truthful and static; completion may resolve directly to the filled checked circle.
+7. Adopt the shared primitive only where an existing Control module already exposes genuine async state (`Loading...`, `Saving...`, `Applying...`, queued/in-progress actions, or equivalent). Initial page/content hydration keeps the shell-first staged loading treatment; background refresh keeps existing data visible. The indicator stays presentational/stateless and must not take ownership of polling, timers, task transitions, persistence, auto-dismissal, or live-region announcements. Preserve existing visible text, buttons, page-save semantics, action polling, conflicts, and state-location hierarchy; reserve the indicator slot to avoid layout shift, mark the SVG decorative when adjacent copy already names the state, and remove only feature-specific spinner treatment made redundant by the shared primitive.
+8. Run `node --test web-tests/control-uiux-refinements.test.js web-tests/control-secondary-surfaces.test.js` plus the existing Community/Content/Mappings/Analytics/Utilities focused suites and verify GREEN.
+
+## Task 8: Integrated verification and visual review
 
 **Files:** verification only unless a regression is found.
 
@@ -114,10 +150,12 @@
 3. Run focused Python tests covering control action validation, snapshot serialization, and announcement executor behavior.
 4. Run `python -m compileall -q` on modified Python modules or the repo’s equivalent compile check.
 5. Run `git diff --check` and inspect `git status --short --branch --untracked-files=all`.
-6. Serve the real Control implementation locally and inspect representative tray, header, mappings, Announcement empty/message/embed/mention/destination/color/image states, narrow viewport, and light/dark themes in a browser. Fix only concrete regressions.
-7. Self-review the diff against the Approved decision record and verify no Under discussion bulk-save semantics were implemented.
+6. Serve the real Control implementation locally and inspect representative tray, header, mappings, Announcement empty/message/embed/mention/destination/color/image states, narrow viewport, and light/dark themes in a browser. Also inspect the async indicator at 22 px, 18 px, and 16 px; queued/running/determinate/completed states; reduced-motion; and forced-colors/high-contrast behavior. Verify the 22 px ring reads at the approved 2.5 px weight, smaller rings remain proportionally balanced, and state changes cause no layout shift. Fix only concrete regressions.
+7. Self-review the diff against the Approved decision records, including `docs/superpowers/decisions/2026-10-17-control-async-task-indicator.md`. Verify there is no redundant async status surface, no bulk-save control or bulk-save semantics were introduced, and page-local save/conflict behavior remains unchanged.
 
-## Task 8: Commit, push, and final identity verification
+## Task 9: Authorization-gated commit, push, and final identity verification
+
+**Execution gate:** Stop after Task 8 unless the user explicitly authorizes commit and push for this execution run. Approval of the plan, of Tasks 1–8, or of implementation does not itself authorize Task 9.
 
 1. Make coherent feature-branch commits.
 2. Re-run fresh verification required by `verification-before-completion`.

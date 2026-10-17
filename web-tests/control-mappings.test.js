@@ -21,6 +21,9 @@ const CHANNEL_KEYS = [
   'ai_updates',
   'quiz_channel',
   'anon_questions',
+  'anon_messages_panel',
+  'anon_messages_submissions',
+  'anon_messages_audit_log',
   'analytics',
   'showcase_forum',
   'app_of_the_week',
@@ -285,7 +288,9 @@ test('mapping page markup uses read then edit state, visible health text, labels
   store.hydrate(pageKey, baseSnapshot(), 'f'.repeat(64));
 
   const readMarkup = mappingPageMarkup({ pageKey, state: store.get(pageKey), snapshot: baseSnapshot() });
-  assert.match(readMarkup, /<h1>Channels<\/h1>/);
+  assert.match(readMarkup, /<h1>Resources<\/h1>/);
+  assert.match(readMarkup, /mapping-resource-tabs/);
+  assert.doesNotMatch(readMarkup, /mapping-resource-heading/);
   assert.match(readMarkup, />Edit settings</);
   assert.match(readMarkup, />Connected</);
   assert.match(readMarkup, />Not connected</);
