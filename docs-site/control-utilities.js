@@ -413,7 +413,7 @@ function ticketEditRows(state) {
     return `
       <fieldset class="utility-editor-row" data-ticket-row="${index}">
         <legend>Ticket type ${index + 1}</legend>
-        <div class="utility-ticket-grid">
+        <div class="control-field-grid">
           <label>
             <span>Key</span>
             <input type="text" maxlength="32" value="${escapeHtml(item.key)}" data-ticket-field="key"${item.isNew ? '' : ' readonly'} aria-invalid="${Boolean(keyError)}">
@@ -624,7 +624,7 @@ function notificationRead(state, snapshot) {
     return `<article class="utility-notification-button-summary"><strong>${escapeHtml(item.label)}</strong><dl><div><dt>Role</dt><dd>${escapeHtml(role?.name || `Role ${item.role_id}`)}</dd></div><div><dt>Emoji</dt><dd>${escapeHtml(item.emoji || 'None')}</dd></div><div><dt>Style</dt><dd>${escapeHtml(item.style)}</dd></div></dl></article>`;
   }).join('');
   return `
-    <dl class="utility-panel-summary-list">
+    <dl class="control-definition-list">
       <div><dt>Title</dt><dd>${escapeHtml(panel.title || 'Not configured')}</dd></div>
       <div><dt>Description</dt><dd>${escapeHtml(panel.description || 'Not configured')}</dd></div>
     </dl>
@@ -643,7 +643,7 @@ function notificationButtonRows(state, snapshot) {
     return `
       <fieldset class="utility-editor-row" data-notification-row="${index}">
         <legend>Button ${index + 1}</legend>
-        <div class="utility-notification-grid">
+        <div class="control-field-grid">
           <label>
             <span>Role</span>
             <select data-notification-field="role_id" aria-invalid="${Boolean(roleError)}">

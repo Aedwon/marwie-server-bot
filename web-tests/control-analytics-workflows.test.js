@@ -108,13 +108,13 @@ test('Analytics metric values use semantic definition-list associations without 
   const definition = createAnalyticsPageDefinition();
   const markup = analyticsPageMarkup({ state: readState(definition), snapshot: analyticsSnapshot });
 
-  assert.match(markup, /<dl[^>]*class="analytics-metrics"/);
+  assert.match(markup, /<dl[^>]*class="control-stat-list"/);
   assert.equal((markup.match(/<dt\b/g) || []).length, 7);
   assert.equal((markup.match(/<dd\b/g) || []).length, 7);
   assert.doesNotMatch(markup, /class="analytics-metric"/);
 
-  const styles = readFileSync(new URL('../docs-site/control-analytics-workflows.css', import.meta.url), 'utf8');
-  assert.doesNotMatch(styles, /\.analytics-metric(?!s)\b/);
+  const styles = readFileSync(new URL('../docs-site/control-features.css', import.meta.url), 'utf8');
+  assert.doesNotMatch(styles, /\.analytics-metric\b/);
 });
 
 test('Analytics owns only its feature flag and links report-channel ownership to Mappings', () => {
@@ -182,7 +182,7 @@ test('Analytics missing projection shows one unavailable state instead of seven 
   const markup = analyticsPageMarkup({ state: readState(definition), snapshot });
   assert.match(markup, /role="status"/);
   assert.match(markup, /Analytics data unavailable/i);
-  assert.doesNotMatch(markup, /<dl[^>]*class="analytics-metrics"/);
+  assert.doesNotMatch(markup, /<dl[^>]*class="control-stat-list"/);
   assert.doesNotMatch(markup, /Moderation cases|Tickets opened|Tickets closed|Quiz answers|Quiz accuracy|Anonymous questions|Reputation events/);
   assert.match(markup, /Reporting/);
   assert.match(markup, /weekly-analytics/);
@@ -218,7 +218,7 @@ test('all three Workflow pages are handbook-only semantic pages without redundan
 });
 
 test('Workflow pages use one consistent numbered operational timeline', () => {
-  const styles = readFileSync(new URL('../docs-site/control-analytics-workflows.css', import.meta.url), 'utf8');
+  const styles = readFileSync(new URL('../docs-site/control-features.css', import.meta.url), 'utf8');
   assert.match(styles, /\.workflow-timeline/);
   assert.match(styles, /\.workflow-stage-number/);
 

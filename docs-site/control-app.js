@@ -60,21 +60,7 @@ let removePageInteractions = () => {};
 let activityController = null;
 let activityGuildId = null;
 
-function installDomainStyles({ marker, href }) {
-  if (document.querySelector(`link[${marker}]`)) return;
-  const link = document.createElement('link');
-  link.rel = 'stylesheet';
-  link.href = href;
-  link.setAttribute(marker, 'true');
-  document.head.append(link);
-}
 
-installDomainStyles({ marker: 'data-control-community-styles', href: '/control-community.css?v=1' });
-installDomainStyles({ marker: 'data-control-content-styles', href: '/control-content.css?v=2' });
-installDomainStyles({ marker: 'data-control-utilities-styles', href: '/control-utilities.css?v=1' });
-installDomainStyles({ marker: 'data-control-analytics-workflows-styles', href: '/control-analytics-workflows.css?v=1' });
-installDomainStyles({ marker: 'data-control-mappings-styles', href: '/control-mappings.css?v=1' });
-installDomainStyles({ marker: 'data-control-secondary-styles', href: '/control-secondary.css?v=1' });
 registerCommunityPages();
 registerContentPages();
 registerUtilitiesPages();

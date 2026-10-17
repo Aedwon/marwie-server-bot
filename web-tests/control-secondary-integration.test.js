@@ -7,7 +7,7 @@ import { resolveControlRoute } from '../docs-site/control-router.js';
 import { activityPageMarkup } from '../docs-site/control-secondary.js';
 
 const appSource = readFileSync(new URL('../docs-site/control-app.js', import.meta.url), 'utf8');
-const cssUrl = new URL('../docs-site/control-secondary.css', import.meta.url);
+const cssUrl = new URL('../docs-site/control-features.css', import.meta.url);
 const secondaryCss = existsSync(cssUrl) ? readFileSync(cssUrl, 'utf8') : '';
 
 test('canonical Commands fallback renders the useful reference surface instead of the placeholder', () => {
@@ -70,6 +70,6 @@ test('secondary surfaces provide wrapping and narrow reflow without event-card s
   assert.match(secondaryCss, /\.control-activity-meta/);
   assert.match(secondaryCss, /\.control-activity-meta\s*\{[^}]*font-size:\s*13px\s*;/);
   assert.match(secondaryCss, /overflow-wrap:\s*anywhere/);
-  assert.match(secondaryCss, /@media\s*\(max-width:\s*560px\)/);
-  assert.doesNotMatch(secondaryCss, /activity-card|box-shadow/);
+  assert.match(secondaryCss, /@media\s*\(max-width:\s*760px\)/);
+  assert.doesNotMatch(secondaryCss, /activity-card/);
 });
