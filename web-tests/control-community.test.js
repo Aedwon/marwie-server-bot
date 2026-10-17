@@ -64,7 +64,7 @@ test('Community page module owns all four canonical Community pages', async () =
   ].sort());
 });
 
-test('Reputation batches enable state and strict ascending thresholds without mapping or manual-adjustment ownership', async () => {
+test('Reputation owns feature state while tier resources stay out of the center workspace', async () => {
   const { createCommunityPageDefinition } = await communityModule();
   const definition = createCommunityPageDefinition(REPUTATION);
   const persisted = definition.selectPersisted(reputationSnapshot());
@@ -102,10 +102,10 @@ test('Reputation batches enable state and strict ascending thresholds without ma
   });
   assert.doesNotMatch(markup, /Manual adjustment/i);
   assert.doesNotMatch(markup, /member_id|adjust_reputation/i);
-  assert.match(markup, /mappings/i);
+  assert.doesNotMatch(markup, /mappings|data-resource-key|set_resource|clear_resource/i);
 });
 
-test('Quizzes owns schedule and full question lifecycle while quiz channel stays a Mappings summary', async () => {
+test('Quizzes owns schedule and questions while quiz channel stays out of the center workspace', async () => {
   const { createCommunityPageDefinition } = await communityModule();
   const definition = createCommunityPageDefinition(QUIZZES);
   const persisted = definition.selectPersisted(quizSnapshot());
@@ -174,37 +174,51 @@ test('Quizzes owns schedule and full question lifecycle while quiz channel stays
   assert.match(markup, /<dt>Questions<\/dt><dd>1<\/dd>/);
   assert.match(markup, /Aug 28, 2026, 12:00 AM UTC/);
   assert.doesNotMatch(markup, /2026-08-28T00:00:00\+00:00/);
-  assert.match(markup, /mappings/i);
-  assert.doesNotMatch(markup, /data-resource-key|set_resource|clear_resource/i);
+  assert.doesNotMatch(markup, /mappings|data-resource-key|set_resource|clear_resource/i);
 });
 
-test('Voice & Coworking exposes only Temporary voice and preserves coworking outside this page', async () => {
+test('Voice & Coworking owns Temporary voice behavior and exposes canonical voice resources through Context', async () => {
   const { createCommunityPageDefinition } = await communityModule();
-  const definition = createCommunityPageDefinition(VOICE_COWORKING);
+  const { withResourceBindings } = await import('../docs-site/control-resource-bindings.js');
+  const { featureResourceKeys } = await import('../docs-site/control-resource-contract.js');
+  const definition = withResourceBindings(
+    createCommunityPageDefinition(VOICE_COWORKING),
+    featureResourceKeys(VOICE_COWORKING),
+  );
   const snapshot = {
     features: [feature('voice', true), feature('coworking', false)],
+    channels: [
+      { id: '1', name: 'Create Workspace', type: 2 },
+      { id: '3', name: 'Lounge', type: 2 },
+    ],
+    categories: [{ id: '2', name: 'Temporary voice', type: 4 }],
     resources: [
-      { key: 'create_workspace_voice', id: '1', name: 'Create Workspace', exists: true },
-      { key: 'temp_voice_category', id: '2', name: 'Temporary voice', exists: true },
-      { key: 'coworking_lounge', id: '3', name: 'Lounge', exists: true },
+      { key: 'create_workspace_voice', id: '1', name: 'Create Workspace', exists: true, kind: 'voice' },
+      { key: 'temp_voice_category', id: '2', name: 'Temporary voice', exists: true, kind: 'category' },
+      { key: 'coworking_lounge', id: '3', name: 'Lounge', exists: true, kind: 'voice' },
     ],
   };
   const persisted = definition.selectPersisted(snapshot);
-  assert.deepEqual(persisted, { voiceEnabled: true });
+  assert.equal(persisted.voiceEnabled, true);
+  assert.deepEqual(persisted.resourceBindings, {
+    create_workspace_voice: '1',
+    coworking_lounge: '3',
+    temp_voice_category: '2',
+  });
   const draft = definition.cloneDraft(persisted);
   draft.voiceEnabled = false;
-  draft.coworkingEnabled = true;
   assert.deepEqual(definition.diffDraft(persisted, draft), [
     { action_type: 'set_feature', payload: { feature: 'voice', enabled: false } },
   ]);
 
-  const markup = definition.render({
-    state: { mode: 'read', status: 'clean', persisted, draft, errors: {}, dirty: false, saveError: null },
-    snapshot,
-  });
+  const state = { mode: 'read', status: 'clean', persisted, draft, errors: {}, dirty: false, saveError: null };
+  const markup = definition.render({ state, snapshot });
+  const context = definition.renderContext({ state, snapshot });
   assert.match(markup, /Temporary voice/);
-  assert.match(markup, /Temporary voice category/);
-  assert.doesNotMatch(markup, /Voice channels|coworking_lounge|create_workspace_voice/);
+  assert.doesNotMatch(markup, /Temporary voice category|coworking_lounge|create_workspace_voice/);
+  assert.match(context, /Temporary voice category/);
+  assert.match(context, /Create workspace voice/i);
+  assert.match(context, /Coworking lounge/i);
 });
 
 test('Showcase exposes only feature-local state and Mappings summary', async () => {

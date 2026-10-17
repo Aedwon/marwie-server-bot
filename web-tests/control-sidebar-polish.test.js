@@ -16,46 +16,44 @@ function sourceBlock(source, start, end) {
   return source.slice(startIndex, endIndex);
 }
 
-test('revealing a primary domain changes only the revealed menu', () => {
+test('revealing a feature group changes only the revealed menu', () => {
   const state = createNavigationState({ currentPath: '/control/community/reputation' });
 
-  state.revealDomain('content');
+  state.revealDomain('publishing');
 
   assert.equal(state.current.path, '/control/community/reputation');
-  assert.equal(state.expandedDomain, 'content');
+  assert.equal(state.expandedDomain, 'publishing');
   assert.equal(state.lastByDomain.community, '/control/community/reputation');
 });
 
-test('Analytics is grouped with Commands and Activity instead of primary section switchers', () => {
+test('feature-first groups own primary navigation and Playbooks stay secondary', () => {
   const model = navigationModel(
     destinationForPath('/control/community/reputation'),
-    'community',
+    'engagement',
   );
 
   assert.deepEqual(
     model.primary.map(item => item.key),
-    ['community', 'content', 'utilities', 'workflows', 'mappings'],
+    ['engagement', 'publishing', 'support-safety', 'insights', 'system'],
   );
   assert.deepEqual(
     model.secondary.map(item => item.path),
-    ['/control/analytics', '/control/commands', '/control/activity'],
+    ['/control/workflows/ticket-handling', '/control/workflows/events'],
   );
 });
 
-test('section-switcher markup has no disclosure glyph and marks the current page domain independently', () => {
+test('feature-group markup has no disclosure glyph and marks the current destination independently', () => {
   const model = navigationModel(
     destinationForPath('/control/community/reputation'),
-    'content',
+    'publishing',
   );
   const markup = navigationMarkup(model);
 
   assert.doesNotMatch(markup, /⌄/);
-  assert.match(markup, /data-domain="community"[\s\S]*?control-nav-marker/);
-  assert.match(markup, /data-domain="content"[\s\S]*?aria-expanded="true"/);
-  assert.doesNotMatch(
-    markup.match(/data-domain="content"[\s\S]*?<\/section>/)?.[0] || '',
-    /control-nav-marker/,
-  );
+  assert.match(markup, /data-domain="engagement"[\s\S]*?aria-current="page"/);
+  assert.match(markup, /data-domain="publishing"[\s\S]*?aria-expanded="true"/);
+  assert.doesNotMatch(markup, /control-nav-marker/);
+  assert.match(markup, /Playbooks/);
 });
 
 test('parent clicks reveal only and ordinary route changes do not rebuild navigation', () => {
