@@ -4,7 +4,7 @@ const VALID_PREFERENCES = new Set(['dark', 'light', 'system']);
 export function resolveThemePreference(preference, systemDark) {
   const resolvedPreference = VALID_PREFERENCES.has(preference)
     ? preference
-    : 'dark';
+    : 'system';
 
   return {
     preference: resolvedPreference,
@@ -23,7 +23,7 @@ export function installThemeControls({
 }) {
   let currentPreference = VALID_PREFERENCES.has(storage?.getItem?.(STORAGE_KEY))
     ? storage.getItem(STORAGE_KEY)
-    : 'dark';
+    : 'system';
 
   const apply = (preference, { persist = false } = {}) => {
     const resolved = resolveThemePreference(preference, Boolean(media?.matches));
@@ -41,7 +41,7 @@ export function installThemeControls({
     }
 
     if (themeColor) {
-      themeColor.content = resolved.theme === 'dark' ? '#171719' : '#f5f5f7';
+      themeColor.content = resolved.theme === 'dark' ? '#0f0f11' : '#fcfcfb';
     }
   };
 
