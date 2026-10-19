@@ -4,6 +4,28 @@ Instructions for any agent implementing work in this repository.
 
 If you are designing a feature, read `CLAUDE.md` too. If you were dispatched as a subagent, read `SUBAGENTS.md` first.
 
+## Branch ownership and deployment boundaries
+
+This repository has two independent production lines. Do not treat them as interchangeable.
+
+| Branch | Owns | Deployment target |
+| --- | --- | --- |
+| `main` | Discord bot runtime | Bot-Hosting |
+| `web/rob-bot-site-production` | Rob-bot website and Control | Vercel production |
+| `vercel-ready-*` | Temporary website review candidates | Vercel Preview |
+
+Rules:
+
+- `main` is bot-only. Do not add, merge, or maintain Vercel deployment configuration there.
+- A Vercel deployment created from `main` is accidental infrastructure behavior. Never promote it to production.
+- Website and Control changes do not go to `main` merely because they live in the same repository.
+- `web/rob-bot-site-production` is the authoritative production branch for the website and Control.
+- `vercel-ready-*` exists only for a finished website candidate that is ready for human review.
+- Ordinary bot, website feature, staging, worker, RED/GREEN, and implementation branches are not deployment branches.
+- A feature containing both bot and website changes must be promoted separately: bot changes go to `main`; website and Control changes go to `web/rob-bot-site-production`.
+- Never merge one production branch into the other just to synchronize shared files. Port only the changes owned by that production line.
+- Promoting the website in Vercel does not deploy the Discord bot. Deploying or restarting the Discord bot does not promote the website.
+
 ## Before writing code
 
 For feature work, read these in full before touching implementation:
