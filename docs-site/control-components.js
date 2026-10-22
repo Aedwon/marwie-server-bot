@@ -1,4 +1,5 @@
 import { activityPageMarkup, commandsPageMarkup } from './control-secondary.js';
+import { controlIcon, hasControlIcon } from './control-icons.js';
 
 export function escapeHtml(value) {
   return String(value ?? '')
@@ -90,13 +91,14 @@ export function controlPageHeaderMarkup({
       })
       : '')
     : '');
+  const contextTrigger = `<button class="control-context-trigger" type="button" data-control-context-open data-context-trigger="page" aria-controls="controlContextDrawer" aria-expanded="false" aria-label="Open page context" title="Context" hidden>${controlIcon('sidebar-simple', { size: 18 })}<span class="sr-only">Context</span></button>`;
   return `<header class="control-page-header" data-page-header>
     <div class="control-page-heading">
       <h1>${escapeHtml(title)}</h1>
       ${description ? `<p class="control-page-intro">${escapeHtml(description)}</p>` : ''}
       ${metaMarkup}
     </div>
-    ${resolvedActions || ''}
+    <div class="control-page-header-actions">${contextTrigger}${resolvedActions || ''}</div>
   </header>`;
 }
 
@@ -169,28 +171,51 @@ export function featureHeaderActionsMarkup({
   return `<div class="control-feature-header-actions">${toggles}</div>`;
 }
 
-export function navigationMarkup(model) {
+function navIconMarkup(name, { rail = false, group = false } = {}) {
+  if (!hasControlIcon(name)) return '';
+  const className = group ? 'control-nav-group-icon' : (rail ? 'control-nav-icon control-nav-icon-rail' : 'control-nav-icon');
+  return controlIcon(name, { size: group ? 16 : (rail ? 20 : 17), className });
+}
+
+function navLabelMarkup(label, { rail = false } = {}) {
+  return rail
+    ? `<span class="sr-only">${escapeHtml(label)}</span>`
+    : `<span class="control-nav-label">${escapeHtml(label)}</span>`;
+}
+
+export function navigationMarkup(model, { rail = false } = {}) {
   const primary = model.primary.map(group => {
     const children = group.children.map(child => {
       const matchDomain = child.matchDomain ? ` data-nav-match-domain="${escapeHtml(child.matchDomain)}"` : '';
+      const accessibleLabel = rail ? ` aria-label="${escapeHtml(child.label)}"` : '';
       return `
-      <a href="${child.path}" data-nav-path="${child.path}" data-nav-key="${escapeHtml(child.key)}"${matchDomain}${child.current ? ' aria-current="page"' : ''}>${escapeHtml(child.label)}</a>`;
+      <a href="${child.path}" data-nav-path="${child.path}" data-nav-key="${escapeHtml(child.key)}"${matchDomain}${accessibleLabel}${child.current ? ' aria-current="page"' : ''}>${navIconMarkup(child.icon, { rail })}${navLabelMarkup(child.label, { rail })}</a>`;
     }).join('');
+
+    if (rail) {
+      return `<section class="control-nav-domain control-nav-domain-rail${group.current ? ' control-nav-domain-current' : ''}" data-domain="${group.key}">
+      <div class="control-nav-children">${children}</div>
+    </section>`;
+    }
+
     return `<section class="control-nav-domain${group.expanded ? ' control-nav-domain-open' : ''}${group.current ? ' control-nav-domain-current' : ''}" data-domain="${group.key}">
       <button type="button" data-domain-select="${group.key}" aria-expanded="${group.expanded ? 'true' : 'false'}">
-        <span>${escapeHtml(group.label)}</span>
+        <span class="control-nav-domain-label">${navIconMarkup(group.icon, { group: true })}<span>${escapeHtml(group.label)}</span></span>
       </button>
       <div class="control-nav-children"${group.expanded ? '' : ' hidden'}>${children}</div>
     </section>`;
   }).join('');
 
-  const secondary = model.secondary.map(item => `
-    <a href="${item.path}" data-nav-path="${item.path}"${item.current ? ' aria-current="page"' : ''}>${escapeHtml(item.label)}</a>`).join('');
+  const secondary = model.secondary.map(item => {
+    const accessibleLabel = rail ? ` aria-label="${escapeHtml(item.label)}"` : '';
+    return `
+    <a href="${item.path}" data-nav-path="${item.path}"${accessibleLabel}${item.current ? ' aria-current="page"' : ''}>${navIconMarkup(item.icon, { rail })}${navLabelMarkup(item.label, { rail })}</a>`;
+  }).join('');
   const playbooks = secondary
-    ? `<div class="control-playbooks"><p class="control-nav-group-label">Playbooks</p><nav class="control-secondary-nav" aria-label="Control playbooks">${secondary}</nav></div>`
+    ? `<div class="control-playbooks${rail ? ' control-playbooks-rail' : ''}">${rail ? '' : '<p class="control-nav-group-label">Playbooks</p>'}<nav class="control-secondary-nav" aria-label="Control playbooks">${secondary}</nav></div>`
     : '';
 
-  return `<nav class="control-primary-nav" aria-label="Control destinations">${primary}</nav>${playbooks}`;
+  return `<nav class="control-primary-nav${rail ? ' control-primary-nav-rail' : ''}" aria-label="Control destinations">${primary}</nav>${playbooks}`;
 }
 
 export function identityMarkup(session, guild) {

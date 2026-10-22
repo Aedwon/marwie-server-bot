@@ -1,7 +1,7 @@
 # Control Redesign Finish Implementation Plan
 
 Date: 2026-10-21
-Status: implemented; live acceptance recorded
+Status: implemented; visual acceptance reopened after live review
 Spec: `docs/superpowers/specs/2026-10-16-control-design-system.md`
 
 Authoritative decisions:
@@ -130,6 +130,7 @@ Cost: one manual port of two commits and a possible conflict in `control.css`. R
 | `web-tests/control-community.test.js` | modify | Assert composed Engagement bodies |
 | `web-tests/control-content-r1.test.js` | modify | Assert Publishing bodies and context |
 | `web-tests/control-utilities-r1.test.js` | modify | Assert Support and Safety bodies |
+| `web-tests/control-discord-preview.test.js` | create | Lock the Discord preview message, embed, and button contract |
 | `web-tests/control-analytics-workflows.test.js` | modify | Assert Analytics, Moderation, Playbooks |
 | `web-tests/control-secondary-integration.test.js` | modify | Assert Activity and Commands anatomy |
 | `web-tests/control-mappings.test.js` | modify | Assert Resources anatomy and context behavior |
@@ -977,3 +978,142 @@ One defect was found in Notification roles edit mode and fixed on 2026-10-22: th
 | Commands | Live pass | Live pass | N/A | Live pass | Accepted (read only) |
 | Ticket handling | Live pass | Live pass | N/A | Live pass | Accepted (read only) |
 | Events | Live pass | Live pass | N/A | Live pass | Accepted (read only) |
+
+## Review follow-up (2026-10-22)
+
+The acceptance table above is the earlier capture record. The 2026-10-22 live review reopened it.
+
+The page save actions are now one shared floating save bar at the page end on every edit route. The bar is sticky at `bottom: max(14px, env(safe-area-inset-bottom))`, with a 12px radius, translucent surface, hairline border, blur, and `--shadow-save-bar`. Short pages use a flex column with `min-height: calc(100dvh - 2rem)` and `margin-top: auto` so the bar pins to the viewport bottom. The global changes tray clears the bar below 1200px and on mobile.
+
+Files changed: `control-features.css`, `control.css`, `control.html`, the six page modules, `control-route-render-contract.test.js`, `control-redesign-completion.test.js`, `control-legacy-removal.test.js`, `control-theme-surfaces.test.js`, and `control-stage3-reconciliation.test.js`.
+
+Verification: `npm run test:web` 248 pass, `npm run check:web` pass, `git diff --check` pass. Visual acceptance was later completed on 2026-10-22.
+
+## Review follow-up: shell navigation and panel layout (2026-10-22)
+
+The live review approved a shell with an icon rail, one navigation toggle, a content-gated context panel, and no 900px to 1199px top bar. The approved model is recorded in `docs/superpowers/decisions/2026-10-22-control-shell-navigation.md` and section 13 of the design system.
+
+### Files
+
+- Create: `docs/superpowers/decisions/2026-10-22-control-shell-navigation.md`
+- Create: `docs-site/control-icons.js`
+- Create: `docs-site/control-shell-layout.js`
+- Modify: `docs-site/control.html`
+- Modify: `docs-site/control.css`
+- Modify: `docs-site/control-features.css`
+- Modify: `docs-site/control-app.js`
+- Modify: `docs-site/control-layout.js`
+- Modify: `docs-site/control-navigation.js`
+- Modify: `docs-site/control-components.js`
+- Modify: `docs-site/control-router.js`
+- Modify: `web-tests/control-sidebar-polish.test.js`
+- Modify: `web-tests/control-foundation-regressions.test.js`
+- Modify: `web-tests/control-route-render-contract.test.js`
+- Create: `web-tests/control-shell-layout.test.js`
+
+### Behavior
+
+1. Add a pure layout resolver with the 240px labeled width, 64px rail, 304px panel, and 600px center floor.
+2. Set `data-nav-mode` and `data-context-mode` from the resolver. Do not add fixed 900px or 1200px bands.
+3. Add Phosphor icons to every navigation destination and group. Inline the SVG paths.
+4. Add the 64px rail markup. Keep all destinations visible, use hairline dividers, and keep the account menu reachable.
+5. Add one navigation toggle at the top right. Save the operator's choice. Use the automatic collapse when no choice is saved.
+6. Keep the context panel a column while it fits. Move the Context trigger to the page header when the panel is a drawer and the navigation is not a drawer. Use the top bar only when the navigation is a drawer.
+7. Replace page layout media queries with container queries against the center width.
+8. Remove the 900px to 1199px top bar rules.
+9. At drawer widths, opening one drawer closes the other so only one overlay is active.
+
+### Verify
+
+```bash
+npm run test:web
+npm run check:web
+git diff --check
+```
+
+Result on 2026-10-22:
+
+- `npm run test:web`: 266 pass, 0 fail.
+- `npm run check:web`: pass.
+- `git diff --check`: pass.
+- Signed-in fixture checked at 1120, 1000, 900, 700, and 390px in light and dark. At 1120 the rail and context column are visible. At 1000 and 900 the context panel is a drawer with a page header trigger. At 700 the rail and context drawer are visible. Below 700 the navigation is a drawer and the top bar has Menu and Context. Drawer open, close, Escape, and focus return were checked. The account menu paints above the center. The narrow context drawer fills the content viewport without horizontal overflow.
+- The user accepted the live build on 2026-10-22 and asked to commit and merge.
+
+### Review follow-up: status pills, current group, and toggle icon (2026-10-22)
+
+The live review asked for three visual corrections.
+
+1. Remove the leading dot from `Enabled` and the other status chips.
+2. Stop the current feature group label from centering and remove its leading dot.
+3. Replace the double-chevron navigation toggle with a sidebar panel icon.
+
+Files changed: `docs-site/control.css`, `docs-site/control-app.js`, `docs-site/control.html`, `web-tests/control-sidebar-polish.test.js`, `web-tests/control-theme-surfaces.test.js`, the design system, the shell decision record, and this plan.
+
+Result on 2026-10-22:
+
+- `npm run test:web`: 267 pass, 0 fail.
+- `npm run check:web`: pass.
+- `git diff --check`: pass.
+- Signed-in fixture checked at 1236, 1120, 1000, and 390px in light and dark. The status chip has no leading dot. The current group label starts at the navigation content edge. No `.control-nav-marker` exists. The toggle has one sidebar panel icon in both labeled and rail states. No horizontal overflow.
+- Layout thresholds are unchanged. The earlier 700px live check still applies.
+
+### Review follow-up: Discord preview fidelity (2026-10-22)
+
+The live review asked for the announcement embed and notification role panel previews to read like the Discord messages they approximate. The two previews previously used a generic dark card, a letter avatar, a block message layout, browser-default disabled buttons, and a fixed accent color for the embed edge.
+
+Changes:
+
+1. Render both previews as Discord messages with a channel header, 40px bot avatar, Rob-bot name, APP tag, preview timestamp, message body, and embed surface.
+2. Reflect the announcement composer color through `--embed-color` and style the title, body, footer, and image on the Discord embed surface.
+3. Use Discord blurple for the notification panel embed and render its buttons with Discord primary, secondary, success, and danger colors, 32px height, 3px radius, and action rows of at most five.
+4. Keep the Preview labels and notes. Keep preview buttons disabled.
+5. Use `/rob-robin.jpg?v=1` as the bot avatar in both previews.
+6. Use the 12px metadata floor for the APP tag instead of Discord's 10px label.
+
+Files changed: `control-content.js`, `control-utilities.js`, `control-features.css`, `control.html`, `control-legacy-removal.test.js`, `control-stage3-reconciliation.test.js`, the design system, and this plan. Create `web-tests/control-discord-preview.test.js`.
+
+Result on 2026-10-22:
+
+- `npm run test:web`: 270 pass, 0 fail.
+- `npm run check:web`: pass.
+- `git diff --check`: pass.
+- Signed-in fixture checked at 1236px in light and dark. The announcement preview was checked in the context column with a title, body, footer, image, and selected embed color. The notification preview was checked in read and edit modes. The context drawer was forced open at the same fixed 304px panel width; the preview width and overflow are unchanged.
+- Policy read: `Aedwon/Pantas` main at `17db830f931574f38530c51aed37c7d8ba2645e1`; repository policy read from `origin/main`.
+- The user accepted the live build on 2026-10-22 and asked to commit and merge.
+
+### Review follow-up: sidebar brand and account swap (2026-10-22)
+
+The live review asked to swap the signed-in profile block with the Rob-bot Control Panel brand block.
+
+Changes:
+
+1. Move the brand into the fixed head beside the navigation toggle.
+2. Move the signed-in account and appearance controls into a fixed footer below the scrolling navigation body.
+3. Open the account menu upward in the labeled and drawer forms, and to the right in the rail.
+4. Keep the drawer close control in the head and keep the toggle hidden in the drawer.
+5. Bump `control.css` to `v=25`.
+
+Files changed: `docs-site/control.html`, `docs-site/control.css`, `web-tests/control-sidebar-polish.test.js`, `web-tests/control-foundation-regressions.test.js`, `web-tests/control-theme-surfaces.test.js`, the design system, the shell decision record, and this plan.
+
+Result on 2026-10-22:
+
+- `npm run test:web`: 271 pass, 0 fail.
+- `npm run check:web`: pass.
+- `git diff --check`: pass.
+- Signed-in fixture checked at 1236px in light and dark. The brand is at the top with the toggle. The account and appearance controls are in the footer. The account menu opens upward over the navigation body.
+- Width checks used a same-origin viewport frame so the shell resolver saw the intended width. At 1000px with the labeled navigation and context drawer, the brand, toggle, and footer keep their order. At 1000px with the rail, the brand is a 44px mark above the toggle, the footer keeps the account and appearance controls, and the account menu opens right and upward. At 390px the drawer opens with the brand and close control at the top, the account and appearance controls at the bottom, and no horizontal overflow.
+
+### Promotion and build repair (2026-10-22)
+
+The user accepted the live review and asked to commit and merge. Promotion targets `web/rob-bot-site-production`. The Discord bot and `main` remain unchanged.
+
+The Vercel production deployment was stale at `control.css?v=8`. The production deployment record showed a failed build for `c286a1b`. The cause was the `npm run build` command, which still invoked three anonymous-review overlay scripts. Those scripts were written for an earlier review baseline. Parts of their changes were already present, so the first script stopped on a missing anchor. The build command now runs the verification gates and copies the site output without reapplying the overlay scripts.
+
+Verification before promotion:
+
+- `npm run check:web`: pass.
+- `npm run test:web`: 271 pass, 0 fail.
+- `git diff --check`: pass.
+- Python gates under `uv` with CPython 3.12: compileall pass, Ruff check pass, Ruff format pass, mypy pass, 37 focused tests pass.
+
+The finish branch and production SHAs are recorded after the merge and Vercel verification.

@@ -550,11 +550,11 @@ export function mappingPageMarkup({ pageKey, state, snapshot } = {}) {
           ${config.resourceKeys.map(key => editRow(key, state.persisted[key], state.draft[key], snapshot, state.errors?.[key])).join('')}
         </div>
         ${destructiveMappingMarkup(pageKey, state)}
-        <div class="mapping-page-actions">
+        ${suggestionMarkup(pageKey, snapshot)}
+        <div class="mapping-page-actions control-save-bar">
           <button class="control-button control-button-primary" type="button" data-mapping-save${state.dirty && !Object.keys(state.errors || {}).length && state.status !== 'saving' ? '' : ' disabled'}>${state.status === 'saving' ? 'Saving…' : 'Save changes'}</button>
           <button class="control-button control-button-secondary" type="button" data-mapping-discard${state.status === 'saving' ? ' disabled' : ''}>Discard</button>
         </div>
-        ${suggestionMarkup(pageKey, snapshot)}
       </section>`;
   }
 

@@ -321,7 +321,7 @@ function settingsActionsMarkup(state) {
   if (state.mode !== 'edit') return '';
   const disabled = !state.dirty || Object.keys(state.errors || {}).length || state.status === 'saving';
   return `
-    <div class="content-page-actions">
+    <div class="content-page-actions control-save-bar">
       <button class="control-button control-button-primary" type="button" data-content-save${disabled ? ' disabled' : ''}>${state.status === 'saving' ? 'Saving…' : 'Save changes'}</button>
       <button class="control-button control-button-secondary" type="button" data-content-discard${state.status === 'saving' ? ' disabled' : ''}>Discard</button>
     </div>`;
@@ -477,8 +477,8 @@ export function announcementPreviewMarkup(snapshot, composer = {}) {
   const footer = String(composer.footer || '');
   const hasEmbed = announcementHasEmbed(composer);
   const image = hasEmbed && validHttpUrl(composer.imageUrl) ? `<img class="discord-preview-image" src="${escapeHtml(composer.imageUrl)}" alt="Announcement embed preview">` : '';
-  const embed = hasEmbed ? `<div class="discord-embed" style="--embed-color:#${escapeHtml(String(composer.color || DEFAULT_ANNOUNCEMENT_COLOR).replace('#', ''))}">${title ? `<strong>${escapeHtml(title)}</strong>` : ''}${body ? `<p>${escapeHtml(body).split(String.fromCharCode(10)).join('<br>')}</p>` : ''}${image}${footer ? `<small>${escapeHtml(footer)}</small>` : ''}</div>` : '';
-  return `<div class="discord-preview-channel">#${escapeHtml(destination?.name || 'select-a-channel')}</div><div class="discord-preview-message"><div class="discord-preview-avatar" aria-hidden="true">R</div><div><strong>Rob-bot</strong><span class="discord-bot-label">APP</span>${message ? `<p>${previewMessageMarkup(snapshot, message)}</p>` : ''}${embed || (!message ? '<p class="discord-preview-empty">Your announcement preview appears here.</p>' : '')}</div></div>`;
+  const embed = hasEmbed ? `<div class="discord-embed" style="--embed-color:#${escapeHtml(String(composer.color || DEFAULT_ANNOUNCEMENT_COLOR).replace('#', ''))}">${title ? `<strong class="discord-embed-title">${escapeHtml(title)}</strong>` : ''}${body ? `<p class="discord-embed-description">${escapeHtml(body).split(String.fromCharCode(10)).join('<br>')}</p>` : ''}${image}${footer ? `<small class="discord-embed-footer">${escapeHtml(footer)}</small>` : ''}</div>` : '';
+  return `<div class="discord-preview-channel"><span class="discord-preview-channel-icon" aria-hidden="true">#</span><span>${escapeHtml(destination?.name || 'select-a-channel')}</span></div><div class="discord-preview-message"><img class="discord-preview-avatar" src="/rob-robin.jpg?v=1" alt="" aria-hidden="true"><div class="discord-preview-body"><div class="discord-preview-author"><strong>Rob-bot</strong><span class="discord-bot-label">APP</span><span class="discord-preview-timestamp" aria-hidden="true">Today at 12:00 PM</span></div>${message ? `<div class="discord-preview-content">${previewMessageMarkup(snapshot, message)}</div>` : ''}${embed || (!message ? '<p class="discord-preview-empty">Your announcement preview appears here.</p>' : '')}</div></div>`;
 }
 
 function announcementCanPost(snapshot, state, featureEnabled) {
@@ -500,7 +500,6 @@ function announcementMarkup(config, state, snapshot) {
     <section class="control-page content-page content-page-compact" data-page-key="/control/content/announcements">
       ${contentHeaderMarkup(config, state, 'Build a one-off server announcement and preview exactly what Rob-bot will post.')}
       ${statusMarkup(state)}
-      ${settingsActionsMarkup(state)}
       <div class="content-announcement-layout">
         <section class="control-section content-announcement-composer">
           <div class="control-section-heading"><div><h2>Announcement builder</h2><p>Composer values are local until you post.</p></div><div class="content-announcement-actions"><button class="content-clear-action" type="button" data-announcement-clear>Clear all</button><button class="control-button control-button-primary content-announcement-post" type="button" data-announcement-send${canPost ? '' : ' disabled'}>Post</button></div></div>
@@ -516,6 +515,7 @@ function announcementMarkup(config, state, snapshot) {
           <p class="content-note">Message alone is postable. An embed is created only when Title and/or Body has content. Footer, color, and image apply only to that embed.</p>
         </section>
       </div>
+      ${settingsActionsMarkup(state)}
     </section>`;
 }
 
@@ -590,7 +590,6 @@ function liveMarkup(config, state, snapshot) {
     <section class="control-page content-page content-page-compact" data-page-key="/control/content/live">
       ${contentHeaderMarkup(config, state, 'Post the configured live-host notice to the mapped Live destination.')}
       ${statusMarkup(state)}
-      ${settingsActionsMarkup(state)}
       <section class="control-section content-live-dispatch" aria-labelledby="live-dispatch-heading">
         <div class="control-section-heading"><div><h2 id="live-dispatch-heading">Live notice</h2><p>Review each dispatch step before publishing.</p></div></div>
         <ol class="content-dispatch-flow">
@@ -600,6 +599,7 @@ function liveMarkup(config, state, snapshot) {
         </ol>
         <div class="content-dispatch-actions"><button class="control-button control-button-primary" type="button" data-live-send${fallback && state.persisted.enabled ? '' : ' disabled'}>Post Live notice</button></div>
       </section>
+      ${settingsActionsMarkup(state)}
     </section>`;
 }
 

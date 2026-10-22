@@ -48,6 +48,7 @@ export function navigationModel(current, expandedDomain = DEFAULT_GROUP, lastByD
     primary: CONTROL_NAV_GROUPS.map(group => ({
       key: group.key,
       label: group.label,
+      icon: group.icon,
       expanded: group.key === expanded,
       current: group.items.some(item => (item.matchPaths || [item.path]).includes(current?.path)),
       children: group.items.map(item => {
@@ -65,42 +66,97 @@ function focusableWithin(node) {
     .filter(item => !item.hidden && item.getAttribute('aria-hidden') !== 'true');
 }
 
-export function installDrawerController({ drawer, trigger, closeButton, mediaQuery }) {
-  if (!drawer || !trigger || !mediaQuery) return () => {};
+export function installDrawerController({
+  drawer,
+  trigger,
+  triggers = [],
+  closeButton,
+  isDrawer = () => true,
+  isAvailable = () => true,
+  delegateRoot = null,
+  delegateSelector = '',
+  onOpen = () => {},
+  onClose = () => {},
+} = {}) {
+  const staticTriggers = [...new Set([trigger, ...triggers].filter(Boolean))];
+  const delegated = Boolean(delegateRoot && delegateSelector);
+  if (!drawer || (!staticTriggers.length && !delegated)) {
+    return { open: () => {}, close: () => {}, sync: () => {}, destroy: () => {} };
+  }
   let opener = null;
+  let openedAsDrawer = false;
+
+  const triggerItems = () => {
+    const dynamic = delegated
+      ? [...(delegateRoot.querySelectorAll?.(delegateSelector) || [])]
+      : [];
+    return [...new Set([...staticTriggers, ...dynamic].filter(Boolean))];
+  };
+  const isModal = () => Boolean(isAvailable() && isDrawer());
+  const setExpanded = value => triggerItems().forEach(item => item.setAttribute('aria-expanded', String(value)));
 
   const close = ({ restoreFocus = true } = {}) => {
+    const wasOpen = openedAsDrawer;
+    if (!wasOpen) return;
+    openedAsDrawer = false;
     drawer.dataset.open = 'false';
-    trigger.setAttribute('aria-expanded', 'false');
-    if (mediaQuery.matches) {
+    setExpanded(false);
+    if (isModal()) {
       drawer.setAttribute('aria-hidden', 'true');
       drawer.inert = true;
+    } else {
+      drawer.removeAttribute('aria-hidden');
+      drawer.inert = !isAvailable();
     }
-    if (restoreFocus) opener?.focus?.();
+    if (restoreFocus && wasOpen) opener?.focus?.();
     opener = null;
+    if (wasOpen) onClose();
   };
 
   const open = () => {
-    opener = document.activeElement instanceof HTMLElement ? document.activeElement : trigger;
+    if (!isModal() || openedAsDrawer) return;
+    openedAsDrawer = true;
+    opener = document.activeElement instanceof HTMLElement ? document.activeElement : triggerItems()[0];
     drawer.inert = false;
     drawer.removeAttribute('aria-hidden');
     drawer.dataset.open = 'true';
-    trigger.setAttribute('aria-expanded', 'true');
+    setExpanded(true);
     focusableWithin(drawer)[0]?.focus();
+    onOpen();
   };
 
-  const syncMode = () => {
-    if (mediaQuery.matches) close({ restoreFocus: false });
-    else {
-      drawer.inert = false;
-      drawer.removeAttribute('aria-hidden');
-      drawer.dataset.open = 'true';
-      trigger.setAttribute('aria-expanded', 'false');
+  const sync = () => {
+    if (!isAvailable()) {
+      openedAsDrawer = false;
+      drawer.dataset.open = 'false';
+      setExpanded(false);
+      drawer.setAttribute('aria-hidden', 'true');
+      drawer.inert = true;
+      return;
     }
+    if (isDrawer()) {
+      if (openedAsDrawer) {
+        drawer.inert = false;
+        drawer.removeAttribute('aria-hidden');
+        drawer.dataset.open = 'true';
+        setExpanded(true);
+      } else {
+        drawer.dataset.open = 'false';
+        setExpanded(false);
+        drawer.setAttribute('aria-hidden', 'true');
+        drawer.inert = true;
+      }
+      return;
+    }
+    openedAsDrawer = false;
+    drawer.inert = false;
+    drawer.removeAttribute('aria-hidden');
+    drawer.dataset.open = 'true';
+    setExpanded(false);
   };
 
   const onKeyDown = event => {
-    if (!mediaQuery.matches || drawer.dataset.open !== 'true') return;
+    if (!isModal() || drawer.dataset.open !== 'true') return;
     if (event.key === 'Escape') {
       event.preventDefault();
       close();
@@ -120,18 +176,30 @@ export function installDrawerController({ drawer, trigger, closeButton, mediaQue
     }
   };
 
-  const onTrigger = () => drawer.dataset.open === 'true' ? close() : open();
-  const onClose = () => close();
-  trigger.addEventListener('click', onTrigger);
-  closeButton?.addEventListener('click', onClose);
+  const onTrigger = event => {
+    if (delegated) {
+      const target = event?.target?.closest?.(delegateSelector);
+      if (!target || !delegateRoot.contains?.(target)) return;
+    }
+    if (drawer.dataset.open === 'true') close();
+    else open();
+  };
+  const onCloseClick = () => close();
+  if (delegated) delegateRoot.addEventListener('click', onTrigger);
+  else staticTriggers.forEach(item => item.addEventListener('click', onTrigger));
+  closeButton?.addEventListener('click', onCloseClick);
   drawer.addEventListener('keydown', onKeyDown);
-  mediaQuery.addEventListener('change', syncMode);
-  syncMode();
+  sync();
 
-  return () => {
-    trigger.removeEventListener('click', onTrigger);
-    closeButton?.removeEventListener('click', onClose);
-    drawer.removeEventListener('keydown', onKeyDown);
-    mediaQuery.removeEventListener('change', syncMode);
+  return {
+    open,
+    close,
+    sync,
+    destroy: () => {
+      if (delegated) delegateRoot.removeEventListener('click', onTrigger);
+      else staticTriggers.forEach(item => item.removeEventListener('click', onTrigger));
+      closeButton?.removeEventListener('click', onCloseClick);
+      drawer.removeEventListener('keydown', onKeyDown);
+    },
   };
 }

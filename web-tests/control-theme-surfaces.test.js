@@ -17,5 +17,5 @@ test('Control owns its theme surfaces without the handbook stylesheet', () => {
 });
 
 test('Control shell stylesheet URL is cache-busted for the current Control surface contract', () => {
-  assert.match(controlHtml, /href=["']\/control\.css\?v=18["']/);
+  assert.match(controlHtml, /href=["']\/control\.css\?v=25["']/);
 });

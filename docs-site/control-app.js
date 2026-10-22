@@ -6,9 +6,10 @@ import { registerCommunityPages } from './control-community.js';
 import { registerMappingPages } from './control-mappings.js';
 import { registerUtilitiesPages } from './control-utilities.js';
 import { installThemeControls } from './control-theme.js';
-import { installContextDrawerController, syncContextAvailability } from './control-layout.js';
+import { installContextDrawerController, syncContextAvailability, syncContextTriggers } from './control-layout.js';
 import { createChangesTrayController } from './control-tray.js';
 import { createNavigationState, installDrawerController, navigationModel } from './control-navigation.js';
+import { installShellLayout, readNavPreference, writeNavPreference } from './control-shell-layout.js';
 import { navGroupForPath, resolveControlRoute } from './control-router.js';
 import { createActivityController, installActivityPage } from './control-secondary.js';
 import { registerWorkflowPages, workflowPageMarkup } from './control-workflows.js';
@@ -31,12 +32,12 @@ import {
 const ROUTE_KEY = 'rob-control-last-route';
 const DOMAIN_ROUTE_KEY = 'rob-control-last-domain-routes';
 const EXPANDED_KEY = 'rob-control-expanded-domain';
-const NAV_QUERY = '(max-width: 899px)';
-const CONTEXT_QUERY = '(max-width: 1199px)';
 
 const shell = {
+  root: document.querySelector('.control-shell'),
   nav: document.querySelector('#controlNavContent'),
   drawer: document.querySelector('#controlNavDrawer'),
+  toggle: document.querySelector('#controlNavToggle'),
   menu: document.querySelector('#controlMenuButton'),
   close: document.querySelector('#controlNavClose'),
   main: document.querySelector('#controlMain'),
@@ -48,9 +49,6 @@ const shell = {
   contextClose: document.querySelector('#controlContextClose'),
 };
 
-const navMedia = matchMedia(NAV_QUERY);
-const contextMedia = matchMedia(CONTEXT_QUERY);
-
 let session = null;
 let guild = null;
 let guildState = null;
@@ -59,6 +57,10 @@ let removeAccountMenu = () => {};
 let removePageInteractions = () => {};
 let activityController = null;
 let activityGuildId = null;
+let navPreference = readNavPreference(localStorage);
+let shellLayout = null;
+let navDrawer = null;
+let contextDrawer = null;
 
 
 registerCommunityPages();
@@ -112,16 +114,6 @@ function syncNavigationCurrentState() {
   navigationDomainSections().forEach(section => {
     const current = section.dataset.domain === currentGroup;
     section.classList.toggle('control-nav-domain-current', current);
-    const button = section.querySelector('[data-domain-select]');
-    const existingMarker = button?.querySelector('.control-nav-marker');
-    if (current && button && !existingMarker) {
-      const marker = document.createElement('span');
-      marker.className = 'control-nav-marker';
-      marker.setAttribute('aria-hidden', 'true');
-      button.prepend(marker);
-    } else if (!current) {
-      existingMarker?.remove();
-    }
   });
 }
 
@@ -170,8 +162,34 @@ function revealNavigationDomain(domainKey) {
   });
 }
 
+function setNavToggleState() {
+  if (!shell.toggle) return;
+  const mode = shell.root?.dataset.navMode || 'expanded';
+  const collapsed = mode === 'rail';
+  const label = collapsed ? 'Expand navigation' : 'Collapse navigation';
+  shell.toggle.setAttribute('aria-label', label);
+  shell.toggle.title = label;
+  shell.toggle.setAttribute('aria-pressed', String(collapsed));
+  shell.toggle.hidden = mode === 'drawer';
+}
+
+function syncShellChrome() {
+  if (!shell.root) return;
+  const mode = shell.root.dataset.navMode || 'expanded';
+  if (shell.nav.dataset.navMode !== mode) renderNavigation();
+  setNavToggleState();
+  syncContextTriggers({ shell: shell.root, trigger: shell.contextButton, pageRoot: document });
+  navDrawer?.sync();
+  contextDrawer?.sync();
+}
+
 function renderNavigation() {
-  shell.nav.innerHTML = navigationMarkup(navigationModel(navState.current, navState.expandedDomain, navState.lastByDomain));
+  const mode = shell.root?.dataset.navMode || 'expanded';
+  shell.nav.innerHTML = navigationMarkup(
+    navigationModel(navState.current, navState.expandedDomain, navState.lastByDomain),
+    { rail: mode === 'rail' },
+  );
+  shell.nav.dataset.navMode = mode;
   shell.nav.querySelectorAll('a[href^="/control/"]').forEach(link => {
     link.addEventListener('click', event => {
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -184,6 +202,7 @@ function renderNavigation() {
       revealNavigationDomain(button.dataset.domainSelect);
     });
   });
+  syncNavigationCurrentState();
 }
 
 function resetActivityController() {
@@ -227,12 +246,13 @@ function renderMain() {
   const workflowMarkup = session?.authenticated ? workflowPageMarkup(pageKey) : '';
   const contextMarkup = currentContextMarkup();
 
+  if (shell.root?.dataset.contextMode === 'drawer') contextDrawer?.close({ restoreFocus: false });
+
   syncContextAvailability({
     drawer: shell.contextDrawer,
     trigger: shell.contextButton,
     root: shell.context,
     markup: contextMarkup,
-    mediaQuery: contextMedia,
   });
 
   shell.main.replaceChildren?.();
@@ -257,6 +277,8 @@ function renderMain() {
   } else if (activity) {
     removePageInteractions = installActivityPage(shell.main, activity);
   }
+  shellLayout?.refresh();
+  syncShellChrome();
   shell.main.focus({ preventScroll: true });
   changesTray.render();
 }
@@ -269,8 +291,10 @@ function navigate(path, { replace = false } = {}) {
   }
   syncNavigationCurrentState();
   renderMain();
-  if (navMedia.matches) shell.close.click();
-  if (contextMedia.matches && shell.contextDrawer?.dataset.open === 'true') shell.contextClose?.click();
+  if (shell.root?.dataset.navMode === 'drawer') shell.close.click();
+  if (shell.root?.dataset.contextMode === 'drawer' && shell.contextDrawer?.dataset.open === 'true') {
+    shell.contextClose?.click();
+  }
 }
 
 function setStatus(message, tone = '') {
@@ -454,28 +478,39 @@ window.addEventListener('popstate', () => {
   persistNavigation();
   syncNavigationCurrentState();
   renderMain();
+  if (shell.root?.dataset.navMode === 'drawer') navDrawer?.close({ restoreFocus: false });
+  if (shell.root?.dataset.contextMode === 'drawer') contextDrawer?.close({ restoreFocus: false });
 });
 
-installDrawerController({
+navDrawer = installDrawerController({
   drawer: shell.drawer,
   trigger: shell.menu,
   closeButton: shell.close,
-  mediaQuery: navMedia,
+  isDrawer: () => shell.root?.dataset.navMode === 'drawer',
+  onOpen: () => contextDrawer?.close({ restoreFocus: false }),
 });
-installContextDrawerController({
+contextDrawer = installContextDrawerController({
   drawer: shell.contextDrawer,
   trigger: shell.contextButton,
   closeButton: shell.contextClose,
-  mediaQuery: contextMedia,
+  isDrawer: () => shell.root?.dataset.contextMode === 'drawer',
+  isAvailable: () => shell.root?.dataset.context === 'true',
+  delegateRoot: document,
+  delegateSelector: '[data-control-context-open]',
+  onOpen: () => navDrawer?.close({ restoreFocus: false }),
 });
-contextMedia.addEventListener('change', () => {
-  syncContextAvailability({
-    drawer: shell.contextDrawer,
-    trigger: shell.contextButton,
-    root: shell.context,
-    markup: currentContextMarkup(),
-    mediaQuery: contextMedia,
-  });
+shell.toggle?.addEventListener('click', () => {
+  const mode = shell.root?.dataset.navMode;
+  if (mode === 'drawer') return;
+  navPreference = mode === 'rail' ? 'expanded' : 'collapsed';
+  writeNavPreference(localStorage, navPreference);
+  shellLayout?.refresh();
+  syncShellChrome();
+});
+shellLayout = installShellLayout({
+  shell: shell.root,
+  getPreference: () => navPreference,
+  onChange: () => syncShellChrome(),
 });
 installThemeControls({
   root: document.documentElement,
@@ -488,7 +523,7 @@ installControlStateGuards({
   getCurrentPageKey: () => navState.current.path,
   onSave: requestRegisteredPageSave,
 });
-renderNavigation();
+syncShellChrome();
 
 if (location.pathname !== resolvedInitial.path) history.replaceState({ control: true }, '', resolvedInitial.path);
 

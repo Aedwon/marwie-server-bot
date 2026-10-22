@@ -23,8 +23,16 @@ test('Commands column labels use the same grid geometry as command rows', () => 
   assert.match(featureCss, /\.control-command-table-head\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*minmax\(180px, \.9fr\) minmax\(0, 1\.4fr\) auto;/);
 });
 
-test('medium Context drawer reserves center workspace width while open', () => {
-  assert.match(shellCss, /@media \(min-width: 900px\) and \(max-width: 1199px\)[\s\S]*?\.control-shell:has\(\.control-context-shell\[data-open=\"true\"\]\) \.control-main[\s\S]*?padding-right:\s*calc\(var\(--control-right-width\) \+ 32px\);/);
+test('context column reserves its own track and never pads the center workspace', () => {
+  assert.match(
+    shellCss,
+    /\.control-shell\[data-nav-mode=\"rail\"\]\[data-context-mode=\"column\"\] \{[^}]*var\(--control-rail-width\)[^}]*var\(--control-right-width\)/,
+  );
+  assert.match(
+    shellCss,
+    /\.control-shell\[data-context-mode=\"drawer\"\] \.control-context-shell \{[^}]*position: fixed;/,
+  );
+  assert.doesNotMatch(shellCss, /padding-right:\s*calc\(var\(--control-right-width\)/);
 });
 
 test('mobile pending-changes tray can wrap within safe viewport insets', () => {

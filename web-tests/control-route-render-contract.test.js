@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
+import { controlPageHeaderMarkup } from '../docs-site/control-components.js';
 import { activityPageMarkup, commandsPageMarkup } from '../docs-site/control-secondary.js';
 import { registerCommunityPages } from '../docs-site/control-community.js';
 import { registerContentPages } from '../docs-site/control-content.js';
@@ -107,9 +108,9 @@ test('every feature route renders its editable fields in edit mode', () => {
     const markup = renderRegisteredControlPage(pageKey, { snapshot });
     assert.ok(markup, `${pageKey} must render in edit mode`);
     assertContains(markup, EDIT_EXPECTATIONS[pageKey], `${pageKey} edit mode`);
-    if (pageKey !== '/control/content/announcements' && pageKey !== '/control/content/live') {
-      assert.match(markup, /Save changes/, `${pageKey} must expose Save changes`);
-    }
+    assert.match(markup, /class="[^"]*control-save-bar[^"]*"/, `${pageKey} must use the shared floating save bar`);
+    assert.match(markup, /Save changes/, `${pageKey} must expose Save changes`);
+    assert.match(markup, /Discard/, `${pageKey} must expose Discard`);
     controlState.discard(pageKey);
     controlState.get(pageKey).mode = 'read';
   }
@@ -228,10 +229,23 @@ test('the shell declares context presence so the right column can collapse', () 
   assert.doesNotMatch(html, /styles\.css/);
   assert.doesNotMatch(html, /control-emoji-picker\.css/);
   assert.match(html, /class="control-shell"[^>]*data-context="false"/);
-  assert.match(css, /\.control-shell\[data-context="true"\]/);
-  assert.match(css, /\.control-shell\[data-context="false"\]/);
+  assert.match(html, /data-nav-mode="expanded"/);
+  assert.match(html, /data-context-mode="none"/);
+  assert.match(css, /\.control-shell\[data-nav-mode="expanded"\]\[data-context-mode="column"\]/);
+  assert.match(css, /\.control-shell\[data-nav-mode="rail"\]\[data-context-mode="column"\]/);
+  assert.match(css, /\.control-shell\[data-nav-mode="drawer"\]\[data-context-mode="drawer"\]/);
   assert.match(css, /\.sr-only/);
   assert.match(features, /font-size: 28px/);
   assert.match(features, /font-size: 18px/);
   assert.match(css, /grid-template-columns: var\(--control-left-width\) minmax\(0, 1fr\)/);
+  assert.match(features, /@container control-main/);
+});
+
+test('page headers carry a hidden page context trigger', () => {
+  const markup = controlPageHeaderMarkup({ title: 'Reputation' });
+  assert.match(markup, /data-control-context-open/);
+  assert.match(markup, /data-context-trigger="page"/);
+  assert.match(markup, /aria-controls="controlContextDrawer"/);
+  assert.match(markup, /Open page context/);
+  assert.match(markup, /hidden/);
 });

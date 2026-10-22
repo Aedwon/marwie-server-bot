@@ -117,7 +117,7 @@ function toggleEditor(field, label, enabled, help = '') {
 function saveBar(state) {
   const invalid = Boolean(Object.keys(state?.errors || {}).length);
   const disabled = !state?.dirty || invalid || state?.status === 'saving';
-  return `<div class="community-page-actions"><button class="control-button control-button-primary" type="button" data-community-save${disabled ? ' disabled' : ''}>${state?.status === 'saving' ? 'Saving…' : 'Save changes'}</button><button class="control-button control-button-secondary" type="button" data-community-discard${state?.status === 'saving' ? ' disabled' : ''}>Discard</button></div>`;
+  return `<div class="community-page-actions control-save-bar"><button class="control-button control-button-primary" type="button" data-community-save${disabled ? ' disabled' : ''}>${state?.status === 'saving' ? 'Saving…' : 'Save changes'}</button><button class="control-button control-button-secondary" type="button" data-community-discard${state?.status === 'saving' ? ' disabled' : ''}>Discard</button></div>`;
 }
 
 function pageHeader(title, description, state, feature) {

@@ -1,7 +1,7 @@
 # Control redesign finish boundary
 
 Date: 2026-10-21
-Status: Active
+Status: Active; visual acceptance reopened after live review
 Scope: Rob-bot Control website
 
 ## Context
@@ -68,6 +68,26 @@ One defect was found during the live review. Notification roles rendered an iner
 
 The fixed Notification roles views were recaptured live in `.visual-companion/control-finish-review/live-edit-notification-roles4` (20 images) on 2026-10-22 and copied into `live-edit`. The live edit header has no inert toggle at 1440, 1024, and 390 in light and dark. The route is accepted.
 
-The other 18 routes are accepted from the live read and edit captures. The local web service was restored after the capture. The public host serves the previous local-hosting build again (`control.css?v=12`), and both the local and public `/healthz` endpoints return 200. The finish branch is committed locally but not pushed, merged, or promoted. The local hosting worktree was not reset, cleaned, or modified.
+The other 18 routes were accepted from the live read and edit captures. That acceptance was reopened by the 2026-10-22 live review. The local web service was restored after the earlier capture. The public host served the previous local-hosting build again (`control.css?v=12`), and both the local and public `/healthz` endpoints returned 200. The finish branch is committed locally but not pushed, merged, or promoted. The local hosting worktree was not reset, cleaned, or modified.
 
 No bot deploy was made. `main` was not changed.
+
+### Review follow-up: floating save bar
+
+The 2026-10-22 live review reopened visual acceptance. The page save actions had regressed to inline rows in page headers or section headings. They are now one shared floating surface at the page end on every edit route.
+
+- The shared `control-save-bar` is rendered by the community, content, utilities, analytics, mappings, and workflows pages.
+- The bar is sticky at `bottom: max(14px, env(safe-area-inset-bottom))`, with a 12px radius, translucent surface, hairline border, blur, and `--shadow-save-bar`.
+- Short edit pages use a flex column with `min-height: calc(100dvh - 2rem)` and `margin-top: auto`. The bar pins to the viewport bottom without a JavaScript positioner.
+- Announcement and Live save actions moved to the page end. Mapping save actions moved after suggestions. Workflow save actions moved out of the Configuration heading.
+- The global changes tray clears the bar at widths below 1200px and on mobile.
+- Asset versions are `control.css?v=19` and `control-features.css?v=8`.
+- Asset-version assertions in `control-theme-surfaces.test.js` and `control-stage3-reconciliation.test.js` were updated to the new versions.
+
+Verification on 2026-10-22: `npm run test:web` reports 248 tests, 248 pass. `npm run check:web` and `git diff --check` pass. Live visual acceptance is still pending.
+
+The current review build is served by the custom finish server on `127.0.0.1:8787`. The launchd service `com.aedwon.marwie-server-web` is booted out for this review and must be restored after acceptance. The public host currently points at the review build.
+
+The user accepted the live review and asked to commit and merge on 2026-10-22. Promotion to `web/rob-bot-site-production` is approved. The Discord bot and `main` are excluded.
+
+The Vercel production site was stale at `control.css?v=8` because the production build failed. The build command reapplied review overlay scripts whose changes were already present in the branch, and the first script stopped on a missing anchor. The build command no longer invokes those scripts. Verification before promotion passed: `npm run check:web`, `npm run test:web` at 271 tests, `git diff --check`, and the Python gates under CPython 3.12.

@@ -418,7 +418,7 @@ function saveActions(state) {
   const errors = Object.keys(state?.errors || {}).length;
   const canSave = Boolean(state?.dirty && !errors && state?.status !== 'saving' && state?.revision);
   return `
-    <div class="utility-save-bar">
+    <div class="utility-save-bar control-save-bar">
       <span data-utility-save-state>${state?.status === 'saving' ? 'Saving changes…' : state?.dirty ? 'Unsaved changes' : 'No unsaved changes'}</span>
       <div>
         <button class="control-button control-button-primary" type="button" data-utility-save${canSave ? '' : ' disabled'}>${state?.status === 'saving' ? 'Saving…' : 'Save changes'}</button>
@@ -654,20 +654,40 @@ function previewEmojiMarkup(snapshot, value) {
   return `<span class="utility-discord-button-emoji-fallback">${escapeHtml(selected)}</span>`;
 }
 
+function notificationPanelChannelName(snapshot) {
+  const resource = (snapshot?.resources || []).find(item => item?.key === 'role_panel');
+  return String(resource?.name || '').trim() || 'role-panel';
+}
+
+function notificationPreviewButtonRows(buttons) {
+  const rows = [];
+  for (let index = 0; index < buttons.length; index += 5) rows.push(buttons.slice(index, index + 5));
+  return rows;
+}
+
 function notificationPreviewBodyMarkup(panel, snapshot) {
   const title = String(panel?.title || '').trim();
   const description = String(panel?.description || '').trim();
   const buttons = panel?.buttons || [];
+  const rows = notificationPreviewButtonRows(buttons);
   return `
-    <div class="utility-discord-embed">
-      <h4>${escapeHtml(title || 'Panel title')}</h4>
-      <p>${escapeHtml(description || 'Panel description').replaceAll('\n', '<br>')}</p>
-    </div>
-    <div class="utility-discord-actions">
-      ${buttons.length ? buttons.map(item => `
-        <button class="utility-discord-button utility-discord-button-${escapeHtml(item.style || 'primary')}" type="button" data-notification-preview-button disabled>
-          ${previewEmojiMarkup(snapshot, item.emoji)}<span>${escapeHtml(String(item.label || '').trim() || 'Button label')}</span>
-        </button>`).join('') : '<span class="utility-discord-no-buttons">No buttons yet</span>'}
+    <div class="discord-preview-channel"><span class="discord-preview-channel-icon" aria-hidden="true">#</span><span>${escapeHtml(notificationPanelChannelName(snapshot))}</span></div>
+    <div class="discord-preview-message">
+      <img class="discord-preview-avatar" src="/rob-robin.jpg?v=1" alt="" aria-hidden="true">
+      <div class="discord-preview-body">
+        <div class="discord-preview-author"><strong>Rob-bot</strong><span class="discord-bot-label">APP</span><span class="discord-preview-timestamp" aria-hidden="true">Today at 12:00 PM</span></div>
+        <div class="utility-discord-embed discord-embed" style="--embed-color:#5865f2">
+          <h4 class="discord-embed-title">${escapeHtml(title || 'Panel title')}</h4>
+          <p class="discord-embed-description">${escapeHtml(description || 'Panel description').replaceAll('\n', '<br>')}</p>
+        </div>
+        ${rows.length ? rows.map(row => `
+          <div class="utility-discord-action-row">
+            ${row.map(item => `
+              <button class="utility-discord-button utility-discord-button-${escapeHtml(item.style || 'primary')}" type="button" data-notification-preview-button disabled>
+                ${previewEmojiMarkup(snapshot, item.emoji)}<span>${escapeHtml(String(item.label || '').trim() || 'Button label')}</span>
+              </button>`).join('')}
+          </div>`).join('') : '<p class="utility-discord-no-buttons">No buttons yet</p>'}
+      </div>
     </div>`;
 }
 

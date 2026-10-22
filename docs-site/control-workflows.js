@@ -251,13 +251,12 @@ function createModerationPageDefinition() {
         toggleAttribute: 'data-workflow-enabled',
       });
       const saveActions = editing
-        ? `<div class="workflow-save-actions"><button class="control-button control-button-primary" type="button" data-workflow-save${state.dirty && !Object.keys(state.errors || {}).length && state.status !== 'saving' ? '' : ' disabled'}>${state.status === 'saving' ? 'Saving…' : 'Save changes'}</button><button class="control-button control-button-secondary" type="button" data-workflow-discard${state.status === 'saving' ? ' disabled' : ''}>Discard</button></div>`
+        ? `<div class="workflow-save-actions control-save-bar"><button class="control-button control-button-primary" type="button" data-workflow-save${state.dirty && !Object.keys(state.errors || {}).length && state.status !== 'saving' ? '' : ' disabled'}>${state.status === 'saving' ? 'Saving…' : 'Save changes'}</button><button class="control-button control-button-secondary" type="button" data-workflow-discard${state.status === 'saving' ? ' disabled' : ''}>Discard</button></div>`
         : '';
       const configuration = controlSectionMarkup({
         id: 'moderation-configuration',
         title: 'Configuration',
         description: 'Moderation controls warn, timeout, kick, and ban actions. Role hierarchy checks still apply for each command.',
-        action: saveActions,
         body: editing
           ? '<p class="workflow-note">Use the feature toggle in the page header to change moderation state.</p>'
           : `<dl class="control-definition-list"><div><dt>Moderation actions</dt><dd>${enabled ? 'Enabled' : 'Disabled'}</dd></div><div><dt>Case history</dt><dd>/history stays read-only and records every completed case.</dd></div><div><dt>Log channel</dt><dd>Case history is independent of the optional moderation log destination.</dd></div></dl>`,
@@ -268,7 +267,7 @@ function createModerationPageDefinition() {
         description: 'Run these steps in order and verify the result before closing the case.',
         body: stagesMarkup(config),
       });
-      return `<article class="control-page workflow-page" data-page-key="${MODERATION_PAGE}">${header}${configuration}${guide}</article>`;
+      return `<article class="control-page workflow-page" data-page-key="${MODERATION_PAGE}">${header}${configuration}${guide}${saveActions}</article>`;
     },
     renderContext({ state, snapshot } = {}) {
       return moderationContextMarkup(snapshot || {}, state?.mode === 'edit');

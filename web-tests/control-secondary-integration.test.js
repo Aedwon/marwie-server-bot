@@ -70,6 +70,6 @@ test('secondary surfaces provide wrapping and narrow reflow without event-card s
   assert.match(secondaryCss, /\.control-activity-meta/);
   assert.match(secondaryCss, /\.control-activity-meta\s*\{[^}]*font-size:\s*13px\s*;/);
   assert.match(secondaryCss, /overflow-wrap:\s*anywhere/);
-  assert.match(secondaryCss, /@media\s*\(max-width:\s*760px\)/);
+  assert.match(secondaryCss, /@container\s+control-main\s*\(max-width:\s*720px\)/);
   assert.doesNotMatch(secondaryCss, /activity-card/);
 });
