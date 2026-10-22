@@ -1116,4 +1116,12 @@ Verification before promotion:
 - `git diff --check`: pass.
 - Python gates under `uv` with CPython 3.12: compileall pass, Ruff check pass, Ruff format pass, mypy pass, 37 focused tests pass.
 
-The finish branch and production SHAs are recorded after the merge and Vercel verification.
+Promotion record on 2026-10-22:
+
+- Finish branch: `60229be`.
+- Production branch: `60229be`.
+- Vercel deployment: `dpl_DRy82sYUU7H6c7pjQTCZCztLsuzE`.
+- Local-hosting worktree: `534eae2` plus the preserved runtime edits. It was not reset, cleaned, or modified.
+- Live URL: `https://rob-bot-team-guide.vercel.app/control`.
+- Live asset versions: `control.css?v=25`, `control-app.js?v=18`, and `control-features.css?v=10`.
+- The Vercel project had automatic custom-domain assignment disabled. The custom domain was assigned to the new deployment manually, then automatic assignment was enabled so future production deployments update the same domain.
