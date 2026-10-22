@@ -1118,10 +1118,10 @@ Verification before promotion:
 
 Promotion record on 2026-10-22:
 
-- Finish branch: `60229be`.
-- Production branch: `60229be`.
-- Vercel deployment: `dpl_DRy82sYUU7H6c7pjQTCZCztLsuzE`.
-- Local-hosting worktree: `534eae2` plus the preserved runtime edits. It was not reset, cleaned, or modified.
-- Live URL: `https://rob-bot-team-guide.vercel.app/control`.
+- Finish branch: `60229be`, followed by the promotion record commit `7149107`.
+- Website production branch: `7149107`.
+- Local hosting checkout: merge commit `f0a52ca`. The existing runtime edits were preserved as uncommitted changes. The checkout was not reset or cleaned.
+- Production host: `https://aidevph.aedwon.site/control`, served from the operator's laptop through the Cloudflare Tunnel and the `com.aedwon.marwie-server-web` LaunchAgent.
 - Live asset versions: `control.css?v=25`, `control-app.js?v=18`, and `control-features.css?v=10`.
-- The Vercel project had automatic custom-domain assignment disabled. The custom domain was assigned to the new deployment manually, then automatic assignment was enabled so future production deployments update the same domain.
+- Verification: `node scripts/local_web_hosting.mjs check` passed, `/healthz` returned `{"ok":true}`, and the public host served `control.css?v=25` with the new sidebar markup.
+- Vercel is the rollback path, not the production host. The failed Vercel build was also unblocked and deployed at `dpl_DRy82sYUU7H6c7pjQTCZCztLsuzE`. The project had automatic custom-domain assignment disabled. The custom domain was assigned to that deployment and automatic assignment was enabled.
