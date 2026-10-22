@@ -117,7 +117,7 @@ test('Analytics metric values use semantic definition-list associations without 
   assert.doesNotMatch(styles, /\.analytics-metric\b/);
 });
 
-test('Analytics owns only its feature flag and links report-channel ownership to Mappings', () => {
+test('Analytics owns only its feature flag and leaves report readiness to Context', () => {
   const definition = createAnalyticsPageDefinition();
   const persisted = definition.selectPersisted(analyticsSnapshot);
   const draft = definition.cloneDraft(persisted);
@@ -133,8 +133,9 @@ test('Analytics owns only its feature flag and links report-channel ownership to
     snapshot: analyticsSnapshot,
   });
   assert.match(readMarkup, /Edit settings/);
-  assert.match(readMarkup, /weekly-analytics/);
-  assert.match(readMarkup, /href="\/control\/mappings\/channels"/);
+  assert.doesNotMatch(readMarkup, /weekly-analytics/);
+  assert.doesNotMatch(readMarkup, /href="\/control\/mappings\/channels"/);
+  assert.doesNotMatch(readMarkup, /analytics-reporting-table/);
   assert.doesNotMatch(readMarkup, /<select/);
   assert.doesNotMatch(readMarkup, /data-submenu|control-subnav/);
 
@@ -184,8 +185,8 @@ test('Analytics missing projection shows one unavailable state instead of seven 
   assert.match(markup, /Analytics data unavailable/i);
   assert.doesNotMatch(markup, /<dl[^>]*class="control-stat-list"/);
   assert.doesNotMatch(markup, /Moderation cases|Tickets opened|Tickets closed|Quiz answers|Quiz accuracy|Anonymous questions|Reputation events/);
-  assert.match(markup, /Reporting/);
-  assert.match(markup, /weekly-analytics/);
+  assert.doesNotMatch(markup, /Reporting/);
+  assert.doesNotMatch(markup, /weekly-analytics/);
 });
 
 test('Analytics zero-answer accuracy is rendered as unavailable, not zero percent', () => {
@@ -240,7 +241,7 @@ test('Workflow guidance stays factual instead of inventing moderation policy', (
 test('Workflow guidance links to existing owners without becoming configuration UI', () => {
   const moderation = workflowPageMarkup('/control/workflows/moderation');
   assert.match(moderation, /\/control\/commands/);
-  assert.match(moderation, /\/control\/mappings\/channels/);
+  assert.doesNotMatch(moderation, /\/control\/mappings\/channels/);
 
   const tickets = workflowPageMarkup('/control/workflows/ticket-handling');
   assert.match(tickets, /\/control\/utilities\/ticket-configuration/);

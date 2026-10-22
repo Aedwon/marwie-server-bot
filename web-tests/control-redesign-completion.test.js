@@ -78,14 +78,17 @@ test('wide Control shell exposes floating left, flat center, and optional contex
   const html = readFileSync(new URL('../docs-site/control.html', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../docs-site/control.css', import.meta.url), 'utf8');
   for (const id of ['controlNavDrawer', 'controlMain', 'controlContextDrawer', 'controlContext']) assert.equal(html.includes(`id=\"${id}\"`), true, id);
+  assert.match(css, /--control-rail-width:\s*4rem/);
   assert.match(css, /--control-left-width:\s*15rem/);
   assert.match(css, /--control-right-width:\s*19rem/);
+  assert.match(css, /--control-center-min:\s*37\.5rem/);
   assert.match(css, /--control-edge-gap:\s*\.75rem/);
   assert.match(css, /--radius-shell:\s*24px/);
-  assert.equal(css.includes('@media (min-width: 1200px)'), true);
-  assert.equal(css.includes('@media (max-width: 1199px)'), true);
-  assert.equal(css.includes('@media (max-width: 899px)'), true);
+  assert.equal(css.includes('@media (min-width: 1200px)'), false);
+  assert.equal(css.includes('@media (max-width: 1199px)'), false);
+  assert.equal(css.includes('@media (max-width: 899px)'), false);
   assert.equal(css.includes('@media (max-width: 639px)'), true);
+  assert.match(css, /\.control-shell\[data-nav-mode=\"rail\"\]\[data-context-mode=\"column\"\]/);
 });
 
 test('page registry exposes one optional contextual render path without a second state store', async () => {
@@ -114,4 +117,18 @@ test('System is the default appearance and Control keeps the canonical Figtree w
   const html = readFileSync(new URL('../docs-site/control.html', import.meta.url), 'utf8');
   assert.equal(html.includes('data-preference=\"system\"'), true);
   assert.equal(html.includes('family=Figtree:wght@400;500;600'), true);
+});
+
+test('edit-mode save actions share one sticky floating bar at the bottom', () => {
+  const css = readFileSync(new URL('../docs-site/control-features.css', import.meta.url), 'utf8');
+  const start = css.indexOf('.control-save-bar,');
+  const end = css.indexOf('.control-section,', start);
+  const block = css.slice(start, end);
+  assert.match(block, /position:\s*sticky/);
+  assert.match(block, /bottom:\s*max\(14px, env\(safe-area-inset-bottom\)\)/);
+  assert.match(block, /border-radius:\s*12px/);
+  assert.match(block, /backdrop-filter:\s*blur\(10px\)/);
+  assert.match(block, /box-shadow:\s*var\(--shadow-save-bar\)/);
+  assert.match(css, /\.control-main > \.control-page:has\(\.control-save-bar\)\s*\{[^}]*display:\s*flex/);
+  assert.match(css, /\.control-main > \.control-page:has\(\.control-save-bar\)\s*>\s*\.control-save-bar\s*\{[^}]*margin-top:\s*auto/);
 });

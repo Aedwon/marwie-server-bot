@@ -48,6 +48,22 @@ function resourceStatus(snapshot, key, selectedId) {
   return { label: 'Unavailable', tone: 'bad', current: 'Previously connected resource is unavailable' };
 }
 
+export function resourceBindingState(snapshot, key) {
+  const row = resourceRows(snapshot).get(key);
+  const selectedId = row?.id == null ? null : String(row.id);
+  return {
+    ...resourceStatus(snapshot, key, selectedId),
+    id: selectedId,
+    name: row?.name || '',
+    exists: Boolean(row?.exists),
+  };
+}
+
+export function resourceDisplayName(snapshot, key, fallback = 'Not connected') {
+  const state = resourceBindingState(snapshot, key);
+  return state.name || fallback;
+}
+
 function trapChanged(persisted, draft) {
   const before = persisted?.resourceBindings?.[TRAP_KEY] ?? null;
   const after = draft?.resourceBindings?.[TRAP_KEY] ?? null;
@@ -103,7 +119,7 @@ export function resourceContextMarkup({ pageKey, state, snapshot, resourceKeys =
     </section>`;
 }
 
-export function withResourceBindings(definition, resourceKeys = []) {
+export function withResourceBindings(definition, resourceKeys = [], { genericContext = 'edit' } = {}) {
   const keys = [...resourceKeys];
   if (!keys.length) return definition;
 
@@ -166,6 +182,9 @@ export function withResourceBindings(definition, resourceKeys = []) {
     },
     renderContext(context = {}) {
       const base = baseContext?.(context) || '';
+      const includeGeneric = genericContext === 'always'
+        || (genericContext === 'edit' && context.state?.mode === 'edit');
+      if (!includeGeneric) return base;
       return `${base}${resourceContextMarkup({ ...context, pageKey: definition.pageKey, resourceKeys: keys })}`;
     },
     install(context = {}) {

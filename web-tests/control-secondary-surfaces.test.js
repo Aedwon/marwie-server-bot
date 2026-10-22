@@ -27,7 +27,8 @@ test('Commands renders exactly the three approved Discord-admin references and c
   assert.match(markup, /<code class="control-command-chip">\/ai-source poll<\/code>/);
   assert.match(markup, /href="\/commands#command-ai-source-poll"[^>]*>Open guide<\/a>/);
   assert.match(markup, /href="\/commands"[^>]*>Open the full Commands manual<\/a>/);
-  assert.doesNotMatch(markup, /<(?:form|button|input|select|textarea)\b/i);
+  const withoutContextTrigger = markup.replace(/<button class="control-context-trigger"[\s\S]*?<\/button>/g, '');
+  assert.doesNotMatch(withoutContextTrigger, /<(?:form|button|input|select|textarea)\b/i);
   assert.doesNotMatch(markup, /adjust_reputation|refresh_ticket_panel|poll_ai_sources|enqueueControlAction/);
 });
 

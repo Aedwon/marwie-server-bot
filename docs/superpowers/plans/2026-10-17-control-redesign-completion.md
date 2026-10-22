@@ -1,5 +1,7 @@
 # Control Redesign Completion Implementation Plan
 
+> **Status:** Superseded for remaining execution by `docs/superpowers/plans/2026-10-21-control-redesign-finish.md`. The tasks below are retained for history.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Finish the approved Rob-bot Control redesign across the entire canonical Control surface, not only shared shell components, and deploy the completed result to the current Cloudflare-to-local-Mac production path.

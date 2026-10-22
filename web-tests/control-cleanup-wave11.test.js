@@ -72,11 +72,12 @@ test('Build Help is absent from live web/config/manual surfaces while Message Lo
 test('Wave 11 cutover keeps drawer state accessible and touch targets usable', () => {
   const navigation = read('docs-site/control-navigation.js');
   const css = read('docs-site/control.css');
-  assert.match(navigation, /const open = \(\) => \{[\s\S]*trigger\.setAttribute\('aria-expanded', 'true'\)/);
-  assert.match(navigation, /if \(restoreFocus\) opener\?\.focus\?\.\(\)/);
+  assert.match(navigation, /const setExpanded = value => [\s\S]*?setAttribute\('aria-expanded', String\(value\)\)/);
+  assert.match(navigation, /const open = \(\) => \{[\s\S]*setExpanded\(true\)/);
+  assert.match(navigation, /if \(restoreFocus && wasOpen\) opener\?\.focus\?\.\(\)/);
   assert.match(navigation, /event\.key === 'Escape'/);
   assert.match(css, /\.control-appearance button \{[^}]*min-height: 44px/s);
-  assert.match(css, /\.control-menu-button, \.control-nav-close \{[^}]*min-height: 44px/s);
+  assert.match(css, /\.control-context-button, \.control-context-close, \.control-menu-button, \.control-nav-close \{[^}]*min-height: 44px/s);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(css, /overflow-wrap: anywhere/);
 });

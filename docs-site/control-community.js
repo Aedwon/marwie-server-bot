@@ -3,9 +3,13 @@ import {
   registerControlPage,
   registeredControlPage,
 } from './control-page-registry.js';
-import { featureHeaderActionsMarkup } from './control-components.js';
+import {
+  contextSectionMarkup,
+  controlPageHeaderMarkup,
+  controlSectionMarkup,
+} from './control-components.js';
 import { featureResourceKeys } from './control-resource-contract.js';
-import { withResourceBindings } from './control-resource-bindings.js';
+import { resourceBindingState, withResourceBindings } from './control-resource-bindings.js';
 
 const REPUTATION = '/control/community/reputation';
 const QUIZZES = '/control/community/quizzes';
@@ -95,8 +99,6 @@ function sameQuestionContent(left, right) {
     && left.explanation === right.explanation;
 }
 
-function mappingSummary() { return ''; }
-
 function statusMarkup(state) {
   if (state?.saveError) return `<p class="community-message" role="alert">${escapeHtml(state.saveError)}</p>`;
   if (state?.status === 'conflict') return '<p class="community-message" role="alert">Server state changed while you were editing. Review your draft before retrying.</p>';
@@ -115,25 +117,44 @@ function toggleEditor(field, label, enabled, help = '') {
 function saveBar(state) {
   const invalid = Boolean(Object.keys(state?.errors || {}).length);
   const disabled = !state?.dirty || invalid || state?.status === 'saving';
-  return `<div class="community-page-actions"><button class="control-button control-button-primary" type="button" data-community-save${disabled ? ' disabled' : ''}>${state?.status === 'saving' ? 'Saving…' : 'Save changes'}</button><button class="control-button control-button-secondary" type="button" data-community-discard${state?.status === 'saving' ? ' disabled' : ''}>Discard</button></div>`;
+  return `<div class="community-page-actions control-save-bar"><button class="control-button control-button-primary" type="button" data-community-save${disabled ? ' disabled' : ''}>${state?.status === 'saving' ? 'Saving…' : 'Save changes'}</button><button class="control-button control-button-secondary" type="button" data-community-discard${state?.status === 'saving' ? ' disabled' : ''}>Discard</button></div>`;
 }
 
-function pageHeader(title, description, state, features) {
-  return `<header class="community-page-header"><div><h1>${escapeHtml(title)}</h1><p>${escapeHtml(description)}</p></div>${featureHeaderActionsMarkup({
+function pageHeader(title, description, state, feature) {
+  return controlPageHeaderMarkup({
+    title,
+    description,
+    enabled: feature?.enabled,
     editing: state?.mode === 'edit',
     editAttribute: 'data-community-edit',
-    features,
-  })}</header>`;
+    toggleAttribute: feature?.toggleAttribute || '',
+    features: feature?.features || null,
+  });
+}
+
+function readinessMarkup(snapshot, entries) {
+  return `<div class="control-context-readiness">${entries.map(([key, label]) => {
+    const status = resourceBindingState(snapshot, key);
+    return `<div class="control-context-readiness-row" data-resource-key="${escapeHtml(key)}">
+      <span>${escapeHtml(label)}</span>
+      <span data-tone="${escapeHtml(status.tone)}">${escapeHtml(status.name || status.current)} · ${escapeHtml(status.label)}</span>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function resourceReadinessState(snapshot, keys) {
+  const states = keys.map(key => resourceBindingState(snapshot, key));
+  const connected = states.filter(state => state.tone === 'good').length;
+  return { connected, total: states.length, ready: connected === states.length };
 }
 
 function reputationMarkup(state, snapshot) {
   const value = state.mode === 'edit' ? state.draft : state.persisted;
-  const mappings = mappingSummary(snapshot, [{ label: 'Reputation roles', href: '/control/mappings/roles', keys: ['builder_role', 'contributor_role', 'mentor_role'] }]);
   const header = pageHeader(
     'Reputation',
     state.mode === 'edit' ? 'Configure the feature and tier thresholds. Discord roles are configured in Context.' : 'Current reputation status and tier thresholds.',
     state,
-    [{ label: 'Reputation', enabled: value.enabled, toggleAttribute: 'data-community-field="enabled"' }],
+    { enabled: value.enabled, toggleAttribute: 'data-community-field="enabled"' },
   );
   if (state.mode === 'edit') {
     const error = state.errors?.thresholds;
@@ -164,12 +185,11 @@ function questionEditor(question, index, error) {
 function quizzesMarkup(state, snapshot) {
   const value = state.mode === 'edit' ? state.draft : state.persisted;
   const count = value.questions.length;
-  const mappings = mappingSummary(snapshot, [{ label: 'Quiz channel', href: '/control/mappings/channels', keys: ['quiz_channel'] }]);
   const header = pageHeader(
     'Quizzes',
     state.mode === 'edit' ? 'Configure scheduling and maintain the question bank. The quiz channel is configured in Context.' : 'Current schedule and question-bank status.',
     state,
-    [{ label: 'Scheduled quizzes', enabled: value.enabled, toggleAttribute: 'data-community-field="enabled"' }],
+    { enabled: value.enabled, toggleAttribute: 'data-community-field="enabled"' },
   );
   if (state.mode === 'edit') {
     return `<section class="control-page community-page" data-page-key="${QUIZZES}">${header}${statusMarkup(state)}
@@ -178,35 +198,82 @@ function quizzesMarkup(state, snapshot) {
       ${saveBar(state)}</section>`;
   }
   const enabledCount = value.questions.filter(question => question.enabled).length;
+  const questionRows = value.questions.length
+    ? value.questions.map(question => `<article class="control-list-row community-question-read">
+        <div><strong>${escapeHtml(question.prompt || 'Untitled question')}</strong><span>${escapeHtml(question.category || 'No category')}</span></div>
+        <span class="control-status-text" data-tone="${question.enabled ? 'good' : 'neutral'}">${question.enabled ? 'In rotation' : 'Paused'}</span>
+      </article>`).join('')
+    : '<p class="community-message">No questions are in the bank yet.</p>';
   return `<section class="control-page community-page" data-page-key="${QUIZZES}">${header}${statusMarkup(state)}
-    <section class="community-ops-section" aria-labelledby="quiz-snapshot-heading"><div class="community-section-heading"><div><h2 id="quiz-snapshot-heading">Operational snapshot</h2><p>Current quiz cadence and question-bank readiness.</p></div></div><dl class="control-definition-list"><div><dt>Schedule</dt><dd>${value.intervalHours == null ? 'Not configured' : `Every ${escapeHtml(value.intervalHours)} hours`}</dd></div><div><dt>Last posted</dt><dd>${escapeHtml(timestampLabel(value.lastPostedAt))}</dd></div><div><dt>Questions</dt><dd>${count}</dd></div><div><dt>Enabled</dt><dd>${enabledCount}</dd></div></dl></section>
+    ${controlSectionMarkup({
+    id: 'quiz-snapshot-heading',
+    title: 'Operational snapshot',
+    description: 'Current quiz cadence and question-bank readiness.',
+    body: `<dl class="control-definition-list"><div><dt>Schedule</dt><dd>${value.intervalHours == null ? 'Not configured' : `Every ${escapeHtml(value.intervalHours)} hours`}</dd></div><div><dt>Last posted</dt><dd>${escapeHtml(timestampLabel(value.lastPostedAt))}</dd></div><div><dt>Questions</dt><dd>${count}</dd></div><div><dt>In rotation</dt><dd>${enabledCount}</dd></div></dl>`,
+  })}
+    ${controlSectionMarkup({
+    id: 'quiz-bank-heading',
+    title: 'Question bank',
+    description: `${count} question${count === 1 ? '' : 's'} in this server. Edit settings to change the bank.`,
+    body: `<div class="community-question-list">${questionRows}</div>`,
+  })}
     </section>`;
 }
 
 function voiceCoworkingMarkup(state, snapshot) {
   const value = state.mode === 'edit' ? state.draft : state.persisted;
-  const mappings = mappingSummary(snapshot, [
-    { label: 'Temporary voice category', href: '/control/mappings/categories', keys: ['temp_voice_category'] },
-  ]);
+  const category = resourceBindingState(snapshot, 'temp_voice_category');
+  const workspace = resourceBindingState(snapshot, 'create_workspace_voice');
+  const lounge = resourceBindingState(snapshot, 'coworking_lounge');
   const header = pageHeader(
     'Voice & Coworking',
-    state.mode === 'edit' ? 'Manage Temporary voice. Other voice and coworking resources are configured in Context.' : 'Current Temporary voice state and category mapping.',
+    state.mode === 'edit' ? 'Manage Temporary voice. Channel bindings and the category are configured in Context.' : 'Current Temporary voice state and Discord wiring.',
     state,
-    [{ label: 'Temporary voice', enabled: value.voiceEnabled, toggleAttribute: 'data-community-field="voiceEnabled"' }],
+    { enabled: value.voiceEnabled, toggleAttribute: 'data-community-field="voiceEnabled"' },
   );
-  return `<section class="control-page community-page" data-page-key="${VOICE_COWORKING}">${header}${statusMarkup(state)}${state.mode === 'edit' ? saveBar(state) : ''}</section>`;
+  return `<section class="control-page community-page" data-page-key="${VOICE_COWORKING}">${header}${statusMarkup(state)}
+    ${controlSectionMarkup({
+    id: 'voice-temporary-heading',
+    title: 'Temporary voice',
+    description: value.voiceEnabled
+      ? 'Temporary voice is active. Members can create a personal voice room from the workspace channel.'
+      : 'Temporary voice is disabled. Members cannot create temporary voice rooms right now.',
+    body: `<dl class="control-definition-list">
+      <div><dt>Workspace channel</dt><dd>${escapeHtml(workspace.name || workspace.current)}</dd></div>
+      <div><dt>Category</dt><dd>${escapeHtml(category.name || category.current)}</dd></div>
+      <div><dt>Coworking lounge</dt><dd>${escapeHtml(lounge.name || lounge.current)}</dd></div>
+      <div><dt>Behavior</dt><dd>A member who joins the workspace channel gets a temporary voice channel in the configured category. Rob-bot removes the channel when it becomes empty.</dd></div>
+    </dl>`,
+  })}
+    ${state.mode === 'edit' ? saveBar(state) : ''}</section>`;
 }
 
 function showcaseMarkup(state, snapshot) {
   const value = state.mode === 'edit' ? state.draft : state.persisted;
-  const mappings = mappingSummary(snapshot, [{ label: 'Showcase resources', href: '/control/mappings/channels', keys: ['showcase_forum', 'app_of_the_week', 'collab_lfg'] }]);
+  const forum = resourceBindingState(snapshot, 'showcase_forum');
+  const app = resourceBindingState(snapshot, 'app_of_the_week');
+  const collab = resourceBindingState(snapshot, 'collab_lfg');
   const header = pageHeader(
     'Showcase',
-    state.mode === 'edit' ? 'Manage Showcase behavior here. Forum and destination channels are configured in Context.' : 'Current Showcase status and Discord wiring health.',
+    state.mode === 'edit' ? 'Manage Showcase behavior here. Forum and destination channels are configured in Context.' : 'Current Showcase status and Discord wiring.',
     state,
-    [{ label: 'Showcase', enabled: value.enabled, toggleAttribute: 'data-community-field="enabled"' }],
+    { enabled: value.enabled, toggleAttribute: 'data-community-field="enabled"' },
   );
-  return `<section class="control-page community-page" data-page-key="${SHOWCASE}">${header}${statusMarkup(state)}${state.mode === 'edit' ? saveBar(state) : ''}</section>`;
+  return `<section class="control-page community-page" data-page-key="${SHOWCASE}">${header}${statusMarkup(state)}
+    ${controlSectionMarkup({
+    id: 'showcase-destinations-heading',
+    title: 'Showcase destinations',
+    description: value.enabled
+      ? 'Showcase is active. Members can share work in the forum and staff can publish weekly highlights.'
+      : 'Showcase is disabled. Members cannot post showcase threads right now.',
+    body: `<dl class="control-definition-list">
+      <div><dt>Showcase forum</dt><dd>${escapeHtml(forum.name || forum.current)}</dd></div>
+      <div><dt>App of the Week</dt><dd>${escapeHtml(app.name || app.current)}</dd></div>
+      <div><dt>Collab LFG</dt><dd>${escapeHtml(collab.name || collab.current)}</dd></div>
+      <div><dt>Behavior</dt><dd>Showcase threads are created in the forum. App of the Week highlights a selected member project, and Collab LFG holds collaboration requests.</dd></div>
+    </dl>`,
+  })}
+    ${state.mode === 'edit' ? saveBar(state) : ''}</section>`;
 }
 
 function renderPage(pageKey, state, snapshot) {
@@ -309,6 +376,39 @@ export function createCommunityPageDefinition(pageKey) {
     },
     render({ state, snapshot } = {}) {
       return renderPage(pageKey, state, snapshot || {});
+    },
+    renderContext({ state, snapshot } = {}) {
+      if (!snapshot) return '';
+      const editing = state?.mode === 'edit';
+      const keys = featureResourceKeys(pageKey);
+      const readiness = resourceReadinessState(snapshot, keys);
+      const labels = {
+        [REPUTATION]: [['builder_role', 'Builder role'], ['contributor_role', 'Contributor role'], ['mentor_role', 'Mentor role']],
+        [QUIZZES]: [['quiz_channel', 'Quiz channel']],
+        [VOICE_COWORKING]: [['create_workspace_voice', 'Workspace channel'], ['coworking_lounge', 'Coworking lounge'], ['temp_voice_category', 'Temporary voice category']],
+        [SHOWCASE]: [['showcase_forum', 'Showcase forum'], ['app_of_the_week', 'App of the Week'], ['collab_lfg', 'Collab LFG']],
+      }[pageKey] || [];
+      const dependencyCopy = {
+        [REPUTATION]: 'Reputation awards require all three roles to exist and sit below Rob-bot in the role hierarchy.',
+        [QUIZZES]: 'Automatic quizzes send to the quiz channel. Manual posting still uses the documented Discord command.',
+        [VOICE_COWORKING]: 'Temporary voice needs the workspace channel and category. Rob-bot must be able to manage channels in that category.',
+        [SHOWCASE]: 'Showcase needs its forum and both destination channels before members can use the full flow.',
+      }[pageKey] || '';
+      const readinessSection = editing
+        ? ''
+        : contextSectionMarkup({
+          id: 'readiness',
+          title: 'Readiness',
+          description: readiness.ready
+            ? `All ${readiness.total} Discord resources are connected.`
+            : `${readiness.connected} of ${readiness.total} Discord resources are connected.`,
+          body: readinessMarkup(snapshot, labels),
+        });
+      return `${readinessSection}${contextSectionMarkup({
+        id: 'dependency',
+        title: 'Dependency',
+        body: `<p>${escapeHtml(dependencyCopy)}</p>`,
+      })}`;
     },
     install({ root, store = controlState, onSave, rerender = () => {} } = {}) {
       return installCommunityPageInteractions({ root, pageKey, store, onSave, rerender });

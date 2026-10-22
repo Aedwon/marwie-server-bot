@@ -1,4 +1,4 @@
-import { taskIndicatorMarkup } from './control-components.js';
+import { controlSimplePageHeaderMarkup, taskIndicatorMarkup } from './control-components.js';
 
 const COMMAND_TASKS = Object.freeze([
   Object.freeze({
@@ -86,8 +86,10 @@ export function commandsPageMarkup() {
     </li>`).join('');
 
   return `<section class="control-page-section control-commands-page">
-    <h1>Commands</h1>
-    <p class="control-page-intro">Administrative tasks that stay in Discord, organized by the outcome staff are trying to achieve.</p>
+    ${controlSimplePageHeaderMarkup({
+    title: 'Commands',
+    description: 'Administrative tasks that stay in Discord, organized by the outcome staff are trying to achieve.',
+  })}
     <div class="control-command-table"><div class="control-command-table-head" aria-hidden="true"><span>Goal</span><span>Discord command</span><span>Reference</span></div><ul class="control-command-list">${items}</ul></div>
     <p class="control-secondary-footer"><a class="control-inline-action" href="/commands">Open the full Commands manual</a></p>
   </section>`;
@@ -145,8 +147,10 @@ export function activityPageMarkup(state = {}) {
   }
 
   return `<section class="control-page-section control-activity-page">
-    <h1>Activity</h1>
-    <p class="control-page-intro">A chronological history of administrative changes in this server.</p>
+    ${controlSimplePageHeaderMarkup({
+    title: 'Activity',
+    description: 'A chronological history of administrative changes in this server.',
+  })}
     ${body}
   </section>`;
 }

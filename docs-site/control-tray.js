@@ -38,7 +38,8 @@ export function changesTrayMarkup({ expanded = false, status = {}, dirtyPages = 
   const message = status.message || 'Server state has not loaded yet.';
 
   if (!expanded) {
-    return `<button class="control-changes-tray control-changes-tray-compact" type="button" data-control-tray-expand aria-expanded="false" aria-label="Open changes tray. ${escapeHtml(countLabel)}. ${escapeHtml(message)}">
+    const clean = count === 0 && tone === 'good';
+    return `<button class="control-changes-tray control-changes-tray-compact${clean ? ' control-changes-tray-clean' : ''}" type="button" data-control-tray-expand aria-expanded="false" aria-label="Open changes tray. ${escapeHtml(countLabel)}. ${escapeHtml(message)}">
       <span class="control-tray-server-dot" data-tone="${tone}" aria-hidden="true"></span>
       <span>${escapeHtml(countLabel)}</span>
     </button>`;

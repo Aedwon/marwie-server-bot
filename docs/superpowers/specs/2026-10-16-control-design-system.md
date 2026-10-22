@@ -549,11 +549,15 @@ Disabled controls keep recognizable structure. Do not use opacity so aggressivel
 ## 13.1 Wide desktop
 
 ```css
+--control-rail-width: 4rem;    /* 64px */
 --control-left-width: 15rem;   /* 240px */
 --control-right-width: 19rem;  /* 304px */
 --control-shell-gap: .75rem;   /* 12px */
 --control-edge-gap: .75rem;    /* 12px */
+--control-center-min: 37.5rem; /* 600px */
 ```
+
+The center keeps a 600px floor. The left navigation has a labeled form and an icon-only rail. The right panel is a column while the navigation and the panel can fit around the center floor. These are derived thresholds, not fixed viewport bands. See `docs/superpowers/decisions/2026-10-22-control-shell-navigation.md`.
 
 ```css
 grid-template-columns:
@@ -566,7 +570,8 @@ Left and right are floating/framed shells. Center remains flat.
 
 ## 13.2 Left shell
 
-- width: 240px
+- labeled width: 240px
+- icon rail width: 64px
 - viewport inset: 12px
 - outer radius: 24px
 - outer frame padding: 5px
@@ -574,6 +579,12 @@ Left and right are floating/framed shells. Center remains flat.
 - inner panel top/bottom padding: 12px
 - independent scroll when required
 - sticky or fixed within viewport, preserving the same visual result
+- one collapse toggle at the top right with a sidebar panel icon; collapsed state shows icons only
+- the brand sits at the top left with the collapse toggle
+- the signed-in account and appearance controls form a fixed footer; the account menu opens upward
+- head and footer stay fixed while the navigation body scrolls
+
+The shell auto-collapses the labeled navigation when the labeled width, the right panel, and a 600px center cannot coexist. An explicit operator choice is saved and wins until the navigation must become a drawer. The navigation becomes a drawer below 700px.
 
 ## 13.3 Center workspace
 
@@ -599,19 +610,31 @@ Desktop center horizontal padding: 24px by default; may reduce to 20px on constr
 - outer frame padding: 5px
 - inner padding: 14px
 - independent scroll when needed
-- sticky on wide desktop
+- column form while the center keeps a 600px floor
+- drawer form when the center cannot keep that floor
+- renders only when the page has useful context
 - sections use whitespace and hairlines instead of nested cards by default
 
-## 13.5 Breakpoints
+The page header carries a Context control when the panel is a drawer and the left navigation is not a drawer. When the left navigation is a drawer, the Context control moves to the top bar.
 
-| Width | Behavior |
+## 13.5 Derived layout states
+
+The shell is driven by `data-nav-mode` and `data-context-mode`, not fixed viewport bands.
+
+| State | Behavior |
 |---|---|
-| `>=1200px` | full three-region shell |
-| `900–1199px` | left + center; right becomes drawer/popover |
-| `<900px` | left becomes drawer; compact top bar; right temporary surface |
-| `<640px` | single-column feature layout; touch targets expand |
+| Labeled plus context | 240px navigation, center, 304px panel |
+| Rail plus context | 64px navigation, center, 304px panel |
+| Rail plus center | 64px navigation plus center, no panel column |
+| Context drawer | panel is a fixed overlay with a page header trigger |
+| Navigation drawer | navigation is a fixed overlay with a top bar menu trigger |
 
-The 900px breakpoint intentionally matches the course site's main responsive breakpoint.
+The thresholds derive from the widths above:
+
+- 1192px for labeled navigation plus the context column.
+- 1016px for the icon rail plus the context column.
+- 876px for labeled navigation without context.
+- 700px for the icon rail without context.
 
 Essential feature configuration remains available when side regions collapse.
 
@@ -682,6 +705,15 @@ Use indentation and, where helpful, one subtle vertical guide. Do not put child 
 ## 14.6 Search
 
 If present, quick search is 36–38px tall and searches user-facing features, settings, and actions. Results show feature context. Internal keys are secondary metadata, never primary labels.
+
+## 14.7 Icons and icon rail
+
+- Use Phosphor regular icons, 17px in labeled rows and 20px in the rail, as inline SVG.
+- Icons are decorative. Every destination keeps a text label for assistive technology.
+- The rail shows all destinations, grouped by hairline dividers. Group headers are not interactive in the rail.
+- A selected rail item uses the same neutral selected fill as the labeled navigation.
+- One sidebar panel toggle at the top right of the shell switches between labeled and rail forms. The choice is remembered.
+- The rail keeps the brand at the top and the account and appearance controls in the footer. The account menu may escape the rail bounds and opens upward in the labeled and drawer forms.
 
 ---
 
@@ -900,7 +932,7 @@ Do not fill the panel artificially when a feature has no useful secondary contex
 
 Allowed for concise states such as Enabled, Disabled, Healthy, Needs setup, Degraded, Draft.
 
-Compact and semantic, never decorative.
+Compact and semantic, never decorative. Status chips use text and tone only. They do not carry a leading dot.
 
 ## 22.2 Inline success
 
@@ -1077,6 +1109,8 @@ Preview is clearly labeled as preview and must not be so literal that it can be 
 
 Reflect message text, mentions, embed title/body/footer, color accent, and supplied image where supported.
 
+Preview uses Discord's dark chat palette inside the Control surface. It shows the channel header, bot avatar, bot name with the APP tag, a preview timestamp, message content, and the embed surface. The embed edge is 4px and uses the selected color for announcements or Discord blurple for the notification role panel. Buttons use Discord's primary, secondary, success, and danger colors, 32px height, 3px radius, and action rows of at most five. Preview buttons are disabled. The fixed dark palette is intentional and does not follow the Control theme. The preview remains static and non-interactive. The labeled Preview section and its note distinguish it from live content.
+
 Validation appears beside editor fields, not only in preview.
 
 ---
@@ -1181,19 +1215,21 @@ Essential text, focus indicators, form boundaries, and meaningful states meet ap
 
 # 34. Responsive behavior
 
+The shell uses the derived states in section 13.5. The left navigation collapses to an icon rail before it becomes a drawer. The right context panel stays a column while it can fit around a 600px center.
+
 ### Wide desktop
 
-All three regions visible.
+Labeled navigation, center, and context column when the page has context. Pages without context use the labeled navigation and center.
 
-### Medium 900–1199px
+### Medium desktop
 
-Right context becomes drawer. Center retains complete normal task capability.
+The icon rail replaces the labeled navigation when needed to keep the center at 600px or more. The context column remains a column down to 1016px. Below that width the context panel is a drawer with a page header trigger. The old 900px to 1199px top bar is not part of the design.
 
-### Narrow <900px
+### Narrow below 700px
 
-Left nav becomes drawer. Compact top bar provides menu trigger, current feature/product orientation, and only an essential contextual action if needed. Right context remains reachable through a labeled trigger.
+Left navigation becomes a drawer. The top bar provides the menu trigger and, when a page has context, the Context trigger. Right context is a fixed overlay.
 
-### Small <640px
+### Small below 640px
 
 - single-column feature layouts
 - paired controls stack
@@ -1201,6 +1237,8 @@ Left nav becomes drawer. Compact top bar provides menu trigger, current feature/
 - text inputs use 16px
 - touch targets expand
 - tables prioritize columns then scroll or transform without hiding critical data
+
+Page grids use container queries against the center width. The fixed changes tray keeps a viewport query because it is positioned against the viewport.
 
 ---
 

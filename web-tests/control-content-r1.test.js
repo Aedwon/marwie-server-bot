@@ -124,11 +124,12 @@ test('Feeds has no Poll now action and does not edit the ai_updates mapping', as
   const markup = definition.render({ pageKey: PAGE_KEYS.feeds, state, snapshot: snapshot() });
   assert.doesNotMatch(markup, /Poll now/i);
   assert.doesNotMatch(markup, /name=["']ai_updates["']/i);
-  assert.match(markup, /Mappings/i);
+  assert.doesNotMatch(markup, /Mappings/i);
+  assert.match(markup, /ai-updates/);
   assert.match(markup, /Last checked/i);
 });
 
-test('Announcement chooses a permitted destination while Live remains Mappings-owned', async () => {
+test('Announcement chooses a permitted destination while Live keeps Context-owned wiring', async () => {
   const {
     buildAnnouncementAction,
     buildLiveAction,

@@ -217,8 +217,8 @@ test('Voice & Coworking owns Temporary voice behavior and exposes canonical voic
   assert.match(markup, /Temporary voice/);
   assert.doesNotMatch(markup, /Temporary voice category|coworking_lounge|create_workspace_voice/);
   assert.match(context, /Temporary voice category/);
-  assert.match(context, /Create workspace voice/i);
-  assert.match(context, /Coworking lounge/i);
+  assert.match(context, /Create Workspace/i);
+  assert.match(context, /Lounge/i);
 });
 
 test('Showcase exposes only feature-local state and Mappings summary', async () => {

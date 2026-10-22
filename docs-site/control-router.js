@@ -76,36 +76,36 @@ const MAPPING_PATHS = Object.freeze([
 ]);
 
 export const CONTROL_NAV_GROUPS = Object.freeze([
-  Object.freeze({ key: 'engagement', label: 'Engagement', items: Object.freeze([
-    navItem('/control/community/reputation', 'Reputation'),
-    navItem('/control/community/quizzes', 'Quizzes'),
-    navItem('/control/community/voice-coworking', 'Voice & Coworking'),
-    navItem('/control/community/showcase', 'Showcase'),
-    navItem('/control/utilities/notification-roles', 'Notification roles'),
+  Object.freeze({ key: 'engagement', label: 'Engagement', icon: 'users-three', items: Object.freeze([
+    navItem('/control/community/reputation', 'Reputation', { icon: 'trophy' }),
+    navItem('/control/community/quizzes', 'Quizzes', { icon: 'question' }),
+    navItem('/control/community/voice-coworking', 'Voice & Coworking', { icon: 'microphone-stage' }),
+    navItem('/control/community/showcase', 'Showcase', { icon: 'star' }),
+    navItem('/control/utilities/notification-roles', 'Notification roles', { icon: 'bell' }),
   ]) }),
-  Object.freeze({ key: 'publishing', label: 'Publishing', items: Object.freeze([
-    navItem('/control/content/feeds', 'Feeds'),
-    navItem('/control/content/announcements', 'Announcements'),
-    navItem('/control/content/live', 'Live'),
+  Object.freeze({ key: 'publishing', label: 'Publishing', icon: 'megaphone', items: Object.freeze([
+    navItem('/control/content/feeds', 'Feeds', { icon: 'rss' }),
+    navItem('/control/content/announcements', 'Announcements', { icon: 'megaphone' }),
+    navItem('/control/content/live', 'Live', { icon: 'broadcast' }),
   ]) }),
-  Object.freeze({ key: 'support-safety', label: 'Support & Safety', items: Object.freeze([
-    navItem('/control/utilities/ticket-configuration', 'Tickets'),
-    navItem('/control/utilities/anonymous-questions', 'Anonymous Questions'),
-    navItem('/control/workflows/moderation', 'Moderation'),
+  Object.freeze({ key: 'support-safety', label: 'Support & Safety', icon: 'lifebuoy', items: Object.freeze([
+    navItem('/control/utilities/ticket-configuration', 'Tickets', { icon: 'ticket' }),
+    navItem('/control/utilities/anonymous-questions', 'Anonymous Questions', { icon: 'mask-happy' }),
+    navItem('/control/workflows/moderation', 'Moderation', { icon: 'shield-check' }),
   ]) }),
-  Object.freeze({ key: 'insights', label: 'Insights', items: Object.freeze([
-    navItem('/control/analytics', 'Analytics'),
-    navItem('/control/activity', 'Activity'),
+  Object.freeze({ key: 'insights', label: 'Insights', icon: 'chart-line-up', items: Object.freeze([
+    navItem('/control/analytics', 'Analytics', { icon: 'chart-line-up' }),
+    navItem('/control/activity', 'Activity', { icon: 'pulse' }),
   ]) }),
-  Object.freeze({ key: 'system', label: 'System', items: Object.freeze([
-    navItem('/control/mappings/channels', 'Resources', { key: 'resources', matchPaths: MAPPING_PATHS, matchDomain: 'mappings' }),
-    navItem('/control/commands', 'Commands'),
+  Object.freeze({ key: 'system', label: 'System', icon: 'gear-six', items: Object.freeze([
+    navItem('/control/mappings/channels', 'Resources', { key: 'resources', icon: 'database', matchPaths: MAPPING_PATHS, matchDomain: 'mappings' }),
+    navItem('/control/commands', 'Commands', { icon: 'terminal-window' }),
   ]) }),
 ]);
 
 export const CONTROL_PLAYBOOKS = Object.freeze([
-  navItem('/control/workflows/ticket-handling', 'Ticket handling', { kind: 'playbook' }),
-  navItem('/control/workflows/events', 'Events', { kind: 'playbook' }),
+  navItem('/control/workflows/ticket-handling', 'Ticket handling', { kind: 'playbook', icon: 'headset' }),
+  navItem('/control/workflows/events', 'Events', { kind: 'playbook', icon: 'calendar-dots' }),
 ]);
 
 const NAV_GROUP_BY_PATH = new Map();

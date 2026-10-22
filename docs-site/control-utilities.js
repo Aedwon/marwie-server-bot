@@ -3,9 +3,14 @@ import {
   registerControlPage,
   registeredControlPage,
 } from './control-page-registry.js';
-import { featureHeaderActionsMarkup } from './control-components.js';
+import {
+  contextDefinitionListMarkup,
+  contextSectionMarkup,
+  controlPageHeaderMarkup,
+  controlSectionMarkup,
+} from './control-components.js';
 import { featureResourceKeys } from './control-resource-contract.js';
-import { withResourceBindings } from './control-resource-bindings.js';
+import { resourceBindingState, withResourceBindings } from './control-resource-bindings.js';
 
 const TICKET_PAGE = '/control/utilities/ticket-configuration';
 const NOTIFICATION_PAGE = '/control/utilities/notification-roles';
@@ -56,7 +61,14 @@ function resourceState(row) {
   return { label: 'Not connected', tone: 'neutral' };
 }
 
-function resourceSummaryMarkup() { return ''; }
+function styleLabel(style) {
+  return ({
+    primary: 'Primary',
+    secondary: 'Secondary',
+    success: 'Success',
+    danger: 'Danger',
+  })[String(style || '').toLowerCase()] || 'Primary';
+}
 
 function cloneTicketState(value) {
   return {
@@ -238,6 +250,40 @@ function anonymousDiff(persisted, draft) {
   }];
 }
 
+function utilityContextMarkup(pageKey, snapshot, editing) {
+  const definitions = {
+    [TICKET_PAGE]: {
+      title: 'Ticket readiness',
+      copy: 'Tickets need a panel channel, a category for new tickets, and a staff log channel.',
+      rows: [['ticket_panel', 'Ticket panel'], ['ticket_category', 'Ticket category'], ['ticket_logs', 'Ticket logs']],
+    },
+    [NOTIFICATION_PAGE]: {
+      title: 'Panel readiness',
+      copy: 'The role panel posts in the canonical channel. Rob-bot needs Manage Roles above every assigned role.',
+      rows: [['role_panel', 'Role panel']],
+    },
+    [ANONYMOUS_PAGE]: {
+      title: 'Intake readiness',
+      copy: 'Anonymous questions need a destination where Rob-bot can post reviewed submissions.',
+      rows: [['anon_questions', 'Anonymous questions']],
+    },
+  }[pageKey];
+  if (!definitions) return '';
+  const states = definitions.rows.map(([key, label]) => {
+    const state = resourceBindingState(snapshot, key);
+    return {
+      label,
+      value: `${state.name || state.current} (${state.label})`,
+    };
+  });
+  return contextSectionMarkup({
+    id: 'readiness',
+    title: definitions.title,
+    description: definitions.copy,
+    body: editing ? '' : contextDefinitionListMarkup(states),
+  });
+}
+
 export function createUtilitiesPageDefinition(pageKey) {
   if (!UTILITY_PAGE_CONFIGS[pageKey]) {
     throw new Error(`Unknown Utilities page: ${pageKey}`);
@@ -265,6 +311,9 @@ export function createUtilitiesPageDefinition(pageKey) {
       diffDraft: ticketDiff,
       render({ state, snapshot } = {}) {
         return ticketPageMarkup({ state, snapshot });
+      },
+      renderContext({ state, snapshot } = {}) {
+        return utilityContextMarkup(pageKey, snapshot || {}, state?.mode === 'edit');
       },
       install(context = {}) {
         return installUtilitiesPageInteractions({ ...context, pageKey });
@@ -294,6 +343,9 @@ export function createUtilitiesPageDefinition(pageKey) {
       render({ state, snapshot } = {}) {
         return notificationPageMarkup({ state, snapshot });
       },
+      renderContext({ state, snapshot } = {}) {
+        return utilityContextMarkup(pageKey, snapshot || {}, state?.mode === 'edit');
+      },
       install(context = {}) {
         return installUtilitiesPageInteractions({ ...context, pageKey });
       },
@@ -314,6 +366,9 @@ export function createUtilitiesPageDefinition(pageKey) {
     diffDraft: anonymousDiff,
     render({ state, snapshot } = {}) {
       return anonymousPageMarkup({ state, snapshot });
+    },
+    renderContext({ state, snapshot } = {}) {
+      return utilityContextMarkup(pageKey, snapshot || {}, state?.mode === 'edit');
     },
     install(context = {}) {
       return installUtilitiesPageInteractions({ ...context, pageKey });
@@ -345,27 +400,25 @@ function pageFeedback(state) {
   return '';
 }
 
-function pageHeader(title, description, state, feature = null) {
+function pageHeader(title, description, state, feature = null, { showFeatureToggle = true } = {}) {
   const editing = state?.mode === 'edit';
-  const actions = feature
-    ? featureHeaderActionsMarkup({
-      label: feature.label,
-      enabled: feature.enabled,
-      editing,
-      editAttribute: 'data-utility-edit',
-      toggleAttribute: feature.toggleAttribute || '',
-    })
-    : (editing ? '' : '<button class="control-button control-button-primary control-edit-settings-button" type="button" data-utility-edit>Edit settings</button>');
-  return `
-    <header class="utility-page-header"><div><h1>${escapeHtml(title)}</h1><p>${escapeHtml(description)}</p></div>${actions}</header>
-    ${pageFeedback(state)}`;
+  return `${controlPageHeaderMarkup({
+    title,
+    description,
+    enabled: feature ? feature.enabled : null,
+    editing,
+    editable: true,
+    editAttribute: 'data-utility-edit',
+    toggleAttribute: feature?.toggleAttribute || '',
+    showFeatureToggle,
+  })}${pageFeedback(state)}`;
 }
 
 function saveActions(state) {
   const errors = Object.keys(state?.errors || {}).length;
   const canSave = Boolean(state?.dirty && !errors && state?.status !== 'saving' && state?.revision);
   return `
-    <div class="utility-save-bar">
+    <div class="utility-save-bar control-save-bar">
       <span data-utility-save-state>${state?.status === 'saving' ? 'Saving changes…' : state?.dirty ? 'Unsaved changes' : 'No unsaved changes'}</span>
       <div>
         <button class="control-button control-button-primary" type="button" data-utility-save${canSave ? '' : ' disabled'}>${state?.status === 'saving' ? 'Saving…' : 'Save changes'}</button>
@@ -389,7 +442,7 @@ function ticketReadRows(types) {
       <table class="control-summary-table utility-ticket-table">
         <thead><tr><th>Ticket type</th><th>Key</th><th>Description</th><th>Status</th></tr></thead>
         <tbody>${types.map(item => `
-          <tr><th scope="row">${escapeHtml(item.label)}</th><td><code>${escapeHtml(item.key)}</code></td><td>${escapeHtml(item.description)}</td><td class="control-status-text" data-tone="${item.enabled ? 'good' : 'neutral'}">${item.enabled ? 'Active' : 'Disabled'}</td></tr>`).join('')}</tbody>
+          <tr><th scope="row">${escapeHtml(item.label)}</th><td data-label="Key"><code>${escapeHtml(item.key)}</code></td><td data-label="Description">${escapeHtml(item.description)}</td><td class="control-status-text" data-label="Status" data-tone="${item.enabled ? 'good' : 'neutral'}">${item.enabled ? 'Active' : 'Disabled'}</td></tr>`).join('')}</tbody>
       </table>
     </div>`;
 }
@@ -446,21 +499,29 @@ function ticketPageMarkup({ state, snapshot } = {}) {
   if (!state?.persisted) return '<section class="control-page utility-page"><h1>Tickets</h1><p>Load current server state to manage tickets.</p></section>';
   const editing = state.mode === 'edit';
   const enabled = editing ? state.draft.enabled : state.persisted.enabled;
+  const ticketTypes = editing ? state.draft.ticket_types : state.persisted.ticket_types;
   return `
     <section class="control-page utility-page" data-page-key="${TICKET_PAGE}">
       ${pageHeader('Tickets', 'Manage ticket intake and ticket types.', state, { label: 'Tickets', enabled, toggleAttribute: 'data-utility-feature="tickets"' })}
-      <section class="utility-section" aria-labelledby="ticket-types-heading">
-        <div class="utility-section-heading">
-          <div><h2 id="ticket-types-heading">Ticket types</h2><p>Create, edit, disable, or re-enable the choices shown to members. Disabled ticket types stay visible.</p></div>
-          ${editing ? '<button class="control-button control-button-secondary" type="button" data-ticket-add>Add ticket type</button>' : ''}
-        </div>
-        ${editing ? ticketEditRows(state) : ticketReadRows(state.persisted.ticket_types)}
-      </section>
-      ${resourceSummaryMarkup(snapshot, [
-        { key: 'ticket_panel', label: 'Ticket panel' },
-        { key: 'ticket_category', label: 'Ticket category' },
-        { key: 'ticket_logs', label: 'Ticket logs' },
-      ])}
+      ${controlSectionMarkup({
+    id: 'ticket-intake-heading',
+    title: 'Ticket intake',
+    description: enabled
+      ? 'Intake is active. Members open one ticket at a time from the ticket panel.'
+      : 'Intake is paused. The ticket panel stays posted, but new tickets cannot be opened.',
+    body: `<dl class="control-definition-list">
+      <div><dt>Capacity</dt><dd>One active open or claimed ticket per member.</dd></div>
+      <div><dt>Types</dt><dd>${ticketTypes.filter(item => item.enabled).length} active of ${ticketTypes.length} configured.</dd></div>
+      <div><dt>Handling</dt><dd>Staff claim, close, and reopen tickets. The Ticket handling playbook covers the full flow.</dd></div>
+    </dl>`,
+  })}
+      ${controlSectionMarkup({
+    id: 'ticket-types-heading',
+    title: 'Ticket types',
+    description: 'Create, edit, disable, or re-enable the choices shown to members. Disabled ticket types stay visible.',
+    action: editing ? '<button class="control-button control-button-secondary" type="button" data-ticket-add>Add ticket type</button>' : '',
+    body: editing ? ticketEditRows(state) : ticketReadRows(state.persisted.ticket_types),
+  })}
       ${editing ? saveActions(state) : ''}
     </section>`;
 }
@@ -530,6 +591,16 @@ function emojiSummaryMarkup(snapshot, value) {
   return `<span class="utility-emoji-none" aria-hidden="true">?</span><span>${escapeHtml(selected)}</span>`;
 }
 
+function emojiLabel(snapshot, value) {
+  const selected = String(value || '').trim();
+  if (!selected) return 'None';
+  const emoji = serverEmojiForValue(snapshot, selected);
+  if (emoji) return emoji.name;
+  const parsed = parseCustomEmoji(selected);
+  if (parsed) return `:${parsed.name}:`;
+  return selected;
+}
+
 function emojiPickerMarkup(snapshot, selected, index, error) {
   const selectedValue = String(selected || '');
   const emojis = availableServerEmojis(snapshot);
@@ -583,20 +654,40 @@ function previewEmojiMarkup(snapshot, value) {
   return `<span class="utility-discord-button-emoji-fallback">${escapeHtml(selected)}</span>`;
 }
 
+function notificationPanelChannelName(snapshot) {
+  const resource = (snapshot?.resources || []).find(item => item?.key === 'role_panel');
+  return String(resource?.name || '').trim() || 'role-panel';
+}
+
+function notificationPreviewButtonRows(buttons) {
+  const rows = [];
+  for (let index = 0; index < buttons.length; index += 5) rows.push(buttons.slice(index, index + 5));
+  return rows;
+}
+
 function notificationPreviewBodyMarkup(panel, snapshot) {
   const title = String(panel?.title || '').trim();
   const description = String(panel?.description || '').trim();
   const buttons = panel?.buttons || [];
+  const rows = notificationPreviewButtonRows(buttons);
   return `
-    <div class="utility-discord-embed">
-      <h4>${escapeHtml(title || 'Panel title')}</h4>
-      <p>${escapeHtml(description || 'Panel description').replaceAll('\n', '<br>')}</p>
-    </div>
-    <div class="utility-discord-actions">
-      ${buttons.length ? buttons.map(item => `
-        <button class="utility-discord-button utility-discord-button-${escapeHtml(item.style || 'primary')}" type="button" data-notification-preview-button disabled>
-          ${previewEmojiMarkup(snapshot, item.emoji)}<span>${escapeHtml(String(item.label || '').trim() || 'Button label')}</span>
-        </button>`).join('') : '<span class="utility-discord-no-buttons">No buttons yet</span>'}
+    <div class="discord-preview-channel"><span class="discord-preview-channel-icon" aria-hidden="true">#</span><span>${escapeHtml(notificationPanelChannelName(snapshot))}</span></div>
+    <div class="discord-preview-message">
+      <img class="discord-preview-avatar" src="/rob-robin.jpg?v=1" alt="" aria-hidden="true">
+      <div class="discord-preview-body">
+        <div class="discord-preview-author"><strong>Rob-bot</strong><span class="discord-bot-label">APP</span><span class="discord-preview-timestamp" aria-hidden="true">Today at 12:00 PM</span></div>
+        <div class="utility-discord-embed discord-embed" style="--embed-color:#5865f2">
+          <h4 class="discord-embed-title">${escapeHtml(title || 'Panel title')}</h4>
+          <p class="discord-embed-description">${escapeHtml(description || 'Panel description').replaceAll('\n', '<br>')}</p>
+        </div>
+        ${rows.length ? rows.map(row => `
+          <div class="utility-discord-action-row">
+            ${row.map(item => `
+              <button class="utility-discord-button utility-discord-button-${escapeHtml(item.style || 'primary')}" type="button" data-notification-preview-button disabled>
+                ${previewEmojiMarkup(snapshot, item.emoji)}<span>${escapeHtml(String(item.label || '').trim() || 'Button label')}</span>
+              </button>`).join('')}
+          </div>`).join('') : '<p class="utility-discord-no-buttons">No buttons yet</p>'}
+      </div>
     </div>`;
 }
 
@@ -621,9 +712,10 @@ function notificationRead(state, snapshot) {
   const roles = new Map((snapshot?.roles || []).map(role => [String(role.id), role]));
   const buttons = panel.buttons.map(item => {
     const role = roles.get(String(item.role_id));
-    return `<article class="utility-notification-button-summary"><strong>${escapeHtml(item.label)}</strong><dl><div><dt>Role</dt><dd>${escapeHtml(role?.name || `Role ${item.role_id}`)}</dd></div><div><dt>Emoji</dt><dd>${escapeHtml(item.emoji || 'None')}</dd></div><div><dt>Style</dt><dd>${escapeHtml(item.style)}</dd></div></dl></article>`;
+    return `<article class="utility-notification-button-summary"><strong>${escapeHtml(item.label)}</strong><dl><div><dt>Role</dt><dd>${escapeHtml(role?.name || `Role ${item.role_id}`)}</dd></div><div><dt>Emoji</dt><dd>${escapeHtml(emojiLabel(snapshot, item.emoji))}</dd></div><div><dt>Style</dt><dd>${escapeHtml(styleLabel(item.style))}</dd></div></dl></article>`;
   }).join('');
   return `
+    ${notificationPreviewMarkup(panel, snapshot)}
     <dl class="control-definition-list">
       <div><dt>Title</dt><dd>${escapeHtml(panel.title || 'Not configured')}</dd></div>
       <div><dt>Description</dt><dd>${escapeHtml(panel.description || 'Not configured')}</dd></div>
@@ -680,10 +772,10 @@ function notificationPageMarkup({ state, snapshot } = {}) {
   const buttonError = state?.errors?.buttons || '';
   return `
     <section class="control-page utility-page utility-notification-page" data-page-key="${NOTIFICATION_PAGE}">
-      ${pageHeader('Notification roles', 'Manage the self-assignable role panel.', state)}
+      ${pageHeader('Notification roles', 'Manage the self-assignable role panel.', state, null, { showFeatureToggle: false })}
       <section class="utility-section" aria-labelledby="notification-panel-heading">
         <div class="utility-section-heading">
-          <div><h2 id="notification-panel-heading">Panel</h2><p>Destination wiring is configured in Context.</p></div>
+          <div><h2 id="notification-panel-heading">Panel</h2><p>The panel posts in the canonical role panel channel. Buttons assign the roles shown here.</p></div>
         </div>
         ${editing ? `
           <div class="utility-notification-layout">
@@ -711,9 +803,6 @@ function notificationPageMarkup({ state, snapshot } = {}) {
           </div>
         ` : notificationRead(state, snapshot)}
       </section>
-      ${resourceSummaryMarkup(snapshot, [
-        { key: 'role_panel', label: 'Role panel destination' },
-      ])}
       ${editing ? saveActions(state) : ''}
     </section>`;
 }
@@ -725,10 +814,18 @@ function anonymousPageMarkup({ state, snapshot } = {}) {
   return `
     <section class="control-page utility-page" data-page-key="${ANONYMOUS_PAGE}">
       ${pageHeader('Anonymous Questions', 'Manage anonymous question intake without exposing submitter identity.', state, { label: 'Anonymous Questions', enabled, toggleAttribute: 'data-utility-feature="anonymous_questions"' })}
-      <p class="utility-note">Submitter identity remains outside Control and is not rendered on this page.</p>
-      ${resourceSummaryMarkup(snapshot, [
-        { key: 'anon_questions', label: 'Anonymous questions destination' },
-      ])}
+      ${controlSectionMarkup({
+    id: 'anonymous-intake-heading',
+    title: 'Intake behavior',
+    description: enabled
+      ? 'Anonymous Questions is active. Members can submit a question without signing their name.'
+      : 'Anonymous Questions is paused. The intake flow is closed until the feature is enabled.',
+    body: `<dl class="control-definition-list">
+      <div><dt>Identity</dt><dd>Submitter identity stays outside Control. Staff see only the question and the posting channel.</dd></div>
+      <div><dt>Review</dt><dd>Staff review each submission before it is posted. Rejected questions are not published.</dd></div>
+      <div><dt>Destination</dt><dd>Accepted questions post in the Anonymous Questions channel.</dd></div>
+    </dl>`,
+  })}
       ${editing ? saveActions(state) : ''}
     </section>`;
 }

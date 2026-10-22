@@ -19,6 +19,14 @@ const controlApp = readFileSync(
   new URL('../docs-site/control-app.js', import.meta.url),
   'utf8',
 );
+const controlCss = readFileSync(
+  new URL('../docs-site/control.css', import.meta.url),
+  'utf8',
+);
+const controlFeaturesCss = readFileSync(
+  new URL('../docs-site/control-features.css', import.meta.url),
+  'utf8',
+);
 
 
 class FakeTarget {
@@ -133,7 +141,7 @@ test('invalid child URLs use the domain first child, never remembered child', ()
   assert.equal(resolveControlRoute(resolved.path).path, resolved.path);
 });
 
-test('sidebar hierarchy is account, navigation, branding, then Appearance', () => {
+test('sidebar hierarchy is branding, navigation, account, then Appearance', () => {
   const asideStart = controlHtml.indexOf('<aside id="controlNavDrawer"');
   const asideEnd = controlHtml.indexOf('</aside>', asideStart);
   const identity = controlHtml.indexOf('id="controlIdentity"', asideStart);
@@ -143,10 +151,10 @@ test('sidebar hierarchy is account, navigation, branding, then Appearance', () =
 
   assert.ok(asideStart >= 0);
   assert.ok(
-    asideStart < identity
-      && identity < navigation
-      && navigation < brand
-      && brand < appearance
+    asideStart < brand
+      && brand < navigation
+      && navigation < identity
+      && identity < appearance
       && appearance < asideEnd,
   );
 
@@ -338,4 +346,26 @@ test('ordinary user-facing pages contain no Foundation or migration commentary',
       /Foundation|migration|intentionally deferred|final UI/i,
     );
   }
+});
+
+
+test('shell uses derived layout states instead of fixed desktop bands', () => {
+  assert.doesNotMatch(controlCss, /@media \(min-width: 900px\) and \(max-width: 1199px\)/);
+  assert.doesNotMatch(controlCss, /@media \(min-width: 1200px\)/);
+  assert.match(
+    controlCss,
+    /\.control-shell\[data-nav-mode="rail"\]\[data-context-mode="column"\] \{[\s\S]*?var\(--control-rail-width\)[\s\S]*?var\(--control-right-width\)/,
+  );
+  assert.match(
+    controlCss,
+    /body:has\(\.control-shell\[data-nav-mode="drawer"\]\) \.control-topbar \{ display: flex; \}/,
+  );
+  assert.match(
+    controlCss,
+    /\.control-shell\[data-context-mode="drawer"\] \.control-context-shell \{[\s\S]*?position: fixed;/,
+  );
+  assert.match(
+    controlFeaturesCss,
+    /@container control-main \(max-width: 600px\) \{[\s\S]*?\.content-feed-table td::before,[\s\S]*?content: attr\(data-label\);/,
+  );
 });
