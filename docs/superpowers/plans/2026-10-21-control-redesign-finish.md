@@ -1,7 +1,7 @@
 # Control Redesign Finish Implementation Plan
 
 Date: 2026-10-21
-Status: implemented; live acceptance recorded with one known limitation
+Status: implemented; live acceptance recorded
 Spec: `docs/superpowers/specs/2026-10-16-control-design-system.md`
 
 Authoritative decisions:
@@ -954,7 +954,7 @@ Stop and report if:
 
 Status on 2026-10-22: live read and edit captures completed against the real local server through `https://aidevph.aedwon.site` on 2026-10-21. That hostname routes to the local origin at `127.0.0.1:8787` and uses the same database and backend. The read capture is in `.visual-companion/control-finish-review/live-read` (162 images). The edit capture is in `.visual-companion/control-finish-review/live-edit` (300 images).
 
-One defect was found in Notification roles edit mode and fixed on 2026-10-22: the page rendered an inert Disabled feature toggle in edit mode and no state chip in read mode. The page has no `notification_roles` feature flag. The edit-mode toggle was removed, a render contract test was added, and the fixed views were recaptured on the fixture server in `.visual-companion/control-finish-review/final4-notification-roles` (20 images). Two attempts to recapture the live edit views failed because the signed-in session expired overnight and the operator did not complete the new sign-in. The pre-fix live edit images for this route are not accepted for the header. The route is accepted with that known limitation, pending an optional live edit recapture.
+One defect was found in Notification roles edit mode and fixed on 2026-10-22: the page rendered an inert Disabled feature toggle in edit mode and no state chip in read mode. The page has no `notification_roles` feature flag. The edit-mode toggle was removed, a render contract test was added, and the fixed views were recaptured live in `.visual-companion/control-finish-review/live-edit-notification-roles4` (20 images). The live edit images were copied into `live-edit` and accepted.
 
 | Route | Wide light | Wide dark | 1024 context | 390 | Result |
 | --- | --- | --- | --- | --- | --- |
@@ -962,7 +962,7 @@ One defect was found in Notification roles edit mode and fixed on 2026-10-22: th
 | Quizzes | Live pass | Live pass | Live pass | Live pass | Accepted (read and edit) |
 | Voice & Coworking | Live pass | Live pass | Live pass | Live pass | Accepted (read and edit) |
 | Showcase | Live pass | Live pass | Live pass | Live pass | Accepted (read and edit) |
-| Notification roles | Live read pass; edit fixture pass after fix | Live read pass; edit fixture pass after fix | Live read pass; edit fixture pass after fix | Live read pass; edit fixture pass after fix | Accepted with known limitation: live edit recapture pending |
+| Notification roles | Live pass | Live pass | Live pass | Live pass | Accepted (read and edit) |
 | Feeds | Live pass | Live pass | Live pass | Live pass | Accepted (read and edit) |
 | Announcements | Live pass | Live pass | Live pass | Live pass | Accepted (read and edit) |
 | Live | Live pass | Live pass | Live pass | Live pass | Accepted (read and edit) |

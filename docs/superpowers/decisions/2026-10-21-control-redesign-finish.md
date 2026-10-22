@@ -66,7 +66,7 @@ The real guild data included empty states for Quizzes questions, Feeds sources, 
 
 One defect was found during the live review. Notification roles rendered an inert feature toggle in edit mode and no state chip in read mode. The page has no `notification_roles` feature flag, so the toggle had no effect. The edit-mode toggle was removed for that page, and a render contract test now covers it. Asset versions were bumped to `control.css?v=18`, `control-features.css?v=7`, and `control-app.js?v=14`.
 
-The fixed Notification roles views were recaptured on the fixture server in `.visual-companion/control-finish-review/final4-notification-roles` (20 images). Two attempts to recapture the live edit views failed because the signed-in session expired overnight and the operator did not complete the new sign-in. The pre-fix live edit images for this route are not accepted for the header. The route is accepted with that known limitation. A live edit recapture remains optional.
+The fixed Notification roles views were recaptured live in `.visual-companion/control-finish-review/live-edit-notification-roles4` (20 images) on 2026-10-22 and copied into `live-edit`. The live edit header has no inert toggle at 1440, 1024, and 390 in light and dark. The route is accepted.
 
 The other 18 routes are accepted from the live read and edit captures. The local web service was restored after the capture. The public host serves the previous local-hosting build again (`control.css?v=12`), and both the local and public `/healthz` endpoints return 200. The finish branch is committed locally but not pushed, merged, or promoted. The local hosting worktree was not reset, cleaned, or modified.
 
