@@ -45,6 +45,13 @@ test('global changes tray is one compact/expanded surface and only minimize coll
   assert.equal(nextTrayExpandedState(true, 'content'), true);
   assert.equal(nextTrayExpandedState(true, 'minimize'), false);
   assert.equal(nextTrayExpandedState(false, 'expand'), true);
+
+  const cleanCompact = changesTrayMarkup({ expanded: false, status: { message: 'Server state is current.', tone: 'good' }, dirtyPages: [] });
+  assert.match(cleanCompact, /control-changes-tray-clean/);
+  const failedCompact = changesTrayMarkup({ expanded: false, status: { message: 'Server state failed to load.', tone: 'bad' }, dirtyPages: [] });
+  assert.doesNotMatch(failedCompact, /control-changes-tray-clean/);
+  const loadingCompact = changesTrayMarkup({ expanded: false, status: { message: 'Server state has not loaded yet.', tone: 'neutral' }, dirtyPages: [] });
+  assert.doesNotMatch(loadingCompact, /control-changes-tray-clean/);
 });
 
 test('Control shell mounts one floating tray instead of the old workspace status row', () => {
@@ -146,22 +153,27 @@ test('Discord preview resolves supported literal mention tokens without changing
   for (const expected of ['@Ada', '@Grace', '@Builder', '#general', '@everyone', '@here']) assert.equal(markup.includes(expected), true);
 });
 
-test('Announcement builder renders split composer/preview, trailing counters, image field, clear, and top preview CTA', async () => {
+test('Announcement builder renders the composer in the center and the preview in context', async () => {
   const { createContentPageDefinition } = await import('../docs-site/control-content.js');
   const pageKey = '/control/content/announcements';
   const definition = createContentPageDefinition(pageKey);
   const store = createControlStateStore();
   store.register(definition);
   store.hydrate(pageKey, baseSnapshot(), 'a'.repeat(64));
-  const markup = definition.render({ state: store.get(pageKey), snapshot: baseSnapshot() });
+  const state = store.get(pageKey);
+  const markup = definition.render({ state, snapshot: baseSnapshot() });
   for (const token of [
-    'content-announcement-layout', 'data-announcement-clear', '>Clear all<', 'data-announcement-preview', 'data-announcement-send',
+    'content-announcement-layout', 'data-announcement-clear', '>Clear all<', 'data-announcement-send',
     'data-announcement-destination', 'maxlength=\"2000\"', 'maxlength=\"256\"', 'maxlength=\"4096\"', 'maxlength=\"2048\"',
     'data-announcement-image', 'data-announcement-color-swatch', 'data-announcement-color-popover',
     'data-announcement-counter=\"message\"', '>2000<', 'data-announcement-counter=\"title\"', '>256<',
     'data-announcement-counter=\"body\"', '>4096<', 'data-announcement-counter=\"footer\"', '>2048<',
   ]) assert.equal(markup.includes(token), true, token);
-  assert.equal(markup.indexOf('data-announcement-send') < markup.indexOf('data-announcement-preview'), true);
+  assert.equal(markup.includes('data-announcement-preview'), false);
+
+  const context = definition.renderContext({ state, snapshot: baseSnapshot() });
+  assert.equal(context.includes('data-announcement-preview'), true);
+  assert.equal(context.includes('Send readiness'), true);
 });
 
 test('browser action validation accepts message-only announcements and validates embed limits/image URL', () => {

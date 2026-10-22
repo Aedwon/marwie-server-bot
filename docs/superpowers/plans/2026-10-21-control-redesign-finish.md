@@ -1,7 +1,7 @@
 # Control Redesign Finish Implementation Plan
 
 Date: 2026-10-21
-Status: draft
+Status: implemented; live acceptance recorded with one known limitation
 Spec: `docs/superpowers/specs/2026-10-16-control-design-system.md`
 
 Authoritative decisions:
@@ -952,26 +952,28 @@ Stop and report if:
 
 ## Acceptance table
 
-Fill this in during Task 11. A blank row is not a pass.
+Status on 2026-10-22: live read and edit captures completed against the real local server through `https://aidevph.aedwon.site` on 2026-10-21. That hostname routes to the local origin at `127.0.0.1:8787` and uses the same database and backend. The read capture is in `.visual-companion/control-finish-review/live-read` (162 images). The edit capture is in `.visual-companion/control-finish-review/live-edit` (300 images).
+
+One defect was found in Notification roles edit mode and fixed on 2026-10-22: the page rendered an inert Disabled feature toggle in edit mode and no state chip in read mode. The page has no `notification_roles` feature flag. The edit-mode toggle was removed, a render contract test was added, and the fixed views were recaptured on the fixture server in `.visual-companion/control-finish-review/final4-notification-roles` (20 images). Two attempts to recapture the live edit views failed because the signed-in session expired overnight and the operator did not complete the new sign-in. The pre-fix live edit images for this route are not accepted for the header. The route is accepted with that known limitation, pending an optional live edit recapture.
 
 | Route | Wide light | Wide dark | 1024 context | 390 | Result |
 | --- | --- | --- | --- | --- | --- |
-| Reputation |  |  |  |  |  |
-| Quizzes |  |  |  |  |  |
-| Voice & Coworking |  |  |  |  |  |
-| Showcase |  |  |  |  |  |
-| Notification roles |  |  |  |  |  |
-| Feeds |  |  |  |  |  |
-| Announcements |  |  |  |  |  |
-| Live |  |  |  |  |  |
-| Tickets |  |  |  |  |  |
-| Anonymous Questions |  |  |  |  |  |
-| Moderation |  |  |  |  |  |
-| Analytics |  |  |  |  |  |
-| Activity |  |  |  |  |  |
-| Resources Channels |  |  |  |  |  |
-| Resources Roles |  |  |  |  |  |
-| Resources Categories |  |  |  |  |  |
-| Commands |  |  |  |  |  |
-| Ticket handling |  |  |  |  |  |
-| Events |  |  |  |  |  |
+| Reputation | Live pass | Live pass | Live pass | Live pass | Accepted (read and edit) |
+| Quizzes | Live pass | Live pass | Live pass | Live pass | Accepted (read and edit) |
+| Voice & Coworking | Live pass | Live pass | Live pass | Live pass | Accepted (read and edit) |
+| Showcase | Live pass | Live pass | Live pass | Live pass | Accepted (read and edit) |
+| Notification roles | Live read pass; edit fixture pass after fix | Live read pass; edit fixture pass after fix | Live read pass; edit fixture pass after fix | Live read pass; edit fixture pass after fix | Accepted with known limitation: live edit recapture pending |
+| Feeds | Live pass | Live pass | Live pass | Live pass | Accepted (read and edit) |
+| Announcements | Live pass | Live pass | Live pass | Live pass | Accepted (read and edit) |
+| Live | Live pass | Live pass | Live pass | Live pass | Accepted (read and edit) |
+| Tickets | Live pass | Live pass | Live pass | Live pass | Accepted (read and edit) |
+| Anonymous Questions | Live pass | Live pass | Live pass | Live pass | Accepted (read and edit) |
+| Moderation | Live pass | Live pass | Live pass | Live pass | Accepted (read and edit) |
+| Analytics | Live pass | Live pass | Live pass | Live pass | Accepted (read and edit) |
+| Activity | Live pass | Live pass | N/A | Live pass | Accepted (read only) |
+| Resources Channels | Live pass | Live pass | N/A | Live pass | Accepted (read and mapping edit) |
+| Resources Roles | Live pass | Live pass | N/A | Live pass | Accepted (read and mapping edit) |
+| Resources Categories | Live pass | Live pass | N/A | Live pass | Accepted (read and mapping edit) |
+| Commands | Live pass | Live pass | N/A | Live pass | Accepted (read only) |
+| Ticket handling | Live pass | Live pass | N/A | Live pass | Accepted (read only) |
+| Events | Live pass | Live pass | N/A | Live pass | Accepted (read only) |

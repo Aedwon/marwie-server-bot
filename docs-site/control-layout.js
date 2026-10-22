@@ -7,6 +7,8 @@ export function installContextDrawerController(options = {}) {
 export function syncContextAvailability({ drawer, trigger, root, markup = '', mediaQuery } = {}) {
   if (!drawer || !trigger || !root || !mediaQuery) return false;
   const hasContext = Boolean(String(markup || '').trim());
+  const shell = root.closest?.('.control-shell');
+  if (shell) shell.dataset.context = String(hasContext);
   root.innerHTML = hasContext ? markup : '';
   drawer.hidden = !hasContext;
   trigger.hidden = !hasContext || !mediaQuery.matches;

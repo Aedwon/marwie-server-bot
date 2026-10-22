@@ -19,6 +19,14 @@ const controlApp = readFileSync(
   new URL('../docs-site/control-app.js', import.meta.url),
   'utf8',
 );
+const controlCss = readFileSync(
+  new URL('../docs-site/control.css', import.meta.url),
+  'utf8',
+);
+const controlFeaturesCss = readFileSync(
+  new URL('../docs-site/control-features.css', import.meta.url),
+  'utf8',
+);
 
 
 class FakeTarget {
@@ -338,4 +346,24 @@ test('ordinary user-facing pages contain no Foundation or migration commentary',
       /Foundation|migration|intentionally deferred|final UI/i,
     );
   }
+});
+
+
+test('intermediate desktop keeps a visible context drawer trigger', () => {
+  assert.match(
+    controlCss,
+    /@media \(min-width: 900px\) and \(max-width: 1199px\) \{[\s\S]*?\.control-topbar \{[\s\S]*?display: flex;/,
+  );
+  assert.match(
+    controlCss,
+    /body:has\(\.control-shell\[data-context="false"\]\) \.control-topbar \{ display: none; \}/,
+  );
+  assert.match(
+    controlCss,
+    /\.control-context-shell \{ top: calc\(56px \+ var\(--control-edge-gap\)\); \}/,
+  );
+  assert.match(
+    controlFeaturesCss,
+    /@media \(max-width: 639px\) \{[\s\S]*?\.content-feed-table td::before,[\s\S]*?content: attr\(data-label\);/,
+  );
 });

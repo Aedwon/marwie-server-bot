@@ -3,6 +3,7 @@ import {
   registerControlPage,
   registeredControlPage,
 } from './control-page-registry.js';
+import { controlSimplePageHeaderMarkup } from './control-components.js';
 
 const COMPROMISED_ACCOUNT_TRAP_KEY = 'compromised_account_trap';
 const CHANNEL_KEYS = Object.freeze([
@@ -355,8 +356,8 @@ function readRow(key, row) {
   return `
     <tr data-mapping-key="${escapeHtml(key)}">
       <th scope="row">${escapeHtml(definition.label)}</th>
-      <td class="mapping-current">${escapeHtml(current)}</td>
-      <td class="mapping-status-text" data-tone="${health.className}">${escapeHtml(health.label)}</td>
+      <td class="mapping-current" data-label="Current">${escapeHtml(current)}</td>
+      <td class="mapping-status-text" data-label="Status" data-tone="${health.className}">${escapeHtml(health.label)}</td>
     </tr>`;
 }
 
@@ -527,7 +528,7 @@ export function mappingPageMarkup({ pageKey, state, snapshot } = {}) {
   const config = MAPPING_PAGE_CONFIGS[pageKey];
   if (!config) return '';
   if (!state?.persisted) {
-    return `<section class="control-page mapping-page"><h1>Resources</h1>${resourcesTabsMarkup(pageKey)}<h2>${escapeHtml(config.title)}</h2><p>Load current server state to manage these Discord resources.</p></section>`;
+    return `<section class="control-page mapping-page">${controlSimplePageHeaderMarkup({ title: 'Resources', description: 'Current Discord resources and their connection health.' })}${resourcesTabsMarkup(pageKey)}<h2>${escapeHtml(config.title)}</h2><p>Load current server state to manage these Discord resources.</p></section>`;
   }
 
   const statusMarkup = state.saveError
@@ -539,10 +540,11 @@ export function mappingPageMarkup({ pageKey, state, snapshot } = {}) {
   if (state.mode === 'edit') {
     return `
       <section class="control-page mapping-page" data-page-key="${escapeHtml(pageKey)}">
-        <header class="mapping-page-header">
-          <div><h1>Resources</h1><p>Choose current Discord resources, then save all changes together.</p></div>
+        ${controlSimplePageHeaderMarkup({
+      title: 'Resources',
+      description: 'Choose current Discord resources, then save all changes together.',
+    })}
         ${resourcesTabsMarkup(pageKey)}
-        </header>
         ${statusMarkup}
         <div class="mapping-edit-grid">
           ${config.resourceKeys.map(key => editRow(key, state.persisted[key], state.draft[key], snapshot, state.errors?.[key])).join('')}
@@ -558,11 +560,12 @@ export function mappingPageMarkup({ pageKey, state, snapshot } = {}) {
 
   return `
     <section class="control-page mapping-page" data-page-key="${escapeHtml(pageKey)}">
-      <header class="mapping-page-header">
-        <div><h1>Resources</h1><p>Current Discord resources and their connection health.</p></div>
-        ${resourcesTabsMarkup(pageKey)}
-        <button class="control-button control-button-primary control-edit-settings-button" type="button" data-mapping-edit>Edit settings</button>
-      </header>
+      ${controlSimplePageHeaderMarkup({
+    title: 'Resources',
+    description: 'Current Discord resources and their connection health.',
+    actions: '<button class="control-button control-button-primary control-edit-settings-button" type="button" data-mapping-edit>Edit settings</button>',
+  })}
+      ${resourcesTabsMarkup(pageKey)}
       ${statusMarkup}
       <div class="mapping-table-wrap">
         <table class="mapping-table">

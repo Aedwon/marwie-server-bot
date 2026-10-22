@@ -1,6 +1,13 @@
 import { registerControlPage, registeredControlPage } from './control-page-registry.js';
+import {
+  contextDefinitionListMarkup,
+  contextSectionMarkup,
+  controlPageHeaderMarkup,
+  controlSectionMarkup,
+  controlSimplePageHeaderMarkup,
+} from './control-components.js';
 import { featureResourceKeys } from './control-resource-contract.js';
-import { withResourceBindings } from './control-resource-bindings.js';
+import { resourceBindingState, withResourceBindings } from './control-resource-bindings.js';
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -25,7 +32,6 @@ export const WORKFLOW_PAGE_CONFIGS = Object.freeze({
         ]),
         links: Object.freeze([
           Object.freeze({ href: '/control/commands', label: 'Review moderation commands' }),
-          Object.freeze({ href: '/control/mappings/channels', label: 'Check moderation log mapping' }),
         ]),
       }),
       Object.freeze({
@@ -63,7 +69,7 @@ export const WORKFLOW_PAGE_CONFIGS = Object.freeze({
         title: 'Prepare',
         body: 'Keep ticket types and Discord resources configured in Tickets before publishing the member entry point.',
         points: Object.freeze([
-          'The ticket panel needs an existing ticket_panel text channel and at least one enabled ticket type.',
+          'The ticket panel needs an existing ticket panel channel and at least one enabled ticket type.',
           'Each /ticket-panel post invocation sends a new panel message; it does not edit an older one.',
         ]),
         links: Object.freeze([
@@ -87,7 +93,7 @@ export const WORKFLOW_PAGE_CONFIGS = Object.freeze({
         body: 'Staff can claim, close, and reopen tickets with the documented ticket controls.',
         points: Object.freeze([
           'Claim, Close, and Reopen require Manage Channels or Moderate Members.',
-          'Closing hides the channel from the opener, records the closure, prefixes the channel name when possible, and attempts a transcript of up to 500 messages to ticket_logs.',
+          'Closing hides the channel from the opener, records the closure, prefixes the channel name when possible, and attempts a transcript of up to 500 messages to the ticket log channel.',
           'Reopen restores opener access and removes the closed- prefix when possible.',
         ]),
       }),
@@ -109,8 +115,8 @@ export const WORKFLOW_PAGE_CONFIGS = Object.freeze({
         title: 'Prepare',
         body: 'Verify the feature state and destination before drafting the event communication.',
         points: Object.freeze([
-          'Announcements and Live keep their own feature state; Discord destinations are configured in Context.',
-          'Live needs live_announcements or the fallback announcements mapping and permission to send messages and embeds.',
+          'Announcements and Live keep their own feature state and show destination readiness in Context.',
+          'Live needs the Live announcements channel or the fallback Announcements mapping and permission to send messages and embeds.',
         ]),
         links: Object.freeze([
           Object.freeze({ href: '/control/content/announcements', label: 'Open Announcements' }),
@@ -141,7 +147,7 @@ export const WORKFLOW_PAGE_CONFIGS = Object.freeze({
         title: 'Exceptions',
         body: 'A missing optional live-link or notification ping should not be confused with a failed live post.',
         points: Object.freeze([
-          'If MAR_WIE_TIKTOK_URL is not configured, the live announcement can still post without a link button.',
+          'If the optional TikTok URL is not configured, the live announcement can still post without a link button.',
           'If the configured Live Notifications role cannot be mentioned, the live announcement still posts and the invoker is told the ping was skipped.',
         ]),
       }),
@@ -160,7 +166,7 @@ function stageMarkup(stage, index) {
     <li class="workflow-stage">
       <span class="workflow-stage-number" aria-hidden="true">${String(index + 1).padStart(2, '0')}</span>
       <div class="workflow-stage-content">
-        <h2>${escapeHtml(stage.title)}</h2>
+        <h3>${escapeHtml(stage.title)}</h3>
         <p>${escapeHtml(stage.body)}</p>
         ${points}
         ${links}
@@ -168,18 +174,22 @@ function stageMarkup(stage, index) {
     </li>`;
 }
 
+function stagesMarkup(config) {
+  return `<ol class="workflow-timeline">${config.stages.map(stageMarkup).join('')}</ol>`;
+}
+
 export function workflowPageMarkup(pageKey) {
   const config = WORKFLOW_PAGE_CONFIGS[pageKey];
   if (!config) return '';
   return `
     <article class="control-page workflow-page" data-page-key="${escapeHtml(pageKey)}">
-      <header class="workflow-page-header">
-        <h1>${escapeHtml(config.title)}</h1>
-        <p>${escapeHtml(config.intro)}</p>
-      </header>
-      <ol class="workflow-timeline">
-        ${config.stages.map(stageMarkup).join('')}
-      </ol>
+      ${controlSimplePageHeaderMarkup({ title: config.title, description: config.intro })}
+      ${controlSectionMarkup({
+    id: 'operating-guide',
+    title: 'Operating guide',
+    description: 'Follow these steps in order. Each step names the checks and the failure conditions staff should expect.',
+    body: stagesMarkup(config),
+  })}
     </article>`;
 }
 
@@ -189,6 +199,24 @@ const MODERATION_PAGE = '/control/workflows/moderation';
 
 function moderationEnabled(snapshot) {
   return Boolean((snapshot?.features || []).find(item => item?.name === 'moderation')?.enabled);
+}
+
+function moderationContextMarkup(snapshot, editing) {
+  const log = resourceBindingState(snapshot, 'moderation_log');
+  const trap = resourceBindingState(snapshot, 'compromised_account_trap');
+  const rows = editing
+    ? [{ label: 'Case history', value: '/history reads stored cases even when logging is unavailable' }]
+    : [
+      { label: 'Moderation log', value: `${log.name || log.current} (${log.label})` },
+      { label: 'Compromised account trap', value: `${trap.name || trap.current} (${trap.label})` },
+      { label: 'Case history', value: '/history reads stored cases even when logging is unavailable' },
+    ];
+  return contextSectionMarkup({
+    id: 'moderation-readiness',
+    title: 'Moderation readiness',
+    description: 'Moderation records are independent of the log channel. The log link is optional for case history.',
+    body: contextDefinitionListMarkup(rows),
+  });
 }
 
 function createModerationPageDefinition() {
@@ -208,13 +236,42 @@ function createModerationPageDefinition() {
       return [{ action_type: 'set_feature', payload: { feature: 'moderation', enabled: Boolean(draft?.enabled) } }];
     },
     render({ state } = {}) {
-      const base = workflowPageMarkup(MODERATION_PAGE);
-      if (!state?.persisted) return base;
-      const enabled = state.mode === 'edit' ? state.draft.enabled : state.persisted.enabled;
-      const controls = state.mode === 'edit'
-        ? `<section class="workflow-feature-settings"><label><span><strong>Moderation</strong><small>Enable Rob-bot moderation actions for this server.</small></span><input type="checkbox" data-workflow-enabled${enabled ? ' checked' : ''}></label><div><button class="control-button control-button-primary" type="button" data-workflow-save${state.dirty && !Object.keys(state.errors || {}).length && state.status !== 'saving' ? '' : ' disabled'}>${state.status === 'saving' ? 'Saving…' : 'Save changes'}</button><button class="control-button control-button-secondary" type="button" data-workflow-discard${state.status === 'saving' ? ' disabled' : ''}>Discard</button></div></section>`
-        : `<div class="workflow-feature-state"><span>${enabled ? 'Enabled' : 'Disabled'}</span><button class="control-button control-button-secondary" type="button" data-workflow-edit>Edit settings</button></div>`;
-      return base.replace('</header>', `</header>${controls}`);
+      const config = WORKFLOW_PAGE_CONFIGS[MODERATION_PAGE];
+      if (!state?.persisted) {
+        return `<article class="control-page workflow-page">${controlSimplePageHeaderMarkup({ title: config.title, description: config.intro })}</article>`;
+      }
+      const editing = state.mode === 'edit';
+      const enabled = editing ? state.draft.enabled : state.persisted.enabled;
+      const header = controlPageHeaderMarkup({
+        title: config.title,
+        description: config.intro,
+        enabled,
+        editing,
+        editAttribute: 'data-workflow-edit',
+        toggleAttribute: 'data-workflow-enabled',
+      });
+      const saveActions = editing
+        ? `<div class="workflow-save-actions"><button class="control-button control-button-primary" type="button" data-workflow-save${state.dirty && !Object.keys(state.errors || {}).length && state.status !== 'saving' ? '' : ' disabled'}>${state.status === 'saving' ? 'Saving…' : 'Save changes'}</button><button class="control-button control-button-secondary" type="button" data-workflow-discard${state.status === 'saving' ? ' disabled' : ''}>Discard</button></div>`
+        : '';
+      const configuration = controlSectionMarkup({
+        id: 'moderation-configuration',
+        title: 'Configuration',
+        description: 'Moderation controls warn, timeout, kick, and ban actions. Role hierarchy checks still apply for each command.',
+        action: saveActions,
+        body: editing
+          ? '<p class="workflow-note">Use the feature toggle in the page header to change moderation state.</p>'
+          : `<dl class="control-definition-list"><div><dt>Moderation actions</dt><dd>${enabled ? 'Enabled' : 'Disabled'}</dd></div><div><dt>Case history</dt><dd>/history stays read-only and records every completed case.</dd></div><div><dt>Log channel</dt><dd>Case history is independent of the optional moderation log destination.</dd></div></dl>`,
+      });
+      const guide = controlSectionMarkup({
+        id: 'operating-guide',
+        title: 'Operating guide',
+        description: 'Run these steps in order and verify the result before closing the case.',
+        body: stagesMarkup(config),
+      });
+      return `<article class="control-page workflow-page" data-page-key="${MODERATION_PAGE}">${header}${configuration}${guide}</article>`;
+    },
+    renderContext({ state, snapshot } = {}) {
+      return moderationContextMarkup(snapshot || {}, state?.mode === 'edit');
     },
     install({ root, store, pageKey, onSave, rerender } = {}) {
       const onClick = event => {

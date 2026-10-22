@@ -53,6 +53,93 @@ export function taskIndicatorMarkup({ state = 'queued', size = 22, progress = nu
   </span>`;
 }
 
+export function stateChipMarkup(enabled, { label = '' } = {}) {
+  const on = Boolean(enabled);
+  const text = label || (on ? 'Enabled' : 'Disabled');
+  return `<span class="control-state-chip" data-tone="${on ? 'good' : 'neutral'}" data-enabled="${String(on)}">${escapeHtml(text)}</span>`;
+}
+
+export function controlPageHeaderMarkup({
+  title,
+  description = '',
+  enabled = null,
+  editing = false,
+  editable = true,
+  editAttribute = '',
+  toggleAttribute = '',
+  features = null,
+  actions = '',
+  meta = '',
+  showFeatureToggle = true,
+} = {}) {
+  const state = !editing && typeof enabled === 'boolean'
+    ? stateChipMarkup(enabled)
+    : '';
+  const metaMarkup = state || meta
+    ? `<div class="control-page-meta">${state}${meta}</div>`
+    : '';
+  const resolvedActions = actions || (editable
+    ? (!editing || showFeatureToggle
+      ? featureHeaderActionsMarkup({
+        label: title,
+        enabled: Boolean(enabled),
+        editing,
+        editAttribute,
+        toggleAttribute,
+        features,
+      })
+      : '')
+    : '');
+  return `<header class="control-page-header" data-page-header>
+    <div class="control-page-heading">
+      <h1>${escapeHtml(title)}</h1>
+      ${description ? `<p class="control-page-intro">${escapeHtml(description)}</p>` : ''}
+      ${metaMarkup}
+    </div>
+    ${resolvedActions || ''}
+  </header>`;
+}
+
+export function controlSimplePageHeaderMarkup({ title, description = '', actions = '' } = {}) {
+  return controlPageHeaderMarkup({
+    title,
+    description,
+    editable: false,
+    actions,
+  });
+}
+
+export function controlSectionMarkup({
+  id = '',
+  title,
+  description = '',
+  action = '',
+  body = '',
+  className = '',
+} = {}) {
+  const headingId = id ? ` id="${escapeHtml(id)}"` : '';
+  const heading = title
+    ? `<div class="control-section-heading"><div><h2${headingId}>${escapeHtml(title)}</h2>${description ? `<p>${escapeHtml(description)}</p>` : ''}</div>${action}</div>`
+    : '';
+  return `<section class="control-section${className ? ` ${className}` : ''}"${id ? ` aria-labelledby="${escapeHtml(id)}"` : ''}>${heading}${body}</section>`;
+}
+
+export function contextSectionMarkup({ id = '', title, description = '', body = '', className = '' } = {}) {
+  return `<section class="control-context-section${className ? ` ${className}` : ''}"${id ? ` data-context-section="${escapeHtml(id)}"` : ''}>
+    <h2>${escapeHtml(title)}</h2>
+    ${description ? `<p>${escapeHtml(description)}</p>` : ''}
+    ${body}
+  </section>`;
+}
+
+export function contextDefinitionListMarkup(rows = []) {
+  return `<dl class="control-context-list">${rows.map(row => `<div><dt>${escapeHtml(row.label)}</dt><dd>${escapeHtml(row.value)}</dd></div>`).join('')}</dl>`;
+}
+
+export function contextStatusMarkup(label, tone = 'neutral') {
+  return `<span class="control-context-status" data-tone="${escapeHtml(tone)}">${escapeHtml(label)}</span>`;
+}
+
 export function featureHeaderActionsMarkup({
   label = 'Feature',
   enabled = false,

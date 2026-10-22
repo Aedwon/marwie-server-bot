@@ -3,9 +3,9 @@ import {
   registerControlPage,
   registeredControlPage,
 } from './control-page-registry.js';
-import { featureHeaderActionsMarkup } from './control-components.js';
+import { contextDefinitionListMarkup, contextSectionMarkup, controlPageHeaderMarkup } from './control-components.js';
 import { featureResourceKeys } from './control-resource-contract.js';
-import { withResourceBindings } from './control-resource-bindings.js';
+import { resourceBindingState, withResourceBindings } from './control-resource-bindings.js';
 
 export const ANALYTICS_PAGE_KEY = '/control/analytics';
 
@@ -31,10 +31,6 @@ function analyticsFeature(snapshot) {
   return (snapshot?.features || []).find(item => item?.name === 'analytics') || null;
 }
 
-function analyticsResource(snapshot) {
-  return (snapshot?.resources || []).find(item => item?.key === 'analytics') || null;
-}
-
 function formatPeriod(value) {
   if (!value) return 'Unavailable';
   const parsed = new Date(value);
@@ -51,7 +47,7 @@ function formatPeriod(value) {
 }
 
 function formatBucketPeriod(bucket) {
-  return `${formatPeriod(bucket?.period_start)} – ${formatPeriod(bucket?.period_end)}`;
+  return `${formatPeriod(bucket?.period_start)} to ${formatPeriod(bucket?.period_end)}`;
 }
 
 function formatAccuracy(value) {
@@ -64,21 +60,6 @@ function metricDefinition(label, value) {
       <dt>${escapeHtml(label)}</dt>
       <dd>${escapeHtml(value)}</dd>
     </div>`;
-}
-
-function channelHealth(snapshot) {
-  const resource = analyticsResource(snapshot);
-  if (resource?.id && resource.exists) {
-    return { current: resource.name || 'Connected text channel', status: 'Connected', tone: 'good' };
-  }
-  if (resource?.id) {
-    return {
-      current: 'Previously connected channel is unavailable',
-      status: 'Unavailable',
-      tone: 'bad',
-    };
-  }
-  return { current: 'No report channel connected', status: 'Not connected', tone: 'neutral' };
 }
 
 function rangeProjection(snapshot, requestedRange) {
@@ -231,22 +212,9 @@ function analyticsReportMarkup(snapshot, requestedRange) {
     </section>`;
 }
 
-function reportingMarkup(state, snapshot, enabled) {
-  const channel = channelHealth(snapshot);
-  return `
-    <section class="analytics-settings" aria-labelledby="analytics-settings-title">
-      <div class="analytics-section-heading">
-        <div><h2 id="analytics-settings-title">Reporting</h2><p>${state.mode === 'edit' ? 'Use the feature switch in the page header, then save or discard below.' : enabled ? 'Aggregate reporting is enabled.' : 'Aggregate reporting is disabled.'}</p></div>
-        <a class="control-inline-action" href="/control/mappings/channels">Resource details</a>
-      </div>
-      <div class="control-summary-table-wrap analytics-reporting-table-wrap">
-        <table class="control-summary-table analytics-reporting-table">
-          <thead><tr><th>Resource</th><th>Current</th><th>Status</th></tr></thead>
-          <tbody><tr><th scope="row">Report channel</th><td>${escapeHtml(channel.current)}</td><td class="control-status-text" data-tone="${channel.tone}">${escapeHtml(channel.status)}</td></tr></tbody>
-        </table>
-      </div>
-      ${state.mode === 'edit' ? `<div class="analytics-page-actions"><button class="control-button control-button-primary" type="button" data-analytics-save${state.dirty && state.status !== 'saving' ? '' : ' disabled'}>${state.status === 'saving' ? 'Saving…' : 'Save changes'}</button><button class="control-button control-button-secondary" type="button" data-analytics-discard${state.status === 'saving' ? ' disabled' : ''}>Discard</button></div>` : ''}
-    </section>`;
+function reportingActionsMarkup(state) {
+  if (state.mode !== 'edit') return '';
+  return `<div class="analytics-page-actions"><button class="control-button control-button-primary" type="button" data-analytics-save${state.dirty && state.status !== 'saving' ? '' : ' disabled'}>${state.status === 'saving' ? 'Saving…' : 'Save changes'}</button><button class="control-button control-button-secondary" type="button" data-analytics-discard${state.status === 'saving' ? ' disabled' : ''}>Discard</button></div>`;
 }
 
 export function createAnalyticsPageDefinition() {
@@ -284,6 +252,24 @@ export function createAnalyticsPageDefinition() {
       return analyticsPageMarkup({ state, snapshot, selectedRange });
     },
 
+    renderContext({ state, snapshot } = {}) {
+      const report = resourceBindingState(snapshot || {}, 'analytics');
+      const channel = (snapshot?.channels || []).find(item => String(item.id) === String(report.id || ''));
+      const rows = [
+        { label: 'Send permission', value: channel?.send_messages === true ? 'Allowed' : 'Missing Send Messages or not a text channel' },
+        { label: 'Data source', value: 'Persisted moderation, ticket, quiz, anonymous, and reputation events' },
+      ];
+      if (state?.mode !== 'edit') {
+        rows.unshift({ label: 'Channel', value: `${report.name || report.current} (${report.label})` });
+      }
+      return contextSectionMarkup({
+        id: 'report-destination',
+        title: 'Report destination',
+        description: 'Rob-bot posts the aggregate report to this channel on its configured schedule.',
+        body: contextDefinitionListMarkup(rows),
+      });
+    },
+
     install({ root, store = controlState, onSave, rerender } = {}) {
       return installAnalyticsPageInteractions({
         root,
@@ -315,16 +301,17 @@ export function analyticsPageMarkup({ state, snapshot, selectedRange } = {}) {
   const preferredRange = selectedRange || String(snapshot?.analytics?.default_range || '7d');
   return `
     <section class="control-page analytics-page" data-page-key="${ANALYTICS_PAGE_KEY}">
-      <header class="analytics-page-header"><div><h1>Analytics</h1><p>Operational activity from persisted server data.</p></div>${featureHeaderActionsMarkup({
-        label: 'Analytics',
-        enabled,
-        editing: state.mode === 'edit',
-        editAttribute: 'data-analytics-edit',
-        toggleAttribute: 'data-analytics-enabled',
-      })}</header>
+      ${controlPageHeaderMarkup({
+    title: 'Analytics',
+    description: 'Operational activity from persisted server data.',
+    enabled,
+    editing: state.mode === 'edit',
+    editAttribute: 'data-analytics-edit',
+    toggleAttribute: 'data-analytics-enabled',
+  })}
       ${statusMarkup}
       ${analyticsReportMarkup(snapshot, preferredRange)}
-      ${reportingMarkup(state, snapshot, enabled)}
+      ${reportingActionsMarkup(state)}
     </section>`;
 }
 

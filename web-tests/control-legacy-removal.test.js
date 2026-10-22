@@ -17,7 +17,8 @@ test('Control has one canonical feature style layer and no legacy domain stylesh
   const app = read('docs-site/control-app.js');
   const html = read('docs-site/control.html');
   assert.equal(app.includes('installDomainStyles'), false);
-  assert.equal(html.includes('/control-features.css?v=1'), true);
+  assert.equal(html.includes('/control-features.css?v=7'), true);
+  assert.equal(html.includes('control-emoji-picker.css'), false);
   for (const file of LEGACY_DOMAIN_STYLES) {
     assert.equal(app.includes(file), false, `${file} must not be loaded dynamically`);
     assert.equal(existsSync(new URL(`../docs-site/${file}`, import.meta.url)), false, `${file} must be deleted`);

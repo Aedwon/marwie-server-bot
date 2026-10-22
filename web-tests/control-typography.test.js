@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-const CONTROL_STYLES = ['control.css', 'control-features.css', 'control-emoji-picker.css'];
+const CONTROL_STYLES = ['control.css', 'control-features.css'];
 
 function sourceFor(name) {
   return readFileSync(new URL(`../docs-site/${name}`, import.meta.url), 'utf8');

@@ -3,9 +3,14 @@ import {
   registerControlPage,
   registeredControlPage,
 } from './control-page-registry.js';
-import { featureHeaderActionsMarkup } from './control-components.js';
+import {
+  contextDefinitionListMarkup,
+  contextSectionMarkup,
+  controlPageHeaderMarkup,
+  controlSectionMarkup,
+} from './control-components.js';
 import { featureResourceKeys } from './control-resource-contract.js';
-import { withResourceBindings } from './control-resource-bindings.js';
+import { resourceBindingState, withResourceBindings } from './control-resource-bindings.js';
 
 export const CONTENT_PAGE_CONFIGS = Object.freeze({
   '/control/content/feeds': Object.freeze({
@@ -128,10 +133,10 @@ function mappedResourceId(snapshot, key) {
   return row?.id && row.exists ? String(row.id) : null;
 }
 
-function mappedResourceLabel(snapshot, key, fallback) {
+function mappedResourceLabel(snapshot, key) {
   const row = resource(snapshot, key);
-  if (!row?.id) return `Not connected — configure ${fallback} in Mappings`;
-  if (!row.exists) return `Unavailable mapping — review ${fallback} in Mappings`;
+  if (!row?.id) return 'Not connected';
+  if (!row.exists) return 'Unavailable';
   return row.name ? `#${row.name}` : 'Connected Discord resource';
 }
 
@@ -302,13 +307,14 @@ function statusMarkup(state) {
 
 function contentHeaderMarkup(config, state, description) {
   const enabled = state.mode === 'edit' ? state.draft.enabled : state.persisted.enabled;
-  return `<header class="content-page-header"><div><h1>${escapeHtml(config.title)}</h1><p>${escapeHtml(description)}</p></div>${featureHeaderActionsMarkup({
-    label: config.title,
+  return controlPageHeaderMarkup({
+    title: config.title,
+    description,
     enabled,
     editing: state.mode === 'edit',
     editAttribute: 'data-content-edit',
     toggleAttribute: 'data-content-feature-toggle',
-  })}</header>`;
+  });
 }
 
 function settingsActionsMarkup(state) {
@@ -333,9 +339,9 @@ function feedRowRead(source) {
   return `
     <tr class="content-feed-row">
       <th scope="row"><strong>${escapeHtml(source.name)}</strong><span>${escapeHtml(source.category)}</span></th>
-      <td><a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.url)}</a></td>
-      <td>${escapeHtml(checked)}</td>
-      <td class="content-state" data-enabled="${String(source.enabled)}">${source.enabled ? 'Enabled' : 'Disabled'}</td>
+      <td data-label="URL"><a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.url)}</a></td>
+      <td data-label="Last checked">${escapeHtml(checked)}</td>
+      <td class="content-state" data-label="State" data-enabled="${String(source.enabled)}">${source.enabled ? 'Enabled' : 'Disabled'}</td>
     </tr>`;
 }
 
@@ -367,24 +373,23 @@ function feedRowEdit(source, state) {
 }
 
 function feedsMarkup(config, state, snapshot) {
-  const mapping = mappedResourceLabel(snapshot, 'ai_updates', 'AI updates');
+  const mapping = mappedResourceLabel(snapshot, 'ai_updates');
   const sources = state.mode === 'edit' ? state.draft.sources : state.persisted.sources;
   return `
     <section class="control-page content-page content-page-compact" data-page-key="/control/content/feeds">
       ${contentHeaderMarkup(config, state, 'Manage authoritative RSS and Atom sources. Automatic polling remains scheduled by Rob-bot.')}
       ${statusMarkup(state)}
-      <section class="control-section">
-        <div class="control-section-heading">
-          <div><h2>Sources</h2><p>Destination: ${escapeHtml(mapping)}. Change the destination in Mappings.</p></div>
-          ${state.mode === 'edit' ? '<button class="control-button control-button-secondary" type="button" data-source-add>Add source</button>' : ''}
-        </div>
-        ${state.mode === 'edit'
-    ? `<div class="content-feed-edit-list">${sources.length ? sources.map(source => feedRowEdit(source, state)).join('') : '<p class="content-empty">No feed sources are configured.</p>'}</div>`
-    : sources.length
-      ? `<div class="control-summary-table-wrap"><table class="control-summary-table content-feed-table"><thead><tr><th>Source</th><th>URL</th><th>Last checked</th><th>State</th></tr></thead><tbody>${sources.map(feedRowRead).join('')}</tbody></table></div>`
-      : '<p class="content-empty">No feed sources are configured.</p>'}
-        <p class="content-note">Manual feed polling is available through <code>/ai-source poll</code>, where fetched candidates are previewed before Post or Cancel. This Control page never polls or publishes feeds.</p>
-      </section>
+      ${controlSectionMarkup({
+    title: 'Sources',
+    description: `Destination: ${mapping}. Rob-bot posts fetched candidates there.`,
+    action: state.mode === 'edit' ? '<button class="control-button control-button-secondary" type="button" data-source-add>Add source</button>' : '',
+    body: `${state.mode === 'edit'
+      ? `<div class="content-feed-edit-list">${sources.length ? sources.map(source => feedRowEdit(source, state)).join('') : '<p class="content-empty">No feed sources are configured.</p>'}</div>`
+      : sources.length
+        ? `<div class="control-summary-table-wrap"><table class="control-summary-table content-feed-table"><thead><tr><th>Source</th><th>URL</th><th>Last checked</th><th>State</th></tr></thead><tbody>${sources.map(feedRowRead).join('')}</tbody></table></div>`
+        : '<p class="content-empty">No feed sources are configured.</p>'}
+        <p class="content-note">Manual feed polling is available through <code>/ai-source poll</code>, where fetched candidates are previewed before Post or Cancel. This Control page never polls or publishes feeds.</p>`,
+  })}
       ${settingsActionsMarkup(state)}
     </section>`;
 }
@@ -498,7 +503,7 @@ function announcementMarkup(config, state, snapshot) {
       ${settingsActionsMarkup(state)}
       <div class="content-announcement-layout">
         <section class="control-section content-announcement-composer">
-          <div class="control-section-heading"><div><h2>Announcement builder</h2><p>Composer values are local until you post.</p></div><button class="content-clear-action" type="button" data-announcement-clear>Clear all</button></div>
+          <div class="control-section-heading"><div><h2>Announcement builder</h2><p>Composer values are local until you post.</p></div><div class="content-announcement-actions"><button class="content-clear-action" type="button" data-announcement-clear>Clear all</button><button class="control-button control-button-primary content-announcement-post" type="button" data-announcement-send${canPost ? '' : ' disabled'}>Post</button></div></div>
           <label>Destination channel<select data-announcement-destination>${destinationOptions || '<option value="">No permitted text channels</option>'}</select></label>
           <label>Message / mentions<textarea maxlength="2000" rows="4" data-announcement-message placeholder="Literal Discord syntax: <@123>, <@&456>, <#789>, @everyone, @here">${escapeHtml(composer.message)}</textarea><span class="content-field-counter" data-announcement-counter="message">${announcementRemaining(composer.message, 2000)}</span></label>
           <label>Title<input type="text" maxlength="256" data-announcement-title value="${escapeHtml(composer.title)}"><span class="content-field-counter" data-announcement-counter="title">${announcementRemaining(composer.title, 256)}</span></label>
@@ -510,16 +515,74 @@ function announcementMarkup(config, state, snapshot) {
           <label>Image URL <span class="content-field-meta">1 max</span><input type="url" maxlength="1000" data-announcement-image value="${escapeHtml(composer.imageUrl)}" placeholder="https://example.com/image.png"></label>
           <p class="content-note">Message alone is postable. An embed is created only when Title and/or Body has content. Footer, color, and image apply only to that embed.</p>
         </section>
-        <section class="control-section content-announcement-preview">
-          <div class="content-preview-heading"><div><h2>Preview</h2><p>Final Discord rendering before publish.</p></div><button class="control-button control-button-primary content-announcement-post" type="button" data-announcement-send${canPost ? '' : ' disabled'}>Post</button></div>
-          <div class="discord-preview-shell" data-announcement-preview>${announcementPreviewMarkup(snapshot, composer)}</div>
-        </section>
       </div>
     </section>`;
 }
 
+function announcementContextMarkup(state, snapshot) {
+  const composer = ensureAnnouncementComposer(snapshot);
+  const canonical = resourceBindingState(snapshot, 'announcements');
+  const channel = (snapshot?.channels || []).find(item => String(item.id) === String(canonical.id || ''));
+  const enabled = state.mode === 'edit' ? state.draft.enabled : state.persisted.enabled;
+  const sendReady = channel?.send_messages === true;
+  const postReady = Boolean(enabled && canonical.tone === 'good' && announcementHasPostableContent(composer) && sendReady);
+  return `${contextSectionMarkup({
+    id: 'preview',
+    title: 'Preview',
+    description: 'Approximate Discord rendering before publish.',
+    body: `<div class="discord-preview-shell" data-announcement-preview>${announcementPreviewMarkup(snapshot, composer)}</div>`,
+  })}${contextSectionMarkup({
+    id: 'send-readiness',
+    title: 'Send readiness',
+    body: contextDefinitionListMarkup([
+      ...(state.mode === 'edit' ? [] : [{ label: 'Destination', value: `${canonical.name || canonical.current} (${canonical.label})` }]),
+      { label: 'Send permission', value: sendReady ? 'Allowed' : 'Missing Send Messages' },
+      { label: 'Feature', value: enabled ? 'Enabled' : 'Disabled' },
+      { label: 'Post', value: postReady ? 'Ready' : 'Add content or fix readiness' },
+    ]),
+  })}`;
+}
+
+function feedsContextMarkup(state, snapshot) {
+  const destination = resourceBindingState(snapshot, 'ai_updates');
+  return contextSectionMarkup({
+    id: 'polling',
+    title: 'Polling',
+    description: 'Rob-bot polls these sources on its own schedule.',
+    body: contextDefinitionListMarkup([
+      ...(state.mode === 'edit' ? [] : [{ label: 'Channel', value: `${destination.name || destination.current} (${destination.label})` }]),
+      { label: 'Manual poll', value: 'Use /ai-source poll in Discord' },
+      { label: 'Publishing', value: 'Control never posts feeds directly' },
+    ]),
+  });
+}
+
+function liveContextMarkup(state, snapshot) {
+  const destination = resourceBindingState(snapshot, 'live_announcements');
+  const ping = resourceBindingState(snapshot, 'live_ping_role');
+  const channel = (snapshot?.channels || []).find(item => String(item.id) === String(destination.id || ''));
+  if (state.mode === 'edit') {
+    return contextSectionMarkup({
+      id: 'dispatch-readiness',
+      title: 'Dispatch readiness',
+      body: contextDefinitionListMarkup([
+        { label: 'Send permission', value: channel?.send_messages === true ? 'Allowed' : 'Missing Send Messages' },
+      ]),
+    });
+  }
+  return contextSectionMarkup({
+    id: 'dispatch-readiness',
+    title: 'Dispatch readiness',
+    body: contextDefinitionListMarkup([
+      { label: 'Live announcements', value: `${destination.name || destination.current} (${destination.label})` },
+      { label: 'Send permission', value: channel?.send_messages === true ? 'Allowed' : 'Missing Send Messages' },
+      { label: 'Live ping role', value: `${ping.name || ping.current} (${ping.label})` },
+    ]),
+  });
+}
+
 function liveMarkup(config, state, snapshot) {
-  const destination = mappedResourceLabel(snapshot, 'live_announcements', 'Live announcements');
+  const destination = mappedResourceLabel(snapshot, 'live_announcements');
   const fallback = mappedResourceId(snapshot, 'live_announcements') || mappedResourceId(snapshot, 'announcements');
   const pingRole = resource(snapshot, 'live_ping_role');
   const pingAvailable = Boolean(pingRole?.id && pingRole.exists);
@@ -533,7 +596,7 @@ function liveMarkup(config, state, snapshot) {
         <ol class="content-dispatch-flow">
           <li><span class="content-dispatch-number">1</span><div><strong>Destination</strong><p>${escapeHtml(destination)}</p></div></li>
           <li><span class="content-dispatch-number">2</span><label>Topic<input type="text" maxlength="200" data-live-topic placeholder="Optional stream topic"><small>Optional. Included with the configured live-host notice.</small></label></li>
-          <li><span class="content-dispatch-number">3</span><label class="content-switch"><input type="checkbox" data-live-ping${pingAvailable ? '' : ' disabled'}><span>${pingAvailable ? `Ping ${escapeHtml(pingRole.name || 'configured Live role')}` : 'No Live ping role is connected in Mappings'}</span></label></li>
+          <li><span class="content-dispatch-number">3</span><label class="content-switch"><input type="checkbox" data-live-ping${pingAvailable ? '' : ' disabled'}><span>${pingAvailable ? `Ping ${escapeHtml(pingRole.name || 'configured Live role')}` : 'No Live ping role is connected'}</span></label></li>
         </ol>
         <div class="content-dispatch-actions"><button class="control-button control-button-primary" type="button" data-live-send${fallback && state.persisted.enabled ? '' : ' disabled'}>Post Live notice</button></div>
       </section>
@@ -582,9 +645,17 @@ export function createContentPageDefinition(pageKey) {
       return liveMarkup(config, state, snapshot);
     },
 
-    install({ root, store = controlState, snapshot, onSave, onAction, onConfirm, rerender } = {}) {
+    renderContext({ state, snapshot } = {}) {
+      if (!state?.persisted || !snapshot) return '';
+      if (config.kind === 'feeds') return feedsContextMarkup(state, snapshot);
+      if (config.kind === 'announcements') return announcementContextMarkup(state, snapshot);
+      return liveContextMarkup(state, snapshot);
+    },
+
+    install({ root, contextRoot, store = controlState, snapshot, onSave, onAction, onConfirm, rerender } = {}) {
       return installContentPageInteractions({
         root,
+        contextRoot,
         pageKey,
         store,
         snapshot,
@@ -605,7 +676,7 @@ export function registerContentPages() {
 
 function requireMappedId(snapshot, key, label) {
   const value = mappedResourceId(snapshot, key);
-  if (!value) throw new Error(`${label} is not connected in Mappings.`);
+  if (!value) throw new Error(`${label} is not connected.`);
   return value;
 }
 
@@ -641,7 +712,7 @@ export function buildAnnouncementAction(snapshot, input = {}) {
 export function buildLiveAction(snapshot, input = {}) {
   const channelId = mappedResourceId(snapshot, 'live_announcements')
     || mappedResourceId(snapshot, 'announcements');
-  if (!channelId) throw new Error('Live destination is not connected in Mappings.');
+  if (!channelId) throw new Error('Live destination is not connected.');
   const pingRoleId = input.pingConfiguredRole
     ? requireMappedId(snapshot, 'live_ping_role', 'Live ping role')
     : null;
@@ -699,7 +770,7 @@ function confirmationCopy(action) {
 }
 
 export function installContentPageInteractions({
-  root, pageKey, store = controlState, snapshot, onSave, onAction, onConfirm, rerender = () => {},
+  root, contextRoot, pageKey, store = controlState, snapshot, onSave, onAction, onConfirm, rerender = () => {},
 } = {}) {
   if (!root?.addEventListener) return () => {};
   let colorTrigger = null;
@@ -735,8 +806,10 @@ export function installContentPageInteractions({
       const counter = root.querySelector(`[data-announcement-counter="${key}"]`);
       if (counter) counter.textContent = String(announcementRemaining(composer[key], limit));
     }
-    const preview = root.querySelector('[data-announcement-preview]');
-    if (preview) preview.innerHTML = announcementPreviewMarkup(snapshot, composer);
+    for (const scope of [root, contextRoot]) {
+      const preview = scope?.querySelector?.('[data-announcement-preview]');
+      if (preview) preview.innerHTML = announcementPreviewMarkup(snapshot, composer);
+    }
     const send = root.querySelector('[data-announcement-send]');
     const enabled = store.get(pageKey)?.mode === 'edit' ? store.get(pageKey)?.draft?.enabled : store.get(pageKey)?.persisted?.enabled;
     if (send) send.disabled = !announcementCanPost(snapshot, composer, Boolean(enabled));

@@ -49,3 +49,25 @@ Completion requires:
 3. No route shows a header-only center, a reserved empty right column, raw enum labels, Mappings detour copy, or a legacy body layout.
 4. `npm run check:web`, `npm run test:web`, and `git diff --check` pass.
 5. The production and local-hosting promotion is recorded with commit identifiers and verification output.
+
+## Status on 2026-10-22
+
+The finish implementation is complete on `web/control-redesign-finish-r1`, based on production commit `c286a1b`. All 19 canonical routes were recomposed. One Control style layer remains. Responsive behavior covers wide desktop, 1024 with the context drawer, and 390 with stacked summary tables. Edit mode suppresses duplicate page-specific resource readiness and keeps the generic resource editor.
+
+Automated gates passed on this date: `npm run test:web` ran 247 tests with 0 failures, `npm run check:web` passed, and `git diff --check` was clean.
+
+### Live acceptance
+
+The signed-in capture ran against the real local server through `https://aidevph.aedwon.site` on 2026-10-21. That hostname routes to the local origin at `127.0.0.1:8787` and uses the same database and backend. The read capture has 162 images in `.visual-companion/control-finish-review/live-read`. The edit capture has 300 images in `.visual-companion/control-finish-review/live-edit`. The review covered all 19 routes at 1440 light and dark, 1024 with context closed and open, and 390 light and dark, in read and edit modes where edit mode exists.
+
+The real guild data included empty states for Quizzes questions, Feeds sources, Tickets types, and Analytics activity. Each empty state was explicit and did not leave a header-only center. The rest of the routes rendered real mappings, roles, channels, and activity.
+
+### Follow-up fix
+
+One defect was found during the live review. Notification roles rendered an inert feature toggle in edit mode and no state chip in read mode. The page has no `notification_roles` feature flag, so the toggle had no effect. The edit-mode toggle was removed for that page, and a render contract test now covers it. Asset versions were bumped to `control.css?v=18`, `control-features.css?v=7`, and `control-app.js?v=14`.
+
+The fixed Notification roles views were recaptured on the fixture server in `.visual-companion/control-finish-review/final4-notification-roles` (20 images). Two attempts to recapture the live edit views failed because the signed-in session expired overnight and the operator did not complete the new sign-in. The pre-fix live edit images for this route are not accepted for the header. The route is accepted with that known limitation. A live edit recapture remains optional.
+
+The other 18 routes are accepted from the live read and edit captures. The local web service was restored after the capture. The public host serves the previous local-hosting build again (`control.css?v=12`), and both the local and public `/healthz` endpoints return 200. The finish branch is committed locally but not pushed, merged, or promoted. The local hosting worktree was not reset, cleaned, or modified.
+
+No bot deploy was made. `main` was not changed.

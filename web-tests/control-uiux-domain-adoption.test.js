@@ -81,7 +81,7 @@ test('Analytics keeps its feature toggle in the header and report destination in
   const view = renderFeature(createAnalyticsPageDefinition(), snapshot);
   assert.match(view.center, /control-feature-header-actions/);
   assert.doesNotMatch(view.center, /Manage mappings/);
-  assert.match(view.context, /Analytics/);
+  assert.match(view.context, /Report destination/);
   view.store.beginEdit(view.wrapped.pageKey);
   const state = view.store.get(view.wrapped.pageKey);
   const editMarkup = view.wrapped.render({ state, snapshot });

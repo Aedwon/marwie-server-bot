@@ -208,10 +208,15 @@ function ensureActivityController() {
   return activityController;
 }
 
+function currentContextMarkup() {
+  return session?.authenticated
+    ? renderRegisteredControlContext(navState.current.path, { snapshot: guildState })
+    : '';
+}
+
 function renderMain() {
   removePageInteractions();
   removePageInteractions = () => {};
-
   const pageKey = navState.current.path;
   const activity = pageKey === '/control/activity' && session?.authenticated && guild
     ? ensureActivityController()
@@ -220,9 +225,7 @@ function renderMain() {
     ? renderRegisteredControlPage(pageKey, { snapshot: guildState })
     : null;
   const workflowMarkup = session?.authenticated ? workflowPageMarkup(pageKey) : '';
-  const contextMarkup = session?.authenticated
-    ? renderRegisteredControlContext(pageKey, { snapshot: guildState })
-    : '';
+  const contextMarkup = currentContextMarkup();
 
   syncContextAvailability({
     drawer: shell.contextDrawer,
@@ -464,6 +467,15 @@ installContextDrawerController({
   trigger: shell.contextButton,
   closeButton: shell.contextClose,
   mediaQuery: contextMedia,
+});
+contextMedia.addEventListener('change', () => {
+  syncContextAvailability({
+    drawer: shell.contextDrawer,
+    trigger: shell.contextButton,
+    root: shell.context,
+    markup: currentContextMarkup(),
+    mediaQuery: contextMedia,
+  });
 });
 installThemeControls({
   root: document.documentElement,
