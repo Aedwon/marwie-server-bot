@@ -95,3 +95,15 @@ The Vercel production site was stale at `control.css?v=8` because the production
 The finish branch was merged into `web/rob-bot-site-production` at `60229be` and pushed, with the promotion record at `7149107`. The finish is also integrated into the local hosting checkout at merge commit `f0a52ca` with its runtime edits preserved. The production host is `https://aidevph.aedwon.site/control`, served from the operator's laptop through the Cloudflare Tunnel and the `com.aedwon.marwie-server-web` LaunchAgent. The public host serves `control.css?v=25`, `control-app.js?v=18`, and `control-features.css?v=10`.
 
 Vercel is the rollback path, not the production host. Its failed build was also unblocked and deployed, but it does not define the production URL.
+
+## Status on 2026-10-23
+
+The live review requested three presentation corrections: hide all visible scrollbars, place each add control below its list including empty states, and match the emoji selector to the height of other form controls. The finish branch implements them with `control.css?v=26`, `control-features.css?v=11`, and `control-app.js?v=19`.
+
+A save failed with `Unknown resource key.` for the three anonymous-message channel mappings. The canonical resource set already contained those keys, but the web and worker page-save allowlists did not. Both allowlists and the Channels page revision now include `anon_messages_panel`, `anon_messages_submissions`, and `anon_messages_audit_log`.
+
+The earlier decision excluded a bot deploy. On 2026-10-23 the user explicitly approved a worker allowlist hotfix and a Rob-bot restart to unblock those saves. The restart reloaded the same production database and exposed the existing keys. No schema migration was made.
+
+Verification on 2026-10-23: finish web tests 278 pass, local hosting web tests 302 pass, bot tests 316 pass, `git diff --check` pass on all three changes, local and public `/healthz` return `{"ok":true}`, and the restarted bot published a fresh snapshot.
+
+Promotion commits: UI corrections `841497d`, web save fix `20fe6c7`, worker save fix `c6ad745`.

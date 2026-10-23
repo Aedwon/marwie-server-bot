@@ -1125,3 +1125,23 @@ Promotion record on 2026-10-22:
 - Live asset versions: `control.css?v=25`, `control-app.js?v=18`, and `control-features.css?v=10`.
 - Verification: `node scripts/local_web_hosting.mjs check` passed, `/healthz` returned `{"ok":true}`, and the public host served `control.css?v=25` with the new sidebar markup.
 - Vercel is the rollback path, not the production host. The failed Vercel build was also unblocked and deployed at `dpl_DRy82sYUU7H6c7pjQTCZCztLsuzE`. The project had automatic custom-domain assignment disabled. The custom domain was assigned to that deployment and automatic assignment was enabled.
+
+### Live UI corrections and save hotfix (2026-10-23)
+
+The live review requested three corrections: hide scrollbars, move every add control below its list, and match the emoji selector to the height of other form controls. The finish branch implements them and serves `control.css?v=26`, `control-features.css?v=11`, and `control-app.js?v=19`.
+
+A save failed with `Unknown resource key.` because the three anonymous-message channel mappings were absent from the web and worker resource allowlists. The web allowlist, worker page-save ownership, and Channels page revision now include `anon_messages_panel`, `anon_messages_submissions`, and `anon_messages_audit_log`. The user approved the worker hotfix and a Rob-bot restart on 2026-10-23.
+
+Verification:
+
+- Finish branch: `npm run check:web` pass, `npm run test:web` 278 pass, `git diff --check` pass.
+- Local hosting checkout: `npm run check:web` pass, `npm run test:web` 302 pass, `git diff --check` pass.
+- Bot: 316 tests pass.
+- Local and public `/healthz` return `{"ok":true}`.
+- Rob-bot is online with a refreshed snapshot after the restart.
+
+Commits:
+
+- UI corrections: `841497d`.
+- Web save fix: `20fe6c7`.
+- Worker save fix: `c6ad745`.
