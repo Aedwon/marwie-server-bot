@@ -98,6 +98,21 @@ test('Feeds keeps source edits local and emits one page-level save request', asy
   assert.equal(request.changes[3].payload.source_id, undefined);
 });
 
+test('Feeds places Add source after the source list', async () => {
+  const { createContentPageDefinition } = await contentModule();
+  const definition = createContentPageDefinition(PAGE_KEYS.feeds);
+  const store = createControlStateStore();
+  store.register(definition);
+  store.hydrate(PAGE_KEYS.feeds, snapshot(), 'c'.repeat(64));
+  store.beginEdit(PAGE_KEYS.feeds);
+  const state = store.get(PAGE_KEYS.feeds);
+
+  const markup = definition.render({ pageKey: PAGE_KEYS.feeds, state, snapshot: snapshot() });
+  const add = markup.indexOf('data-source-add');
+  assert.ok(add > markup.indexOf('content-feed-edit-list'), 'add control must follow the list');
+  assert.ok(add > markup.lastIndexOf('data-source-key'), 'add control must follow the last source');
+});
+
 test('Feeds validation preserves URL and source-field constraints', async () => {
   const { createContentPageDefinition } = await contentModule();
   const definition = createContentPageDefinition(PAGE_KEYS.feeds);

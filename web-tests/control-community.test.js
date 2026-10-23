@@ -177,6 +177,29 @@ test('Quizzes owns schedule and questions while quiz channel stays out of the ce
   assert.doesNotMatch(markup, /mappings|data-resource-key|set_resource|clear_resource/i);
 });
 
+test('Quizzes places the add-question control after the question bank', async () => {
+  const { createCommunityPageDefinition } = await communityModule();
+  const definition = createCommunityPageDefinition(QUIZZES);
+  const persisted = definition.selectPersisted(quizSnapshot());
+  const draft = definition.cloneDraft(persisted);
+  const markup = definition.render({
+    state: {
+      mode: 'edit',
+      status: 'dirty',
+      persisted,
+      draft,
+      errors: {},
+      dirty: true,
+      saveError: null,
+    },
+    snapshot: quizSnapshot(),
+  });
+
+  const add = markup.indexOf('data-community-add-question');
+  assert.ok(add > markup.indexOf('community-question-list'), 'add control must follow the list');
+  assert.ok(add > markup.lastIndexOf('data-question-index'), 'add control must follow the last question');
+});
+
 test('Voice & Coworking owns Temporary voice behavior and exposes canonical voice resources through Context', async () => {
   const { createCommunityPageDefinition } = await communityModule();
   const { withResourceBindings } = await import('../docs-site/control-resource-bindings.js');

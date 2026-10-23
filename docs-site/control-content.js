@@ -382,12 +382,12 @@ function feedsMarkup(config, state, snapshot) {
       ${controlSectionMarkup({
     title: 'Sources',
     description: `Destination: ${mapping}. Rob-bot posts fetched candidates there.`,
-    action: state.mode === 'edit' ? '<button class="control-button control-button-secondary" type="button" data-source-add>Add source</button>' : '',
     body: `${state.mode === 'edit'
       ? `<div class="content-feed-edit-list">${sources.length ? sources.map(source => feedRowEdit(source, state)).join('') : '<p class="content-empty">No feed sources are configured.</p>'}</div>`
       : sources.length
         ? `<div class="control-summary-table-wrap"><table class="control-summary-table content-feed-table"><thead><tr><th>Source</th><th>URL</th><th>Last checked</th><th>State</th></tr></thead><tbody>${sources.map(feedRowRead).join('')}</tbody></table></div>`
         : '<p class="content-empty">No feed sources are configured.</p>'}
+        ${state.mode === 'edit' ? '<div class="control-list-add"><button class="control-button control-button-secondary" type="button" data-source-add>Add source</button></div>' : ''}
         <p class="content-note">Manual feed polling is available through <code>/ai-source poll</code>, where fetched candidates are previewed before Post or Cancel. This Control page never polls or publishes feeds.</p>`,
   })}
       ${settingsActionsMarkup(state)}
