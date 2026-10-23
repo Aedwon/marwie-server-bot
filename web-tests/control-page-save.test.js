@@ -125,6 +125,41 @@ test('channels Mappings page owns all anonymous message channel mappings', () =>
   }
 });
 
+test('channels Mappings page save accepts anonymous message keys through the real action contract', () => {
+  const snowflake = '1546719767929552997';
+  const keys = [
+    'anon_messages_panel',
+    'anon_messages_submissions',
+    'anon_messages_audit_log',
+  ];
+
+  for (const key of keys) {
+    const result = validatePageSavePayload({
+      page_key: '/control/mappings/channels',
+      base_revision: 'a'.repeat(64),
+      changes: [
+        { action_type: 'set_resource', payload: { key, discord_id: snowflake } },
+      ],
+    }, {
+      normalizeActionType: realNormalizeActionType,
+      validateActionPayload: realValidateActionPayload,
+      HttpError,
+    });
+    assert.deepEqual(result.changes[0].payload, { key, discord_id: snowflake });
+
+    const cleared = validatePageSavePayload({
+      page_key: '/control/mappings/channels',
+      base_revision: 'a'.repeat(64),
+      changes: [{ action_type: 'clear_resource', payload: { key } }],
+    }, {
+      normalizeActionType: realNormalizeActionType,
+      validateActionPayload: realValidateActionPayload,
+      HttpError,
+    });
+    assert.deepEqual(cleared.changes[0].payload, { key });
+  }
+});
+
 test('notification role page-save resolves destination from Mappings and preserves full custom emoji', () => {
   const emoji = `<a:${'x'.repeat(32)}:1234567890123456789>`;
   assert.ok(emoji.length > 32);

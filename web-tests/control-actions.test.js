@@ -30,6 +30,26 @@ test('Discord snowflakes remain strings beyond JavaScript safe integer range', (
 });
 
 
+test('anonymous message channel mappings accept direct set and clear resource actions', () => {
+  const snowflake = '1546719767929552997';
+  const keys = [
+    'anon_messages_panel',
+    'anon_messages_submissions',
+    'anon_messages_audit_log',
+  ];
+
+  for (const key of keys) {
+    assert.deepEqual(
+      validateActionPayload(ACTIONS.SET_RESOURCE, { key, discord_id: snowflake }),
+      { key, discord_id: snowflake },
+    );
+    assert.deepEqual(
+      validateActionPayload(ACTIONS.CLEAR_RESOURCE, { key }),
+      { key },
+    );
+  }
+});
+
 test('compromised account trap accepts direct set and clear resource actions', () => {
   const snowflake = '1546719767929552997';
   assert.deepEqual(

@@ -37,7 +37,8 @@ const RESOURCE_KEYS = new Set([
   'moderation_log', 'message_log', 'ticket_panel', 'ticket_category', 'ticket_logs',
   'create_workspace_voice', 'temp_voice_category', 'coworking_lounge', 'announcements',
   'live_announcements', 'live_ping_role', 'role_panel', 'ai_updates', 'quiz_channel',
-  'anon_questions', 'analytics', 'showcase_forum',
+  'anon_questions', 'anon_messages_panel', 'anon_messages_submissions', 'anon_messages_audit_log',
+  'analytics', 'showcase_forum',
   'app_of_the_week', 'collab_lfg', 'builder_role', 'contributor_role', 'mentor_role', 'bot_log',
   'compromised_account_trap',
 ]);
