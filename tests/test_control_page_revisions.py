@@ -51,6 +51,31 @@ def test_reputation_change_updates_only_own_revision_contract() -> None:
     assert before["/control/community/quizzes"] == after["/control/community/quizzes"]
 
 
+def test_channels_revision_tracks_anonymous_message_and_trap_resources() -> None:
+    first = snapshot()
+    first["resources"].extend(
+        [
+            {"key": "anon_messages_panel", "id": "10"},
+            {"key": "anon_messages_submissions", "id": "11"},
+            {"key": "anon_messages_audit_log", "id": "12"},
+            {"key": "compromised_account_trap", "id": "13"},
+        ]
+    )
+    page_key = "/control/mappings/channels"
+    before = build_page_revisions(first)
+
+    for key in (
+        "anon_messages_panel",
+        "anon_messages_submissions",
+        "anon_messages_audit_log",
+        "compromised_account_trap",
+    ):
+        changed = deepcopy(first)
+        next(item for item in changed["resources"] if item["key"] == key)["id"] = "99"
+        after = build_page_revisions(changed)
+        assert before[page_key] != after[page_key]
+
+
 def test_runtime_observation_fields_do_not_create_configuration_conflicts() -> None:
     first = snapshot()
     first["quiz"]["last_posted_at"] = "2026-08-28T00:00:00Z"

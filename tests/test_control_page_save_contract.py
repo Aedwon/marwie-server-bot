@@ -68,6 +68,31 @@ def test_channels_mapping_page_owns_compromised_account_trap() -> None:
     }
 
 
+def test_channels_mapping_page_owns_anonymous_message_keys() -> None:
+    snowflake = "1546719767929552997"
+    for key in (
+        "anon_messages_panel",
+        "anon_messages_submissions",
+        "anon_messages_audit_log",
+    ):
+        payload = normalize(
+            {
+                "page_key": "/control/mappings/channels",
+                "base_revision": "a" * 64,
+                "changes": [
+                    {
+                        "action_type": "set_resource",
+                        "payload": {"key": key, "discord_id": snowflake},
+                    }
+                ],
+            }
+        )
+        assert payload["changes"][0]["payload"] == {
+            "key": key,
+            "discord_id": snowflake,
+        }
+
+
 def test_page_save_rejects_commands_only_and_cross_page_actions() -> None:
     with pytest.raises(ValueError, match="does not belong"):
         normalize(

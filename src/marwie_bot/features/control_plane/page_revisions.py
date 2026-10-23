@@ -21,10 +21,14 @@ CHANNEL_RESOURCE_KEYS = frozenset(
         "ai_updates",
         "quiz_channel",
         "anon_questions",
+        "anon_messages_panel",
+        "anon_messages_submissions",
+        "anon_messages_audit_log",
         "analytics",
         "showcase_forum",
         "app_of_the_week",
         "collab_lfg",
+        "compromised_account_trap",
     }
 )
 
