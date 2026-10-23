@@ -50,6 +50,34 @@ test('Ticket configuration batches feature, disable, re-enable, and create chang
   ]);
 });
 
+test('Ticket configuration places Add ticket type after the ticket list', async () => {
+  const { createUtilitiesPageDefinition } = await utilitiesModule();
+  const definition = createUtilitiesPageDefinition('/control/utilities/ticket-configuration');
+  const snapshot = {
+    features: [{ name: 'tickets', enabled: true }],
+    ticket_types: [
+      { key: 'support', label: 'Support', description: 'Staff help', enabled: true },
+      { key: 'report', label: 'Report', description: 'Private report', enabled: false },
+    ],
+    resources: [],
+  };
+  const persisted = definition.selectPersisted(snapshot);
+  const state = {
+    persisted,
+    draft: definition.cloneDraft(persisted),
+    mode: 'edit',
+    status: 'clean',
+    dirty: false,
+    errors: {},
+    saveError: null,
+  };
+
+  const markup = definition.render({ state, snapshot });
+  const add = markup.indexOf('data-ticket-add');
+  assert.ok(add > markup.indexOf('ticket-types-heading'), 'add control must follow the section heading');
+  assert.ok(add > markup.lastIndexOf('data-ticket-field="key"'), 'add control must follow the last ticket type');
+});
+
 test('Notification roles owns panel behavior but never the mapped destination', async () => {
   const { createUtilitiesPageDefinition } = await utilitiesModule();
   const definition = createUtilitiesPageDefinition('/control/utilities/notification-roles');
@@ -141,6 +169,10 @@ test('Notification roles renders server emoji choices and a Discord-style draft 
   assert.match(markup, /https:\/\/cdn\.discordapp\.com\/emojis\/1234\.webp/);
   assert.match(markup, /data-notification-preview-button/);
   assert.match(markup, /data-notification-preview-button[^>]*disabled/);
+  assert.ok(
+    markup.indexOf('data-notification-add') > markup.lastIndexOf('data-notification-row'),
+    'add control must follow the last notification button',
+  );
 });
 
 test('Notification roles preserves a configured emoji that is no longer available', async () => {

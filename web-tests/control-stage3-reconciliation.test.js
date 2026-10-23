@@ -16,7 +16,7 @@ test('Stage 3 app registers every canonical domain module and one canonical feat
     'workflowPageMarkup',
   ]) assert.match(app, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.doesNotMatch(app, /installDomainStyles/);
-  assert.match(html, /\/control-features\.css\?v=10/);
+  assert.match(html, /\/control-features\.css\?v=11/);
 });
 
 test('commands-only operations stay out of canonical feature page modules', () => {

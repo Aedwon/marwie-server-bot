@@ -352,6 +352,7 @@ fieldset.utility-editor-row + fieldset.utility-editor-row { margin-top: 12px; }
   border-bottom: 1px solid var(--stroke-subtle);
 }
 .control-list-row:last-child { border-bottom: 0; }
+.control-list-add { display: flex; justify-content: flex-start; padding-top: 14px; }
 .community-question-read { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
 .community-question-read > div { display: grid; gap: 2px; }
 .community-question-read > div > span { color: var(--text-tertiary); font-size: 13px; line-height: 18px; }
@@ -734,7 +735,11 @@ fieldset.utility-editor-row + fieldset.utility-editor-row { margin-top: 12px; }
 
 .utility-emoji-field { position: relative; }
 .utility-emoji-combobox { position: relative; }
-.utility-emoji-combobox > summary { min-height: 36px; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 10px; border: 1px solid var(--stroke-control); border-radius: var(--radius-control); background: var(--surface-primary); cursor: pointer; list-style: none; }
+.utility-emoji-combobox > summary { height: 36px; min-height: 36px; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 10px; border: 1px solid var(--stroke-control); border-radius: var(--radius-control); background: var(--surface-primary); cursor: pointer; list-style: none; }
+.utility-emoji-current { min-width: 0; display: flex; align-items: center; gap: 8px; }
+.utility-emoji-current > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.utility-emoji-placeholder { flex: 0 0 auto; color: var(--text-tertiary); }
+.utility-emoji-image { width: 18px; height: 18px; flex: 0 0 18px; object-fit: contain; }
 .utility-emoji-combobox > summary::marker { content: ""; }
 .utility-emoji-menu { position: absolute; z-index: 40; top: calc(100% + 6px); left: 0; right: 0; max-height: 280px; overflow: auto; padding: 8px; border: 1px solid var(--stroke-control); border-radius: 12px; background: var(--surface-primary); box-shadow: var(--shadow-floating); }
 .utility-emoji-search-label { display: grid; gap: 5px; padding: 4px; color: var(--text-tertiary); font-size: 12px; }
@@ -891,6 +896,7 @@ fieldset.utility-editor-row + fieldset.utility-editor-row { margin-top: 12px; }
 
 @media (max-width: 639px) {
   body:has(.control-save-bar) .control-changes-tray-mount { bottom: max(124px, calc(env(safe-area-inset-bottom) + 124px)); }
+  .control-main .utility-emoji-combobox > summary { height: 44px; min-height: 44px; }
 }
 
 @media (forced-colors: active) {

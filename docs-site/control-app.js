@@ -1,10 +1,10 @@
 import { identityMarkup, navigationMarkup, pageMarkup } from './control-components.js';
 import { installAccountMenu } from './control-account.js';
-import { registerContentPages } from './control-content.js';
+import { registerContentPages } from './control-content.js?v=19';
 import { registerAnalyticsPage } from './control-analytics.js';
-import { registerCommunityPages } from './control-community.js';
+import { registerCommunityPages } from './control-community.js?v=19';
 import { registerMappingPages } from './control-mappings.js';
-import { registerUtilitiesPages } from './control-utilities.js';
+import { registerUtilitiesPages } from './control-utilities.js?v=19';
 import { installThemeControls } from './control-theme.js';
 import { installContextDrawerController, syncContextAvailability, syncContextTriggers } from './control-layout.js';
 import { createChangesTrayController } from './control-tray.js';

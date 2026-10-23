@@ -519,8 +519,7 @@ function ticketPageMarkup({ state, snapshot } = {}) {
     id: 'ticket-types-heading',
     title: 'Ticket types',
     description: 'Create, edit, disable, or re-enable the choices shown to members. Disabled ticket types stay visible.',
-    action: editing ? '<button class="control-button control-button-secondary" type="button" data-ticket-add>Add ticket type</button>' : '',
-    body: editing ? ticketEditRows(state) : ticketReadRows(state.persisted.ticket_types),
+    body: `${editing ? ticketEditRows(state) : ticketReadRows(state.persisted.ticket_types)}${editing ? '<div class="control-list-add"><button class="control-button control-button-secondary" type="button" data-ticket-add>Add ticket type</button></div>' : ''}`,
   })}
       ${editing ? saveActions(state) : ''}
     </section>`;
@@ -578,7 +577,7 @@ function emojiImageMarkup(emoji, className = 'utility-emoji-image') {
 function emojiSummaryMarkup(snapshot, value) {
   const selected = String(value || '');
   if (!selected) {
-    return '<span class="utility-emoji-none" aria-hidden="true">—</span><span>None</span>';
+    return '<span class="utility-emoji-placeholder" aria-hidden="true">—</span><span>None</span>';
   }
   const emoji = serverEmojiForValue(snapshot, selected);
   if (emoji) {
@@ -586,9 +585,9 @@ function emojiSummaryMarkup(snapshot, value) {
   }
   const parsed = parseCustomEmoji(selected);
   if (parsed) {
-    return `<span class="utility-emoji-none" aria-hidden="true">?</span><span>Current emoji unavailable <small>:${escapeHtml(parsed.name)}:</small></span>`;
+    return `<span class="utility-emoji-placeholder" aria-hidden="true">?</span><span>Current emoji unavailable <small>:${escapeHtml(parsed.name)}:</small></span>`;
   }
-  return `<span class="utility-emoji-none" aria-hidden="true">?</span><span>${escapeHtml(selected)}</span>`;
+  return `<span class="utility-emoji-placeholder" aria-hidden="true">?</span><span>${escapeHtml(selected)}</span>`;
 }
 
 function emojiLabel(snapshot, value) {
@@ -794,10 +793,10 @@ function notificationPageMarkup({ state, snapshot } = {}) {
               </div>
               <div class="utility-section-heading utility-subheading">
                 <div><h3>Buttons</h3><p>Choose the role, label, emoji, and visual style for each button.</p></div>
-                <button class="control-button control-button-secondary" type="button" data-notification-add${state.draft.buttons.length >= 25 ? ' disabled' : ''}>Add button</button>
               </div>
               ${buttonError ? `<p class="utility-field-error" role="alert">${escapeHtml(buttonError)}</p>` : ''}
               ${notificationButtonRows(state, snapshot)}
+              <div class="control-list-add"><button class="control-button control-button-secondary" type="button" data-notification-add${state.draft.buttons.length >= 25 ? ' disabled' : ''}>Add button</button></div>
             </div>
             ${notificationPreviewMarkup(state.draft, snapshot)}
           </div>
