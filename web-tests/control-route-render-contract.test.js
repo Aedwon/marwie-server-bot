@@ -109,6 +109,7 @@ test('every feature route renders its editable fields in edit mode', () => {
     assert.ok(markup, `${pageKey} must render in edit mode`);
     assertContains(markup, EDIT_EXPECTATIONS[pageKey], `${pageKey} edit mode`);
     assert.match(markup, /class="[^"]*control-save-bar[^"]*"/, `${pageKey} must use the shared floating save bar`);
+    assert.match(markup, /data-save-bar-status/, `${pageKey} must show pending changes in the save bar`);
     assert.match(markup, /Save changes/, `${pageKey} must expose Save changes`);
     assert.match(markup, /Discard/, `${pageKey} must expose Discard`);
     controlState.discard(pageKey);

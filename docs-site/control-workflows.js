@@ -5,7 +5,8 @@ import {
   controlPageHeaderMarkup,
   controlSectionMarkup,
   controlSimplePageHeaderMarkup,
-} from './control-components.js';
+  saveBarStatusMarkup,
+} from './control-components.js?v=22';
 import { featureResourceKeys } from './control-resource-contract.js';
 import { resourceBindingState, withResourceBindings } from './control-resource-bindings.js';
 
@@ -251,7 +252,7 @@ function createModerationPageDefinition() {
         toggleAttribute: 'data-workflow-enabled',
       });
       const saveActions = editing
-        ? `<div class="workflow-save-actions control-save-bar"><button class="control-button control-button-primary" type="button" data-workflow-save${state.dirty && !Object.keys(state.errors || {}).length && state.status !== 'saving' ? '' : ' disabled'}>${state.status === 'saving' ? 'Saving…' : 'Save changes'}</button><button class="control-button control-button-secondary" type="button" data-workflow-discard${state.status === 'saving' ? ' disabled' : ''}>Discard</button></div>`
+        ? `<div class="workflow-save-actions control-save-bar">${saveBarStatusMarkup(state)}<button class="control-button control-button-primary" type="button" data-workflow-save${state.dirty && !Object.keys(state.errors || {}).length && state.status !== 'saving' ? '' : ' disabled'}>${state.status === 'saving' ? 'Saving…' : 'Save changes'}</button><button class="control-button control-button-secondary" type="button" data-workflow-discard${state.status === 'saving' ? ' disabled' : ''}>Discard</button></div>`
         : '';
       const configuration = controlSectionMarkup({
         id: 'moderation-configuration',

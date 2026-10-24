@@ -3,7 +3,7 @@ import {
   registerControlPage,
   registeredControlPage,
 } from './control-page-registry.js';
-import { contextDefinitionListMarkup, contextSectionMarkup, controlPageHeaderMarkup } from './control-components.js';
+import { contextDefinitionListMarkup, contextSectionMarkup, controlPageHeaderMarkup, saveBarStatusMarkup } from './control-components.js?v=22';
 import { featureResourceKeys } from './control-resource-contract.js';
 import { resourceBindingState, withResourceBindings } from './control-resource-bindings.js';
 
@@ -214,7 +214,7 @@ function analyticsReportMarkup(snapshot, requestedRange) {
 
 function reportingActionsMarkup(state) {
   if (state.mode !== 'edit') return '';
-  return `<div class="analytics-page-actions control-save-bar"><button class="control-button control-button-primary" type="button" data-analytics-save${state.dirty && state.status !== 'saving' ? '' : ' disabled'}>${state.status === 'saving' ? 'Saving…' : 'Save changes'}</button><button class="control-button control-button-secondary" type="button" data-analytics-discard${state.status === 'saving' ? ' disabled' : ''}>Discard</button></div>`;
+  return `<div class="analytics-page-actions control-save-bar">${saveBarStatusMarkup(state)}<button class="control-button control-button-primary" type="button" data-analytics-save${state.dirty && state.status !== 'saving' ? '' : ' disabled'}>${state.status === 'saving' ? 'Saving…' : 'Save changes'}</button><button class="control-button control-button-secondary" type="button" data-analytics-discard${state.status === 'saving' ? ' disabled' : ''}>Discard</button></div>`;
 }
 
 export function createAnalyticsPageDefinition() {

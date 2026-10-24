@@ -3,7 +3,7 @@ import {
   registerControlPage,
   registeredControlPage,
 } from './control-page-registry.js';
-import { controlSimplePageHeaderMarkup } from './control-components.js';
+import { controlSimplePageHeaderMarkup, saveBarStatusMarkup } from './control-components.js?v=22';
 
 const COMPROMISED_ACCOUNT_TRAP_KEY = 'compromised_account_trap';
 const CHANNEL_KEYS = Object.freeze([
@@ -552,6 +552,7 @@ export function mappingPageMarkup({ pageKey, state, snapshot } = {}) {
         ${destructiveMappingMarkup(pageKey, state)}
         ${suggestionMarkup(pageKey, snapshot)}
         <div class="mapping-page-actions control-save-bar">
+          ${saveBarStatusMarkup(state)}
           <button class="control-button control-button-primary" type="button" data-mapping-save${state.dirty && !Object.keys(state.errors || {}).length && state.status !== 'saving' ? '' : ' disabled'}>${state.status === 'saving' ? 'Saving…' : 'Save changes'}</button>
           <button class="control-button control-button-secondary" type="button" data-mapping-discard${state.status === 'saving' ? ' disabled' : ''}>Discard</button>
         </div>

@@ -16,6 +16,7 @@ function pageState(definition) {
     draft: undefined,
     revision: null,
     dirty: false,
+    changeCount: 0,
     errors: {},
     saveError: null,
     conflictRevision: null,
@@ -28,12 +29,16 @@ function pageState(definition) {
 function recalculate(state) {
   if (state.draft === undefined || state.persisted === undefined) {
     state.dirty = false;
+    state.changeCount = 0;
     state.errors = {};
     return state;
   }
   state.errors = state.definition.validateDraft?.(state.draft) || {};
   const diff = state.definition.diffDraft(state.persisted, state.draft) || [];
   state.dirty = diff.length > 0 || state.retryChanges.length > 0;
+  state.changeCount = state.dirty
+    ? Math.max(1, diff.length, state.retryChanges.length)
+    : 0;
   if (state.status !== 'saving' && state.status !== 'conflict') {
     state.status = state.dirty ? 'dirty' : 'clean';
   }
@@ -104,6 +109,7 @@ export function createControlStateStore() {
         : clone(state.persisted);
       state.errors = {};
       state.dirty = false;
+      state.changeCount = 0;
       state.saveError = null;
       state.conflictRevision = null;
       state.pendingRequest = null;
@@ -169,6 +175,7 @@ export function createControlStateStore() {
           ? state.definition.cloneDraft(state.persisted)
           : clone(state.persisted);
         state.dirty = false;
+        state.changeCount = 0;
         state.errors = {};
         state.mode = 'read';
         state.status = 'saved';

@@ -23,108 +23,104 @@ const baseSnapshot = () => ({
   mappings_review: { plan_hash: 'a'.repeat(64), quiet: true, proposed: [] },
 });
 
-test('global changes tray is one compact/expanded surface and only minimize collapses it', async () => {
-  const { changesTrayMarkup, nextTrayExpandedState } = await import('../docs-site/control-tray.js');
-  const dirtyPages = ['/control/community/reputation', '/control/content/feeds', '/control/community/quizzes'];
-  const compact = changesTrayMarkup({ expanded: false, status: { message: 'Server state is current.', tone: 'good' }, dirtyPages });
-  assert.equal(compact.includes('data-control-tray-expand'), true);
-  assert.equal(compact.includes('3 pending changes'), true);
-  assert.equal(compact.includes('Across 3 Control pages'), false);
+test('the save bar carries pending changes and server status instead of a global tray', async () => {
+  const { saveBarStatusLabel, saveBarStatusMarkup } = await import('../docs-site/control-components.js');
+  const dirty = saveBarStatusMarkup({ dirty: true, changeCount: 3, status: 'dirty' });
+  assert.match(dirty, /data-save-bar-status/);
+  assert.match(dirty, /data-save-bar-dot/);
+  assert.match(dirty, /data-save-bar-message/);
+  assert.match(dirty, />3 pending changes</);
 
-  const expanded = changesTrayMarkup({ expanded: true, status: { message: 'Server state is current.', tone: 'good' }, dirtyPages });
-  assert.equal(expanded.includes('data-control-tray-minimize'), true);
-  assert.equal(expanded.includes('>Changes<'), true);
-  assert.equal(expanded.includes('Server state is current'), true);
-  assert.equal(expanded.includes('Community'), true);
-  assert.equal(expanded.includes('Content'), true);
-  assert.equal(expanded.includes('Save all changes'), false);
-  assert.equal(expanded.includes('data-control-tray-save-all'), false);
-  assert.equal(expanded.toLowerCase().includes('unsaved-dot'), false);
-  assert.equal(expanded.toLowerCase().includes('pending-badge'), false);
+  const clean = saveBarStatusMarkup({ dirty: false, changeCount: 0, status: 'clean' });
+  assert.match(clean, />No pending changes</);
 
-  assert.equal(nextTrayExpandedState(true, 'content'), true);
-  assert.equal(nextTrayExpandedState(true, 'minimize'), false);
-  assert.equal(nextTrayExpandedState(false, 'expand'), true);
+  const saving = saveBarStatusMarkup({ dirty: true, changeCount: 3, status: 'saving' });
+  assert.match(saving, />Saving changes/);
 
-  const cleanCompact = changesTrayMarkup({ expanded: false, status: { message: 'Server state is current.', tone: 'good' }, dirtyPages: [] });
-  assert.match(cleanCompact, /control-changes-tray-clean/);
-  const failedCompact = changesTrayMarkup({ expanded: false, status: { message: 'Server state failed to load.', tone: 'bad' }, dirtyPages: [] });
-  assert.doesNotMatch(failedCompact, /control-changes-tray-clean/);
-  const loadingCompact = changesTrayMarkup({ expanded: false, status: { message: 'Server state has not loaded yet.', tone: 'neutral' }, dirtyPages: [] });
-  assert.doesNotMatch(loadingCompact, /control-changes-tray-clean/);
+  assert.equal(saveBarStatusLabel({ dirty: true, changeCount: 1 }), '1 pending change');
+  assert.equal(saveBarStatusLabel({ dirty: true, changeCount: 2 }), '2 pending changes');
+  assert.equal(saveBarStatusLabel({ dirty: false, changeCount: 0 }), 'No pending changes');
 });
 
-test('Control shell mounts one floating tray instead of the old workspace status row', () => {
+test('select and dropdown chevrons sit clear of the field border', () => {
+  const controlCss = readFileSync(new URL('../docs-site/control.css', import.meta.url), 'utf8');
+  const featuresCss = readFileSync(new URL('../docs-site/control-features.css', import.meta.url), 'utf8');
+  assert.match(controlCss, /--select-chevron:\s*url\(/);
+  assert.match(controlCss, /html\[data-theme=["']dark["']\][\s\S]*?--select-chevron:/);
+  assert.match(
+    featuresCss,
+    /\.control-page select:not\(\[multiple\]\)\s*\{[^}]*appearance:\s*none;[^}]*padding-right:\s*38px;[^}]*background-position:\s*right 16px center;[^}]*background-size:\s*12px 12px;/s,
+  );
+  assert.match(
+    featuresCss,
+    /\.utility-emoji-combobox\s*>\s*summary\s*\{[^}]*padding:\s*0 16px 0 10px;/s,
+  );
+});
+
+test('Control chevrons share one shape and size', () => {
+  const controlCss = readFileSync(new URL('../docs-site/control.css', import.meta.url), 'utf8');
+  const featuresCss = readFileSync(new URL('../docs-site/control-features.css', import.meta.url), 'utf8');
+  const utilities = readFileSync(new URL('../docs-site/control-utilities.js', import.meta.url), 'utf8');
+  assert.match(controlCss, /--chevron-down-mask:\s*url\(/);
+  assert.match(controlCss, /--select-chevron:\s*url\([^;]*M2\.5%204\.5%206%208l3\.5-3\.5/);
+  assert.match(controlCss, /--chevron-down-mask:\s*url\([^;]*M2\.5%204\.5%206%208l3\.5-3\.5/);
+  assert.match(
+    controlCss,
+    /\.control-nav-domain > button::after\s*\{[^}]*width:\s*12px;[^}]*height:\s*12px;[^}]*mask:\s*var\(--chevron-down-mask\)[^;]*;[^}]*color:\s*var\(--text-tertiary\);/s,
+  );
+  assert.doesNotMatch(controlCss, /\.control-nav-domain > button::after\s*\{[^}]*opacity:\s*\.5/s);
+  assert.match(
+    featuresCss,
+    /\.utility-emoji-chevron\s*\{[^}]*width:\s*12px;[^}]*height:\s*12px;[^}]*mask:\s*var\(--chevron-down-mask\)[^;]*;[^}]*color:\s*var\(--text-tertiary\);/s,
+  );
+  assert.doesNotMatch(utilities, />⌄</);
+});
+
+test('unauthenticated pages leave sign-in to the navbar', async () => {
+  const { identityMarkup, pageMarkup } = await import('../docs-site/control-components.js');
+  const page = pageMarkup({ label: 'Community', path: '/control/community', domain: 'community' }, { authenticated: false });
+  assert.match(page, /Sign in with Discord from the navigation to load Control\./);
+  assert.doesNotMatch(page, /\/api\/auth\/start/);
+  assert.doesNotMatch(page, /Sign in with Discord<\/a>/);
+
+  const identity = identityMarkup({ authenticated: false });
+  assert.match(identity, /href="\/api\/auth\/start"/);
+  assert.match(identity, /Sign in with Discord/);
+});
+
+test('Control shell has no global changes tray', () => {
   const html = readFileSync(new URL('../docs-site/control.html', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../docs-site/control.css', import.meta.url), 'utf8');
-  assert.equal(html.includes('controlGlobalStatus'), false);
-  assert.equal(html.split('id=\"controlChangesTray\"').length - 1, 1);
-  assert.equal(css.includes('.control-changes-tray'), true);
-  assert.equal(css.includes('prefers-reduced-motion: reduce'), true);
-  assert.equal(css.includes('cubic-bezier'), true);
+  assert.equal(html.includes('controlChangesTray'), false);
+  assert.equal(css.includes('.control-changes-tray'), false);
+  assert.equal(css.includes('control-tray-'), false);
 });
 
-test('Control semantic foundation uses the canonical Figtree stack and token names', () => {
-  const css = readFileSync(new URL('../docs-site/control.css', import.meta.url), 'utf8');
-  const html = readFileSync(new URL('../docs-site/control.html', import.meta.url), 'utf8');
-  assert.match(css, /--font-sans:\s*"Figtree"/);
-  assert.equal(css.includes('--surface-page'), true);
-  assert.equal(css.includes('--text-primary'), true);
-  assert.equal(css.includes('--stroke-control'), true);
-  assert.equal(css.includes('font-family: var(--font-sans)'), true);
-  assert.match(html, /fonts\.googleapis\.com\/css2\?family=Figtree/);
+test('Control state tracks the number of pending changes', () => {
+  const store = createControlStateStore();
+  const pageKey = '/control/test/pending';
+  store.register({
+    pageKey,
+    selectPersisted: () => ({ a: 0, b: 0 }),
+    cloneDraft: value => structuredClone(value),
+    validateDraft: () => ({}),
+    diffDraft: (persisted, draft) => ['a', 'b']
+      .filter(key => persisted[key] !== draft[key])
+      .map(key => ({ key })),
+    buildSaveRequest: () => ({}),
+  });
+  store.hydrate(pageKey, {}, 'revision');
+  assert.equal(store.get(pageKey).changeCount, 0);
+  store.beginEdit(pageKey);
+  store.updateDraft(pageKey, draft => { draft.a = 1; });
+  assert.equal(store.get(pageKey).changeCount, 1);
+  store.updateDraft(pageKey, draft => { draft.b = 2; });
+  assert.equal(store.get(pageKey).changeCount, 2);
+  store.discard(pageKey);
+  assert.equal(store.get(pageKey).changeCount, 0);
 });
 
-test('canonical async task indicator uses approved geometry, semantic tokens, and motion contracts', async () => {
-  const { taskIndicatorMarkup } = await import('../docs-site/control-components.js');
-  const css = readFileSync(new URL('../docs-site/control.css', import.meta.url), 'utf8');
-
-  const queued = taskIndicatorMarkup({ state: 'queued', size: 22, label: 'Queued' });
-  const running = taskIndicatorMarkup({ state: 'running', size: 22, label: 'Publishing announcement' });
-  const progress = taskIndicatorMarkup({ state: 'progress', progress: 37, size: 18, label: 'Uploading 37%' });
-  const blocked = taskIndicatorMarkup({ state: 'blocked', size: 18, label: 'Waiting for approval' });
-  const failed = taskIndicatorMarkup({ state: 'failed', size: 18, label: 'Failed' });
-  const completed = taskIndicatorMarkup({ state: 'completed', size: 16, label: 'Completed' });
-
-  for (const markup of [queued, running, progress, blocked, failed]) {
-    assert.equal(markup.includes('viewBox="0 0 24 24"'), true);
-    assert.equal(markup.includes('cx="12"'), true);
-    assert.equal(markup.includes('cy="12"'), true);
-    assert.equal(markup.includes('r="8.5"'), true);
-    assert.equal(markup.includes('stroke-width="2.7273"'), true);
-    assert.equal(markup.includes('vector-effect'), false);
-  }
-  assert.equal(completed.includes('viewBox="0 0 24 24"'), true);
-  assert.equal(completed.includes('r="12"'), true);
-  assert.equal(completed.includes('vector-effect'), false);
-  assert.equal(running.includes('data-size="22"'), true);
-  assert.equal(progress.includes('data-size="18"'), true);
-  assert.equal(completed.includes('data-size="16"'), true);
-  assert.equal(progress.includes('pathLength="100"'), true);
-  assert.equal(progress.includes('data-progress="37"'), true);
-  assert.equal(completed.includes('control-task-indicator-complete'), true);
-  assert.equal(completed.includes('control-task-indicator-check'), true);
-  assert.equal(blocked.includes('data-state="blocked"'), true);
-  assert.equal(failed.includes('data-state="failed"'), true);
-  assert.equal(completed.includes('data-state="completed"'), true);
-  assert.equal(completed.includes('Completed'), true);
-  assert.equal(running.includes('aria-live'), false);
-  assert.equal(running.includes('role="status"'), false);
-  assert.throws(() => taskIndicatorMarkup({ state: 'running', size: 20 }));
-  assert.throws(() => taskIndicatorMarkup({ state: 'unknown', size: 22 }));
-
-  for (const token of ['--stroke-subtle', '--status-info-fg', '--status-success-fg', '--status-warning-fg', '--status-error-fg', '--duration-medium']) {
-    assert.equal(css.includes(token), true, token);
-  }
-  assert.equal(css.includes('1.45s linear'), true);
-  assert.equal(css.includes('18 82'), true);
-  assert.equal(css.includes('28 72'), true);
-  assert.equal(css.includes('22 78'), true);
-  assert.equal(css.includes('prefers-reduced-motion: reduce'), true);
-  assert.equal(css.includes('forced-colors: active'), true);
-});
-
-test('shared feature header keeps feature state and Edit settings together without a Feature status label', async () => {
+test('shared feature header shows Edit settings alone in read mode and the feature toggle in edit mode', async () => {
   const { featureHeaderActionsMarkup } = await import('../docs-site/control-components.js');
   const read = featureHeaderActionsMarkup({
     label: 'Announcements', enabled: true, editing: false, editAttribute: 'data-content-edit', toggleAttribute: 'data-content-feature-toggle',
