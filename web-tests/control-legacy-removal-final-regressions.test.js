@@ -35,6 +35,6 @@ test('context column reserves its own track and never pads the center workspace'
   assert.doesNotMatch(shellCss, /padding-right:\s*calc\(var\(--control-right-width\)/);
 });
 
-test('mobile pending-changes tray can wrap within safe viewport insets', () => {
-  assert.match(shellCss, /\.control-changes-tray-compact\s*\{[\s\S]*?width:\s*auto;[\s\S]*?max-width:\s*100%;[\s\S]*?white-space:\s*normal;/);
+test('mobile save bar status wraps inside the floating action bar', () => {
+  assert.match(featureCss, /\.control-save-bar-status\s*\{[\s\S]*?min-width:\s*0;[\s\S]*?overflow-wrap:\s*anywhere;/);
 });

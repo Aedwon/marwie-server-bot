@@ -1,18 +1,17 @@
-import { identityMarkup, navigationMarkup, pageMarkup } from './control-components.js';
+import { identityMarkup, navigationMarkup, pageMarkup } from './control-components.js?v=22';
 import { installAccountMenu } from './control-account.js';
-import { registerContentPages } from './control-content.js?v=19';
-import { registerAnalyticsPage } from './control-analytics.js';
-import { registerCommunityPages } from './control-community.js?v=19';
-import { registerMappingPages } from './control-mappings.js';
-import { registerUtilitiesPages } from './control-utilities.js?v=19';
+import { registerContentPages } from './control-content.js?v=20';
+import { registerAnalyticsPage } from './control-analytics.js?v=20';
+import { registerCommunityPages } from './control-community.js?v=20';
+import { registerMappingPages } from './control-mappings.js?v=20';
+import { registerUtilitiesPages } from './control-utilities.js?v=21';
 import { installThemeControls } from './control-theme.js';
 import { installContextDrawerController, syncContextAvailability, syncContextTriggers } from './control-layout.js';
-import { createChangesTrayController } from './control-tray.js';
 import { createNavigationState, installDrawerController, navigationModel } from './control-navigation.js';
 import { installShellLayout, readNavPreference, writeNavPreference } from './control-shell-layout.js';
 import { navGroupForPath, resolveControlRoute } from './control-router.js';
 import { createActivityController, installActivityPage } from './control-secondary.js';
-import { registerWorkflowPages, workflowPageMarkup } from './control-workflows.js';
+import { registerWorkflowPages, workflowPageMarkup } from './control-workflows.js?v=20';
 import {
   controlState,
   hydrateControlPages,
@@ -42,7 +41,6 @@ const shell = {
   close: document.querySelector('#controlNavClose'),
   main: document.querySelector('#controlMain'),
   identity: document.querySelector('#controlIdentity'),
-  tray: document.querySelector('#controlChangesTray'),
   contextDrawer: document.querySelector('#controlContextDrawer'),
   context: document.querySelector('#controlContext'),
   contextButton: document.querySelector('#controlContextButton'),
@@ -61,6 +59,7 @@ let navPreference = readNavPreference(localStorage);
 let shellLayout = null;
 let navDrawer = null;
 let contextDrawer = null;
+let serverStatus = { message: 'Server state has not loaded yet.', tone: 'neutral' };
 
 
 registerCommunityPages();
@@ -70,10 +69,20 @@ registerAnalyticsPage();
 registerWorkflowPages();
 registerMappingPages();
 
-const changesTray = createChangesTrayController({
-  root: shell.tray,
-  getDirtyPages: () => controlState.dirtyPages(),
-});
+function syncSaveBarStatus() {
+  const status = shell.main?.querySelector?.('[data-save-bar-status]');
+  if (!status) return;
+  const tone = serverStatus.tone || 'neutral';
+  status.dataset.tone = tone;
+  status.title = serverStatus.message;
+  const dot = status.querySelector?.('[data-save-bar-dot]');
+  if (dot) dot.dataset.tone = tone;
+  const message = status.querySelector?.('[data-save-bar-message]');
+  if (!message) return;
+  const show = tone === 'bad' && Boolean(serverStatus.message);
+  message.hidden = !show;
+  message.textContent = show ? serverStatus.message : '';
+}
 
 function readJson(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key) || '') || fallback; } catch { return fallback; }
@@ -280,7 +289,7 @@ function renderMain() {
   shellLayout?.refresh();
   syncShellChrome();
   shell.main.focus({ preventScroll: true });
-  changesTray.render();
+  syncSaveBarStatus();
 }
 
 function navigate(path, { replace = false } = {}) {
@@ -298,7 +307,11 @@ function navigate(path, { replace = false } = {}) {
 }
 
 function setStatus(message, tone = '') {
-  changesTray.setStatus(message, tone);
+  serverStatus = {
+    message: message || '',
+    tone: tone === 'good' || tone === 'bad' ? tone : 'neutral',
+  };
+  syncSaveBarStatus();
 }
 
 async function request(url, options = {}) {

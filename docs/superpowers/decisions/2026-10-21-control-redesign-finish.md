@@ -98,7 +98,7 @@ Vercel is the rollback path, not the production host. Its failed build was also 
 
 ## Status on 2026-10-23
 
-The live review requested three presentation corrections: hide all visible scrollbars, place each add control below its list including empty states, and match the emoji selector to the height of other form controls. The finish branch implements them with `control.css?v=26`, `control-features.css?v=11`, and `control-app.js?v=19`.
+The live review requested four presentation corrections: hide all visible scrollbars, place each add control below its list including empty states, match the emoji selector to the height of other form controls, and lay out the Resources editor fields in three columns at wide widths, two at medium widths, and one at narrow widths. The finish branch implements them with `control.css?v=26`, `control-features.css?v=12`, and `control-app.js?v=19`.
 
 A save failed with `Unknown resource key.` for the three anonymous-message channel mappings. The canonical resource set already contained those keys, but the web and worker page-save allowlists did not. Both allowlists and the Channels page revision now include `anon_messages_panel`, `anon_messages_submissions`, and `anon_messages_audit_log`.
 
@@ -107,3 +107,25 @@ The earlier decision excluded a bot deploy. On 2026-10-23 the user explicitly ap
 Verification on 2026-10-23: finish web tests 278 pass, local hosting web tests 302 pass, bot tests 316 pass, `git diff --check` pass on all three changes, local and public `/healthz` return `{"ok":true}`, and the restarted bot published a fresh snapshot.
 
 Promotion commits: UI corrections `841497d`, web save fix `20fe6c7`, worker save fix `c6ad745`.
+
+## Save bar status follow-up on 2026-10-23
+
+The separate fixed pending-changes pill was removed. Its purpose moved into the shared floating save bar on every editable page. The bar now shows `No pending changes`, `N pending change` or `N pending changes`, or `Saving changes…`, plus a server-status dot. A failed fresh-state load shows its message inside the bar instead of behind an expandable tray. The old Utilities-only status text was replaced by the shared status.
+
+The changes tray module, mount, styles, and tray-specific tests were deleted. The pending count comes from the state store and falls back to the rendered diff when an older cached state module lacks the stored count.
+
+Asset versions are `control.css?v=27`, `control-features.css?v=13`, and `control-app.js?v=20`. The changed page modules and the shared component module are imported with `?v=20` so cached modules cannot mask the new save bar. The finish branch passes 281 web tests and the local hosting checkout passes 303. Both pass `npm run check:web` and `git diff --check`. The public host serves the three versions, has no tray mount, and returns a healthy `/healthz`.
+
+## Chevron follow-up on 2026-10-24
+
+The live review found that select and dropdown chevrons sat too close to the right border, then that the remaining chevrons used different shapes. All Control chevrons now share one 12px by 12px SVG path with 1.5px rounded strokes. Native selects, the Emoji dropdown, and navigation domain groups use the same path. Selects use a colored background image, while the Emoji and navigation chevrons use a shared mask so they follow `currentColor`.
+
+The select arrow sits 16px inside the right border, with 38px of right padding for option text. The Emoji summary uses the same 16px right inset. Navigation chevrons sit 16px from the button edge after padding and margin. All three use `--text-tertiary`: `#6e6e73` in light mode and `#8b8b91` in dark mode. Collapsed navigation groups point down and expanded groups rotate 180deg. Forced-colors mode restores the native select arrow.
+
+Asset versions are `control.css?v=29`, `control-features.css?v=15`, and `control-app.js?v=21`. The Utilities module is imported as `control-utilities.js?v=21`. The finish branch passes 283 web tests and the local hosting checkout passes 305. Both pass `npm run check:web` and `git diff --check`. The public host serves all three versions and returns a healthy `/healthz`. Live computed styles confirm the shared path, 12px by 12px sizing, both theme colors, the select and Emoji insets, the active navigation mask, and the expanded-group rotation.
+
+## Sign-in follow-up on 2026-10-24
+
+The live review asked to remove the duplicate Sign in with Discord button from the page body. The navigation identity keeps the only sign-in control. The unauthenticated page message now reads `Sign in with Discord from the navigation to load Control.` and has no link or button.
+
+Asset versions are `control-app.js?v=22`, with `control-components.js?v=22` in the application and page modules. The stylesheets remain `control.css?v=29` and `control-features.css?v=15`. The finish branch passes 284 web tests and the local hosting checkout passes 306. Both pass `npm run check:web` and `git diff --check`. Live unauthenticated markup has one sign-in link, inside the navigation identity, and none in the page body. The public host returns a healthy `/healthz`.

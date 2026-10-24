@@ -983,7 +983,7 @@ One defect was found in Notification roles edit mode and fixed on 2026-10-22: th
 
 The acceptance table above is the earlier capture record. The 2026-10-22 live review reopened it.
 
-The page save actions are now one shared floating save bar at the page end on every edit route. The bar is sticky at `bottom: max(14px, env(safe-area-inset-bottom))`, with a 12px radius, translucent surface, hairline border, blur, and `--shadow-save-bar`. Short pages use a flex column with `min-height: calc(100dvh - 2rem)` and `margin-top: auto` so the bar pins to the viewport bottom. The global changes tray clears the bar below 1200px and on mobile.
+The page save actions are now one shared floating save bar at the page end on every edit route. The bar is sticky at `bottom: max(14px, env(safe-area-inset-bottom))`, with a 12px radius, translucent surface, hairline border, blur, and `--shadow-save-bar`. Short pages use a flex column with `min-height: calc(100dvh - 2rem)` and `margin-top: auto` so the bar pins to the viewport bottom. The global changes tray was later removed and its status moved into the save bar; see the save bar status follow-up below.
 
 Files changed: `control-features.css`, `control.css`, `control.html`, the six page modules, `control-route-render-contract.test.js`, `control-redesign-completion.test.js`, `control-legacy-removal.test.js`, `control-theme-surfaces.test.js`, and `control-stage3-reconciliation.test.js`.
 
@@ -1128,7 +1128,7 @@ Promotion record on 2026-10-22:
 
 ### Live UI corrections and save hotfix (2026-10-23)
 
-The live review requested three corrections: hide scrollbars, move every add control below its list, and match the emoji selector to the height of other form controls. The finish branch implements them and serves `control.css?v=26`, `control-features.css?v=11`, and `control-app.js?v=19`.
+The live review requested four corrections: hide scrollbars, move every add control below its list, match the emoji selector to the height of other form controls, and lay out the Resources editor fields in three columns at wide widths, two at medium widths, and one at narrow widths. The finish branch implements them and serves `control.css?v=26`, `control-features.css?v=12`, and `control-app.js?v=19`.
 
 A save failed with `Unknown resource key.` because the three anonymous-message channel mappings were absent from the web and worker resource allowlists. The web allowlist, worker page-save ownership, and Channels page revision now include `anon_messages_panel`, `anon_messages_submissions`, and `anon_messages_audit_log`. The user approved the worker hotfix and a Rob-bot restart on 2026-10-23.
 
@@ -1145,3 +1145,52 @@ Commits:
 - UI corrections: `841497d`.
 - Web save fix: `20fe6c7`.
 - Worker save fix: `c6ad745`.
+
+### Save bar status follow-up (2026-10-23)
+
+The live review asked to remove the fixed pending-changes pill and merge its purpose into the floating save and discard bar. The global changes tray, its page mount, controller module, CSS, and tray-specific tests were removed. Every editable page now renders a shared status inside the save bar: the pending-change count, a server-status dot, and an inline server error when fresh state fails. The status updates in place when Utilities edits change the draft and after every page render.
+
+The count comes from the state store. It records the number of changed fields and a retry count, with a rendering fallback that recomputes the diff when an older cached state module is still in use. A saving page shows `Saving changes…`, a clean page shows `No pending changes`, and a dirty page shows `N pending change` or `N pending changes`.
+
+Files changed: `control-components.js`, `control-state.js`, `control-app.js`, `control.html`, `control.css`, `control-features.css`, the six page modules, `control-uiux-refinements.test.js`, `control-route-render-contract.test.js`, `control-legacy-removal-final-regressions.test.js`, `control-theme-surfaces.test.js`, and `control-legacy-removal.test.js`. The file `control-tray.js` was deleted.
+
+Asset versions are `control.css?v=27`, `control-features.css?v=13`, and `control-app.js?v=20`. The changed page modules and the shared component module are imported with `?v=20` so cached modules cannot mask the new save bar.
+
+Verification:
+
+- Finish branch: `npm run check:web` pass, `npm run test:web` 281 pass, `git diff --check` pass.
+- Local hosting checkout: `npm run check:web` pass, `npm run test:web` 303 pass, `git diff --check` pass.
+- Public host serves the three asset versions, has no `controlChangesTray` mount, and `/healthz` returns `{"ok":true}`.
+- The rendered save bar shows the pending count, status dot, Save changes, and Discard, with no horizontal overflow at the tested widths.
+
+### Chevron follow-up (2026-10-24)
+
+The live review found that select and dropdown chevrons sat too close to the right border, then that the remaining chevrons used different shapes. All Control chevrons now share one 12px by 12px SVG path with 1.5px rounded strokes. The shared path is used by native selects, the Emoji dropdown, and the navigation domain groups. Selects use a colored background image, while the Emoji and navigation chevrons use a shared mask so they follow `currentColor`.
+
+The select arrow sits 16px inside the right border, with 38px of right padding so option text cannot run under it. The Emoji summary uses the same 16px right inset. Navigation chevrons sit 16px from the button edge after padding and margin. All three use `--text-tertiary`: `#6e6e73` in light mode and `#8b8b91` in dark mode. Collapsed navigation groups point down and expanded groups rotate 180deg. Forced-colors mode restores the native select arrow.
+
+Files changed: `control.css`, `control-features.css`, `control-utilities.js`, `control-app.js`, `control.html`, `commands.html`, `control-uiux-refinements.test.js`, `control-theme-surfaces.test.js`, `control-legacy-removal.test.js`, and `control-stage3-reconciliation.test.js`.
+
+Asset versions are `control.css?v=29`, `control-features.css?v=15`, and `control-app.js?v=21`. The Utilities module is imported as `control-utilities.js?v=21`.
+
+Verification:
+
+- Finish branch: `npm run check:web` pass, `npm run test:web` 283 pass, `git diff --check` pass.
+- Local hosting checkout: `npm run check:web` pass, `npm run test:web` 305 pass, `git diff --check` pass.
+- Public host serves all three versions. Live computed styles show one shared SVG path, 12px by 12px sizing, the correct light and dark colors, a 16px select inset, and a 17px Emoji right inset. The navigation mask is active, and expanded groups rotate 180deg.
+- `/healthz` returns `{"ok":true}`.
+
+### Sign-in follow-up (2026-10-24)
+
+The live review asked to remove the duplicate Sign in with Discord button from the page body. The navigation identity keeps the only sign-in control. The unauthenticated page message now reads `Sign in with Discord from the navigation to load Control.` and has no link or button.
+
+Files changed: `control-components.js`, `control-app.js`, `control.html`, the six page modules for the shared component import, `control-uiux-refinements.test.js`, and `control-theme-surfaces.test.js`.
+
+Asset versions are `control-app.js?v=22`, with `control-components.js?v=22` in the application and page modules. The stylesheets remain `control.css?v=29` and `control-features.css?v=15`.
+
+Verification:
+
+- Finish branch: `npm run check:web` pass, `npm run test:web` 284 pass, `git diff --check` pass.
+- Local hosting checkout: `npm run check:web` pass, `npm run test:web` 306 pass, `git diff --check` pass.
+- Public host serves `control-app.js?v=22` and `control-components.js?v=22`. Live unauthenticated markup has one sign-in link, inside the navigation identity, and no sign-in link or button in the page body.
+- `/healthz` returns `{"ok":true}`.

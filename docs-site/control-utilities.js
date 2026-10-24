@@ -8,7 +8,9 @@ import {
   contextSectionMarkup,
   controlPageHeaderMarkup,
   controlSectionMarkup,
-} from './control-components.js';
+  saveBarStatusLabel,
+  saveBarStatusMarkup,
+} from './control-components.js?v=22';
 import { featureResourceKeys } from './control-resource-contract.js';
 import { resourceBindingState, withResourceBindings } from './control-resource-bindings.js';
 
@@ -419,7 +421,7 @@ function saveActions(state) {
   const canSave = Boolean(state?.dirty && !errors && state?.status !== 'saving' && state?.revision);
   return `
     <div class="utility-save-bar control-save-bar">
-      <span data-utility-save-state>${state?.status === 'saving' ? 'Saving changes…' : state?.dirty ? 'Unsaved changes' : 'No unsaved changes'}</span>
+      ${saveBarStatusMarkup(state)}
       <div>
         <button class="control-button control-button-primary" type="button" data-utility-save${canSave ? '' : ' disabled'}>${state?.status === 'saving' ? 'Saving…' : 'Save changes'}</button>
         <button class="control-button control-button-secondary" type="button" data-utility-discard${state?.status === 'saving' ? ' disabled' : ''}>Discard</button>
@@ -611,7 +613,7 @@ function emojiPickerMarkup(snapshot, selected, index, error) {
       <details class="utility-emoji-combobox">
         <summary aria-label="Choose emoji for button ${index + 1}">
           <span class="utility-emoji-current">${emojiSummaryMarkup(snapshot, selectedValue)}</span>
-          <span class="utility-emoji-chevron" aria-hidden="true">⌄</span>
+          <span class="utility-emoji-chevron" aria-hidden="true"></span>
         </summary>
         <div class="utility-emoji-menu">
           <label class="utility-emoji-search-label">
@@ -835,13 +837,12 @@ function updateActionBar(root, store, pageKey) {
   if (save) {
     save.disabled = !store.canSave(pageKey);
   }
-  const status = root.querySelector?.('[data-utility-save-state]');
-  if (status) {
-    status.textContent = state.status === 'saving'
-      ? 'Saving changes…'
-      : state.dirty
-        ? 'Unsaved changes'
-        : 'No unsaved changes';
+  const status = root.querySelector?.('[data-save-bar-status-text]');
+  const container = status?.closest?.('[data-save-bar-status]');
+  if (status && container?.dataset.tone !== 'bad') {
+    const label = saveBarStatusLabel(state);
+    status.dataset.defaultLabel = label;
+    status.textContent = label;
   }
 }
 

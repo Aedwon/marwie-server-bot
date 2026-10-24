@@ -60,6 +60,30 @@ export function stateChipMarkup(enabled, { label = '' } = {}) {
   return `<span class="control-state-chip" data-tone="${on ? 'good' : 'neutral'}" data-enabled="${String(on)}">${escapeHtml(text)}</span>`;
 }
 
+export function pendingChangeCount(state = {}) {
+  if (!state?.dirty) return 0;
+  const stored = Number(state.changeCount);
+  if (Number.isFinite(stored) && stored > 0) return stored;
+  const diff = state.definition?.diffDraft?.(state.persisted, state.draft) || [];
+  return Math.max(1, diff.length, state.retryChanges?.length || 0);
+}
+
+export function saveBarStatusLabel(state = {}) {
+  if (state.status === 'saving') return 'Saving changes…';
+  const count = pendingChangeCount(state);
+  if (count < 1) return 'No pending changes';
+  return `${count} pending change${count === 1 ? '' : 's'}`;
+}
+
+export function saveBarStatusMarkup(state = {}) {
+  const label = saveBarStatusLabel(state);
+  return `<span class="control-save-bar-status" data-save-bar-status data-tone="neutral" title="Server state has not loaded yet.">
+    <span class="control-save-bar-dot" data-save-bar-dot data-tone="neutral" aria-hidden="true"></span>
+    <span data-save-bar-status-text data-default-label="${escapeHtml(label)}">${escapeHtml(label)}</span>
+    <span class="control-save-bar-message" data-save-bar-message role="alert" hidden></span>
+  </span>`;
+}
+
 export function controlPageHeaderMarkup({
   title,
   description = '',
@@ -244,7 +268,7 @@ export function identityMarkup(session, guild) {
 
 export function pageMarkup(destination, { authenticated = false, activityState = null } = {}) {
   if (!authenticated) {
-    return `<section class="control-empty"><h1>${escapeHtml(destination.label)}</h1><p>Sign in with Discord to load Control.</p><a class="control-primary-button" href="/api/auth/start">Sign in with Discord</a></section>`;
+    return `<section class="control-empty"><h1>${escapeHtml(destination.label)}</h1><p>Sign in with Discord from the navigation to load Control.</p></section>`;
   }
 
   if (destination.path === '/control/commands') return commandsPageMarkup();
