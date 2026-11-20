@@ -39,13 +39,30 @@ test('Control fields use mobile dimensions in both the workspace and Context', (
 });
 
 test('Quizzes category and option fields inherit the shared 3px keyboard outline', () => {
-  assert.match(
-    shellStyles,
-    /:where\(a, button, input, select, textarea, summary\):focus-visible\s*\{[^}]*outline:\s*3px solid var\(--focus-ring\);[^}]*outline-offset:\s*2px;/,
-  );
-  const sharedFields = featureStyles.match(/\.control-page :is\(input:not\(\[type\]\),[^{}]*\{([^}]+)\}/)?.[1];
-  assert.ok(sharedFields, 'Expected the shared field rule to include the untyped Quizzes inputs');
-  assert.doesNotMatch(sharedFields, /\boutline(?:-[\w-]+)?\s*:/, 'Shared field styles must preserve the keyboard outline');
+  const sharedFocus = ':where(a, button, input, select, textarea, summary):focus-visible';
+  // These selectors style the shell, a toggle track, navigation links, or chart points.
+  const unrelated = new Set([
+    '.control-main',
+    '.control-main:focus-visible',
+    '.control-feature-toggle input:focus-visible + .control-feature-toggle-track',
+    '.control-nav-children a[aria-current="page"]',
+    '.analytics-point-group:focus-visible',
+  ]);
+  const outlines = css => [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+    .flatMap(([, selector, body]) => {
+      const declarations = body.split(';').map(value => value.trim())
+        .filter(value => /^(?:outline(?:-[\w-]+)?|all)\s*:/i.test(value));
+      return declarations.length && !unrelated.has(selector.trim())
+        ? [{ selector: selector.trim(), declarations }]
+        : [];
+    });
+
+  // A base or :focus rule can win over :focus-visible through specificity or source order.
+  assert.deepEqual(outlines(shellStyles), [{
+    selector: sharedFocus,
+    declarations: ['outline: 3px solid var(--focus-ring)', 'outline-offset: 2px'],
+  }], 'Control shell must preserve the shared outline on focused Quizzes fields');
+  assert.deepEqual(outlines(featureStyles), [], 'Control features must preserve the shared outline on focused Quizzes fields');
 });
 
 test('Control Commands can reflow its stacked rows to the available width', () => {

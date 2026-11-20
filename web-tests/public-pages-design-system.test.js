@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { runInNewContext } from 'node:vm';
 
 const read = name => readFileSync(new URL(`../docs-site/${name}`, import.meta.url), 'utf8');
 const legacyColors = /#(?:365544|eaf0ec|2f4d3d|a8c9b2|25352b|bee0c8|28623b|8fd49e|171719|1d1d1f|f5f5f7)\b/gi;
@@ -162,6 +163,41 @@ test('Handbook mobile drawer makes the skip link, top bar, and main content iner
   const js = read('app.js');
   assert.match(js, /querySelectorAll\('\.skip, \.mobilebar, main'\)/, 'Include the skip link and top bar in the drawer background');
   assert.match(js, /menuBackground\.forEach\(element => \{ element\.inert = open; \}\)/);
-  assert.match(js, /event\.key === 'Tab'/, 'Handle tabbing at the drawer boundaries');
-  assert.match(js, /event\.shiftKey/, 'Also wrap reverse tabbing');
+});
+
+test('Handbook mobile drawer cancels native Tab movement only when wrapping focus', () => {
+  const handler = read('app.js').match(/^addEventListener\('keydown', event => \{\n  if \(!side\.classList\.contains\('open'\)\) return;[\s\S]*?^\}\);/m)?.[0];
+  assert.ok(handler, 'Expected the Handbook drawer keydown listener');
+
+  const document = { activeElement: null };
+  const controls = ['Close button', 'first link', 'last link'].map(name => ({
+    name,
+    tabIndex: 0,
+    getClientRects: () => [{}],
+    focus() { document.activeElement = this; },
+  }));
+  const [close, firstLink, lastLink] = controls;
+  const side = {
+    classList: { contains: name => name === 'open' },
+    contains: item => controls.includes(item),
+    querySelectorAll: () => controls,
+  };
+  const window = new EventTarget();
+  runInNewContext(handler, { document, side, addEventListener: window.addEventListener.bind(window) });
+
+  for (const [start, shiftKey, expectedFocus, wraps] of [
+    [lastLink, false, close, true],
+    [close, true, lastLink, true],
+    [firstLink, false, firstLink, false],
+    [firstLink, true, firstLink, false],
+  ]) {
+    start.focus();
+    const event = new Event('keydown', { cancelable: true });
+    Object.assign(event, { key: 'Tab', shiftKey });
+    window.dispatchEvent(event);
+
+    const movement = `${shiftKey ? 'Shift+Tab' : 'Tab'} from the ${start.name}`;
+    assert.equal(event.defaultPrevented, wraps, `${movement} cancellation`);
+    assert.equal(document.activeElement, expectedFocus, `${movement} scripted focus`);
+  }
 });
