@@ -72,6 +72,7 @@ installThemeControls({
 });
 
 const commandShell = document.querySelector('.commands-shell');
+const commandWorkspace = document.querySelector('.commands-workspace');
 const commandDrawer = document.querySelector('#commandsNavDrawer');
 const commandMenuButton = document.querySelector('#commandsMenuButton');
 const commandNavClose = document.querySelector('#commandsNavClose');
@@ -82,6 +83,8 @@ const drawerController = installDrawerController({
   trigger: commandMenuButton,
   closeButton: commandNavClose,
   isDrawer: () => commandNarrow.matches,
+  onOpen: () => { if (commandWorkspace) commandWorkspace.inert = true; },
+  onClose: () => { if (commandWorkspace) commandWorkspace.inert = false; },
 });
 
 function syncCommandShell() {
@@ -89,10 +92,19 @@ function syncCommandShell() {
   drawerController.sync();
   // The controller also marks desktop navigation open. Reserve that flag here for the drawer.
   if (!commandNarrow.matches && commandDrawer) delete commandDrawer.dataset.open;
+  if (commandWorkspace) commandWorkspace.inert = Boolean(commandNarrow.matches && commandDrawer?.dataset.open === 'true');
 }
 
 syncCommandShell();
 commandNarrow.addEventListener?.('change', syncCommandShell);
+
+addEventListener('keydown', event => {
+  if (event.defaultPrevented || event.key !== 'Escape') return;
+  if (commandNarrow.matches && commandDrawer?.dataset.open === 'true') {
+    event.preventDefault();
+    drawerController.close();
+  }
+});
 
 commandDrawer?.querySelectorAll('a[href^="#workflow-"]').forEach(link => {
   link.addEventListener('click', () => {
