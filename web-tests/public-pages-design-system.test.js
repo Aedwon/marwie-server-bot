@@ -65,8 +65,8 @@ test('Commands synchronizes its drawer at 875px and yields keyboard shortcuts to
   assert.match(js, /syncCommandShell\(\);\s*commandNarrow\.addEventListener\?\.\('change', syncCommandShell\)/);
   assert.match(js, /drawerController\.close\(\{ restoreFocus: false \}\)/);
   assert.match(js, /commandWorkspace\s*=\s*document\.querySelector\('\.commands-workspace'\)/);
-  assert.match(js, /onOpen:\s*\(\)\s*=>\s*\{\s*if \(commandWorkspace\) commandWorkspace\.inert = true;\s*\}/);
-  assert.match(js, /onClose:\s*\(\)\s*=>\s*\{\s*if \(commandWorkspace\) commandWorkspace\.inert = false;\s*\}/);
+  assert.match(js, /onOpen:\s*\(\)\s*=>\s*\{[\s\S]*?if \(commandWorkspace\) commandWorkspace\.inert = true;/);
+  assert.match(js, /onClose:\s*\(\)\s*=>\s*\{[\s\S]*?if \(commandWorkspace\) commandWorkspace\.inert = false;[\s\S]*?commandMenuButton\?\.focus\(\);/);
   assert.match(js, /addEventListener\('keydown',\s*event\s*=>\s*\{[\s\S]*?event\.key !== 'Escape'[\s\S]*?commandNarrow\.matches && commandDrawer\?\.dataset\.open === 'true'[\s\S]*?event\.preventDefault\(\);[\s\S]*?drawerController\.close\(\);/);
   assert.match(js, /function setupCommandSearch[\s\S]*?event\.defaultPrevented \|\| dialog\?\.open \|\| commandDrawer\?\.dataset\.open === 'true'/);
 });

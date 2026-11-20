@@ -78,13 +78,22 @@ const commandMenuButton = document.querySelector('#commandsMenuButton');
 const commandNavClose = document.querySelector('#commandsNavClose');
 const commandNarrow = matchMedia('(max-width: 875px)');
 
+let restoreMenuFocus = false;
+
 const drawerController = installDrawerController({
   drawer: commandDrawer,
   trigger: commandMenuButton,
   closeButton: commandNavClose,
   isDrawer: () => commandNarrow.matches,
-  onOpen: () => { if (commandWorkspace) commandWorkspace.inert = true; },
-  onClose: () => { if (commandWorkspace) commandWorkspace.inert = false; },
+  onOpen: () => {
+    restoreMenuFocus = true;
+    if (commandWorkspace) commandWorkspace.inert = true;
+  },
+  onClose: () => {
+    if (commandWorkspace) commandWorkspace.inert = false;
+    if (restoreMenuFocus && commandNarrow.matches) commandMenuButton?.focus();
+    restoreMenuFocus = false;
+  },
 });
 
 function syncCommandShell() {
@@ -92,6 +101,7 @@ function syncCommandShell() {
   drawerController.sync();
   // The controller also marks desktop navigation open. Reserve that flag here for the drawer.
   if (!commandNarrow.matches && commandDrawer) delete commandDrawer.dataset.open;
+  if (!commandNarrow.matches) restoreMenuFocus = false;
   if (commandWorkspace) commandWorkspace.inert = Boolean(commandNarrow.matches && commandDrawer?.dataset.open === 'true');
 }
 
@@ -108,6 +118,7 @@ addEventListener('keydown', event => {
 
 commandDrawer?.querySelectorAll('a[href^="#workflow-"]').forEach(link => {
   link.addEventListener('click', () => {
+    restoreMenuFocus = false;
     drawerController.close({ restoreFocus: false });
   });
 });
