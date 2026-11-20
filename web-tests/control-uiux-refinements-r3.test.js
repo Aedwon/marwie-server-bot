@@ -47,7 +47,7 @@ test('Analytics range row renders a real-series line graph without bars or a vis
   assert.match(markup, /<svg[^>]*class="analytics-line-chart"/);
   assert.match(markup, /class="analytics-axis analytics-axis-x"/);
   assert.match(markup, /class="analytics-axis analytics-axis-y"/);
-  assert.match(markup, /<desc id="analytics-line-chart-summary">3 real UTC buckets/);
+  assert.match(markup, /<desc id="analytics-line-chart-summary">3 real buckets/);
   assert.doesNotMatch(markup, /control-visually-hidden/);
   assert.equal((markup.match(/class="analytics-line-point"/g) || []).length, 3);
   assert.doesNotMatch(markup, /analytics-chart-bars|analytics-chart-bar|View chart data|analytics-series-table|<details/);

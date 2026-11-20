@@ -637,6 +637,8 @@ body:has(.control-shell[data-nav-mode="drawer"]) .control-topbar { display: flex
   font-weight: 500;
 }
 .control-state-chip[data-tone="good"] { border-color: var(--status-success-stroke); background: var(--status-success-bg); color: var(--status-success-fg); }
+.control-state-chip[data-tone="warning"] { border-color: var(--status-warning-stroke); background: var(--status-warning-bg); color: var(--status-warning-fg); }
+.control-state-chip[data-tone="info"] { border-color: var(--status-info-stroke); background: var(--status-info-bg); color: var(--status-info-fg); }
 .control-global-status { min-height: 18px; color: var(--text-tertiary); font-size: 13px; line-height: 18px; }
 
 .control-button, .control-primary-button, .control-secondary-button, .control-edit-settings-button {
