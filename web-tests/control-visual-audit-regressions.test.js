@@ -38,6 +38,16 @@ test('Control fields use mobile dimensions in both the workspace and Context', (
   );
 });
 
+test('Quizzes category and option fields inherit the shared 3px keyboard outline', () => {
+  assert.match(
+    shellStyles,
+    /:where\(a, button, input, select, textarea, summary\):focus-visible\s*\{[^}]*outline:\s*3px solid var\(--focus-ring\);[^}]*outline-offset:\s*2px;/,
+  );
+  const sharedFields = featureStyles.match(/\.control-page :is\(input:not\(\[type\]\),[^{}]*\{([^}]+)\}/)?.[1];
+  assert.ok(sharedFields, 'Expected the shared field rule to include the untyped Quizzes inputs');
+  assert.doesNotMatch(sharedFields, /\boutline(?:-[\w-]+)?\s*:/, 'Shared field styles must preserve the keyboard outline');
+});
+
 test('Control Commands can reflow its stacked rows to the available width', () => {
   assert.match(featureStyles, /\.control-command-item[^{}]*\{\s*grid-template-columns:\s*1fr;\s*\}/);
   assert.doesNotMatch(featureStyles, /\.control-command-table(?=\s*[,\{])[^{}]*\{[^}]*min-width:\s*560px;/);

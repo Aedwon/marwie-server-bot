@@ -301,7 +301,6 @@ fieldset.utility-editor-row + fieldset.utility-editor-row { margin-top: 12px; }
   color: var(--text-primary);
   font-size: var(--control-field-font-size);
   line-height: 1.4;
-  outline: 0;
 }
 .control-page textarea { min-height: 96px; resize: vertical; }
 .control-page :is(input, textarea, select):hover:not(:disabled, :focus) { border-color: var(--text-tertiary); }

@@ -79,7 +79,7 @@ test('Handbook uses System appearance, current assets, and confirmation copy', (
   assert.match(html, /fonts\.googleapis\.com\/css2\?family=Figtree:wght@400;500;600/);
   assert.match(html, /href="\/styles\.css\?v=15"/);
   assert.match(html, /href="\/home\.css\?v=3"/);
-  assert.match(html, /src="\/app\.js\?v=18" defer/);
+  assert.match(html, /src="\/app\.js\?v=19" defer/);
   assert.match(html, /<div class="release">V1 · slash commands require confirmation<\/div>/);
   assert.doesNotMatch(html, /45 slash commands/);
 });
@@ -142,17 +142,26 @@ test('Handbook only persists explicit theme choices', () => {
   assert.match(js, /themeColor\.content = actual === 'dark' \? '#0f0f11' : '#fcfcfb'/);
 });
 
-test('Handbook drawer isolates the inactive surface and restores focus on dismissal', () => {
+test('Handbook drawer restores the mobile trigger or fragment destination when dismissed', () => {
+  const html = read('index.html');
   const js = read('app.js');
+  assert.match(html, /<aside[^>]*id="sidebar"[^>]*>\s*<button[^>]*id="menuClose"[^>]*hidden>/);
   assert.match(js, /matchMedia\('\(max-width: 900px\)'\)/);
-  assert.match(js, /side\.inert\s*=/);
-  assert.match(js, /main\.inert\s*=/);
+  assert.match(js, /side\.inert\s*=\s*menuNarrow\.matches && !open/);
   assert.match(js, /side\.setAttribute\('aria-hidden', 'true'\)/);
   assert.match(js, /side\.removeAttribute\('aria-hidden'\)/);
-  assert.match(js, /addEventListener\?\.\('change', syncMenu\)/);
-  assert.match(js, /side\.querySelector\('\.nav a, \.theme-switcher button'\)\?\.focus\(\)/);
-  assert.match(js, /if \(restoreFocus\) menuBtn\.focus\(\)/);
-  assert.match(js, /menuBtn\.addEventListener\('click', \(\) => \{[^}]*closeMenu\(\{ restoreFocus: true \}\)/);
-  assert.match(js, /querySelectorAll\('a\[href\^="#"\]'\)[\s\S]*?closeMenu\(\)/);
-  assert.match(js, /event\.key === 'Escape'[\s\S]*?closeMenu\(\{ restoreFocus: true \}\)/);
+  assert.match(js, /menuNarrow\.addEventListener\?\.\('change', \(\) => \{[\s\S]*?syncMenu\(\)/);
+  assert.match(js, /function closeMenu\(focusTarget = menuBtn\) \{[\s\S]*?syncMenu\(\);\s*focusTarget\.focus\(/);
+  assert.match(js, /menuClose\.addEventListener\('click', \(\) => closeMenu\(\)\)/);
+  assert.match(js, /querySelectorAll\('a\[href\]'\)[\s\S]*?closeMenu\(destination \|\| menuBtn\)/);
+  assert.match(js, /!side\.contains\(event\.target\)[\s\S]*?closeMenu\(\)/);
+  assert.match(js, /event\.key === 'Escape'[\s\S]*?closeMenu\(\)/);
+});
+
+test('Handbook mobile drawer makes the skip link, top bar, and main content inert while open', () => {
+  const js = read('app.js');
+  assert.match(js, /querySelectorAll\('\.skip, \.mobilebar, main'\)/, 'Include the skip link and top bar in the drawer background');
+  assert.match(js, /menuBackground\.forEach\(element => \{ element\.inert = open; \}\)/);
+  assert.match(js, /event\.key === 'Tab'/, 'Handle tabbing at the drawer boundaries');
+  assert.match(js, /event\.shiftKey/, 'Also wrap reverse tabbing');
 });

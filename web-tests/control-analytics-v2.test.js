@@ -478,7 +478,7 @@ test('Control and public Commands load the same version of the shared Control st
   const html = readAsset('control.html');
   const commands = readAsset('commands.html');
   for (const markup of [html, commands]) assert.match(markup, /href="\/control\.css\?v=33"/);
-  assert.match(html, /href="\/control-features\.css\?v=17"/);
+  assert.match(html, /href="\/control-features\.css\?v=18"/);
   assert.match(html, /src="\/control-app\.js\?v=30"/);
   assert.match(readAsset('control-app.js'), /from '\.\/control-analytics\.js\?v=21'/);
 });

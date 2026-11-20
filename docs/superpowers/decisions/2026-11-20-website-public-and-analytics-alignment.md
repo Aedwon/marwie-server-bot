@@ -62,3 +62,8 @@ Supersedes the dark-first default in `docs/superpowers/specs/2026-08-30-all-comm
 - Quizzes interval guidance and Live topic guidance now render at 12px. Shared Control fields use 44px minimum height and 16px type below 640px in the workspace and Context. Placeholders use the theme's readable tertiary text color. Field boundaries meet non-text contrast in both themes and retain the focus stroke on hover. [WCAG 2.2 contrast criteria](https://www.w3.org/TR/WCAG22/#contrast-minimum)
 - Control Commands stacked rows now fit the mobile viewport. Removing the inherited 560px table minimum eliminated the measured 198px page overflow at 390px. The Stage A regression test counts only ticks inside the Analytics x-axis group.
 - The primary re-audit passed 66 checks. A separate sweep covered all 19 Control destinations and both public routes in desktop and mobile light and dark, including 60 edit-mode checks. Both sweeps recorded zero typography, page-overflow, and theme issues. Stage C Task 4 will record the final promoted SHAs in the handoff report.
+
+### Final branch review corrections
+
+- Shared Control fields inherit the 3px keyboard focus outline in both themes, including the Quizzes category and options. Stage C field contrast and the 16px mobile font remain in effect. The feature stylesheet is `control-features.css?v=18`.
+- The Handbook mobile drawer makes the skip link, top bar, and main content inert and loops Tab in both directions. Escape, Close sections, and outside clicks return focus to Sections. In-page links focus their destinations. Desktop clears inert from the sidebar and background. The Handbook script is `app.js?v=19`.
