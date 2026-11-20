@@ -49,7 +49,7 @@ test('Commands keeps the desktop search field distinct and mobile input readable
 
 test('Commands scrolls its navigation body and loads the pinned asset versions', () => {
   const html = read('commands.html');
-  assert.match(html, /href="\/control\.css\?v=32"/);
+  assert.match(html, /href="\/control\.css\?v=33"/);
   assert.match(html, /href="\/commands\.css\?v=8"/);
   assert.match(html, /src="\/commands\.js\?v=8"/);
   assert.match(html, /class="commands-nav-body">\s*<nav class="control-primary-nav[\s\S]*?<nav class="control-secondary-nav/);

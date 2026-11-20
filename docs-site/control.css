@@ -11,6 +11,7 @@
   --text-faint: #8a8a8f;
   --stroke-subtle: #ebebea;
   --stroke-control: #dcdcda;
+  --stroke-field: color-mix(in srgb, var(--text-tertiary) 75%, var(--stroke-control));
   --stroke-selected: #e4e4e0;
   --accent-brand: #7db9e8;
   --accent-info: #2f6fa3;
@@ -143,6 +144,9 @@ a { text-decoration: none; }
 .skip:focus-visible { transform: translateY(0); }
 
 body.control-page {
+  --control-field-height: 36px;
+  --control-field-font-size: 14px;
+
   min-height: 100dvh;
   background: var(--surface-page);
   color: var(--text-primary);
@@ -150,6 +154,9 @@ body.control-page {
   font-size: 14px;
   line-height: 1.5;
 }
+
+:where(body.control-page) :where(h1, h2, h3, h4, h5, h6, b, strong, th) { font-weight: 600; }
+:where(body.control-page) :is(input, textarea)::placeholder { color: var(--text-tertiary); opacity: 1; }
 
 .control-shell {
   min-height: 100dvh;
@@ -611,7 +618,7 @@ body:has(.control-shell[data-nav-mode="drawer"]) .control-topbar { display: flex
 .control-resource-status[data-tone="info"] { color: var(--status-info-fg); }
 .control-resource-field { display: grid; gap: 7px; }
 .control-resource-field > span { font-size: 13px; font-weight: 500; }
-.control-resource-field select { width: 100%; min-height: 36px; }
+.control-resource-field select { width: 100%; min-height: var(--control-field-height); font-size: var(--control-field-font-size); }
 .control-resource-confirm { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: start; color: var(--text-secondary); font-size: 13px; line-height: 1.4; }
 .control-resource-error { color: var(--status-error-fg); font-size: 13px; line-height: 1.4; }
 
@@ -722,11 +729,11 @@ body:has(.control-shell[data-nav-mode="drawer"]) .control-topbar { display: flex
 :where(a, button, input, select, textarea, summary):focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
 
 @media (max-width: 639px) {
+  body.control-page { --control-field-height: 44px; --control-field-font-size: 16px; }
   .control-shell[data-context-mode="drawer"] .control-context-shell { inset: 0; width: auto; height: auto; border: 0; border-radius: 0; }
   .control-context-head { position: sticky; top: 0; z-index: 2; background: var(--surface-primary); }
   .control-context-close { min-width: 64px; display: inline-flex; align-items: center; justify-content: center; }
   .control-main :is(button, select, input:not([type="checkbox"]):not([type="radio"])) { min-height: 44px; }
-  .control-main :is(input, textarea, select) { font-size: 16px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -219,10 +219,26 @@ function chartPage(range, bucketGranularity, series, clock = manila) {
   return page(snapshot, range, clock);
 }
 
+function xAxisTicks(markup) {
+  const opening = /<g class="analytics-axis analytics-axis-x"[^>]*>/.exec(markup);
+  assert.ok(opening, 'expected an x-axis group');
+  const content = markup.slice(opening.index + opening[0].length);
+  let depth = 1;
+  for (const tag of content.matchAll(/<\/?g\b[^>]*>/g)) {
+    depth += tag[0].startsWith('</') ? -1 : 1;
+    if (depth !== 0) continue;
+    const axis = content.slice(0, tag.index);
+    return [...axis.matchAll(/<g class="analytics-axis-tick"[^>]*>(.*?)<\/g>/gs)].map(([, tick]) => {
+      const text = /<text x="([\d.]+)"[^>]*>([^<]*)<\/text>/.exec(tick);
+      assert.ok(text, 'expected a positioned x-axis tick label');
+      return { x: Number(text[1]), label: text[2] };
+    });
+  }
+  assert.fail('expected a closing x-axis group tag');
+}
+
 function xTickLabels(markup) {
-  const axis = markup.split('class="analytics-axis analytics-axis-x"')[1].split('</svg>')[0];
-  return [...axis.matchAll(/<g class="analytics-axis-tick">[^<]*<line[^>]*><\/line><text[^>]*>([^<]*)<\/text>/g)]
-    .map(([, label]) => label);
+  return xAxisTicks(markup).map(({ label }) => label);
 }
 
 const operationalBucket = {
@@ -265,9 +281,7 @@ test('uses time on hour and six-hour ticks and uses month and day on daily ticks
     period_end: new Date(dayStart + (index + 1) * 6 * hour).toISOString(),
   }));
   const threeDayMarkup = chartPage('3d', '6hour', threeDaySeries);
-  const threeDayTicks = [...threeDayMarkup.matchAll(/<g class="analytics-axis-tick"><line x1="([\d.]+)"[^>]*><\/line><text x="([\d.]+)"[^>]*text-anchor="([^"]+)"[^>]*>([^<]+)<\/text>/g)]
-    .slice(-4)
-    .map(match => ({ x: Number(match[2]), anchor: match[3], label: match[4] }));
+  const threeDayTicks = xAxisTicks(threeDayMarkup);
   assert.equal(threeDayTicks.length, 4);
   for (let i = 1; i < threeDayTicks.length; i += 1) {
     assert.ok(threeDayTicks[i].x - threeDayTicks[i - 1].x >= 140, `expected >= 140 SVG units between sub-day tick labels ${i - 1} and ${i}`);
@@ -463,8 +477,8 @@ test('coverage can stack in a narrow workspace and chart points have a visible f
 test('Control and public Commands load the same version of the shared Control stylesheet', () => {
   const html = readAsset('control.html');
   const commands = readAsset('commands.html');
-  for (const markup of [html, commands]) assert.match(markup, /href="\/control\.css\?v=32"/);
-  assert.match(html, /href="\/control-features\.css\?v=16"/);
+  for (const markup of [html, commands]) assert.match(markup, /href="\/control\.css\?v=33"/);
+  assert.match(html, /href="\/control-features\.css\?v=17"/);
   assert.match(html, /src="\/control-app\.js\?v=30"/);
   assert.match(readAsset('control-app.js'), /from '\.\/control-analytics\.js\?v=21'/);
 });
