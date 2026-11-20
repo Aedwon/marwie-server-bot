@@ -256,9 +256,22 @@ test('v2 chart counts all eight operational event types and excludes correct ans
 
 test('uses time on hour and six-hour ticks and uses month and day on daily ticks', () => {
   const houred = xTickLabels(page(v2Snapshot()));
-  assert.equal(houred.length, 6);
+  assert.equal(houred.length, 4);
   assert.equal(houred[0], 'Nov 19, 3:00 PM');
   assert.equal(houred.at(-1), 'Nov 20, 2:00 PM');
+
+  const threeDaySeries = Array.from({ length: 12 }, (_, index) => ({
+    period_start: new Date(dayStart + index * 6 * hour).toISOString(),
+    period_end: new Date(dayStart + (index + 1) * 6 * hour).toISOString(),
+  }));
+  const threeDayMarkup = chartPage('3d', '6hour', threeDaySeries);
+  const threeDayTicks = [...threeDayMarkup.matchAll(/<g class="analytics-axis-tick"><line x1="([\d.]+)"[^>]*><\/line><text x="([\d.]+)"[^>]*text-anchor="([^"]+)"[^>]*>([^<]+)<\/text>/g)]
+    .slice(-4)
+    .map(match => ({ x: Number(match[2]), anchor: match[3], label: match[4] }));
+  assert.equal(threeDayTicks.length, 4);
+  for (let i = 1; i < threeDayTicks.length; i += 1) {
+    assert.ok(threeDayTicks[i].x - threeDayTicks[i - 1].x >= 140, `expected >= 140 SVG units between sub-day tick labels ${i - 1} and ${i}`);
+  }
 
   assert.deepEqual(xTickLabels(chartPage('3d', '6hour', [hourlyBucket(0), hourlyBucket(6)])), [
     'Nov 19, 3:00 PM', 'Nov 19, 9:00 PM',
@@ -456,11 +469,16 @@ test('Control and public Commands load the same version of the shared Control st
   assert.match(readAsset('control-app.js'), /from '\.\/control-analytics\.js\?v=21'/);
 });
 
-test('absent closure count renders Unavailable for median ticket close time even if median seconds is set', () => {
-  const snapshot = v2Snapshot({ tickets_closed: undefined, tickets_closed_distinct: undefined, ticket_median_close_seconds: 185 });
-  const markup = page(snapshot);
-  assert.equal(metric(markup, 'Tickets closed'), 'Unavailable');
-  assert.equal(metric(markup, 'Median ticket close time'), 'Unavailable');
+test('absent closure count renders Unavailable and zero closures renders No closures even if median seconds is set', () => {
+  const missing = v2Snapshot({ tickets_closed: undefined, tickets_closed_distinct: undefined, ticket_median_close_seconds: 185 });
+  const missingMarkup = page(missing);
+  assert.equal(metric(missingMarkup, 'Tickets closed'), 'Unavailable');
+  assert.equal(metric(missingMarkup, 'Median ticket close time'), 'Unavailable');
+
+  const zero = v2Snapshot({ tickets_closed: 0, tickets_closed_distinct: 0, ticket_median_close_seconds: 185 });
+  const zeroMarkup = page(zero);
+  assert.equal(metric(zeroMarkup, 'Tickets closed'), '0');
+  assert.equal(metric(zeroMarkup, 'Median ticket close time'), 'No closures');
 });
 
 test('30-bucket series keeps non-overlapping hit circles between adjacent equal-value points', () => {

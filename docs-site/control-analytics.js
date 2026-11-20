@@ -225,9 +225,13 @@ function xTickIndexes(length, maximumTicks = 6) {
   return [...indexes].sort((left, right) => left - right);
 }
 
-function formatAxisTicks(series, indexes, { granularity, selectedRange, locale, timeZone }) {
-  const isSubDay = granularity === 'hour' || granularity === '6hour'
+function isSubDayGranularity(granularity, selectedRange) {
+  return granularity === 'hour' || granularity === '6hour'
     || (!granularity && (selectedRange === '1d' || selectedRange === '3d'));
+}
+
+function formatAxisTicks(series, indexes, { granularity, selectedRange, locale, timeZone }) {
+  const isSubDay = isSubDayGranularity(granularity, selectedRange);
   const dates = indexes.map(index => new Date(series[index]?.period_start));
   const validDates = dates.filter(date => Number.isFinite(date.getTime()));
   const year = new Intl.DateTimeFormat(locale, { year: 'numeric', timeZone });
@@ -268,7 +272,10 @@ function analyticsChartMarkup(projection, selectedRange, clock) {
       label: Number.isInteger(value) ? String(value) : value.toFixed(1),
     };
   });
-  const tickIndexes = xTickIndexes(series.length);
+  const tickIndexes = xTickIndexes(
+    series.length,
+    isSubDayGranularity(projection.bucket_granularity, selectedRange) ? 4 : 6,
+  );
   const tickLabels = formatAxisTicks(series, tickIndexes, {
     granularity: projection.bucket_granularity, selectedRange, ...clock,
   });
@@ -348,7 +355,7 @@ function analyticsReportMarkup(snapshot, requestedRange, clock) {
         ${metricDefinition('Tickets closed', closed)}
         ${v2 ? metricDefinition('Tickets reopened', projection.tickets_reopened ?? 0) : ''}
         ${v2 ? metricDefinition('Open tickets (current)', backlog ?? 'Unavailable') : ''}
-        ${v2 ? metricDefinition('Median ticket close time', ticketsClosed == null ? 'Unavailable' : formatDurationSeconds(projection.ticket_median_close_seconds, { ticketsClosed })) : ''}
+        ${v2 ? metricDefinition('Median ticket close time', ticketsClosed == null ? 'Unavailable' : ticketsClosed === 0 ? 'No closures' : formatDurationSeconds(projection.ticket_median_close_seconds, { ticketsClosed })) : ''}
         ${metricDefinition('Quiz answers', projection.quiz_answers ?? 0)}
         ${metricDefinition('Quiz accuracy', formatAccuracy(projection.quiz_accuracy))}
         ${metricDefinition('Anonymous questions', projection.anonymous_questions ?? 0)}
