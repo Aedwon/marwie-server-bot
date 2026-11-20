@@ -71,21 +71,55 @@ installThemeControls({
   themeColor,
 });
 
+const commandShell = document.querySelector('.commands-shell');
+const commandWorkspace = document.querySelector('.commands-workspace');
 const commandDrawer = document.querySelector('#commandsNavDrawer');
 const commandMenuButton = document.querySelector('#commandsMenuButton');
 const commandNavClose = document.querySelector('#commandsNavClose');
-const commandNarrow = matchMedia('(max-width: 944px)');
+const commandNarrow = matchMedia('(max-width: 875px)');
 
-installDrawerController({
+let restoreMenuFocus = false;
+
+const drawerController = installDrawerController({
   drawer: commandDrawer,
   trigger: commandMenuButton,
   closeButton: commandNavClose,
-  mediaQuery: commandNarrow,
+  isDrawer: () => commandNarrow.matches,
+  onOpen: () => {
+    restoreMenuFocus = true;
+    if (commandWorkspace) commandWorkspace.inert = true;
+  },
+  onClose: () => {
+    if (commandWorkspace) commandWorkspace.inert = false;
+    if (restoreMenuFocus && commandNarrow.matches) commandMenuButton?.focus();
+    restoreMenuFocus = false;
+  },
 });
 
-commandDrawer?.querySelectorAll('a[href^="#"]').forEach(link => {
+function syncCommandShell() {
+  commandShell.dataset.navMode = commandNarrow.matches ? 'drawer' : 'expanded';
+  drawerController.sync();
+  // The controller also marks desktop navigation open. Reserve that flag here for the drawer.
+  if (!commandNarrow.matches && commandDrawer) delete commandDrawer.dataset.open;
+  if (!commandNarrow.matches) restoreMenuFocus = false;
+  if (commandWorkspace) commandWorkspace.inert = Boolean(commandNarrow.matches && commandDrawer?.dataset.open === 'true');
+}
+
+syncCommandShell();
+commandNarrow.addEventListener?.('change', syncCommandShell);
+
+addEventListener('keydown', event => {
+  if (event.defaultPrevented || event.key !== 'Escape') return;
+  if (commandNarrow.matches && commandDrawer?.dataset.open === 'true') {
+    event.preventDefault();
+    drawerController.close();
+  }
+});
+
+commandDrawer?.querySelectorAll('a[href^="#workflow-"]').forEach(link => {
   link.addEventListener('click', () => {
-    if (commandNarrow.matches) commandNavClose?.click();
+    restoreMenuFocus = false;
+    drawerController.close({ restoreFocus: false });
   });
 });
 
@@ -510,7 +544,7 @@ function setupCommandSearch(container, cards, dialog) {
   input?.addEventListener('input', applyFilter);
   clear?.addEventListener('click', clearSearch);
   addEventListener('keydown', event => {
-    if (dialog?.open) return;
+    if (event.defaultPrevented || dialog?.open || commandDrawer?.dataset.open === 'true') return;
     const target = event.target;
     const typing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target?.isContentEditable;
     if (event.key === '/' && !typing) {

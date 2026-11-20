@@ -266,36 +266,84 @@ const themeButtons = [...document.querySelectorAll('[data-theme-choice]')];
 const themeColor = document.querySelector('#themeColor');
 const scheme = matchMedia('(prefers-color-scheme: dark)');
 
-function applyTheme(pref) {
+function applyTheme(pref, { persist = false } = {}) {
   const actual = pref === 'system' ? (scheme.matches ? 'dark' : 'light') : pref;
   root.dataset.preference = pref;
   root.dataset.theme = actual;
   themeButtons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.themeChoice === pref)));
-  localStorage.setItem('rob-doc-theme', pref);
-  if (themeColor) themeColor.content = actual === 'dark' ? '#171719' : '#ffffff';
+  if (persist) localStorage.setItem('rob-doc-theme', pref);
+  if (themeColor) themeColor.content = actual === 'dark' ? '#0f0f11' : '#fcfcfb';
 }
 
-themeButtons.forEach(button => button.addEventListener('click', () => applyTheme(button.dataset.themeChoice)));
+themeButtons.forEach(button => button.addEventListener('click', () => applyTheme(button.dataset.themeChoice, { persist: true })));
 scheme.addEventListener?.('change', () => {
-  if (root.dataset.preference === 'system') applyTheme('system');
+  if (root.dataset.preference === 'system') applyTheme('system', { persist: false });
 });
-applyTheme(root.dataset.preference || 'system');
+applyTheme(root.dataset.preference || 'system', { persist: false });
 
 const side = document.querySelector('#sidebar');
 const menuBtn = document.querySelector('#menuBtn');
-function closeMenu() {
-  side?.classList.remove('open');
-  menuBtn?.setAttribute('aria-expanded', 'false');
-}
-menuBtn?.addEventListener('click', () => {
-  const open = side?.classList.toggle('open') || false;
+const menuClose = document.querySelector('#menuClose');
+const menuBackground = document.querySelectorAll('.skip, .mobilebar, main');
+const menuNarrow = matchMedia('(max-width: 900px)');
+
+function syncMenu() {
+  if (!menuNarrow.matches) side.classList.remove('open');
+  const open = side.classList.contains('open');
+  menuBackground.forEach(element => { element.inert = open; });
+  side.inert = menuNarrow.matches && !open;
+  menuClose.hidden = !open;
+  if (side.inert) side.setAttribute('aria-hidden', 'true');
+  else side.removeAttribute('aria-hidden');
   menuBtn.setAttribute('aria-expanded', String(open));
+}
+
+function closeMenu(focusTarget = menuBtn) {
+  side.classList.remove('open');
+  syncMenu();
+  focusTarget.focus({ preventScroll: true });
+}
+
+syncMenu();
+menuNarrow.addEventListener?.('change', () => {
+  const focused = document.activeElement;
+  syncMenu();
+  if (side.inert && side.contains(focused)) menuBtn.focus();
+  if (!menuNarrow.matches && focused === menuClose) side.querySelector('.nav a')?.focus();
 });
-side?.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
-  if (innerWidth <= 900) closeMenu();
+
+menuBtn.addEventListener('click', () => {
+  if (!menuNarrow.matches) return;
+  side.classList.add('open');
+  syncMenu();
+  menuClose.focus();
+});
+menuClose.addEventListener('click', () => closeMenu());
+side.querySelectorAll('a[href]').forEach(link => link.addEventListener('click', () => {
+  if (!side.classList.contains('open')) return;
+  const destination = link.hash && document.getElementById(link.hash.slice(1));
+  if (destination) destination.tabIndex = -1;
+  closeMenu(destination || menuBtn);
 }));
+document.addEventListener('click', event => {
+  if (side.classList.contains('open') && !side.contains(event.target) && !menuBtn.contains(event.target)) {
+    closeMenu();
+  }
+});
 addEventListener('keydown', event => {
-  if (event.key === 'Escape') closeMenu();
+  if (!side.classList.contains('open')) return;
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    closeMenu();
+  } else if (event.key === 'Tab') {
+    const items = [...side.querySelectorAll('a[href], button:not(:disabled)')]
+      .filter(item => item.tabIndex >= 0 && item.getClientRects().length);
+    const edge = event.shiftKey ? items[0] : items.at(-1);
+    if (document.activeElement === edge || !side.contains(document.activeElement)) {
+      event.preventDefault();
+      (event.shiftKey ? items.at(-1) : items[0])?.focus();
+    }
+  }
 });
 
 const links = [...document.querySelectorAll('.nav a[href^="#"]')];

@@ -1,7 +1,7 @@
 import { identityMarkup, navigationMarkup, pageMarkup } from './control-components.js?v=22';
 import { installAccountMenu } from './control-account.js';
 import { registerContentPages } from './control-content.js?v=20';
-import { registerAnalyticsPage } from './control-analytics.js?v=20';
+import { registerAnalyticsPage } from './control-analytics.js?v=21';
 import { registerCommunityPages } from './control-community.js?v=20';
 import { registerMappingPages } from './control-mappings.js?v=20';
 import { registerUtilitiesPages } from './control-utilities.js?v=21';
