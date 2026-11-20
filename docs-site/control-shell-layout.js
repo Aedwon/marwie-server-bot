@@ -25,7 +25,7 @@ export function shellThresholds() {
   };
 }
 
-export function resolveShellLayout({ width = 0, hasContext = false, navPreference = 'auto' } = {}) {
+export function resolveShellLayout({ width = 0, hasContext = false, navPreference = 'auto', navOverride = null } = {}) {
   const thresholds = shellThresholds();
   const preference = normalizedPreference(navPreference);
   const safeWidth = Number.isFinite(Number(width)) ? Math.max(0, Number(width)) : 0;
@@ -33,6 +33,8 @@ export function resolveShellLayout({ width = 0, hasContext = false, navPreferenc
   let navMode;
   if (safeWidth < thresholds.navDrawer) {
     navMode = 'drawer';
+  } else if (navOverride === 'expanded') {
+    navMode = 'expanded';
   } else if (preference === 'collapsed') {
     navMode = 'rail';
   } else if (preference === 'expanded') {
@@ -96,6 +98,7 @@ export function installShellLayout({
   target = defaultTarget(),
   getWidth = defaultWidth,
   getPreference = () => 'auto',
+  getOverride = () => null,
   onChange = () => {},
 } = {}) {
   if (!shell) return { refresh: () => null, destroy: () => {} };
@@ -106,6 +109,7 @@ export function installShellLayout({
       width: getWidth(),
       hasContext: shell.dataset.context === 'true',
       navPreference: getPreference(),
+      navOverride: getOverride(),
     });
     shell.dataset.navMode = result.navMode;
     shell.dataset.contextMode = result.contextMode;

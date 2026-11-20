@@ -225,7 +225,20 @@ body:has(.control-shell[data-nav-mode="drawer"]) .control-topbar { display: flex
 }
 .control-shell[data-nav-mode="rail"] .control-rail {
   width: var(--control-rail-width);
-  padding: 10px;
+  padding: 10px 9px;
+}
+.control-shell[data-nav-motion="true"] {
+  transition: grid-template-columns var(--duration-medium) var(--ease-standard);
+}
+.control-shell[data-nav-motion="true"] .control-rail {
+  transition: width var(--duration-medium) var(--ease-standard);
+}
+#controlNavContent.control-nav-enter {
+  animation: control-nav-enter var(--duration-medium) var(--ease-standard);
+}
+@keyframes control-nav-enter {
+  from { opacity: 0; transform: translateX(-6px); }
+  to { opacity: 1; transform: none; }
 }
 .control-context-shell {
   width: var(--control-right-width);
@@ -461,7 +474,8 @@ body:has(.control-shell[data-nav-mode="drawer"]) .control-topbar { display: flex
 .control-shell[data-nav-mode="rail"] .control-nav-children { gap: 2px; padding: 0; }
 .control-shell[data-nav-mode="rail"] .control-nav-children a,
 .control-shell[data-nav-mode="rail"] .control-secondary-nav a {
-  width: 44px;
+  width: 100%;
+  max-width: 44px;
   height: 44px;
   min-height: 44px;
   justify-content: center;
@@ -715,6 +729,9 @@ body:has(.control-shell[data-nav-mode="drawer"]) .control-topbar { display: flex
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  .control-shell[data-nav-motion="true"],
+  .control-shell[data-nav-motion="true"] .control-rail { transition: none !important; }
+  .control-nav-enter { animation: none !important; }
   .control-task-status[data-state="running"] .control-task-indicator-orbit, .control-task-status[data-state="running"] .control-task-indicator-active { animation: none !important; }
 }
 

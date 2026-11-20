@@ -129,3 +129,26 @@ Asset versions are `control.css?v=29`, `control-features.css?v=15`, and `control
 The live review asked to remove the duplicate Sign in with Discord button from the page body. The navigation identity keeps the only sign-in control. The unauthenticated page message now reads `Sign in with Discord from the navigation to load Control.` and has no link or button.
 
 Asset versions are `control-app.js?v=22`, with `control-components.js?v=22` in the application and page modules. The stylesheets remain `control.css?v=29` and `control-features.css?v=15`. The finish branch passes 284 web tests and the local hosting checkout passes 306. Both pass `npm run check:web` and `git diff --check`. Live unauthenticated markup has one sign-in link, inside the navigation identity, and none in the page body. The public host returns a healthy `/healthz`.
+
+## Rail clipping and hover expansion follow-up on 2026-10-24
+
+The selected rail item was cut off on its right side. The rail is 64px wide with 1px borders, so 10px horizontal padding left a 42px content box for 44px items, and the scroll container hides horizontal overflow. Rail padding is now `10px 9px`, which gives a 44px content box. Rail destinations use `width: 100%` with `max-width: 44px` so a classic scrollbar cannot clip them either.
+
+The collapsed rail now expands while the pointer is over it. A 120ms hover delay avoids accidental expansion, and a 180ms leave delay avoids flicker. Focus inside the rail keeps it open until focus leaves. The expansion is a transient layout override (`navOverride: 'expanded'`) and never writes the saved navigation preference. Drawer mode still wins below 700px and resets the hover state.
+
+Asset versions are `control.css?v=30` and `control-app.js?v=28`, with `control-nav-hover.js?v=3` and `control-shell-layout.js?v=2`. The finish branch passes 298 web tests and the local hosting checkout passes 320. Both pass `npm run check:web` and `git diff --check`. Live measurements show a 44px navigation box and a 44px selected item with no clipping. Hover expands the rail to 240px with five domain buttons and their labels, and leaving returns it to 64px while the saved preference stays `collapsed`. The public host returns a healthy `/healthz`.
+
+## Navigation motion follow-up on 2026-10-24
+
+The live review asked for the collapse and expand to feel satisfying instead of snapping. `control-nav-motion.js` coordinates the layout change and the content swap.
+
+- Collapsing renders the rail markup immediately, then animates the shell grid and rail width from 240px to 64px over 200ms.
+- Expanding animates the shell grid and rail width first. The labeled markup swaps in when the 200ms width animation finishes, so labels do not appear in a narrow rail.
+- Returning to the rail before the expansion finishes cancels the pending markup swap.
+- The first render is immediate and unanimated so a page load does not animate.
+- Nav content uses a 200ms `control-nav-enter` fade and 6px slide when it swaps.
+- Reduced-motion users get no transition or animation.
+
+Motion state lives in `data-nav-motion` on the shell and the `control-nav-enter` class on `#controlNavContent`. Both are cleared when the animation ends or the controller is destroyed.
+
+Asset versions are `control.css?v=31` and `control-app.js?v=29`, with `control-nav-motion.js?v=1`. The finish branch passes 306 web tests and the local hosting checkout passes 328. Both pass `npm run check:web` and `git diff --check`. Live animation inspection shows a 200ms `grid-template-columns` transition on the shell and a 200ms `width` transition on the rail. Finishing both animations yields a 240px grid and a 240px rail. The public host returns a healthy `/healthz`.

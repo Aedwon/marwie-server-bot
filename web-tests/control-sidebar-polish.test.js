@@ -146,6 +146,31 @@ test('drawer modes open one drawer at a time and close ignores non-drawer state'
   assert.match(controlApp, /onOpen: \(\) => navDrawer\?\.close\(\{ restoreFocus: false \}\)/);
 });
 
+test('rail destinations fit inside the rail padding', () => {
+  assert.match(controlCss, /data-nav-mode="rail"\] \.control-rail \{[^}]*padding: 10px 9px;/);
+  assert.match(
+    controlCss,
+    /data-nav-mode="rail"\] \.control-nav-children a,\n\.control-shell\[data-nav-mode="rail"\] \.control-secondary-nav a \{[^}]*width: 100%;[^}]*max-width: 44px;/,
+  );
+});
+
+test('the app installs hover expansion without saving a preference', () => {
+  assert.match(controlApp, /installNavHoverExpand/);
+  assert.match(controlApp, /getOverride/);
+  const hoverBlock = sourceBlock(controlApp, 'navHover = installNavHoverExpand(', 'installThemeControls(');
+  assert.doesNotMatch(hoverBlock, /writeNavPreference/);
+});
+
+test('rail motion animates the shell, the rail, and the swapped content', () => {
+  assert.match(controlCss, /\.control-shell\[data-nav-motion="true"\] \{[^}]*transition: grid-template-columns/);
+  assert.match(controlCss, /\.control-shell\[data-nav-motion="true"\] \.control-rail \{[^}]*transition: width/);
+  assert.match(controlCss, /@keyframes control-nav-enter/);
+  assert.match(controlCss, /\.control-nav-enter \{[^}]*animation: control-nav-enter/);
+  assert.match(controlCss, /prefers-reduced-motion: reduce[\s\S]*?data-nav-motion="true"/);
+  assert.match(controlApp, /installNavMotion/);
+  assert.match(controlApp, /navMotion\?\.sync\(mode\)/);
+});
+
 test('shell styles expose the rail and use center container queries', () => {
   assert.match(controlCss, /--control-rail-width: 4rem;/);
   assert.match(controlCss, /--control-center-min: 37.5rem;/);

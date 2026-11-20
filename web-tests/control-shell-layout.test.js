@@ -68,6 +68,29 @@ test('the drawer wins over an explicit expanded choice below 700px', () => {
   assert.equal(layout(640, true, 'expanded').contextMode, 'drawer');
 });
 
+test('a hover override expands the rail without changing the saved preference', () => {
+  const base = { width: 1400, hasContext: false, navPreference: 'collapsed' };
+  assert.equal(resolveShellLayout(base).navMode, 'rail');
+  const hovered = resolveShellLayout({ ...base, navOverride: 'expanded' });
+  assert.equal(hovered.navMode, 'expanded');
+  assert.equal(hovered.navPreference, 'collapsed');
+});
+
+test('the drawer wins over a hover override below 700px', () => {
+  const result = resolveShellLayout({
+    width: 640,
+    hasContext: true,
+    navPreference: 'collapsed',
+    navOverride: 'expanded',
+  });
+  assert.equal(result.navMode, 'drawer');
+  assert.equal(result.contextMode, 'drawer');
+});
+
+test('an unknown hover override is ignored', () => {
+  assert.equal(resolveShellLayout({ width: 1400, navPreference: 'collapsed', navOverride: 'peek' }).navMode, 'rail');
+});
+
 test('pages without context reserve no context column', () => {
   assert.equal(layout(1400, false).contextMode, 'none');
 });
@@ -138,4 +161,33 @@ test('installer sets shell state and reports only layout changes', () => {
 
   controller.destroy();
   assert.equal(listeners.has('resize'), false);
+});
+
+test('installer applies and clears a hover override', () => {
+  const shell = { dataset: {} };
+  let override = null;
+  const seen = [];
+  const controller = installShellLayout({
+    shell,
+    target: { addEventListener() {}, removeEventListener() {} },
+    getWidth: () => 1400,
+    getPreference: () => 'collapsed',
+    getOverride: () => override,
+    onChange: value => seen.push(value),
+  });
+
+  assert.equal(shell.dataset.navMode, 'rail');
+  assert.equal(seen.length, 1);
+
+  override = 'expanded';
+  controller.refresh();
+  assert.equal(shell.dataset.navMode, 'expanded');
+  assert.equal(seen.length, 2);
+
+  override = null;
+  controller.refresh();
+  assert.equal(shell.dataset.navMode, 'rail');
+  assert.equal(seen.length, 3);
+
+  controller.destroy();
 });

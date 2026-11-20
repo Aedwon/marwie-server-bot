@@ -8,7 +8,9 @@ import { registerUtilitiesPages } from './control-utilities.js?v=21';
 import { installThemeControls } from './control-theme.js';
 import { installContextDrawerController, syncContextAvailability, syncContextTriggers } from './control-layout.js';
 import { createNavigationState, installDrawerController, navigationModel } from './control-navigation.js';
-import { installShellLayout, readNavPreference, writeNavPreference } from './control-shell-layout.js';
+import { installNavHoverExpand } from './control-nav-hover.js?v=3';
+import { installNavMotion } from './control-nav-motion.js?v=1';
+import { installShellLayout, readNavPreference, writeNavPreference } from './control-shell-layout.js?v=2';
 import { navGroupForPath, resolveControlRoute } from './control-router.js';
 import { createActivityController, installActivityPage } from './control-secondary.js';
 import { registerWorkflowPages, workflowPageMarkup } from './control-workflows.js?v=20';
@@ -35,6 +37,7 @@ const EXPANDED_KEY = 'rob-control-expanded-domain';
 const shell = {
   root: document.querySelector('.control-shell'),
   nav: document.querySelector('#controlNavContent'),
+  rail: document.querySelector('.control-rail'),
   drawer: document.querySelector('#controlNavDrawer'),
   toggle: document.querySelector('#controlNavToggle'),
   menu: document.querySelector('#controlMenuButton'),
@@ -58,6 +61,8 @@ let activityGuildId = null;
 let navPreference = readNavPreference(localStorage);
 let shellLayout = null;
 let navDrawer = null;
+let navHover = null;
+let navMotion = null;
 let contextDrawer = null;
 let serverStatus = { message: 'Server state has not loaded yet.', tone: 'neutral' };
 
@@ -185,7 +190,8 @@ function setNavToggleState() {
 function syncShellChrome() {
   if (!shell.root) return;
   const mode = shell.root.dataset.navMode || 'expanded';
-  if (shell.nav.dataset.navMode !== mode) renderNavigation();
+  if (mode === 'drawer') navHover?.reset();
+  navMotion?.sync(mode);
   setNavToggleState();
   syncContextTriggers({ shell: shell.root, trigger: shell.contextButton, pageRoot: document });
   navDrawer?.sync();
@@ -520,10 +526,24 @@ shell.toggle?.addEventListener('click', () => {
   shellLayout?.refresh();
   syncShellChrome();
 });
+navMotion = installNavMotion({
+  shell: shell.root,
+  nav: shell.nav,
+  render: renderNavigation,
+});
 shellLayout = installShellLayout({
   shell: shell.root,
   getPreference: () => navPreference,
+  getOverride: () => (navHover?.isExpanded() ? 'expanded' : null),
   onChange: () => syncShellChrome(),
+});
+navHover = installNavHoverExpand({
+  rail: shell.rail,
+  getMode: () => shell.root?.dataset.navMode || 'expanded',
+  isHoverCapable: () => matchMedia('(hover: hover) and (pointer: fine)').matches,
+  hasFocusInside: () => Boolean(shell.rail?.contains(document.activeElement)),
+  expand: () => shellLayout?.refresh(),
+  collapse: () => shellLayout?.refresh(),
 });
 installThemeControls({
   root: document.documentElement,

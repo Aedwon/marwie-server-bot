@@ -1194,3 +1194,46 @@ Verification:
 - Local hosting checkout: `npm run check:web` pass, `npm run test:web` 306 pass, `git diff --check` pass.
 - Public host serves `control-app.js?v=22` and `control-components.js?v=22`. Live unauthenticated markup has one sign-in link, inside the navigation identity, and no sign-in link or button in the page body.
 - `/healthz` returns `{"ok":true}`.
+
+### Rail clipping and hover expansion follow-up (2026-10-24)
+
+The live review found that the selected rail item was cut off on its right side. The rail is 64px wide with 1px borders, so 10px horizontal padding left a 42px content box for 44px items. The scroll container hides horizontal overflow, so the extra 2px was clipped. Rail padding is now `10px 9px`, which gives a 44px content box. Rail destinations use `width: 100%` with `max-width: 44px` so a classic scrollbar cannot clip them either.
+
+The same review asked for the collapsed rail to expand while the pointer is over it. `control-nav-hover.js` expands the rail 120ms after `mouseenter` and collapses it 180ms after `mouseleave`. Focus inside the rail keeps it open until focus leaves. The expansion is a transient layout override (`navOverride: 'expanded'`) and never writes the saved navigation preference. Drawer mode still wins below 700px and resets the hover state. The shell layout import is cache-busted to `control-shell-layout.js?v=2` so the override reaches the browser.
+
+Files changed: `control.css`, `control-app.js`, `control-nav-hover.js`, `control-shell-layout.js`, `control.html`, `commands.html`, `control-nav-hover.test.js`, `control-shell-layout.test.js`, `control-sidebar-polish.test.js`, and `control-theme-surfaces.test.js`.
+
+Asset versions are `control.css?v=30` and `control-app.js?v=28`. The new module is imported as `control-nav-hover.js?v=3`.
+
+Verification:
+
+- Finish branch: `npm run check:web` pass, `npm run test:web` 298 pass, `git diff --check` pass.
+- Local hosting checkout: `npm run check:web` pass, `npm run test:web` 320 pass, `git diff --check` pass.
+- Public host serves `control-app.js?v=28`. Live rail measurements show a 44px navigation box and a 44px selected item with no clipping.
+- Live hover expands the rail from 64px to 240px with five domain buttons and their labels. Leaving the rail returns it to 64px, and the saved preference stays `collapsed`.
+- `/healthz` returns `{"ok":true}`.
+
+### Navigation motion follow-up (2026-10-24)
+
+The live review asked for the collapse and expand to feel satisfying instead of snapping. `control-nav-motion.js` coordinates the layout change and the content swap.
+
+- Collapsing renders the rail markup immediately, then animates the shell grid and rail width from 240px to 64px over 200ms.
+- Expanding animates the shell grid and rail width first. The labeled markup swaps in when the 200ms width animation finishes, so labels do not appear in a narrow rail.
+- Returning to the rail before the expansion finishes cancels the pending markup swap.
+- The first render is immediate and unanimated so a page load does not animate.
+- Nav content uses a 200ms `control-nav-enter` fade and 6px slide when it swaps.
+- Reduced-motion users get no transition or animation.
+
+Motion state lives in `data-nav-motion` on the shell and the `control-nav-enter` class on `#controlNavContent`. Both are cleared when the animation ends or the controller is destroyed.
+
+Files changed: `control.css`, `control-app.js`, `control-nav-motion.js`, `control.html`, `commands.html`, `control-nav-motion.test.js`, `control-sidebar-polish.test.js`, and `control-theme-surfaces.test.js`.
+
+Asset versions are `control.css?v=31` and `control-app.js?v=29`. The new module is imported as `control-nav-motion.js?v=1`.
+
+Verification:
+
+- Finish branch: `npm run check:web` pass, `npm run test:web` 306 pass, `git diff --check` pass.
+- Local hosting checkout: `npm run check:web` pass, `npm run test:web` 328 pass, `git diff --check` pass.
+- Public host serves `control.css?v=31`, `control-app.js?v=29`, and `control-nav-motion.js?v=1`.
+- Live animation inspection shows a 200ms `grid-template-columns` transition on the shell and a 200ms `width` transition on the rail. Finishing both animations yields a 240px grid and a 240px rail.
+- `/healthz` returns `{"ok":true}`.
