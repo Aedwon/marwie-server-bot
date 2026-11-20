@@ -37,3 +37,20 @@ Extends the six-field activity sum in `docs/superpowers/specs/2026-09-01-control
 - **Passive telemetry:** `Human messages` and `Voice member minutes` display `Unavailable` when unavailable/null (never `0`), append `(partial)` when `status === 'partial'`, and show measured values (including true `0`) when `status === 'complete'`.
 - **Single operational-events chart (YAGNI):** Passive telemetry is disabled in live production. Keep one operational-events SVG chart (`role="group"` so interactive focusable points remain accessible) with a dedicated horizontal scroll wrapper around `<svg>` and a non-clipping bucket breakdown inspector outside the scroller. Non-null passive counts still appear in the bucket breakdown when present.
 - **v1 compatibility:** Flat v1 snapshots and unversioned ranged v1 snapshots retain their exact 7 operational rows and existing chart behavior without fabricating v2 metrics or coverage chips.
+
+
+## Stage B: Public Pages Design-System Alignment (`/commands` and `/handbook`)
+
+### Decision 4: All Commands switches to System theme default (supersedes dark-first spec)
+
+Supersedes the dark-first default in `docs/superpowers/specs/2026-08-30-all-commands-redesign.md:28`.
+
+- `/commands` (`docs-site/commands.html`) now defaults to `system` (`data-theme="light" data-preference="system"`, `localStorage.getItem('rob-doc-theme') || 'system'`, `<meta name="theme-color" content="#fcfcfb" id="themeColor">`, System appearance button `aria-pressed="true"`), matching Control and Design System §32 and removing the pre-JS dark flash before `control-theme.js` initializes.
+- `/commands` removes `/styles.css` and consumes only `control.css` + `commands.css` using canonical `--surface-*`, `--text-*`, `--stroke-*`, `--accent-info`, `--focus-ring`, and `--shadow-floating` tokens with Figtree `400`/`500`/`600` weights and `>= 13px` typography (`13px / 18px` metadata contract preserved on `.search-status` and `.permission-badge`).
+- `/commands` adopts an `< 876px` (`max-width: 875px`) drawer breakpoint (`240px` sidebar + `600px` center floor + gaps = `876px`, matching `control-shell-layout.js:22` `labelsNoContext`) because `/commands` has no icon-only rail. `.commands-shell` synchronizes `data-nav-mode="expanded|drawer"` and `data-context-mode="none"` with `installDrawerController({ isDrawer })` on boot and resize so the desktop sidebar is never marked `inert`, and the window Escape handler respects `event.defaultPrevented` / open drawer state so closing the drawer never clears an active search query.
+
+### Decision 5: Handbook token unification without structural overhaul
+
+- `/handbook` (`docs-site/index.html`) keeps its existing navigation/section structure and `/styles.css` HTTP 200 route while removing the stale hardcoded `"45 slash commands"` count (`V1 · slash commands require confirmation`).
+- `docs-site/styles.css`, `docs-site/home.css`, and `docs-site/visual.css` migrate completely off the legacy `#365544` green palette, Apple SF system fonts, `650`/`700` weights, and sub-12px sizes onto canonical paper/ink/sky tokens (`#fcfcfb`/`#ffffff`/`#f4f4f2`/`#111113`/`#2f6fa3`/`#7db9e8` light; `#0f0f11`/`#19191c`/`#1b1b1e`/`#ececee`/`#7db9e8` dark), Figtree `400`/`500`/`600`, and a `>= 12px` floor with `visual.css` cascade aligned to `styles.css`.
+- `docs-site/app.js` updates `theme-color` to `#0f0f11`/`#fcfcfb`, persists `rob-doc-theme` only on explicit button clicks (`{ persist: true }`), and synchronizes mobile drawer `inert`/`aria-hidden`/focus management so closed offscreen links are never tabbable and Escape restores focus to `#menuBtn`.
