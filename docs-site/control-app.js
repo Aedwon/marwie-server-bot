@@ -376,11 +376,20 @@ async function loadSession() {
   }
 
   setStatus('Loading fresh server state…');
-  const data = await loadGuildState(guild.id);
-  guildState = data.state;
-  snapshot = data.snapshot;
-  hydrateControlPages(guildState, snapshot?.page_revisions || guildState?.meta?.page_revisions || {});
-  setStatus(snapshot?.fresh ? 'Server state is current.' : 'Server state is unavailable.', snapshot?.fresh ? 'good' : 'bad');
+  try {
+    const data = await loadGuildState(guild.id);
+    guildState = data.state;
+    snapshot = data.snapshot;
+    hydrateControlPages(guildState, snapshot?.page_revisions || guildState?.meta?.page_revisions || {});
+    setStatus(snapshot?.fresh ? 'Server state is current.' : 'Server state is unavailable.', snapshot?.fresh ? 'good' : 'bad');
+  } catch (error) {
+    guildState = null;
+    snapshot = null;
+    resetActivityController();
+    setStatus(error?.message || 'Rob-bot could not provide fresh server state. Try again in a moment.', 'bad');
+    renderMain();
+    return;
+  }
   renderMain();
 }
 

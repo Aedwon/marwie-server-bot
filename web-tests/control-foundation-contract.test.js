@@ -37,7 +37,9 @@ test('browser mutations remain idempotent, rate bounded and fresh-snapshot gated
 test('stale snapshot refresh remains an internal durable action path', () => {
   assert.match(guildStateSource, /'refresh_snapshot'/);
   assert.match(guildStateSource, /tryWakeControlWorker/);
-  assert.match(guildStateSource, /waitForFreshSnapshot/);
+  assert.doesNotMatch(guildStateSource, /waitForFreshSnapshot/);
+  assert.match(guildStateSource, /json\(res, 202/);
+  assert.match(guildStateSource, /status: 'refreshing'/);
 });
 
 test('worker keeps live permission recheck and sanitized unexpected failures in one executor', () => {

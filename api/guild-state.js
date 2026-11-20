@@ -15,14 +15,23 @@ import {
 import { normalizeSnapshotChannelCapabilities } from './_lib/snapshot-compat.js';
 
 const REFRESH_BUCKET_MS = 5 * 1000;
-const REFRESH_WAIT_MS = 75 * 1000;
-
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 async function requestSnapshotRefresh(session, guildId) {
   const sql = database();
+  const active = await sql`
+    SELECT id, status
+    FROM control_actions
+    WHERE guild_id = ${guildId}
+      AND actor_id = ${session.userId}
+      AND action_type = 'refresh_snapshot'
+      AND status IN ('queued', 'claimed')
+      AND created_at >= CURRENT_TIMESTAMP - INTERVAL '30 seconds'
+    ORDER BY created_at DESC
+    LIMIT 1
+  `;
+  if (active[0]) {
+    if (active[0].status === 'queued') await tryWakeControlWorker();
+    return true;
+  }
   const key = `snapshot-refresh:${Math.floor(Date.now() / REFRESH_BUCKET_MS)}`;
   const actionId = randomToken(16);
   const inserted = await sql`
@@ -53,24 +62,6 @@ async function requestSnapshotRefresh(session, guildId) {
   `;
   if (!existing[0] || existing[0].status === 'queued') return await tryWakeControlWorker();
   return true;
-}
-
-async function waitForFreshSnapshot(guildId, wakeDelivered) {
-  const deadline = Date.now() + REFRESH_WAIT_MS;
-  let nextWakeRetry = Date.now() + 5 * 1000;
-  let delivered = wakeDelivered;
-
-  while (Date.now() < deadline) {
-    await sleep(1000);
-    const row = await getSnapshot(guildId);
-    if (row && snapshotIsFresh(row)) return row;
-
-    if (!delivered && Date.now() >= nextWakeRetry) {
-      delivered = await tryWakeControlWorker();
-      nextWakeRetry = Date.now() + 5 * 1000;
-    }
-  }
-  return null;
 }
 
 function sendSnapshot(res, row) {
@@ -105,15 +96,13 @@ export default async function handler(req, res) {
       return;
     }
 
-    const wakeDelivered = await requestSnapshotRefresh(session, guildId);
-    const refreshed = await waitForFreshSnapshot(guildId, wakeDelivered);
-    if (!refreshed) {
-      throw new HttpError(
-        503,
-        'Rob-bot did not publish fresh server state in time. Retry in a moment.',
-      );
-    }
-    sendSnapshot(res, refreshed);
+    await requestSnapshotRefresh(session, guildId);
+    res.setHeader('Retry-After', '1');
+    json(res, 202, {
+      guild_id: String(guildId),
+      status: 'refreshing',
+      retry_after_ms: 1000,
+    });
   } catch (error) {
     handleError(res, error);
   }

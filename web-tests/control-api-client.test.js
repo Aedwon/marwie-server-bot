@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { enqueuePageSave, waitForAction } from '../docs-site/control-api.js';
+import { enqueuePageSave, loadGuildState, waitForAction } from '../docs-site/control-api.js';
 
 function response(status, body) {
   return {
@@ -71,4 +71,50 @@ test('wake failure retries the same logical save with the same idempotency key',
   assert.equal(bodies.length, 2);
   assert.equal(bodies[0].idempotency_key, bodies[1].idempotency_key);
   assert.deepEqual(bodies[0].payload, bodies[1].payload);
+});
+
+
+test('guild-state polling resolves after refreshing responses become fresh', async () => {
+  const responses = [
+    response(202, { status: 'refreshing', retry_after_ms: 1000 }),
+    response(202, { status: 'refreshing', retry_after_ms: 1000 }),
+    response(200, { state: { guild: { id: '123' } }, snapshot: { fresh: true } }),
+  ];
+  let delays = 0;
+  const result = await loadGuildState('123', {
+    fetchImpl: async () => responses.shift(),
+    delay: async (ms) => { assert.equal(ms, 1000); delays += 1; },
+    maxAttempts: 10,
+  });
+  assert.equal(result.snapshot.fresh, true);
+  assert.equal(delays, 2);
+});
+
+test('guild-state polling stops after the configured refreshing bound', async () => {
+  let calls = 0;
+  let delays = 0;
+  await assert.rejects(
+    loadGuildState('123', {
+      fetchImpl: async () => { calls += 1; return response(202, { status: 'refreshing' }); },
+      delay: async (ms) => { assert.equal(ms, 1000); delays += 1; },
+      maxAttempts: 3,
+    }),
+    /Rob-bot could not provide fresh server state\. Try again in a moment\./,
+  );
+  assert.equal(calls, 3);
+  assert.equal(delays, 2);
+});
+
+test('guild-state polling fails ordinary HTTP errors immediately', async () => {
+  let calls = 0;
+  let delays = 0;
+  await assert.rejects(
+    loadGuildState('123', {
+      fetchImpl: async () => { calls += 1; return response(500, { error: 'broken' }); },
+      delay: async () => { delays += 1; },
+    }),
+    /broken/,
+  );
+  assert.equal(calls, 1);
+  assert.equal(delays, 0);
 });

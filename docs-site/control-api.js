@@ -82,8 +82,21 @@ export async function waitForAction(actionId, { fetchImpl = fetch, delay = ms =>
   throw new Error('Rob-bot did not finish the Control save in time. Refresh and retry safely.');
 }
 
-export async function loadGuildState(guildId, fetchImpl = fetch) {
-  return await jsonRequest(`/api/guild-state?guild_id=${encodeURIComponent(guildId)}`, {}, fetchImpl);
+export async function loadGuildState(guildId, options = fetch) {
+  const config = typeof options === 'function' ? { fetchImpl: options } : (options || {});
+  const fetchImpl = config.fetchImpl || fetch;
+  const delay = config.delay || (ms => new Promise(resolve => setTimeout(resolve, ms)));
+  const maxAttempts = Number.isInteger(config.maxAttempts) && config.maxAttempts > 0
+    ? config.maxAttempts
+    : 10;
+  const url = `/api/guild-state?guild_id=${encodeURIComponent(guildId)}`;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const data = await jsonRequest(url, {}, fetchImpl);
+    if (data?.status !== 'refreshing') return data;
+    if (attempt + 1 < maxAttempts) await delay(1000);
+  }
+  throw new Error('Rob-bot could not provide fresh server state. Try again in a moment.');
 }
 
 export async function loadActivity(guildId, { cursor = null, limit = 25, fetchImpl = fetch } = {}) {

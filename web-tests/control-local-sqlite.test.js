@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 
 import { createSqliteTaggedClient } from '../api/_lib/sqlite-database.js';
+import { snapshotIsFresh } from '../api/_lib/control.js';
 
 function withTempDb(run) {
   const directory = mkdtempSync(join(tmpdir(), 'rob-control-sqlite-'));
@@ -51,7 +52,7 @@ test('SQLite tagged client binds values, translates current Postgres syntax, and
 
     const cursor = new Date('2026-10-16T06:00:00.000Z');
     const castRows = await sql`SELECT ${cursor}::timestamptz AS created_at, ${JSON.stringify(payload)}::json AS payload_json`;
-    assert.equal(castRows[0].created_at, '2026-10-16 06:00:00.000');
+    assert.equal(castRows[0].created_at, '2026-10-16T06:00:00.000Z');
     assert.deepEqual(castRows[0].payload_json, payload);
 
     const intervalRows = await sql`
@@ -66,6 +67,19 @@ test('SQLite tagged client binds values, translates current Postgres syntax, and
     const foreignRows = await sql`PRAGMA foreign_keys`;
     assert.equal(Number(busyRows[0].timeout), 5000);
     assert.equal(Number(foreignRows[0].foreign_keys), 1);
+  });
+});
+
+
+test('SQLite timestamp rows are explicit UTC and freshness is timezone-safe', async () => {
+  await withTempDb(async path => {
+    const sql = createSqliteTaggedClient(path);
+    const current = await sql`SELECT CURRENT_TIMESTAMP AS updated_at`;
+    const stale = await sql`SELECT datetime(CURRENT_TIMESTAMP, '-4 minutes') AS updated_at`;
+
+    assert.match(current[0].updated_at, /^\d{4}-\d{2}-\d{2}T.*Z$/);
+    assert.equal(snapshotIsFresh(current[0]), true);
+    assert.equal(snapshotIsFresh(stale[0]), false);
   });
 });
 

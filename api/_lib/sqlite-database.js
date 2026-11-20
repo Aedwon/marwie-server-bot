@@ -3,6 +3,8 @@ import { DatabaseSync } from 'node:sqlite';
 
 const IDEMPOTENCY_CONSTRAINT = 'uq_control_actions_actor_idempotency';
 const JSON_COLUMN = /_json$/;
+const TIMESTAMP_COLUMN = /_at$/;
+const SQLITE_UTC_TIMESTAMP = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?$/;
 
 function translateIntervals(sql) {
   return sql
@@ -37,7 +39,11 @@ function sqliteValue(value) {
 
 function decodedValue(key, value) {
   if (typeof value === 'bigint') return value.toString();
-  if (!JSON_COLUMN.test(key) || typeof value !== 'string') return value;
+  if (typeof value !== 'string') return value;
+  if (TIMESTAMP_COLUMN.test(key) && SQLITE_UTC_TIMESTAMP.test(value)) {
+    return new Date(`${value.replace(' ', 'T')}Z`).toISOString();
+  }
+  if (!JSON_COLUMN.test(key)) return value;
   try {
     return JSON.parse(value);
   } catch {
