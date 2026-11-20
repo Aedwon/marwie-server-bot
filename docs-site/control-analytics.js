@@ -256,6 +256,8 @@ function analyticsChartMarkup(projection, selectedRange, clock) {
   const xFor = index => series.length === 1
     ? margin.left + (plotWidth / 2)
     : margin.left + ((index / (series.length - 1)) * plotWidth);
+  const pointStep = series.length > 1 ? plotWidth / (series.length - 1) : plotWidth;
+  const hitRadius = Math.max(5, Math.min(10, Math.floor(((pointStep - 2) / 2) * 10) / 10));
   const yFor = total => margin.top + plotHeight - ((total / maximum) * plotHeight);
   const points = totals.map((total, index) => `${xFor(index).toFixed(2)},${yFor(total).toFixed(2)}`);
   const yTicks = Array.from({ length: 5 }, (_, index) => {
@@ -301,7 +303,7 @@ function analyticsChartMarkup(projection, selectedRange, clock) {
     const label = escapeHtml(bucketSummary(bucket, totals[index], clock));
     const position = `cx="${xFor(index).toFixed(2)}" cy="${yFor(totals[index]).toFixed(2)}"`;
     return `<g class="analytics-point-group" tabindex="0" role="button" data-analytics-point="${index}" data-bucket-summary="${label}" aria-label="${label}">
-      <circle class="analytics-line-hit" ${position} r="10"></circle>
+      <circle class="analytics-line-hit" ${position} r="${hitRadius}"></circle>
       <circle class="analytics-line-point" ${position} r="4"></circle>
     </g>`;
   }).join('')}
@@ -346,7 +348,7 @@ function analyticsReportMarkup(snapshot, requestedRange, clock) {
         ${metricDefinition('Tickets closed', closed)}
         ${v2 ? metricDefinition('Tickets reopened', projection.tickets_reopened ?? 0) : ''}
         ${v2 ? metricDefinition('Open tickets (current)', backlog ?? 'Unavailable') : ''}
-        ${v2 ? metricDefinition('Median ticket close time', formatDurationSeconds(projection.ticket_median_close_seconds, { ticketsClosed })) : ''}
+        ${v2 ? metricDefinition('Median ticket close time', ticketsClosed == null ? 'Unavailable' : formatDurationSeconds(projection.ticket_median_close_seconds, { ticketsClosed })) : ''}
         ${metricDefinition('Quiz answers', projection.quiz_answers ?? 0)}
         ${metricDefinition('Quiz accuracy', formatAccuracy(projection.quiz_accuracy))}
         ${metricDefinition('Anonymous questions', projection.anonymous_questions ?? 0)}

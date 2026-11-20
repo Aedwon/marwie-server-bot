@@ -455,3 +455,26 @@ test('Control and public Commands load the same version of the shared Control st
   assert.match(html, /src="\/control-app\.js\?v=30"/);
   assert.match(readAsset('control-app.js'), /from '\.\/control-analytics\.js\?v=21'/);
 });
+
+test('absent closure count renders Unavailable for median ticket close time even if median seconds is set', () => {
+  const snapshot = v2Snapshot({ tickets_closed: undefined, tickets_closed_distinct: undefined, ticket_median_close_seconds: 185 });
+  const markup = page(snapshot);
+  assert.equal(metric(markup, 'Tickets closed'), 'Unavailable');
+  assert.equal(metric(markup, 'Median ticket close time'), 'Unavailable');
+});
+
+test('30-bucket series keeps non-overlapping hit circles between adjacent equal-value points', () => {
+  const dayMs = 24 * 60 * 60 * 1000;
+  const start = Date.parse('2026-10-21T00:00:00Z');
+  const series = Array.from({ length: 30 }, (_, index) => ({
+    period_start: new Date(start + index * dayMs).toISOString(),
+    period_end: new Date(start + (index + 1) * dayMs).toISOString(),
+    reputation_events: 5,
+  }));
+  const markup = page(v2Snapshot({ range_key: '1m', bucket_granularity: 'day', series }), '1d');
+  const hits = [...markup.matchAll(/<circle class="analytics-line-hit" cx="([\d.]+)" cy="([\d.]+)" r="([\d.]+)"/g)]
+    .map(match => ({ cx: Number(match[1]), cy: Number(match[2]), r: Number(match[3]) }));
+  assert.equal(hits.length, 30);
+  const gap = hits[1].cx - hits[0].cx;
+  assert.ok(hits[0].r * 2 < gap, `expected diameter ${hits[0].r * 2} < center spacing ${gap}`);
+});
