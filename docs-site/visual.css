@@ -1,13 +1,7 @@
 :root {
-  --page-surface: #f7f7f9;
-  --page-surface-strong: #f0f0f3;
-  --hairline: color-mix(in srgb, var(--text) 10%, transparent);
-}
-
-html[data-theme="dark"] {
-  --page-surface: #1b1b1e;
-  --page-surface-strong: #222226;
-  --hairline: color-mix(in srgb, var(--text) 12%, transparent);
+  --page-surface: var(--surface-secondary);
+  --page-surface-strong: var(--surface-selected);
+  --hairline: var(--stroke-subtle);
 }
 
 body {
@@ -16,7 +10,6 @@ body {
 
 .sidebar {
   border-right: 0;
-  background: color-mix(in srgb, var(--sidebar) 92%, var(--bg));
   padding-inline: 18px;
 }
 
@@ -42,38 +35,20 @@ body {
 .nav-label {
   padding-left: 7px;
   color: var(--quiet);
-  font-size: 10.5px;
+  font-size: 12px;
   letter-spacing: .045em;
   text-transform: uppercase;
 }
 
 .nav a {
-  min-height: 34px;
   margin-left: 13px;
   padding-inline: 10px;
   border-radius: 8px;
 }
 
-.nav a:hover {
-  background: color-mix(in srgb, var(--page-surface-strong) 74%, transparent);
-}
-
-.nav a[aria-current="true"],
-.nav a[aria-current="page"] {
-  background: var(--page-surface-strong);
-  color: var(--text);
-}
-
 .appearance {
   border-top: 0;
   padding-top: 20px;
-}
-
-.theme-switcher {
-  border: 0;
-  padding: 3px;
-  border-radius: 10px;
-  background: var(--page-surface-strong);
 }
 
 .theme-switcher button {
@@ -140,8 +115,7 @@ details {
 }
 
 .note,
-.operator-note,
-.setup-principle {
+.operator-note {
   border: 0;
   border-radius: 14px;
   background: var(--page-surface);

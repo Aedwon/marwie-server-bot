@@ -266,36 +266,63 @@ const themeButtons = [...document.querySelectorAll('[data-theme-choice]')];
 const themeColor = document.querySelector('#themeColor');
 const scheme = matchMedia('(prefers-color-scheme: dark)');
 
-function applyTheme(pref) {
+function applyTheme(pref, { persist = false } = {}) {
   const actual = pref === 'system' ? (scheme.matches ? 'dark' : 'light') : pref;
   root.dataset.preference = pref;
   root.dataset.theme = actual;
   themeButtons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.themeChoice === pref)));
-  localStorage.setItem('rob-doc-theme', pref);
-  if (themeColor) themeColor.content = actual === 'dark' ? '#171719' : '#ffffff';
+  if (persist) localStorage.setItem('rob-doc-theme', pref);
+  if (themeColor) themeColor.content = actual === 'dark' ? '#0f0f11' : '#fcfcfb';
 }
 
-themeButtons.forEach(button => button.addEventListener('click', () => applyTheme(button.dataset.themeChoice)));
+themeButtons.forEach(button => button.addEventListener('click', () => applyTheme(button.dataset.themeChoice, { persist: true })));
 scheme.addEventListener?.('change', () => {
-  if (root.dataset.preference === 'system') applyTheme('system');
+  if (root.dataset.preference === 'system') applyTheme('system', { persist: false });
 });
-applyTheme(root.dataset.preference || 'system');
+applyTheme(root.dataset.preference || 'system', { persist: false });
 
 const side = document.querySelector('#sidebar');
+const main = document.querySelector('main');
 const menuBtn = document.querySelector('#menuBtn');
-function closeMenu() {
-  side?.classList.remove('open');
-  menuBtn?.setAttribute('aria-expanded', 'false');
-}
-menuBtn?.addEventListener('click', () => {
-  const open = side?.classList.toggle('open') || false;
+const menuNarrow = matchMedia('(max-width: 900px)');
+
+function syncMenu() {
+  if (!menuNarrow.matches) side.classList.remove('open');
+  const open = side.classList.contains('open');
+  side.inert = menuNarrow.matches && !open;
+  main.inert = open;
+  if (side.inert) side.setAttribute('aria-hidden', 'true');
+  else side.removeAttribute('aria-hidden');
   menuBtn.setAttribute('aria-expanded', String(open));
+}
+
+function closeMenu({ restoreFocus = false } = {}) {
+  side.classList.remove('open');
+  syncMenu();
+  if (restoreFocus) menuBtn.focus();
+}
+
+syncMenu();
+menuNarrow.addEventListener?.('change', syncMenu);
+
+menuBtn.addEventListener('click', () => {
+  if (!menuNarrow.matches) return;
+  if (side.classList.contains('open')) {
+    closeMenu({ restoreFocus: true });
+  } else {
+    side.classList.add('open');
+    syncMenu();
+    side.querySelector('.nav a, .theme-switcher button')?.focus();
+  }
 });
-side?.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
-  if (innerWidth <= 900) closeMenu();
+side.querySelectorAll('a[href^="#"]').forEach(link => link.addEventListener('click', () => {
+  if (menuNarrow.matches) closeMenu();
 }));
 addEventListener('keydown', event => {
-  if (event.key === 'Escape') closeMenu();
+  if (event.key === 'Escape' && side.classList.contains('open')) {
+    event.preventDefault();
+    closeMenu({ restoreFocus: true });
+  }
 });
 
 const links = [...document.querySelectorAll('.nav a[href^="#"]')];

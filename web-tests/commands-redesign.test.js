@@ -60,18 +60,25 @@ test('All Commands uses the Control sibling shell instead of legacy handbook chr
   assert.doesNotMatch(commandsHtml, /Rob-bot Handbook/);
 });
 
-test('All Commands defaults to Dark and reuses Control theme and drawer behavior', () => {
-  assert.match(commandsHtml, /<html[^>]*data-theme="dark"[^>]*data-preference="dark"/);
-  assert.match(commandsHtml, /localStorage\.getItem\('rob-doc-theme'\) \|\| 'dark'/);
+test('All Commands defaults to System and reuses Control theme and drawer behavior', () => {
+  assert.match(commandsHtml, /<html[^>]*data-theme="light"[^>]*data-preference="system"/);
+  assert.match(commandsHtml, /localStorage\.getItem\('rob-doc-theme'\) \|\| 'system'/);
+  assert.match(commandsHtml, /<meta name="theme-color" content="#fcfcfb" id="themeColor">/);
+  assert.match(commandsHtml, /fonts\.googleapis\.com\/css2\?family=Figtree:wght@400;500;600/);
+  assert.doesNotMatch(commandsHtml, /\/styles\.css/);
+  assert.match(commandsHtml, /class="control-shell commands-shell"[^>]*data-nav-mode="expanded"[^>]*data-context-mode="none"/);
   const appearanceStart = commandsHtml.indexOf('class="control-appearance"');
   assert.ok(appearanceStart >= 0);
   const appearance = commandsHtml.slice(appearanceStart, commandsHtml.indexOf('</div>', appearanceStart));
   assert.ok(appearance.indexOf('data-theme-choice="dark"') < appearance.indexOf('data-theme-choice="light"'));
   assert.ok(appearance.indexOf('data-theme-choice="light"') < appearance.indexOf('data-theme-choice="system"'));
+  assert.match(appearance, /data-theme-choice="system"[^>]*aria-pressed="true"/);
   assert.match(commandsJs, /import \{ installThemeControls \} from '\.\/control-theme\.js';/);
   assert.match(commandsJs, /import \{ installDrawerController \} from '\.\/control-navigation\.js';/);
   assert.match(commandsJs, /installThemeControls\s*\(/);
   assert.match(commandsJs, /installDrawerController\s*\(/);
+  assert.match(commandsJs, /isDrawer\s*:/);
+  assert.doesNotMatch(commandsJs, /mediaQuery\s*:/);
 });
 
 test('All Commands keeps the approved 13px typography floor and metadata treatment', () => {
