@@ -61,7 +61,7 @@ test('Reputation removes decorative rank markers and uses Control-styled thresho
   assert.doesNotMatch(read, /community-tier-index|>01<|>02<|>03</);
 
   const edit = definition.render({ state: pageState(persisted, 'edit'), snapshot: { features: [], resources: [] } });
-  assert.equal((edit.match(/community-threshold-input/g) || []).length, 3);
+  assert.equal((edit.match(/class="control-number-input"[^>]*data-community-threshold=/g) || []).length, 3);
 });
 
 test('quiz question toggle remains question-level rotation inclusion', () => {

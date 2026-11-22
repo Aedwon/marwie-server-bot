@@ -3,9 +3,9 @@ import {
   registerControlPage,
   registeredControlPage,
 } from './control-page-registry.js';
-import { contextDefinitionListMarkup, contextSectionMarkup, controlPageHeaderMarkup, saveBarStatusMarkup } from './control-components.js?v=23';
+import { contextDefinitionListMarkup, contextSectionMarkup, controlPageHeaderMarkup, saveBarStatusMarkup } from './control-components.js?v=24';
 import { featureResourceKeys } from './control-resource-contract.js';
-import { resourceBindingState, withResourceBindings } from './control-resource-bindings.js';
+import { resourceBindingState, withResourceBindings } from './control-resource-bindings.js?v=2';
 
 export const ANALYTICS_PAGE_KEY = '/control/analytics';
 
@@ -136,7 +136,7 @@ function coverageListMarkup(coverage) {
     const detail = coverageDetail(entry);
     return `<li class="analytics-coverage-item">
       <span>${label}</span>
-      <span class="control-state-chip"${tone ? ` data-tone="${tone}"` : ''}>${status}</span>
+      <span class="analytics-coverage-status"${tone ? ` data-tone="${tone}"` : ''}>${status}</span>
       ${detail ? `<span class="analytics-coverage-note">${escapeHtml(detail)}</span>` : ''}
     </li>`;
   }).join('')}

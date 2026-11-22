@@ -1,6 +1,7 @@
 import { activityPageMarkup, commandsPageMarkup } from './control-secondary.js';
+import { controlIcon } from './control-icons.js?v=2';
 
-export { navigationMarkup } from './control-shell.js?v=1';
+export { navigationMarkup } from './control-shell.js?v=2';
 
 export function escapeHtml(value) {
   return String(value ?? '')
@@ -53,12 +54,6 @@ export function taskIndicatorMarkup({ state = 'queued', size = 22, progress = nu
     </svg>
     <span class="control-task-indicator-label">${escapeHtml(visibleLabel)}</span>
   </span>`;
-}
-
-export function stateChipMarkup(enabled, { label = '' } = {}) {
-  const on = Boolean(enabled);
-  const text = label || (on ? 'Enabled' : 'Disabled');
-  return `<span class="control-state-chip" data-tone="${on ? 'good' : 'neutral'}" data-enabled="${String(on)}">${escapeHtml(text)}</span>`;
 }
 
 export function pendingChangeCount(state = {}) {
@@ -118,6 +113,7 @@ export function saveBarView(state, { blocked = false } = {}) {
 export function controlPageHeaderMarkup({
   title,
   description = '',
+  lede = '',
   enabled = null,
   editing = false,
   editable = true,
@@ -128,11 +124,8 @@ export function controlPageHeaderMarkup({
   meta = '',
   showFeatureToggle = true,
 } = {}) {
-  const state = !editing && typeof enabled === 'boolean'
-    ? stateChipMarkup(enabled)
-    : '';
-  const metaMarkup = state || meta
-    ? `<div class="control-page-meta">${state}${meta}</div>`
+  const metaMarkup = meta
+    ? `<div class="control-page-meta">${meta}</div>`
     : '';
   const resolvedActions = actions || (editable
     ? (!editing || showFeatureToggle
@@ -149,7 +142,7 @@ export function controlPageHeaderMarkup({
   return `<header class="control-page-header" data-page-header>
     <div class="control-page-heading">
       <h1>${escapeHtml(title)}</h1>
-      ${description ? `<p class="control-page-intro">${escapeHtml(description)}</p>` : ''}
+      ${description || lede ? `<p class="control-page-intro">${escapeHtml(lede || description)}</p>` : ''}
       ${metaMarkup}
     </div>
     <div class="control-page-header-actions">${resolvedActions || ''}</div>
@@ -241,4 +234,151 @@ export function pageMarkup(destination, { authenticated = false, activityState =
     <h1>${escapeHtml(destination.label)}</h1>
     <p class="control-page-intro">${intro}</p>
   </section>`;
+}
+
+
+/* ---------- Page model: settings rows, master switch, problems, disclosure ---------- */
+
+let rowIdCounter = 0;
+const nextRowId = prefix => `${prefix}-${(rowIdCounter += 1)}`;
+
+// A warning icon and one sentence. No role: the save bar and live region announce changes.
+export function problemLine(text) {
+  if (!text) return '';
+  return `<p class="control-problem">${controlIcon('warning', { size: 14, className: 'control-problem-icon' })}<span>${escapeHtml(text)}</span></p>`;
+}
+
+// Container for settingRow markup. `master` ('on' | 'off') dims every row after the master switch when off.
+export function settingsRows(rows = '', { label = '', master = '' } = {}) {
+  const labelAttr = label ? ` role="group" aria-label="${escapeHtml(label)}"` : '';
+  const masterAttr = master ? ` data-master="${escapeHtml(master)}"` : '';
+  return `<div class="control-settings-rows" data-settings-rows${labelAttr}${masterAttr}>${rows}</div>`;
+}
+
+// One row: label and hint left, one control in the fixed control column right.
+// A problem replaces the hint and marks the row with data-problem.
+export function settingRow({
+  label,
+  hint = '',
+  problem = '',
+  control = '',
+  rowKey = '',
+  controlId = '',
+  master = false,
+} = {}) {
+  const labelMarkup = controlId
+    ? `<label class="control-setting-label" for="${escapeHtml(controlId)}">${escapeHtml(label)}</label>`
+    : `<span class="control-setting-label">${escapeHtml(label)}</span>`;
+  const detail = problem
+    ? problemLine(problem)
+    : (hint ? `<p class="control-setting-hint">${escapeHtml(hint)}</p>` : '');
+  const key = rowKey ? ` data-row-key="${escapeHtml(rowKey)}"` : '';
+  return `<div class="control-setting-row"${key}${problem ? ' data-problem' : ''}${master ? ' data-master-row' : ''} data-setting-row>
+    <div class="control-setting-copy">${labelMarkup}${detail}</div>
+    <div class="control-setting-control">${control}</div>
+  </div>`;
+}
+
+export function switchMarkup({ checked = false, attributes = '', id = '', label = '' } = {}) {
+  const idAttr = id ? ` id="${escapeHtml(id)}"` : '';
+  const labelAttr = label ? ` aria-label="${escapeHtml(label)}"` : '';
+  return `<span class="control-switch"><input type="checkbox" role="switch"${idAttr}${labelAttr}${attributes ? ` ${attributes}` : ''}${checked ? ' checked' : ''}><span class="control-switch-track" aria-hidden="true"></span></span>`;
+}
+
+// The first row of a feature page. The label is a verb phrase. When off, offHint states the effect.
+export function masterSwitchRow({
+  label,
+  hint = '',
+  offHint = '',
+  checked = false,
+  field = 'enabled',
+  attribute = 'data-setting-field',
+} = {}) {
+  const id = nextRowId('control-master');
+  return settingRow({
+    label,
+    hint: checked ? hint : offHint,
+    controlId: id,
+    rowKey: 'master',
+    master: true,
+    control: switchMarkup({ checked, id, attributes: `${attribute}="${escapeHtml(field)}"` }),
+  });
+}
+
+// Bordered number input with its unit after it.
+export function numberWithUnit({
+  value = '',
+  unit = '',
+  min = null,
+  max = null,
+  step = 1,
+  id = '',
+  attributes = '',
+  placeholder = '',
+  label = '',
+} = {}) {
+  const idAttr = id ? ` id="${escapeHtml(id)}"` : '';
+  const labelAttr = label ? ` aria-label="${escapeHtml(label)}"` : '';
+  const placeholderAttr = placeholder ? ` placeholder="${escapeHtml(placeholder)}"` : '';
+  return `<span class="control-number"><input class="control-number-input" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-min="${min ?? ""}" data-max="${max ?? ""}"${idAttr}${labelAttr}${placeholderAttr}${attributes ? ` ${attributes}` : ''} value="${value == null ? '' : escapeHtml(value)}">${unit ? `<span class="control-unit">${escapeHtml(unit)}</span>` : ''}</span>`;
+}
+
+// Open state survives page re-renders. Keyed by disclosure id.
+const openDisclosures = new Set();
+export const isDisclosureOpen = id => openDisclosures.has(id);
+export function setDisclosureOpen(id, open) {
+  if (open) openDisclosures.add(id);
+  else openDisclosures.delete(id);
+}
+
+// The one disclosure pattern: a button with a chevron that reveals its body in place.
+// `trigger` replaces the plain label when the whole row is the button.
+export function disclosure({ id, label = '', trigger = '', body = '', open = null, className = '' } = {}) {
+  const isOpen = open == null ? isDisclosureOpen(id) : Boolean(open);
+  const bodyId = `control-disclosure-${id}`;
+  return `<div class="control-disclosure${className ? ` ${className}` : ''}" data-disclosure="${escapeHtml(id)}" data-open="${isOpen}">
+    <button type="button" class="control-disclose" data-disclosure-toggle aria-expanded="${isOpen}" aria-controls="${escapeHtml(bodyId)}">${trigger || escapeHtml(label)}${controlIcon('chevron', { size: 12, className: 'control-disclose-chev' })}</button>
+    <div class="control-reveal" id="${escapeHtml(bodyId)}"><div${isOpen ? '' : ' inert'} data-disclosure-body>${body}</div></div>
+  </div>`;
+}
+
+// Flips one disclosure from its toggle button and records the state. Returns the new open state.
+export function toggleDisclosure(button) {
+  const container = button?.closest?.('[data-disclosure]');
+  if (!container) return null;
+  const open = container.dataset.open !== 'true';
+  container.dataset.open = String(open);
+  button.setAttribute('aria-expanded', String(open));
+  const body = container.querySelector('[data-disclosure-body]');
+  if (body) body.inert = !open;
+  setDisclosureOpen(container.dataset.disclosure, open);
+  return open;
+}
+
+// Section on a settings page: h2 15px with the rows beneath it.
+export function settingsSection({ id = '', title, body = '', action = '' } = {}) {
+  const headingId = id ? ` id="${escapeHtml(id)}"` : '';
+  return `<section class="control-settings-section"${id ? ` aria-labelledby="${escapeHtml(id)}"` : ''}>
+    <div class="control-settings-heading"><h2${headingId}>${escapeHtml(title)}</h2>${action}</div>
+    ${body}
+  </section>`;
+}
+
+// Pure: which rows a saved page save touched, so they can flash once.
+export function savedRowKeys(changes = []) {
+  const keys = new Set();
+  for (const change of changes || []) {
+    const payload = change?.payload || {};
+    switch (change?.action_type) {
+      case 'set_feature': keys.add('master'); break;
+      case 'set_resource':
+      case 'clear_resource': if (payload.key) keys.add(String(payload.key)); break;
+      case 'set_reputation_thresholds': ['builder', 'contributor', 'mentor'].forEach(tier => keys.add(`threshold:${tier}`)); break;
+      case 'set_quiz_schedule': keys.add('intervalHours'); break;
+      case 'update_quiz_question':
+      case 'set_quiz_question_enabled': keys.add(`question:${payload.question_id}`); break;
+      default: break;
+    }
+  }
+  return [...keys];
 }

@@ -39,10 +39,11 @@ for (const [name, selector] of [
   ['control.css', '.control-offline'],
   ['control.css', '.control-global-status'],
   ['control.css', '.control-eyebrow'],
-  ['control.css', '.control-state-chip'],
   ['control.css', '.control-pop-note'],
   ['control.css', '.control-pop-who span'],
   ['control-features.css', '.control-stat-row dt'],
+  ['control-features.css', '.control-setting-hint'],
+  ['control-features.css', '.control-problem'],
 ]) {
   test(`${selector} uses the approved 13px / 18px metadata treatment`, () => {
     const block = typographyBlock(name, selector);

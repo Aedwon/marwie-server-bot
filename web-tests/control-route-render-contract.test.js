@@ -33,23 +33,31 @@ const snapshot = controlRouteSnapshot();
 hydrateControlPages(snapshot, controlRouteRevisions());
 
 const READ_EXPECTATIONS = {
-  '/control/community/reputation': ['Reputation', 'Enabled', 'Tier progression', '50 pts', 'Mentor'],
-  '/control/community/quizzes': ['Quizzes', 'Enabled', 'Operational snapshot', 'Question bank', 'What does len return?', 'Python'],
-  '/control/community/voice-coworking': ['Voice &amp; Coworking', 'Enabled', 'Temporary voice', 'Temporary Voice', 'temporary voice channel'],
-  '/control/community/showcase': ['Showcase', 'Enabled', 'Showcase destinations', 'App of the Week', 'Collab LFG'],
+  '/control/community/reputation': ['Reputation', 'Award reputation', 'Builder', 'Mentor', 'pts', 'Roles'],
+  '/control/community/quizzes': ['Quizzes', 'Post quizzes on a schedule', 'Posts every', 'Channels', 'Questions', 'What does len return?', 'In rotation', 'Paused'],
+  '/control/community/voice-coworking': ['Voice &amp; Coworking', 'Create voice rooms', 'Join to create', 'New rooms go in', 'Coworking lounge'],
+  '/control/community/showcase': ['Showcase', 'Run showcase spotlights', 'Showcase forum', 'App of the week', 'Collaboration / LFG'],
   '/control/utilities/notification-roles': ['Notification roles', 'Preview', 'Builder updates', 'Primary', 'Secondary'],
-  '/control/content/feeds': ['Feeds', 'Enabled', 'Sources', 'OpenAI', 'ai-updates'],
-  '/control/content/announcements': ['Announcements', 'Enabled', 'Announcement builder', 'Post'],
-  '/control/content/live': ['Live', 'Enabled', 'Live notice', '#live', 'Post Live notice'],
-  '/control/utilities/ticket-configuration': ['Tickets', 'Enabled', 'Ticket intake', 'Ticket types', 'Support', 'Report'],
-  '/control/utilities/anonymous-questions': ['Anonymous Questions', 'Enabled', 'Intake behavior', 'Anonymous Questions'],
-  '/control/workflows/moderation': ['Moderation', 'Enabled', 'Configuration', 'Operating guide', 'Prepare'],
-  '/control/analytics': ['Analytics', 'Enabled', 'Moderation cases', 'Activity over time'],
+  '/control/content/feeds': ['Feeds', 'Sources', 'OpenAI', 'ai-updates'],
+  '/control/content/announcements': ['Announcements', 'Announcement builder', 'Post'],
+  '/control/content/live': ['Live', 'Live notice', '#live', 'Post Live notice'],
+  '/control/utilities/ticket-configuration': ['Tickets', 'Ticket intake', 'Ticket types', 'Support', 'Report'],
+  '/control/utilities/anonymous-questions': ['Anonymous Questions', 'Intake behavior', 'Anonymous Questions'],
+  '/control/workflows/moderation': ['Moderation', 'Configuration', 'Operating guide', 'Prepare'],
+  '/control/analytics': ['Analytics', 'Moderation cases', 'Activity over time'],
 };
 
+// Converted pages edit in place: they have no separate read view.
+const CONVERTED_ROUTES = new Set([
+  '/control/community/reputation',
+  '/control/community/quizzes',
+  '/control/community/voice-coworking',
+  '/control/community/showcase',
+]);
+
 const EDIT_EXPECTATIONS = {
-  '/control/community/reputation': ['Tier thresholds', 'Save changes', 'Discard'],
-  '/control/community/quizzes': ['Question bank', 'Add question', 'Save changes'],
+  '/control/community/reputation': ['Builder', 'Save changes', 'Discard'],
+  '/control/community/quizzes': ['Questions', 'Add question', 'Save changes'],
   '/control/community/voice-coworking': ['Save changes', 'Discard'],
   '/control/community/showcase': ['Save changes', 'Discard'],
   '/control/utilities/notification-roles': ['Buttons', 'Add button', 'Preview', 'Save changes'],
@@ -63,10 +71,6 @@ const EDIT_EXPECTATIONS = {
 };
 
 const CONTEXT_EXPECTATIONS = {
-  '/control/community/reputation': ['Builder', 'Mentor'],
-  '/control/community/quizzes': ['Quiz channel'],
-  '/control/community/voice-coworking': ['Temporary voice category'],
-  '/control/community/showcase': ['Showcase forum'],
   '/control/utilities/notification-roles': ['Role panel'],
   '/control/content/feeds': ['Channel'],
   '/control/content/announcements': ['Destination', 'Preview', 'Send readiness'],
@@ -95,6 +99,12 @@ test('every feature route renders operational content in read mode', () => {
     assert.ok(markup, `${pageKey} must render`);
     assertContains(markup, READ_EXPECTATIONS[pageKey], `${pageKey} read mode`);
     assert.doesNotMatch(markup, /\bMappings\b/, `${pageKey} must not send the operator to Mappings`);
+    assert.doesNotMatch(markup, /control-state-chip/, `${pageKey} must not render a state chip`);
+    if (CONVERTED_ROUTES.has(pageKey)) {
+      assert.doesNotMatch(markup, /Edit settings|data-community-edit/, `${pageKey} edits in place`);
+      assert.equal(controlState.get(pageKey).mode, 'edit', `${pageKey} enters edit state when hydrated`);
+      assert.equal(renderRegisteredControlContext(pageKey, { snapshot }), '', `${pageKey} renders no context`);
+    }
   }
 });
 
@@ -113,7 +123,8 @@ test('every feature route renders its editable fields in edit mode', () => {
     assert.match(markup, /Save changes/, `${pageKey} must expose Save changes`);
     assert.match(markup, /Discard/, `${pageKey} must expose Discard`);
     controlState.discard(pageKey);
-    controlState.get(pageKey).mode = 'read';
+    if (!CONVERTED_ROUTES.has(pageKey)) controlState.get(pageKey).mode = 'read';
+    else assert.equal(controlState.get(pageKey).mode, 'edit');
   }
 });
 
@@ -154,7 +165,6 @@ test('summary tables expose labels for stacked mobile rows', () => {
 
 test('edit mode context delegates resource status to the generic editor', () => {
   const cases = [
-    ['/control/community/reputation', /All 3 Discord resources are connected\./],
     ['/control/content/announcements', /<dt>Destination<\/dt>/],
     ['/control/content/feeds', /<dt>Channel<\/dt>/],
     ['/control/analytics', /<dt>Channel<\/dt>/],
@@ -234,7 +244,7 @@ test('the shell declares nav mode and peek state and has no context column', () 
   assert.match(css, /\.control-shell\[data-nav-mode="rail"\]\[data-peek="true"\] \.control-panel/);
   assert.match(css, /\.control-shell\[data-nav-mode="drawer"\] \.control-rail/);
   assert.match(css, /\.sr-only/);
-  assert.match(features, /font-size: 28px/);
+  assert.match(features, /font-size: 24px/);
   assert.match(features, /font-size: 18px/);
   assert.match(css, /grid-template-columns: var\(--nav-col\) minmax\(0, 1fr\)/);
   assert.match(features, /@container control-main/);

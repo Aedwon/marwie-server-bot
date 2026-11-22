@@ -10,9 +10,9 @@ import {
   controlSectionMarkup,
   saveBarStatusLabel,
   saveBarStatusMarkup,
-} from './control-components.js?v=23';
+} from './control-components.js?v=24';
 import { featureResourceKeys } from './control-resource-contract.js';
-import { resourceBindingState, withResourceBindings } from './control-resource-bindings.js';
+import { resourceBindingState, withResourceBindings } from './control-resource-bindings.js?v=2';
 
 const TICKET_PAGE = '/control/utilities/ticket-configuration';
 const NOTIFICATION_PAGE = '/control/utilities/notification-roles';

@@ -14,8 +14,10 @@ export function registeredControlPage(pageKey) {
 }
 
 export function hydrateControlPages(snapshot, revisions = {}) {
-  for (const pageKey of registrations.keys()) {
+  for (const [pageKey, definition] of registrations) {
     controlState.hydrate(pageKey, snapshot, revisions?.[pageKey] || null);
+    // Converted pages edit in place: they enter edit state as soon as they hold persisted state.
+    if (definition.editOnMount && controlState.get(pageKey).mode !== 'edit') controlState.beginEdit(pageKey);
   }
 }
 

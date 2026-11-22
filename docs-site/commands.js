@@ -1,4 +1,4 @@
-import { installShell, loadShellSession } from './control-shell.js?v=1';
+import { installShell, loadShellSession } from './control-shell.js?v=2';
 import { GUILD_STORAGE_KEY, pickGuild } from './control-account.js?v=2';
 import { plainHeading, slug } from './control-palette.js?v=1';
 

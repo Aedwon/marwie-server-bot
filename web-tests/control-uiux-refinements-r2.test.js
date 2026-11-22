@@ -52,7 +52,7 @@ test('Voice & Coworking exposes one Temporary voice owner and never writes cowor
     state: { ...readState(definition, snapshot), mode: 'edit', draft, dirty: true },
     snapshot,
   });
-  assert.match(markup, /Temporary voice/);
+  assert.match(markup, /Create voice rooms/);
   assert.equal((markup.match(/data-community-field="voiceEnabled"/g) || []).length, 1);
   assert.doesNotMatch(markup, /data-community-field="coworkingEnabled"/);
   assert.doesNotMatch(markup, /Voice channels/);

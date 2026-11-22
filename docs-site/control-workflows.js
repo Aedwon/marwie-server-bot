@@ -6,9 +6,9 @@ import {
   controlSectionMarkup,
   controlSimplePageHeaderMarkup,
   saveBarStatusMarkup,
-} from './control-components.js?v=23';
+} from './control-components.js?v=24';
 import { featureResourceKeys } from './control-resource-contract.js';
-import { resourceBindingState, withResourceBindings } from './control-resource-bindings.js';
+import { resourceBindingState, withResourceBindings } from './control-resource-bindings.js?v=2';
 
 function escapeHtml(value) {
   return String(value ?? '')

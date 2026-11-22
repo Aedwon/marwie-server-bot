@@ -2,19 +2,22 @@ import {
   SAVE_BAR_HOLD_MS,
   pageMarkup,
   saveBarView,
-} from './control-components.js?v=23';
-import { registerContentPages } from './control-content.js?v=21';
-import { registerAnalyticsPage } from './control-analytics.js?v=22';
-import { registerCommunityPages } from './control-community.js?v=21';
-import { registerMappingPages } from './control-mappings.js?v=21';
-import { registerUtilitiesPages } from './control-utilities.js?v=22';
+  savedRowKeys,
+  toggleDisclosure,
+} from './control-components.js?v=24';
+import { problemPaths, problemsFromSnapshot } from './control-problems.js?v=1';
+import { registerContentPages } from './control-content.js?v=22';
+import { registerAnalyticsPage } from './control-analytics.js?v=23';
+import { registerCommunityPages } from './control-community.js?v=22';
+import { registerMappingPages } from './control-mappings.js?v=22';
+import { registerUtilitiesPages } from './control-utilities.js?v=23';
 import { controlIcon } from './control-icons.js?v=2';
 import { GUILD_STORAGE_KEY, pickGuild } from './control-account.js?v=2';
 import { createNavigationState, isNavigationBlocked } from './control-navigation.js?v=2';
-import { installShell } from './control-shell.js?v=1';
+import { installShell } from './control-shell.js?v=2';
 import { resolveControlRoute } from './control-router.js?v=2';
 import { createActivityController, installActivityPage } from './control-secondary.js';
-import { registerWorkflowPages, workflowPageMarkup } from './control-workflows.js?v=21';
+import { registerWorkflowPages, workflowPageMarkup } from './control-workflows.js?v=22';
 import {
   controlState,
   hydrateControlPages,
@@ -56,6 +59,7 @@ let blockedUntil = 0;
 let blockedTimer = null;
 let barExitTimer = null;
 let lastBarKind = 'hidden';
+let flagKey = '';
 const detailsOpen = new Set();
 let serverStatus = { message: 'Server state has not loaded yet.', tone: 'neutral' };
 
@@ -203,7 +207,16 @@ function flashBlocked() {
 
 /* ---------- Rendering ---------- */
 
-function renderMain({ entrance = false } = {}) {
+function syncNavFlags() {
+  if (!shellController) return;
+  const paths = session?.authenticated && guildState ? problemPaths(problemsFromSnapshot(guildState)) : new Set();
+  const key = [...paths].sort().join('|');
+  if (key === flagKey) return;
+  flagKey = key;
+  shellController.setFlags(paths);
+}
+
+function renderMain({ entrance = false, savedRows = [] } = {}) {
   removePageInteractions();
   removePageInteractions = () => {};
   const pageKey = navState.current.path;
@@ -224,13 +237,20 @@ function renderMain({ entrance = false } = {}) {
     activityState: activity?.state || null,
   }));
   const details = contextMarkup.trim() ? detailsMarkup(contextMarkup, detailsOpen.has(pageKey)) : '';
+  // Re-rendering after an edit must not steal focus or move the caret.
+  const active = !entrance && shell.main.contains(document.activeElement) ? document.activeElement : null;
+  const focusId = active?.id || '';
+  const caret = focusId && typeof active.selectionStart === 'number' ? [active.selectionStart, active.selectionEnd] : null;
   shell.main.innerHTML = `<div class="control-page-frame${entrance ? ' control-page-enter' : ''}">${pageHtml}${details}</div>`;
   shell.main.dataset.pageKey = pageKey;
   shell.main.scrollTop = entrance ? 0 : scrollTop;
+  for (const rowKey of savedRows) {
+    shell.main.querySelectorAll(`[data-row-key="${CSS.escape(rowKey)}"]`).forEach(row => row.classList.add('control-row-saved'));
+  }
 
   if (registeredMarkup !== null) {
-    // Resource bindings live in the Details disclosure until Stage 2 moves them into the page.
-    const contextRoot = shell.main.querySelector('[data-details-body]') || document.createElement('div');
+    // Converted pages hold their resource rows in the page itself. Others keep them in Details.
+    const contextRoot = shell.main.querySelector('[data-details-body]') || shell.wrap;
     removePageInteractions = installRegisteredControlPage(pageKey, shell.wrap, {
       snapshot: guildState,
       contextRoot,
@@ -243,11 +263,23 @@ function renderMain({ entrance = false } = {}) {
   } else if (activity) {
     removePageInteractions = installActivityPage(shell.main, activity);
   }
-  shell.main.focus({ preventScroll: true });
+  const refocus = focusId ? shell.main.querySelector(`#${CSS.escape(focusId)}`) : null;
+  if (refocus) {
+    refocus.focus({ preventScroll: true });
+    if (caret) { try { refocus.setSelectionRange(caret[0], caret[1]); } catch { /* number inputs have no selection API */ } }
+  } else {
+    shell.main.focus({ preventScroll: true });
+  }
   syncSaveBar();
+  syncNavFlags();
 }
 
 shell.main.addEventListener('click', event => {
+  const disclosureToggle = event.target.closest?.('[data-disclosure-toggle]');
+  if (disclosureToggle) {
+    toggleDisclosure(disclosureToggle);
+    return;
+  }
   const toggle = event.target.closest?.('[data-details-toggle]');
   if (!toggle) return;
   const container = toggle.closest('[data-control-details]');
@@ -401,8 +433,9 @@ async function requestRegisteredPageSave(pageKey, request) {
       || null;
     controlState.reconcile(pageKey, action.result || { outcome: 'saved' }, guildState, revision);
     announcePageState(pageKey);
-    renderMain();
-    if (controlState.get(pageKey).status === 'saved') {
+    const saved = controlState.get(pageKey).status === 'saved';
+    renderMain({ savedRows: saved ? savedRowKeys(request.changes) : [] });
+    if (saved) {
       // Hold the saved bar for 900ms, let it exit, then clear the page's saved message.
       setTimeout(() => {
         controlState.settleSaved(pageKey);

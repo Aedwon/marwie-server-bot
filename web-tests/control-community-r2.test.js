@@ -65,8 +65,9 @@ test('unconfigured quiz schedule renders truthfully instead of inventing 24 hour
   const persisted = definition.selectPersisted(snapshot);
   const markup = definition.render({ state: readState(persisted), snapshot });
 
-  assert.match(markup, /Not configured/i);
-  assert.doesNotMatch(markup, /Every 24 hours/i);
+  assert.match(markup, /data-community-field="intervalHours" value=""/);
+  assert.match(markup, /Leave blank to post only with \/quiz start/);
+  assert.doesNotMatch(markup, /value="24"|placeholder="24"|Every 24 hours/i);
 });
 
 test('question-only edits remain valid without creating an automatic schedule', async () => {
@@ -107,7 +108,8 @@ test('an explicit interval configures the schedule and configured 24 renders as 
   const configuredSnapshot = quizSnapshot(24);
   const configured = definition.selectPersisted(configuredSnapshot);
   const markup = definition.render({ state: readState(configured), snapshot: configuredSnapshot });
-  assert.match(markup, /Every 24 hours/i);
+  assert.match(markup, /data-community-field="intervalHours" value="24"/);
+  assert.match(markup, /<span class="control-unit">hours<\/span>/);
 });
 
 test('quiz interval validation accepts only explicit integers from 1 through 720 while absence stays valid', async () => {

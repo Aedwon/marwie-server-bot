@@ -64,7 +64,7 @@ test('Community page module owns all four canonical Community pages', async () =
   ].sort());
 });
 
-test('Reputation owns feature state while tier resources stay out of the center workspace', async () => {
+test('Reputation owns feature state, thresholds and its three tier role selects', async () => {
   const { createCommunityPageDefinition } = await communityModule();
   const definition = createCommunityPageDefinition(REPUTATION);
   const persisted = definition.selectPersisted(reputationSnapshot());
@@ -102,10 +102,16 @@ test('Reputation owns feature state while tier resources stay out of the center 
   });
   assert.doesNotMatch(markup, /Manual adjustment/i);
   assert.doesNotMatch(markup, /member_id|adjust_reputation/i);
-  assert.doesNotMatch(markup, /mappings|data-resource-key|set_resource|clear_resource/i);
+  assert.doesNotMatch(markup, /Edit settings|data-community-edit|set_resource|clear_resource/i);
+  assert.ok(markup.indexOf('data-master-row') < markup.indexOf('data-community-threshold="builder"'), 'master switch row comes first');
+  for (const tier of ['builder', 'contributor', 'mentor']) {
+    assert.match(markup, new RegExp(`data-community-threshold="${tier}"[^>]*value="`));
+    assert.match(markup, new RegExp(`data-resource-select="${tier}_role"`));
+  }
+  assert.match(markup, /<span class="control-unit">pts<\/span>/);
 });
 
-test('Quizzes owns schedule and questions while quiz channel stays out of the center workspace', async () => {
+test('Quizzes owns schedule, questions and a Channels section for the quiz channel', async () => {
   const { createCommunityPageDefinition } = await communityModule();
   const definition = createCommunityPageDefinition(QUIZZES);
   const persisted = definition.selectPersisted(quizSnapshot());
@@ -170,11 +176,12 @@ test('Quizzes owns schedule and questions while quiz channel stays out of the ce
     },
     snapshot: quizSnapshot(),
   });
-  assert.match(markup, /Operational snapshot/);
-  assert.match(markup, /<dt>Questions<\/dt><dd>1<\/dd>/);
-  assert.match(markup, /Aug 28, 2026, 12:00 AM UTC/);
-  assert.doesNotMatch(markup, /2026-08-28T00:00:00\+00:00/);
-  assert.doesNotMatch(markup, /mappings|data-resource-key|set_resource|clear_resource/i);
+  assert.doesNotMatch(markup, /Operational snapshot|Edit settings|set_resource|clear_resource/);
+  assert.match(markup, /data-community-field="intervalHours"[^>]*value="24"/);
+  assert.match(markup, /<span class="control-unit">hours<\/span>/);
+  assert.match(markup, /<span class="control-question-prompt">What does len return\?<\/span><span class="control-question-status">In rotation<\/span>/);
+  assert.match(markup, /data-resource-select="quiz_channel"/);
+  assert.ok(markup.indexOf('data-master-row') < markup.indexOf('data-community-field="intervalHours"'));
 });
 
 test('Quizzes places the add-question control after the question bank', async () => {
@@ -196,17 +203,18 @@ test('Quizzes places the add-question control after the question bank', async ()
   });
 
   const add = markup.indexOf('data-community-add-question');
-  assert.ok(add > markup.indexOf('community-question-list'), 'add control must follow the list');
+  assert.ok(add > markup.indexOf('control-question-list'), 'add control must follow the list');
   assert.ok(add > markup.lastIndexOf('data-question-index'), 'add control must follow the last question');
 });
 
-test('Voice & Coworking owns Temporary voice behavior and exposes canonical voice resources through Context', async () => {
+test('Voice & Coworking owns the master switch, names the creator channel and lists its resources as selects', async () => {
   const { createCommunityPageDefinition } = await communityModule();
   const { withResourceBindings } = await import('../docs-site/control-resource-bindings.js');
   const { featureResourceKeys } = await import('../docs-site/control-resource-contract.js');
   const definition = withResourceBindings(
     createCommunityPageDefinition(VOICE_COWORKING),
     featureResourceKeys(VOICE_COWORKING),
+    { genericContext: 'never' },
   );
   const snapshot = {
     features: [feature('voice', true), feature('coworking', false)],
@@ -236,12 +244,13 @@ test('Voice & Coworking owns Temporary voice behavior and exposes canonical voic
 
   const state = { mode: 'read', status: 'clean', persisted, draft, errors: {}, dirty: false, saveError: null };
   const markup = definition.render({ state, snapshot });
-  const context = definition.renderContext({ state, snapshot });
-  assert.match(markup, /Temporary voice/);
-  assert.doesNotMatch(markup, /Temporary voice category|coworking_lounge|create_workspace_voice/);
-  assert.match(context, /Temporary voice category/);
-  assert.match(context, /Create Workspace/i);
-  assert.match(context, /Lounge/i);
+  assert.equal(definition.renderContext({ state, snapshot }), '');
+  assert.match(markup, /Joining Create Workspace gives a member their own voice room\./);
+  for (const label of ['Join to create', 'New rooms go in', 'Coworking lounge']) assert.match(markup, new RegExp(label));
+  for (const key of ['create_workspace_voice', 'temp_voice_category', 'coworking_lounge']) {
+    assert.match(markup, new RegExp(`data-resource-select="${key}"`));
+  }
+  assert.match(markup, /Shared room for Pomodoro sessions/);
 });
 
 test('Showcase exposes only feature-local state and Mappings summary', async () => {

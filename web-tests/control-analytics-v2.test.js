@@ -146,7 +146,8 @@ test('shows disabled passive counters and preserves backend coverage notes verba
   }));
   assert.equal(metric(markup, 'Human messages'), 'Unavailable');
   assert.equal(metric(markup, 'Voice member minutes'), 'Unavailable');
-  assert.match(markup, /class="control-state-chip">Unavailable<\/span>/);
+  assert.match(markup, /class="analytics-coverage-status">Unavailable<\/span>/);
+  assert.doesNotMatch(markup, /control-state-chip/);
   assert.match(markup, /Passive telemetry disabled \(1 gap, 3 dropped\)<\//);
   assert.equal((markup.match(/3 dropped/g) || []).length, 1);
 });
@@ -449,13 +450,12 @@ test('changing the range resets inspection and restores focus after rerender', (
 
 const readAsset = name => readFileSync(new URL('../docs-site/' + name, import.meta.url), 'utf8');
 
-test('coverage chips use semantic warning and info tokens for text, border, and background', () => {
-  const css = readAsset('control.css');
-  for (const tone of ['warning', 'info']) {
-    const block = css.match(new RegExp('\\.control-state-chip\\[data-tone="' + tone + '"\\]\\s*\\{([^}]*)\\}'))?.[1];
-    assert.ok(block, tone);
-    for (const suffix of ['fg', 'stroke', 'bg']) assert.ok(block.includes('--status-' + tone + '-' + suffix));
-  }
+test('coverage status is plain text colored by semantic tokens, with no chip styling', () => {
+  const css = readAsset('control.css') + readAsset('control-features.css');
+  assert.doesNotMatch(css, /control-state-chip/);
+  assert.match(css, /\.analytics-coverage-status\s*\{[^}]*color:\s*var\(--text-secondary\)/);
+  assert.match(css, /\.analytics-coverage-status\[data-tone="warning"\]\s*\{[^}]*--status-warning-fg/);
+  assert.match(css, /\.analytics-coverage-status\[data-tone="good"\]\s*\{[^}]*--status-success-fg/);
 });
 
 test('only the chart scrolls horizontally and axes and inspector use readable tabular numbers', () => {
@@ -477,10 +477,10 @@ test('coverage can stack in a narrow workspace and chart points have a visible f
 test('Control and public Commands load the same version of the shared Control stylesheet', () => {
   const html = readAsset('control.html');
   const commands = readAsset('commands.html');
-  for (const markup of [html, commands]) assert.match(markup, /href="\/control\.css\?v=34"/);
-  assert.match(html, /href="\/control-features\.css\?v=19"/);
-  assert.match(html, /src="\/control-app\.js\?v=31"/);
-  assert.match(readAsset('control-app.js'), /from '\.\/control-analytics\.js\?v=22'/);
+  for (const markup of [html, commands]) assert.match(markup, /href="\/control\.css\?v=35"/);
+  assert.match(html, /href="\/control-features\.css\?v=20"/);
+  assert.match(html, /src="\/control-app\.js\?v=32"/);
+  assert.match(readAsset('control-app.js'), /from '\.\/control-analytics\.js\?v=23'/);
 });
 
 test('absent closure count renders Unavailable and zero closures renders No closures even if median seconds is set', () => {

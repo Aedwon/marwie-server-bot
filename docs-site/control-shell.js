@@ -286,6 +286,7 @@ export function installShell({
   let commandItems = [];
   let openGroup = initialOpenGroup(currentPath, storage?.getItem?.(EXPANDED_KEY));
   let current = currentPath;
+  let flags = new Set();
 
   const modeOf = () => shell.dataset.navMode || 'expanded';
   const railClosed = () => modeOf() === 'rail' && shell.dataset.peek !== 'true';
@@ -320,7 +321,7 @@ export function installShell({
   const setCurrent = (path, { animate = true } = {}) => {
     current = path;
     const lastByDomain = typeof getLastByDomain === 'function' ? getLastByDomain() : readJson(storage, DOMAIN_ROUTE_KEY);
-    const model = navigationModel(destinationForPath(path) || { path }, openGroup || DEFAULT_GROUP, lastByDomain);
+    const model = navigationModel(destinationForPath(path) || { path }, openGroup || DEFAULT_GROUP, lastByDomain, { flags });
     const currentLeaves = new Set();
     const currentKeys = new Set();
     for (const item of model.items) {
@@ -346,6 +347,30 @@ export function installShell({
     if (owner && owner !== before) indicator.track();
     else indicator.place(animate);
     syncPaletteIndex();
+  };
+
+  /* Flags: a feature with a problem shows a warning icon at the row end. */
+  const syncFlag = (row, flagged) => {
+    if (!row) return;
+    const existing = row.querySelector(':scope > .control-nav-flag');
+    if (!flagged) { existing?.remove(); return; }
+    if (existing) return;
+    const anchor = row.querySelector(':scope > .control-nav-chev');
+    if (anchor) anchor.insertAdjacentHTML('beforebegin', flagMarkup());
+    else row.insertAdjacentHTML('beforeend', flagMarkup());
+  };
+  const setFlags = paths => {
+    flags = paths instanceof Set ? paths : new Set(paths || []);
+    const lastByDomain = typeof getLastByDomain === 'function' ? getLastByDomain() : readJson(storage, DOMAIN_ROUTE_KEY);
+    const model = navigationModel(destinationForPath(current) || { path: current }, openGroup || DEFAULT_GROUP, lastByDomain, { flags });
+    for (const item of model.items) {
+      if (item.type === 'group') {
+        syncFlag(nav.querySelector(`[data-domain-select="${CSS.escape(item.key)}"]`), item.flagged);
+        item.children.forEach(child => syncFlag(nav.querySelector(`a.control-nav-leaf[data-nav-key="${CSS.escape(child.key)}"]`), child.flagged));
+      } else if (item.type === 'link') {
+        syncFlag(nav.querySelector(`a.control-nav-row:not(.control-nav-leaf)[data-nav-key="${CSS.escape(item.key)}"]`), item.flagged);
+      }
+    }
   };
 
   nav.addEventListener('click', event => {
@@ -468,7 +493,7 @@ export function installShell({
   const destinationsFromNav = () => {
     const entries = [];
     const lastByDomain = typeof getLastByDomain === 'function' ? getLastByDomain() : readJson(storage, DOMAIN_ROUTE_KEY);
-    const model = navigationModel(destinationForPath(current) || { path: current }, openGroup || DEFAULT_GROUP, lastByDomain);
+    const model = navigationModel(destinationForPath(current) || { path: current }, openGroup || DEFAULT_GROUP, lastByDomain, { flags });
     let group = '';
     for (const item of model.items) {
       if (item.type === 'group') item.children.forEach(child => entries.push({ label: child.label, path: child.path, group: item.label }));
@@ -576,6 +601,7 @@ export function installShell({
     shell,
     nav,
     setCurrent,
+    setFlags,
     setOpen,
     announce,
     renderIdentity,

@@ -1,4 +1,5 @@
 import { MAPPING_RESOURCE_DEFINITIONS, mappingOptionsForKey } from './control-mappings.js';
+import { settingRow, settingsRows } from './control-components.js?v=24';
 
 const TRAP_KEY = 'compromised_account_trap';
 
@@ -119,6 +120,56 @@ export function resourceContextMarkup({ pageKey, state, snapshot, resourceKeys =
     </section>`;
 }
 
+const OPTION_PREFIX = Object.freeze({ role: '@', text: '#', forum: '#' });
+const KIND_NOUN = Object.freeze({ role: 'role', category: 'category' });
+
+// #name for text and forum channels, @name for roles, plain name for voice channels and categories.
+export function resourceOptionLabel(kind, name) {
+  return `${OPTION_PREFIX[kind] || ''}${name || 'Unnamed Discord resource'}`;
+}
+
+// Bordered select for one resource key. Options come from the snapshot through mappingOptionsForKey.
+export function resourceSelectMarkup({ snapshot, key, value = null, problem = false, id = '' } = {}) {
+  const definition = MAPPING_RESOURCE_DEFINITIONS[key];
+  if (!definition) return '';
+  const options = mappingOptionsForKey(snapshot, key);
+  const selectedId = value == null ? '' : String(value);
+  const stale = Boolean(selectedId && !options.some(option => String(option.id) === selectedId));
+  const noun = KIND_NOUN[definition.kind] || 'channel';
+  const choose = selectedId === '' || (stale && problem);
+  const idAttr = id ? ` id="${escapeHtml(id)}"` : '';
+  return `<select class="control-select"${idAttr} data-resource-select="${escapeHtml(key)}"${problem ? ' aria-invalid="true" data-invalid' : ''}>
+    <option value=""${choose ? ' selected' : ''}>Choose a ${noun}</option>
+    ${stale && !problem ? `<option value="${escapeHtml(selectedId)}" disabled selected>Unavailable current mapping</option>` : ''}
+    ${options.map(option => `<option value="${escapeHtml(option.id)}"${String(option.id) === selectedId ? ' selected' : ''}>${escapeHtml(resourceOptionLabel(definition.kind, option.name))}</option>`).join('')}
+  </select>`;
+}
+
+// Select rows for a page's resource bindings. A saved problem shows only while the draft still holds that binding.
+export function resourceRowsMarkup({ snapshot, state, keys = [], problems = [], labels = {}, hints = {} } = {}) {
+  const draft = state?.draft || state?.persisted || {};
+  const rows = keys.map(key => {
+    const definition = MAPPING_RESOURCE_DEFINITIONS[key];
+    if (!definition) return '';
+    const selected = draft?.resourceBindings?.[key] ?? null;
+    const saved = state?.persisted?.resourceBindings?.[key] ?? null;
+    const found = problems.find(item => item.resourceKey === key);
+    const sentence = found && String(saved ?? '') === String(selected ?? '') ? `${found.cause} ${found.effect}` : '';
+    const error = state?.errors?.[`resource_${key}`] || '';
+    const text = sentence || error;
+    const id = `resource-${key}`;
+    return settingRow({
+      label: labels[key] || definition.label,
+      hint: hints[key] || '',
+      problem: text,
+      rowKey: key,
+      controlId: id,
+      control: resourceSelectMarkup({ snapshot, key, value: selected, problem: Boolean(text), id }),
+    });
+  }).join('');
+  return settingsRows(rows);
+}
+
 export function withResourceBindings(definition, resourceKeys = [], { genericContext = 'edit' } = {}) {
   const keys = [...resourceKeys];
   if (!keys.length) return definition;
@@ -189,7 +240,8 @@ export function withResourceBindings(definition, resourceKeys = [], { genericCon
     },
     install(context = {}) {
       const cleanupBase = baseInstall?.(context) || (() => {});
-      const cleanupResources = installResourceContextInteractions({ ...context, pageKey: definition.pageKey });
+      const contextRoot = context.contextRoot || (definition.editOnMount ? context.root : undefined);
+      const cleanupResources = installResourceContextInteractions({ ...context, contextRoot, pageKey: definition.pageKey });
       return () => {
         cleanupResources();
         cleanupBase();

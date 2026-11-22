@@ -177,7 +177,6 @@ export function createControlStateStore() {
         state.dirty = false;
         state.changeCount = 0;
         state.errors = {};
-        state.mode = 'read';
         state.status = 'saved';
         state.savedAt = Date.now();
         state.pendingRequest = null;

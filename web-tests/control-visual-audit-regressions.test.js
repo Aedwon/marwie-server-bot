@@ -45,9 +45,13 @@ test('Quizzes category and option fields inherit the shared 3px keyboard outline
     '.control-main',
     '.control-main:focus-visible',
     '.control-feature-toggle input:focus-visible + .control-feature-toggle-track',
+    '.control-switch input:focus-visible + .control-switch-track',
     '.control-nav-row[aria-current="page"]',
     '.control-palette input:focus-visible',
     '.analytics-point-group:focus-visible',
+    // Number-with-unit draws the shared outline on its bordered box, not on the inner input.
+    '.control-page .control-number .control-number-input:focus-visible',
+    '.control-number:has(.control-number-input:focus-visible)',
   ]);
   const outlines = css => [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)]
     .flatMap(([, selector, body]) => {

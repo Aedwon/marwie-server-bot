@@ -9,9 +9,9 @@ import {
   controlPageHeaderMarkup,
   controlSectionMarkup,
   saveBarStatusMarkup,
-} from './control-components.js?v=23';
+} from './control-components.js?v=24';
 import { featureResourceKeys } from './control-resource-contract.js';
-import { resourceBindingState, withResourceBindings } from './control-resource-bindings.js';
+import { resourceBindingState, withResourceBindings } from './control-resource-bindings.js?v=2';
 
 export const CONTENT_PAGE_CONFIGS = Object.freeze({
   '/control/content/feeds': Object.freeze({

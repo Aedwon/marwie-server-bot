@@ -4,13 +4,21 @@ import {
   registeredControlPage,
 } from './control-page-registry.js';
 import {
-  contextSectionMarkup,
   controlPageHeaderMarkup,
-  controlSectionMarkup,
+  disclosure,
+  masterSwitchRow,
+  numberWithUnit,
+  problemLine,
   saveBarStatusMarkup,
-} from './control-components.js?v=23';
+  setDisclosureOpen,
+  settingRow,
+  settingsRows,
+  settingsSection,
+  switchMarkup,
+} from './control-components.js?v=24';
 import { featureResourceKeys } from './control-resource-contract.js';
-import { resourceBindingState, withResourceBindings } from './control-resource-bindings.js';
+import { resourceBindingState, resourceRowsMarkup, withResourceBindings } from './control-resource-bindings.js?v=2';
+import { problemsFromSnapshot } from './control-problems.js?v=1';
 
 const REPUTATION = '/control/community/reputation';
 const QUIZZES = '/control/community/quizzes';
@@ -34,31 +42,12 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
-function timestampLabel(value) {
-  const raw = String(value || '');
-  const date = new Date(raw);
-  if (!raw || !Number.isFinite(date.getTime())) return raw || 'No recorded post yet';
-  try {
-    return `${new Intl.DateTimeFormat('en-US', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-      timeZone: 'UTC',
-    }).format(date)} UTC`;
-  } catch {
-    return raw;
-  }
-}
-
 function clone(value) {
   return structuredClone(value);
 }
 
 function featureEnabled(snapshot, name) {
   return Boolean((snapshot?.features || []).find(item => item?.name === name)?.enabled);
-}
-
-function resourcesByKey(snapshot) {
-  return new Map((snapshot?.resources || []).map(item => [item?.key, item]));
 }
 
 function integer(value) {
@@ -100,181 +89,149 @@ function sameQuestionContent(left, right) {
     && left.explanation === right.explanation;
 }
 
-function statusMarkup(state) {
-  if (state?.saveError) return `<p class="community-message" role="alert">${escapeHtml(state.saveError)}</p>`;
-  if (state?.status === 'conflict') return '<p class="community-message" role="alert">Server state changed while you were editing. Review your draft before retrying.</p>';
-  if (state?.status === 'saved') return '<p class="community-message community-message-good" role="status">Changes saved.</p>';
-  return '';
-}
-
-function statePill(enabled) {
-  return `<span class="community-state" data-enabled="${String(Boolean(enabled))}">${enabled ? 'Enabled' : 'Disabled'}</span>`;
-}
-
-function toggleEditor(field, label, enabled, help = '') {
-  return `<label class="community-toggle-row"><span><strong>${escapeHtml(label)}</strong>${help ? `<small>${escapeHtml(help)}</small>` : ''}</span><input type="checkbox" data-community-field="${escapeHtml(field)}"${enabled ? ' checked' : ''}></label>`;
-}
-
 function saveBar(state) {
   const invalid = Boolean(Object.keys(state?.errors || {}).length);
   const disabled = !state?.dirty || invalid || state?.status === 'saving';
   return `<div class="community-page-actions control-save-bar">${saveBarStatusMarkup(state)}<button class="control-button control-button-primary" type="button" data-community-save${disabled ? ' disabled' : ''}>${state?.status === 'saving' ? 'Saving…' : 'Save changes'}</button><button class="control-button control-button-secondary" type="button" data-community-discard${state?.status === 'saving' ? ' disabled' : ''}>Discard</button></div>`;
 }
 
-function pageHeader(title, description, state, feature) {
-  return controlPageHeaderMarkup({
+// Every converted page has the same frame: header, master switch row first, then its rows and sections.
+function pageFrame(pageKey, state, { lede = '', enabled, body }) {
+  return `<section class="control-page community-page" data-page-key="${pageKey}" data-master="${enabled ? 'on' : 'off'}">
+    ${controlPageHeaderMarkup({ title: COMMUNITY_PAGE_CONFIGS[pageKey].title, lede, editable: false })}
+    ${body}
+    ${saveBar(state)}
+  </section>`;
+}
+
+function resourceSection(pageKey, state, snapshot, title, { labels = {}, hints = {} } = {}) {
+  const keys = featureResourceKeys(pageKey);
+  const problems = problemsFromSnapshot(snapshot).filter(problem => problem.pageKey === pageKey);
+  return settingsSection({
+    id: `${pageKey.split('/').pop()}-resources-heading`,
     title,
-    description,
-    enabled: feature?.enabled,
-    editing: state?.mode === 'edit',
-    editAttribute: 'data-community-edit',
-    toggleAttribute: feature?.toggleAttribute || '',
-    features: feature?.features || null,
+    body: resourceRowsMarkup({ snapshot, state, keys, problems, labels, hints }),
   });
 }
 
-function readinessMarkup(snapshot, entries) {
-  return `<div class="control-context-readiness">${entries.map(([key, label]) => {
-    const status = resourceBindingState(snapshot, key);
-    return `<div class="control-context-readiness-row" data-resource-key="${escapeHtml(key)}">
-      <span>${escapeHtml(label)}</span>
-      <span data-tone="${escapeHtml(status.tone)}">${escapeHtml(status.name || status.current)} · ${escapeHtml(status.label)}</span>
-    </div>`;
-  }).join('')}</div>`;
-}
-
-function resourceReadinessState(snapshot, keys) {
-  const states = keys.map(key => resourceBindingState(snapshot, key));
-  const connected = states.filter(state => state.tone === 'good').length;
-  return { connected, total: states.length, ready: connected === states.length };
-}
-
 function reputationMarkup(state, snapshot) {
-  const value = state.mode === 'edit' ? state.draft : state.persisted;
-  const header = pageHeader(
-    'Reputation',
-    state.mode === 'edit' ? 'Configure the feature and tier thresholds. Discord roles are configured in Context.' : 'Current reputation status and tier thresholds.',
-    state,
-    { enabled: value.enabled, toggleAttribute: 'data-community-field="enabled"' },
-  );
-  if (state.mode === 'edit') {
-    const error = state.errors?.thresholds;
-    return `<section class="control-page community-page" data-page-key="${REPUTATION}">
-      ${header}${statusMarkup(state)}
-      <fieldset class="community-fieldset community-tier-fieldset"><legend>Tier thresholds</legend><p>Use strictly increasing values from 1 to 100000.</p>
-        <div class="control-field-grid">${['builder', 'contributor', 'mentor'].map(key => `<label class="community-threshold-field"><strong class="community-threshold-label">${escapeHtml(key[0].toUpperCase() + key.slice(1))}</strong><input class="community-threshold-input" type="number" min="1" max="100000" step="1" inputmode="numeric" data-community-threshold="${key}" value="${escapeHtml(value.thresholds[key])}"></label>`).join('')}</div>
-        ${error ? `<p class="community-field-error" role="alert">${escapeHtml(error)}</p>` : ''}
-      </fieldset>${saveBar(state)}</section>`;
-  }
-  return `<section class="control-page community-page" data-page-key="${REPUTATION}">${header}${statusMarkup(state)}
-    <section class="community-tier-section" aria-labelledby="reputation-tier-heading"><div class="community-section-heading"><div><h2 id="reputation-tier-heading">Tier progression</h2><p>Reputation thresholds increase from Builder through Mentor.</p></div></div><div class="control-step-list" role="list">${[['Builder', value.thresholds.builder], ['Contributor', value.thresholds.contributor], ['Mentor', value.thresholds.mentor]].map(([label, threshold]) => `<div class="community-tier-step" role="listitem"><strong>${escapeHtml(label)}</strong><span class="community-tier-value">${escapeHtml(threshold)} pts</span></div>`).join('')}</div></section>
-    </section>`;
+  const value = state.draft ?? state.persisted;
+  const tiers = ['builder', 'contributor', 'mentor'];
+  const rows = masterSwitchRow({
+    label: 'Award reputation',
+    offHint: 'Members keep their points but earn no more.',
+    checked: value.enabled,
+    field: 'enabled',
+    attribute: 'data-community-field',
+  }) + tiers.map(tier => settingRow({
+    label: tier[0].toUpperCase() + tier.slice(1),
+    rowKey: `threshold:${tier}`,
+    controlId: `community-threshold-${tier}`,
+    control: numberWithUnit({
+      id: `community-threshold-${tier}`, value: value.thresholds[tier], unit: 'pts', min: 1, max: 100000, step: 1,
+      attributes: `data-community-threshold="${tier}"`,
+    }),
+  })).join('');
+  const error = state.errors?.thresholds;
+  return pageFrame(REPUTATION, state, {
+    enabled: value.enabled,
+    body: `${settingsRows(rows, { label: 'Reputation settings' })}${error ? `<div class="control-rows-note">${problemLine(error)}</div>` : ''}
+      ${resourceSection(REPUTATION, state, snapshot, 'Roles')}`,
+  });
 }
 
-function questionEditor(question, index, error) {
-  return `<article class="control-list-row" data-question-index="${index}">
-    <div class="community-question-heading"><strong>${question.id == null ? 'New question' : `Question ${escapeHtml(question.id)}`}</strong>${question.id == null ? '<button class="control-button control-button-secondary" type="button" data-community-remove-question>Remove draft</button>' : `<label class="community-inline-toggle control-feature-toggle control-feature-toggle-editing"><input type="checkbox" data-question-field="enabled"${question.enabled ? ' checked' : ''} aria-label="Include in rotation"><span class="control-feature-toggle-track" aria-hidden="true"></span><span class="control-feature-toggle-copy">Include in rotation</span></label>`}</div>
-    <div class="community-form-grid">
+function questionRow(question, index, error) {
+  const key = question.id == null ? `new-${index}` : question.id;
+  const status = question.id == null ? 'Not saved yet' : (question.enabled ? 'In rotation' : 'Paused');
+  const trigger = `<span class="control-question-copy"><span class="control-question-prompt">${escapeHtml(question.prompt || 'Untitled question')}</span><span class="control-question-status">${status}</span></span>`;
+  const lead = question.id == null
+    ? '<div class="control-question-actions"><button class="control-button control-button-secondary" type="button" data-community-remove-question>Remove draft</button></div>'
+    : settingsRows(settingRow({
+      label: 'Include in rotation',
+      controlId: `community-question-${key}-enabled`,
+      control: switchMarkup({ id: `community-question-${key}-enabled`, checked: question.enabled, attributes: 'data-question-field="enabled"' }),
+    }));
+  const body = `${lead}<div class="community-form-grid">
       <label>Category<input maxlength="50" data-question-field="category" value="${escapeHtml(question.category)}"></label>
       <label class="community-span-two">Prompt<textarea maxlength="2000" rows="3" data-question-field="prompt">${escapeHtml(question.prompt)}</textarea></label>
       ${question.options.map((option, optionIndex) => `<label>Option ${optionIndex + 1}<input maxlength="300" data-question-option="${optionIndex}" value="${escapeHtml(option)}"></label>`).join('')}
-      <label>Correct answer<select data-question-field="correct">${[1, 2, 3, 4].map(value => `<option value="${value}"${question.correct === value ? ' selected' : ''}>Option ${value}</option>`).join('')}</select></label>
+      <label>Correct answer<select data-question-field="correct">${[1, 2, 3, 4].map(number => `<option value="${number}"${question.correct === number ? ' selected' : ''}>Option ${number}</option>`).join('')}</select></label>
       <label class="community-span-two">Explanation<textarea maxlength="2000" rows="2" data-question-field="explanation">${escapeHtml(question.explanation)}</textarea></label>
-    </div>${error ? `<p class="community-field-error" role="alert">${escapeHtml(error)}</p>` : ''}</article>`;
+    </div>${error ? problemLine(error) : ''}`;
+  return `<article class="control-question" data-question-index="${index}" data-row-key="question:${question.id ?? 'new'}"${error ? ' data-problem' : ''}>${disclosure({ id: `quiz-q-${key}`, trigger, body, open: error ? true : null })}</article>`;
 }
 
 function quizzesMarkup(state, snapshot) {
-  const value = state.mode === 'edit' ? state.draft : state.persisted;
-  const count = value.questions.length;
-  const header = pageHeader(
-    'Quizzes',
-    state.mode === 'edit' ? 'Configure scheduling and maintain the question bank. The quiz channel is configured in Context.' : 'Current schedule and question-bank status.',
-    state,
-    { enabled: value.enabled, toggleAttribute: 'data-community-field="enabled"' },
-  );
-  if (state.mode === 'edit') {
-    return `<section class="control-page community-page" data-page-key="${QUIZZES}">${header}${statusMarkup(state)}
-      <div class="control-section-stack"><label class="control-field-group">Interval in hours<input type="number" min="1" max="720" step="1" data-community-field="intervalHours" value="${value.intervalHours == null ? '' : escapeHtml(value.intervalHours)}" placeholder="24"><small>Between 1 and 720 hours. Leave blank if automatic scheduling is not configured.</small>${state.errors?.intervalHours ? `<span class="community-field-error" role="alert">${escapeHtml(state.errors.intervalHours)}</span>` : ''}</label></div>
-      <section class="community-question-section"><div class="community-section-heading"><div><h2>Question bank</h2><p>${count} question${count === 1 ? '' : 's'} in this server.</p></div></div><div class="community-question-list">${value.questions.map((question, index) => questionEditor(question, index, state.errors?.[`question_${index}`])).join('')}</div><div class="control-list-add"><button class="control-button control-button-secondary" type="button" data-community-add-question>Add question</button></div></section>
-      ${saveBar(state)}</section>`;
-  }
-  const enabledCount = value.questions.filter(question => question.enabled).length;
-  const questionRows = value.questions.length
-    ? value.questions.map(question => `<article class="control-list-row community-question-read">
-        <div><strong>${escapeHtml(question.prompt || 'Untitled question')}</strong><span>${escapeHtml(question.category || 'No category')}</span></div>
-        <span class="control-status-text" data-tone="${question.enabled ? 'good' : 'neutral'}">${question.enabled ? 'In rotation' : 'Paused'}</span>
-      </article>`).join('')
-    : '<p class="community-message">No questions are in the bank yet.</p>';
-  return `<section class="control-page community-page" data-page-key="${QUIZZES}">${header}${statusMarkup(state)}
-    ${controlSectionMarkup({
-    id: 'quiz-snapshot-heading',
-    title: 'Operational snapshot',
-    description: 'Current quiz cadence and question-bank readiness.',
-    body: `<dl class="control-definition-list"><div><dt>Schedule</dt><dd>${value.intervalHours == null ? 'Not configured' : `Every ${escapeHtml(value.intervalHours)} hours`}</dd></div><div><dt>Last posted</dt><dd>${escapeHtml(timestampLabel(value.lastPostedAt))}</dd></div><div><dt>Questions</dt><dd>${count}</dd></div><div><dt>In rotation</dt><dd>${enabledCount}</dd></div></dl>`,
-  })}
-    ${controlSectionMarkup({
-    id: 'quiz-bank-heading',
-    title: 'Question bank',
-    description: `${count} question${count === 1 ? '' : 's'} in this server. Edit settings to change the bank.`,
-    body: `<div class="community-question-list">${questionRows}</div>`,
-  })}
-    </section>`;
+  const value = state.draft ?? state.persisted;
+  const interval = state.persisted.intervalHours;
+  const rows = masterSwitchRow({
+    label: 'Post quizzes on a schedule',
+    offHint: 'Rob-bot stops posting quizzes.',
+    checked: value.enabled,
+    field: 'enabled',
+    attribute: 'data-community-field',
+  }) + settingRow({
+    label: 'Posts every',
+    hint: interval == null ? 'Leave blank to post only with /quiz start.' : 'Between 1 and 720 hours.',
+    problem: state.errors?.intervalHours || '',
+    rowKey: 'intervalHours',
+    controlId: 'community-interval',
+    control: numberWithUnit({
+      id: 'community-interval', value: value.intervalHours, unit: 'hours', min: 1, max: 720, step: 1,
+      attributes: 'data-community-field="intervalHours"',
+    }),
+  });
+  const list = value.questions.length
+    ? `<div class="control-question-list">${value.questions.map((question, index) => questionRow(question, index, state.errors?.[`question_${index}`])).join('')}</div>`
+    : '<p class="control-empty-line">No questions yet. Add one to start the rotation.</p>';
+  const questions = `${list}<div class="control-list-add"><button class="control-button control-button-secondary" type="button" data-community-add-question>Add question</button></div>`;
+  return pageFrame(QUIZZES, state, {
+    enabled: value.enabled,
+    body: `${settingsRows(rows, { label: 'Quiz settings' })}
+      ${resourceSection(QUIZZES, state, snapshot, 'Channels')}
+      ${settingsSection({
+    id: 'quiz-questions-heading',
+    title: 'Questions',
+    body: questions,
+  })}`,
+  });
 }
 
 function voiceCoworkingMarkup(state, snapshot) {
-  const value = state.mode === 'edit' ? state.draft : state.persisted;
-  const category = resourceBindingState(snapshot, 'temp_voice_category');
+  const value = state.draft ?? state.persisted;
   const workspace = resourceBindingState(snapshot, 'create_workspace_voice');
-  const lounge = resourceBindingState(snapshot, 'coworking_lounge');
-  const header = pageHeader(
-    'Voice & Coworking',
-    state.mode === 'edit' ? 'Manage Temporary voice. Channel bindings and the category are configured in Context.' : 'Current Temporary voice state and Discord wiring.',
-    state,
-    { enabled: value.voiceEnabled, toggleAttribute: 'data-community-field="voiceEnabled"' },
-  );
-  return `<section class="control-page community-page" data-page-key="${VOICE_COWORKING}">${header}${statusMarkup(state)}
-    ${controlSectionMarkup({
-    id: 'voice-temporary-heading',
-    title: 'Temporary voice',
-    description: value.voiceEnabled
-      ? 'Temporary voice is active. Members can create a personal voice room from the workspace channel.'
-      : 'Temporary voice is disabled. Members cannot create temporary voice rooms right now.',
-    body: `<dl class="control-definition-list">
-      <div><dt>Workspace channel</dt><dd>${escapeHtml(workspace.name || workspace.current)}</dd></div>
-      <div><dt>Category</dt><dd>${escapeHtml(category.name || category.current)}</dd></div>
-      <div><dt>Coworking lounge</dt><dd>${escapeHtml(lounge.name || lounge.current)}</dd></div>
-      <div><dt>Behavior</dt><dd>A member who joins the workspace channel gets a temporary voice channel in the configured category. Rob-bot removes the channel when it becomes empty.</dd></div>
-    </dl>`,
-  })}
-    ${state.mode === 'edit' ? saveBar(state) : ''}</section>`;
+  const rows = masterSwitchRow({
+    label: 'Create voice rooms',
+    offHint: 'Members cannot create voice rooms.',
+    checked: value.voiceEnabled,
+    field: 'voiceEnabled',
+    attribute: 'data-community-field',
+  });
+  return pageFrame(VOICE_COWORKING, state, {
+    enabled: value.voiceEnabled,
+    lede: workspace.exists && workspace.name ? `Joining ${workspace.name} gives a member their own voice room.` : '',
+    body: `${settingsRows(rows, { label: 'Voice settings' })}
+      ${resourceSection(VOICE_COWORKING, state, snapshot, 'Channels and category', {
+    labels: { create_workspace_voice: 'Join to create', temp_voice_category: 'New rooms go in' },
+    hints: { coworking_lounge: 'Shared room for Pomodoro sessions' },
+  })}`,
+  });
 }
 
 function showcaseMarkup(state, snapshot) {
-  const value = state.mode === 'edit' ? state.draft : state.persisted;
-  const forum = resourceBindingState(snapshot, 'showcase_forum');
-  const app = resourceBindingState(snapshot, 'app_of_the_week');
-  const collab = resourceBindingState(snapshot, 'collab_lfg');
-  const header = pageHeader(
-    'Showcase',
-    state.mode === 'edit' ? 'Manage Showcase behavior here. Forum and destination channels are configured in Context.' : 'Current Showcase status and Discord wiring.',
-    state,
-    { enabled: value.enabled, toggleAttribute: 'data-community-field="enabled"' },
-  );
-  return `<section class="control-page community-page" data-page-key="${SHOWCASE}">${header}${statusMarkup(state)}
-    ${controlSectionMarkup({
-    id: 'showcase-destinations-heading',
-    title: 'Showcase destinations',
-    description: value.enabled
-      ? 'Showcase is active. Members can share work in the forum and staff can publish weekly highlights.'
-      : 'Showcase is disabled. Members cannot post showcase threads right now.',
-    body: `<dl class="control-definition-list">
-      <div><dt>Showcase forum</dt><dd>${escapeHtml(forum.name || forum.current)}</dd></div>
-      <div><dt>App of the Week</dt><dd>${escapeHtml(app.name || app.current)}</dd></div>
-      <div><dt>Collab LFG</dt><dd>${escapeHtml(collab.name || collab.current)}</dd></div>
-      <div><dt>Behavior</dt><dd>Showcase threads are created in the forum. App of the Week highlights a selected member project, and Collab LFG holds collaboration requests.</dd></div>
-    </dl>`,
-  })}
-    ${state.mode === 'edit' ? saveBar(state) : ''}</section>`;
+  const value = state.draft ?? state.persisted;
+  const rows = masterSwitchRow({
+    label: 'Run showcase spotlights',
+    offHint: 'Members cannot post showcase threads.',
+    checked: value.enabled,
+    field: 'enabled',
+    attribute: 'data-community-field',
+  });
+  return pageFrame(SHOWCASE, state, {
+    enabled: value.enabled,
+    body: `${settingsRows(rows, { label: 'Showcase settings' })}
+      ${resourceSection(SHOWCASE, state, snapshot, 'Channels')}`,
+  });
 }
 
 function renderPage(pageKey, state, snapshot) {
@@ -299,6 +256,7 @@ export function createCommunityPageDefinition(pageKey) {
   if (!COMMUNITY_PAGE_CONFIGS[pageKey]) throw new Error(`Unknown Community page: ${pageKey}`);
   return {
     pageKey,
+    editOnMount: true,
     selectPersisted(snapshot) {
       if (pageKey === REPUTATION) {
         const raw = snapshot?.reputation?.thresholds || DEFAULT_THRESHOLDS;
@@ -378,38 +336,9 @@ export function createCommunityPageDefinition(pageKey) {
     render({ state, snapshot } = {}) {
       return renderPage(pageKey, state, snapshot || {});
     },
-    renderContext({ state, snapshot } = {}) {
-      if (!snapshot) return '';
-      const editing = state?.mode === 'edit';
-      const keys = featureResourceKeys(pageKey);
-      const readiness = resourceReadinessState(snapshot, keys);
-      const labels = {
-        [REPUTATION]: [['builder_role', 'Builder role'], ['contributor_role', 'Contributor role'], ['mentor_role', 'Mentor role']],
-        [QUIZZES]: [['quiz_channel', 'Quiz channel']],
-        [VOICE_COWORKING]: [['create_workspace_voice', 'Workspace channel'], ['coworking_lounge', 'Coworking lounge'], ['temp_voice_category', 'Temporary voice category']],
-        [SHOWCASE]: [['showcase_forum', 'Showcase forum'], ['app_of_the_week', 'App of the Week'], ['collab_lfg', 'Collab LFG']],
-      }[pageKey] || [];
-      const dependencyCopy = {
-        [REPUTATION]: 'Reputation awards require all three roles to exist and sit below Rob-bot in the role hierarchy.',
-        [QUIZZES]: 'Automatic quizzes send to the quiz channel. Manual posting still uses the documented Discord command.',
-        [VOICE_COWORKING]: 'Temporary voice needs the workspace channel and category. Rob-bot must be able to manage channels in that category.',
-        [SHOWCASE]: 'Showcase needs its forum and both destination channels before members can use the full flow.',
-      }[pageKey] || '';
-      const readinessSection = editing
-        ? ''
-        : contextSectionMarkup({
-          id: 'readiness',
-          title: 'Readiness',
-          description: readiness.ready
-            ? `All ${readiness.total} Discord resources are connected.`
-            : `${readiness.connected} of ${readiness.total} Discord resources are connected.`,
-          body: readinessMarkup(snapshot, labels),
-        });
-      return `${readinessSection}${contextSectionMarkup({
-        id: 'dependency',
-        title: 'Dependency',
-        body: `<p>${escapeHtml(dependencyCopy)}</p>`,
-      })}`;
+    // Context content now lives in the page as rows, problems and the Channels section.
+    renderContext() {
+      return '';
     },
     install({ root, store = controlState, onSave, rerender = () => {} } = {}) {
       return installCommunityPageInteractions({ root, pageKey, store, onSave, rerender });
@@ -419,30 +348,28 @@ export function createCommunityPageDefinition(pageKey) {
 
 export function registerCommunityPages() {
   for (const pageKey of Object.keys(COMMUNITY_PAGE_CONFIGS)) {
-    if (!registeredControlPage(pageKey)) registerControlPage(withResourceBindings(createCommunityPageDefinition(pageKey), featureResourceKeys(pageKey)));
+    if (!registeredControlPage(pageKey)) registerControlPage(withResourceBindings(createCommunityPageDefinition(pageKey), featureResourceKeys(pageKey), { genericContext: 'never' }));
   }
 }
 
 export function installCommunityPageInteractions({ root, pageKey, store = controlState, onSave, rerender = () => {} } = {}) {
   if (!root?.addEventListener) return () => {};
   const onClick = event => {
-    if (event.target?.closest?.('[data-community-edit]')) {
-      store.beginEdit(pageKey);
-      rerender();
-      return;
-    }
     if (event.target?.closest?.('[data-community-save]')) {
       if (store.canSave(pageKey)) onSave?.(pageKey, store.buildSaveRequest(pageKey));
       return;
     }
     if (event.target?.closest?.('[data-community-discard]')) {
       store.discard(pageKey);
-      store.get(pageKey).mode = 'read';
       rerender();
       return;
     }
     if (pageKey === QUIZZES && event.target?.closest?.('[data-community-add-question]')) {
-      store.updateDraft(pageKey, draft => { draft.questions.push({ id: null, category: '', prompt: '', options: ['', '', '', ''], correct: 1, explanation: '', enabled: true }); });
+      let added = 0;
+      store.updateDraft(pageKey, draft => {
+        added = draft.questions.push({ id: null, category: '', prompt: '', options: ['', '', '', ''], correct: 1, explanation: '', enabled: true }) - 1;
+      });
+      setDisclosureOpen(`quiz-q-new-${added}`, true);
       rerender();
       return;
     }
@@ -486,10 +413,16 @@ export function installCommunityPageInteractions({ root, pageKey, store = contro
       rerender();
     }
   };
+  // Typed values reach the draft on every keystroke so the save bar appears at once.
+  const onInput = event => {
+    if (event.target?.matches?.('input[type="text"], input:not([type]), textarea')) onChange(event);
+  };
   root.addEventListener('click', onClick);
   root.addEventListener('change', onChange);
+  root.addEventListener('input', onInput);
   return () => {
     root.removeEventListener('click', onClick);
     root.removeEventListener('change', onChange);
+    root.removeEventListener('input', onInput);
   };
 }

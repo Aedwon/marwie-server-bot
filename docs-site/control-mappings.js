@@ -3,7 +3,7 @@ import {
   registerControlPage,
   registeredControlPage,
 } from './control-page-registry.js';
-import { controlSimplePageHeaderMarkup, saveBarStatusMarkup } from './control-components.js?v=23';
+import { controlSimplePageHeaderMarkup, saveBarStatusMarkup } from './control-components.js?v=24';
 
 const COMPROMISED_ACCOUNT_TRAP_KEY = 'compromised_account_trap';
 const CHANNEL_KEYS = Object.freeze([

@@ -499,8 +499,8 @@ body.control-page {
 .control-disclose[aria-expanded="true"] .control-disclose-chev { transform: rotate(180deg); }
 .control-reveal { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--motion-enter) var(--ease-out); }
 .control-reveal > div { min-height: 0; overflow: hidden; visibility: hidden; transition: visibility var(--motion-enter) var(--ease-out); }
-.control-details[data-open="true"] .control-reveal { grid-template-rows: 1fr; }
-.control-details[data-open="true"] .control-reveal > div { visibility: visible; }
+:is(.control-details, .control-disclosure)[data-open="true"] > .control-reveal { grid-template-rows: 1fr; }
+:is(.control-details, .control-disclosure)[data-open="true"] > .control-reveal > div { visibility: visible; }
 .control-details-body { display: grid; gap: 20px; padding: 8px 0 4px; }
 
 /* Save bar: floating ink bar, bottom center of main. Pages build the content; the app moves it here. */
@@ -675,26 +675,10 @@ body.control-page {
 .control-empty h1 { margin: 0 0 10px; font-size: 28px; line-height: 1.2; font-weight: 500; letter-spacing: -.02em; }
 .control-empty p { margin: 0 0 22px; color: var(--text-secondary); font-size: 16px; line-height: 1.6; }
 .control-page-section { padding: 0; }
-.control-page-section h1 { margin: 0; font-size: 28px; line-height: 1.2; font-weight: 500; letter-spacing: -.02em; }
+.control-page-section h1 { margin: 0; font-size: 24px; line-height: 1.25; font-weight: 600; letter-spacing: -.015em; }
 .control-page-intro { max-width: 68ch; margin: 8px 0 0; color: var(--text-secondary); font-size: 14px; line-height: 1.55; }
 .control-eyebrow { margin: 0; color: var(--text-tertiary); font-size: 13px; line-height: 18px; font-weight: 500; }
 .control-page-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
-.control-state-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 2px 8px;
-  border: 1px solid var(--stroke-subtle);
-  border-radius: 999px;
-  background: var(--surface-secondary);
-  color: var(--text-secondary);
-  font-size: 13px;
-  line-height: 18px;
-  font-weight: 500;
-}
-.control-state-chip[data-tone="good"] { border-color: var(--status-success-stroke); background: var(--status-success-bg); color: var(--status-success-fg); }
-.control-state-chip[data-tone="warning"] { border-color: var(--status-warning-stroke); background: var(--status-warning-bg); color: var(--status-warning-fg); }
-.control-state-chip[data-tone="info"] { border-color: var(--status-info-stroke); background: var(--status-info-bg); color: var(--status-info-fg); }
 .control-global-status { min-height: 18px; color: var(--text-tertiary); font-size: 13px; line-height: 18px; }
 
 .control-button, .control-primary-button, .control-secondary-button, .control-edit-settings-button {
@@ -796,6 +780,7 @@ body.control-page {
   .control-shell, .control-topbar, .control-panel, .control-nav-kids, .control-nav-indicator, .control-reveal,
   .control-rail, .control-save-host, .control-nav-chev, .control-disclose-chev, .control-seg-thumb { transition: none !important; }
   .control-pop, .control-palette { transform: none !important; }
+  .control-switch-track, .control-switch-track::after { transition: none !important; }
   .control-page-enter { animation-name: control-page-fade; }
   @keyframes control-page-fade { from { opacity: 0; } }
   .control-save-host.nudge { animation: none; }

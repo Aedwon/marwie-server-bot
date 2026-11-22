@@ -40,7 +40,7 @@ test('invalid drafts cannot produce save requests and discard resets from curren
   assert.equal(store.get('/control/community/reputation').dirty, false);
 });
 
-test('dirty drafts survive route changes in memory and successful reconciliation returns to read state', () => {
+test('dirty drafts survive route changes in memory and successful reconciliation stays in edit state', () => {
   const store = freshStore();
   store.beginEdit('/control/community/reputation');
   store.updateDraft('/control/community/reputation', draft => { draft.builder = 60; });
@@ -48,9 +48,23 @@ test('dirty drafts survive route changes in memory and successful reconciliation
   assert.deepEqual(request.changes[0].payload, { builder: 60, contributor: 150, mentor: 500 });
   store.reconcile('/control/community/reputation', { outcome: 'saved' }, { reputation: { builder: 60, contributor: 150, mentor: 500 } }, 'b'.repeat(64));
   const state = store.get('/control/community/reputation');
-  assert.equal(state.mode, 'read');
+  assert.equal(state.mode, 'edit');
+  assert.equal(state.status, 'saved');
   assert.equal(state.dirty, false);
   assert.equal(state.revision, 'b'.repeat(64));
+});
+
+test('discard keeps edit state and resets the draft to the persisted values', () => {
+  const store = freshStore();
+  const key = '/control/community/reputation';
+  store.beginEdit(key);
+  store.updateDraft(key, draft => { draft.builder = 60; });
+  assert.equal(store.get(key).dirty, true);
+  store.discard(key);
+  const state = store.get(key);
+  assert.equal(state.mode, 'edit');
+  assert.equal(state.dirty, false);
+  assert.equal(state.draft.builder, 50);
 });
 
 test('partial save keeps unresolved intended differences and conflict remains distinct', () => {

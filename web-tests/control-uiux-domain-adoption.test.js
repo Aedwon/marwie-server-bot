@@ -23,7 +23,7 @@ function renderFeature(definition, snapshot) {
   };
 }
 
-test('Community keeps feature configuration in center and canonical resources in Context', () => {
+test('Community pages hold feature settings and canonical resources in the page with no context', () => {
   const snapshot = {
     features: [{ name: 'reputation', enabled: true, config: {} }],
     reputation: { thresholds: { builder: 50, contributor: 150, mentor: 500 } },
@@ -39,13 +39,21 @@ test('Community keeps feature configuration in center and canonical resources in
       { key: 'mentor_role', id: '3', name: 'Mentor', exists: true, kind: 'role' },
     ],
   };
-  const view = renderFeature(createCommunityPageDefinition('/control/community/reputation'), snapshot);
-  assert.match(view.center, /control-feature-header-actions/);
-  assert.doesNotMatch(view.center, /control-summary-table|Manage mappings/);
-  assert.match(view.context, /Discord resources/);
-  assert.match(view.context, /Builder role/);
-  assert.match(view.context, /Contributor role/);
-  assert.match(view.context, /Mentor role/);
+  const definition = withResourceBindings(
+    createCommunityPageDefinition('/control/community/reputation'),
+    featureResourceKeys('/control/community/reputation'),
+    { genericContext: 'never' },
+  );
+  const store = createControlStateStore();
+  store.register(definition);
+  store.hydrate(definition.pageKey, snapshot, 'a'.repeat(64));
+  store.beginEdit(definition.pageKey);
+  const state = store.get(definition.pageKey);
+  const center = definition.render({ state, snapshot });
+  assert.doesNotMatch(center, /control-feature-header-actions|control-summary-table|Manage mappings/);
+  assert.equal(definition.renderContext({ state, snapshot }), '');
+  for (const label of ['Builder role', 'Contributor role', 'Mentor role']) assert.match(center, new RegExp(label));
+  assert.match(center, /<option value="1" selected>@Builder<\/option>/);
 });
 
 test('Utilities keep feature settings in center and ticket resources in Context', () => {
