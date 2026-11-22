@@ -43,7 +43,6 @@ const EXPECTED_GROUPS = {
     '/control/workflows/moderation',
   ],
   insights: ['/control/analytics', '/control/activity'],
-  system: ['/control/mappings/channels', '/control/commands'],
 };
 
 const EXPECTED_RESOURCES = {
@@ -68,27 +67,29 @@ test('completion keeps all 19 canonical deep links stable', async () => {
 });
 
 test('navigation is grouped by user-facing feature intent instead of URL families', async () => {
-  const { CONTROL_NAV_GROUPS, CONTROL_PLAYBOOKS } = await import('../docs-site/control-router.js');
+  const { CONTROL_NAV_GROUPS, CONTROL_NAV_RESOURCES, CONTROL_PLAYBOOKS, CONTROL_REFERENCE } = await import('../docs-site/control-router.js');
   assert.deepEqual(Object.fromEntries(CONTROL_NAV_GROUPS.map(group => [group.key, group.items.map(item => item.path)])), EXPECTED_GROUPS);
-  assert.deepEqual(CONTROL_NAV_GROUPS.map(group => group.label), ['Engagement', 'Publishing', 'Support & Safety', 'Insights', 'System']);
+  assert.deepEqual(CONTROL_NAV_GROUPS.map(group => group.label), ['Engagement', 'Publishing', 'Support & Safety', 'Insights']);
+  assert.equal(CONTROL_NAV_RESOURCES.path, '/control/mappings/channels');
+  assert.deepEqual(CONTROL_NAV_RESOURCES.matchPaths, ['/control/mappings/channels', '/control/mappings/roles', '/control/mappings/categories']);
   assert.deepEqual(CONTROL_PLAYBOOKS.map(item => item.path), ['/control/workflows/ticket-handling', '/control/workflows/events']);
+  assert.deepEqual(CONTROL_REFERENCE.map(item => item.path), ['/commands', '/handbook']);
 });
 
-test('wide Control shell exposes floating left, flat center, and optional contextual right regions', () => {
+test('wide Control shell is a top bar, a floating sidebar panel and a flat main area with no context column', () => {
   const html = readFileSync(new URL('../docs-site/control.html', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../docs-site/control.css', import.meta.url), 'utf8');
-  for (const id of ['controlNavDrawer', 'controlMain', 'controlContextDrawer', 'controlContext']) assert.equal(html.includes(`id=\"${id}\"`), true, id);
-  assert.match(css, /--control-rail-width:\s*4rem/);
-  assert.match(css, /--control-left-width:\s*15rem/);
-  assert.match(css, /--control-right-width:\s*19rem/);
-  assert.match(css, /--control-center-min:\s*37\.5rem/);
+  for (const id of ['controlTopbar', 'controlNavDrawer', 'controlNavContent', 'controlMain', 'controlMainWrap', 'controlSaveBar']) assert.equal(html.includes(`id="${id}"`), true, id);
+  for (const id of ['controlContextDrawer', 'controlContext', 'controlContextButton', 'controlContextClose']) assert.equal(html.includes(`id="${id}"`), false, id);
+  assert.match(css, /--nav-w:\s*232px/);
+  assert.match(css, /--rail-w:\s*60px/);
+  assert.match(css, /--top-h:\s*52px/);
   assert.match(css, /--control-edge-gap:\s*\.75rem/);
-  assert.match(css, /--radius-shell:\s*24px/);
+  assert.match(css, /--radius-shell:\s*16px/);
   assert.equal(css.includes('@media (min-width: 1200px)'), false);
-  assert.equal(css.includes('@media (max-width: 1199px)'), false);
   assert.equal(css.includes('@media (max-width: 899px)'), false);
   assert.equal(css.includes('@media (max-width: 639px)'), true);
-  assert.match(css, /\.control-shell\[data-nav-mode=\"rail\"\]\[data-context-mode=\"column\"\]/);
+  assert.match(css, /\.control-shell\[data-nav-mode="rail"\] \{ --nav-col: var\(--rail-w\); \}/);
 });
 
 test('page registry exposes one optional contextual render path without a second state store', async () => {
@@ -119,16 +120,22 @@ test('System is the default appearance and Control keeps the canonical Figtree w
   assert.equal(html.includes('family=Figtree:wght@400;500;600'), true);
 });
 
-test('edit-mode save actions share one sticky floating bar at the bottom', () => {
+test('save actions share one floating ink bar at the bottom center of main', () => {
+  const shell = readFileSync(new URL('../docs-site/control.css', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../docs-site/control-features.css', import.meta.url), 'utf8');
+  const host = shell.match(/\.control-save-host \{([^}]*)\}/)?.[1] || '';
+  assert.match(host, /position:\s*absolute/);
+  assert.match(host, /bottom:\s*20px/);
+  assert.match(host, /left:\s*50%/);
+  assert.match(host, /width:\s*min\(480px, calc\(100% - 40px\)\)/);
+  assert.match(host, /background:\s*var\(--text-primary\)/);
+  assert.match(host, /color:\s*var\(--surface-page\)/);
+  assert.match(host, /transition:\s*transform var\(--motion-exit\) var\(--ease-in\)/);
+  assert.match(shell, /\.control-save-host:not\(\[data-bar="hidden"\]\) \{[^}]*transition:\s*transform var\(--motion-enter\) var\(--ease-out\)/);
+  assert.match(shell, /@keyframes control-save-nudge[\s\S]*?translate\(calc\(-50% - 2px\)[\s\S]*?translate\(calc\(-50% \+ 2px\)/);
   const start = css.indexOf('.control-save-bar,');
-  const end = css.indexOf('.control-section,', start);
-  const block = css.slice(start, end);
-  assert.match(block, /position:\s*sticky/);
-  assert.match(block, /bottom:\s*max\(14px, env\(safe-area-inset-bottom\)\)/);
-  assert.match(block, /border-radius:\s*12px/);
-  assert.match(block, /backdrop-filter:\s*blur\(10px\)/);
-  assert.match(block, /box-shadow:\s*var\(--shadow-save-bar\)/);
-  assert.match(css, /\.control-main > \.control-page:has\(\.control-save-bar\)\s*\{[^}]*display:\s*flex/);
-  assert.match(css, /\.control-main > \.control-page:has\(\.control-save-bar\)\s*>\s*\.control-save-bar\s*\{[^}]*margin-top:\s*auto/);
+  const block = css.slice(start, css.indexOf('.control-save-bar > div,', start));
+  assert.match(block, /display:\s*flex/);
+  assert.doesNotMatch(block, /position:\s*sticky|backdrop-filter|border-radius/);
+  assert.doesNotMatch(css, /\.control-main > \.control-page:has\(\.control-save-bar\)/);
 });

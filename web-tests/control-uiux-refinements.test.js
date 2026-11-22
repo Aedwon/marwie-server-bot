@@ -23,23 +23,25 @@ const baseSnapshot = () => ({
   mappings_review: { plan_hash: 'a'.repeat(64), quiet: true, proposed: [] },
 });
 
-test('the save bar carries pending changes and server status instead of a global tray', async () => {
+test('the save bar carries unsaved changes and server status without a dot', async () => {
   const { saveBarStatusLabel, saveBarStatusMarkup } = await import('../docs-site/control-components.js');
   const dirty = saveBarStatusMarkup({ dirty: true, changeCount: 3, status: 'dirty' });
   assert.match(dirty, /data-save-bar-status/);
-  assert.match(dirty, /data-save-bar-dot/);
+  assert.doesNotMatch(dirty, /data-save-bar-dot|control-save-bar-dot/);
   assert.match(dirty, /data-save-bar-message/);
-  assert.match(dirty, />3 pending changes</);
+  assert.match(dirty, />3 unsaved changes</);
 
   const clean = saveBarStatusMarkup({ dirty: false, changeCount: 0, status: 'clean' });
-  assert.match(clean, />No pending changes</);
+  assert.match(clean, />No unsaved changes</);
 
   const saving = saveBarStatusMarkup({ dirty: true, changeCount: 3, status: 'saving' });
-  assert.match(saving, />Saving changes/);
+  assert.match(saving, />Saving</);
 
-  assert.equal(saveBarStatusLabel({ dirty: true, changeCount: 1 }), '1 pending change');
-  assert.equal(saveBarStatusLabel({ dirty: true, changeCount: 2 }), '2 pending changes');
-  assert.equal(saveBarStatusLabel({ dirty: false, changeCount: 0 }), 'No pending changes');
+  assert.equal(saveBarStatusLabel({ dirty: true, changeCount: 1 }), '1 unsaved change');
+  assert.equal(saveBarStatusLabel({ dirty: true, changeCount: 2 }), '2 unsaved changes');
+  assert.equal(saveBarStatusLabel({ dirty: false, changeCount: 0 }), 'No unsaved changes');
+  const features = readFileSync(new URL('../docs-site/control-features.css', import.meta.url), 'utf8');
+  assert.doesNotMatch(features, /control-save-bar-dot/);
 });
 
 test('select and dropdown chevrons sit clear of the field border', () => {
@@ -57,18 +59,20 @@ test('select and dropdown chevrons sit clear of the field border', () => {
   );
 });
 
-test('Control chevrons share one shape and size', () => {
+test('Control chevrons share one shape and size', async () => {
   const controlCss = readFileSync(new URL('../docs-site/control.css', import.meta.url), 'utf8');
   const featuresCss = readFileSync(new URL('../docs-site/control-features.css', import.meta.url), 'utf8');
   const utilities = readFileSync(new URL('../docs-site/control-utilities.js', import.meta.url), 'utf8');
   assert.match(controlCss, /--chevron-down-mask:\s*url\(/);
   assert.match(controlCss, /--select-chevron:\s*url\([^;]*M2\.5%204\.5%206%208l3\.5-3\.5/);
   assert.match(controlCss, /--chevron-down-mask:\s*url\([^;]*M2\.5%204\.5%206%208l3\.5-3\.5/);
-  assert.match(
-    controlCss,
-    /\.control-nav-domain > button::after\s*\{[^}]*width:\s*12px;[^}]*height:\s*12px;[^}]*mask:\s*var\(--chevron-down-mask\)[^;]*;[^}]*color:\s*var\(--text-tertiary\);/s,
-  );
-  assert.doesNotMatch(controlCss, /\.control-nav-domain > button::after\s*\{[^}]*opacity:\s*\.5/s);
+  const { controlIcon } = await import('../docs-site/control-icons.js');
+  const navChevron = controlIcon('chevron', { size: 12, className: 'control-nav-chev' });
+  assert.match(navChevron, /viewBox="0 0 12 12"/);
+  assert.match(navChevron, /width="12" height="12"/);
+  assert.match(navChevron, /M2\.5 4\.5 6 8l3\.5-3\.5/);
+  assert.match(controlCss, /\.control-nav-chev \{[^}]*color:\s*var\(--text-faint\)/);
+  assert.doesNotMatch(controlCss, /\.control-nav-chev \{[^}]*opacity:\s*\.5/s);
   assert.match(
     featuresCss,
     /\.utility-emoji-chevron\s*\{[^}]*width:\s*12px;[^}]*height:\s*12px;[^}]*mask:\s*var\(--chevron-down-mask\)[^;]*;[^}]*color:\s*var\(--text-tertiary\);/s,
@@ -76,16 +80,18 @@ test('Control chevrons share one shape and size', () => {
   assert.doesNotMatch(utilities, />⌄</);
 });
 
-test('unauthenticated pages leave sign-in to the navbar', async () => {
-  const { identityMarkup, pageMarkup } = await import('../docs-site/control-components.js');
+test('unauthenticated pages leave sign-in to the top bar', async () => {
+  const { pageMarkup } = await import('../docs-site/control-components.js');
   const page = pageMarkup({ label: 'Community', path: '/control/community', domain: 'community' }, { authenticated: false });
-  assert.match(page, /Sign in with Discord from the navigation to load Control\./);
+  assert.match(page, /Sign in with Discord from the top bar to load Control\./);
   assert.doesNotMatch(page, /\/api\/auth\/start/);
   assert.doesNotMatch(page, /Sign in with Discord<\/a>/);
 
-  const identity = identityMarkup({ authenticated: false });
-  assert.match(identity, /href="\/api\/auth\/start"/);
-  assert.match(identity, /Sign in with Discord/);
+  const html = readFileSync(new URL('../docs-site/control.html', import.meta.url), 'utf8');
+  const bar = html.slice(html.indexOf('<header class="control-topbar"'), html.indexOf('</header>'));
+  assert.match(bar, /<a id="controlLogin" class="control-login" href="\/api\/auth\/start"[^>]*hidden>/);
+  assert.match(bar, /Sign in with Discord<\/span>/);
+  assert.ok(bar.indexOf('id="controlLogin"') > bar.indexOf('id="controlSearch"'));
 });
 
 test('Control shell has no global changes tray', () => {

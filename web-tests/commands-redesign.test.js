@@ -49,36 +49,38 @@ function cssBlock(source, selector) {
   return block;
 }
 
-test('All Commands uses the Control sibling shell instead of legacy handbook chrome', () => {
+test('All Commands uses the shared Control shell instead of legacy handbook chrome', () => {
   assert.match(commandsHtml, /<body class="control-page commands-page">/);
-  assert.match(commandsHtml, /class="control-shell commands-shell"/);
-  assert.match(commandsHtml, /id="commandsNavDrawer" class="control-rail commands-rail"/);
+  assert.match(commandsHtml, /<div class="control-shell" data-nav-mode="expanded"/);
+  assert.match(commandsHtml, /<aside id="controlNavDrawer" class="control-rail"/);
+  assert.match(commandsHtml, /<main id="controlMain" class="control-main commands-main"/);
   assert.match(commandsHtml, /href="\/control\.css\?v=/);
   assert.match(commandsHtml, /<h1[^>]*>All Commands<\/h1>/);
   assert.match(commandsHtml, /<title>All Commands · Rob-bot<\/title>/);
-  assert.doesNotMatch(commandsHtml, /class="(?:layout|sidebar|mobilebar|mobilebrand|menubtn)"/);
+  assert.doesNotMatch(commandsHtml, /class="(?:layout|sidebar|mobilebar|mobilebrand|menubtn|commands-shell|commands-rail)"/);
   assert.doesNotMatch(commandsHtml, /Rob-bot Handbook/);
 });
 
-test('All Commands defaults to System and reuses Control theme and drawer behavior', () => {
+test('All Commands defaults to System and reuses the shared shell theme and drawer behavior', () => {
   assert.match(commandsHtml, /<html[^>]*data-theme="light"[^>]*data-preference="system"/);
   assert.match(commandsHtml, /localStorage\.getItem\('rob-doc-theme'\) \|\| 'system'/);
-  assert.match(commandsHtml, /<meta name="theme-color" content="#fcfcfb" id="themeColor">/);
+  assert.match(commandsHtml, /<meta name="theme-color" content="#fcfcfb">/);
   assert.match(commandsHtml, /fonts\.googleapis\.com\/css2\?family=Figtree:wght@400;500;600/);
   assert.doesNotMatch(commandsHtml, /\/styles\.css/);
-  assert.match(commandsHtml, /class="control-shell commands-shell"[^>]*data-nav-mode="expanded"[^>]*data-context-mode="none"/);
-  const appearanceStart = commandsHtml.indexOf('class="control-appearance"');
-  assert.ok(appearanceStart >= 0);
-  const appearance = commandsHtml.slice(appearanceStart, commandsHtml.indexOf('</div>', appearanceStart));
-  assert.ok(appearance.indexOf('data-theme-choice="dark"') < appearance.indexOf('data-theme-choice="light"'));
-  assert.ok(appearance.indexOf('data-theme-choice="light"') < appearance.indexOf('data-theme-choice="system"'));
-  assert.match(appearance, /data-theme-choice="system"[^>]*aria-pressed="true"/);
-  assert.match(commandsJs, /import \{ installThemeControls \} from '\.\/control-theme\.js';/);
-  assert.match(commandsJs, /import \{ installDrawerController \} from '\.\/control-navigation\.js';/);
-  assert.match(commandsJs, /installThemeControls\s*\(/);
-  assert.match(commandsJs, /installDrawerController\s*\(/);
-  assert.match(commandsJs, /isDrawer\s*:/);
-  assert.doesNotMatch(commandsJs, /mediaQuery\s*:/);
+  assert.match(commandsHtml, /data-nav-mode="expanded"[^>]*data-peek="false"/);
+  assert.doesNotMatch(commandsHtml, /data-context-mode/);
+  const segStart = commandsHtml.indexOf('class="control-seg"');
+  assert.ok(segStart >= 0);
+  const seg = commandsHtml.slice(segStart, commandsHtml.indexOf('</div>', segStart));
+  assert.ok(seg.indexOf('data-theme-choice="light"') < seg.indexOf('data-theme-choice="dark"'));
+  assert.ok(seg.indexOf('data-theme-choice="dark"') < seg.indexOf('data-theme-choice="system"'));
+  assert.match(seg, /data-theme-choice="system"[^>]*aria-pressed="true"/);
+  assert.match(commandsJs, /import \{ installShell, loadShellSession \} from '\.\/control-shell\.js\?v=\d+';/);
+  assert.match(commandsJs, /installShell\(\{ currentPath: '\/commands' \}\)/);
+  const shellSource = read('docs-site/control-shell.js');
+  assert.match(shellSource, /installThemeControls\s*\(/);
+  assert.match(shellSource, /installDrawerController\s*\(/);
+  assert.match(shellSource, /isDrawer\s*:/);
 });
 
 test('All Commands keeps the approved 13px typography floor and metadata treatment', () => {
@@ -121,10 +123,12 @@ test('command search and hash reveal remain wired to the existing manual renderi
   assert.equal(publicManual, canonicalManual);
 });
 
-test('All Commands is public and canonical website routing stays separated from Control and handbook', () => {
-  assert.doesNotMatch(commandsHtml + commandsJs, /\/api\/(?:session|auth)|Sign in with Discord|controlIdentity/);
+test('All Commands content stays public and canonical website routing stays separated from Control and handbook', () => {
+  // The manual loads without a session. The shared top bar only adds Sign in or the account menu.
+  assert.doesNotMatch(commandsJs, /loadManual\([^)]*session|await loadShellSession/);
   assert.match(commandsHtml, /href="\/control"[^>]*>Control<\/a>/);
   assert.match(commandsHtml, /href="\/handbook"[^>]*>Handbook<\/a>/);
+  assert.match(commandsHtml, /id="controlLogin"[^>]*href="\/api\/auth\/start"/);
 
   const rewrite = source => vercel.rewrites.find(item => item.source === source)?.destination;
   assert.equal(rewrite('/'), '/docs-site/control');

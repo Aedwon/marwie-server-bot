@@ -45,7 +45,8 @@ test('Quizzes category and option fields inherit the shared 3px keyboard outline
     '.control-main',
     '.control-main:focus-visible',
     '.control-feature-toggle input:focus-visible + .control-feature-toggle-track',
-    '.control-nav-children a[aria-current="page"]',
+    '.control-nav-row[aria-current="page"]',
+    '.control-palette input:focus-visible',
     '.analytics-point-group:focus-visible',
   ]);
   const outlines = css => [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)]
@@ -82,4 +83,11 @@ test('Control text fields expose their boundaries and retain the focus stroke on
 test('Notification subsections and Control Command titles use compact heading typography', () => {
   assert.match(featureStyles, /\.utility-subheading\s+h3\s*\{[^}]*font-size:\s*16px;[^}]*font-weight:\s*600;/);
   assert.match(featureStyles, /\.control-command-goal\s+h2\s*\{[^}]*font-size:\s*16px;[^}]*font-weight:\s*600;/);
+});
+
+test('hidden skip link casts no shadow into the top-left corner', () => {
+  const css = readFileSync(new URL('../docs-site/control.css', import.meta.url), 'utf8');
+  const base = css.match(/\n\.skip \{([^}]*)\}/)[1];
+  assert.match(base, /box-shadow:\s*none/);
+  assert.match(css, /\.skip:focus-visible \{[^}]*box-shadow:\s*var\(--shadow-floating\)/);
 });

@@ -67,7 +67,7 @@ test('hovering the collapsed rail expands it after a short delay', () => {
   const { rail, timers, events, instance } = controller();
   rail.fire('mouseenter');
   assert.deepEqual(events, []);
-  timers.advance(120);
+  timers.advance(150);
   assert.deepEqual(events, ['expand']);
   assert.equal(instance.isExpanded(), true);
 });
@@ -87,10 +87,10 @@ test('hover does nothing outside rail mode or on touch pointers', () => {
 test('leaving the rail collapses it again', () => {
   const { rail, timers, events, instance } = controller();
   rail.fire('mouseenter');
-  timers.advance(120);
+  timers.advance(150);
   rail.fire('mouseleave');
   assert.deepEqual(events, ['expand']);
-  timers.advance(180);
+  timers.advance(200);
   assert.deepEqual(events, ['expand', 'collapse']);
   assert.equal(instance.isExpanded(), false);
 });
@@ -108,21 +108,21 @@ test('focus inside the rail keeps it open until focus leaves', () => {
   let focused = true;
   const { rail, timers, events } = controller({ hasFocusInside: () => focused });
   rail.fire('mouseenter');
-  timers.advance(120);
+  timers.advance(150);
   rail.fire('mouseleave');
   timers.advance(500);
   assert.deepEqual(events, ['expand']);
 
   focused = false;
   rail.fire('focusout');
-  timers.advance(180);
+  timers.advance(200);
   assert.deepEqual(events, ['expand', 'collapse']);
 });
 
 test('reset collapses the state without firing the collapse callback', () => {
   const { rail, timers, events, instance } = controller();
   rail.fire('mouseenter');
-  timers.advance(120);
+  timers.advance(150);
   assert.equal(instance.isExpanded(), true);
   instance.reset();
   assert.equal(instance.isExpanded(), false);

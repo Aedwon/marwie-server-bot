@@ -1,5 +1,5 @@
-const DEFAULT_OPEN_DELAY = 120;
-const DEFAULT_CLOSE_DELAY = 180;
+const DEFAULT_OPEN_DELAY = 150;
+const DEFAULT_CLOSE_DELAY = 200;
 
 const DEFAULT_TIMERS = {
   setTimeout: (handler, delay) => setTimeout(handler, delay),
@@ -7,7 +7,7 @@ const DEFAULT_TIMERS = {
 };
 
 function noopController() {
-  return { isExpanded: () => false, reset() {}, destroy() {} };
+  return { isExpanded: () => false, open() {}, reset() {}, destroy() {} };
 }
 
 export function installNavHoverExpand({
@@ -77,6 +77,14 @@ export function installNavHoverExpand({
 
   return {
     isExpanded: () => expanded,
+    // Immediate open for keyboard focus.
+    open() {
+      clearOpen();
+      clearClose();
+      if (expanded || !canExpand()) return;
+      expanded = true;
+      expand();
+    },
     reset() {
       clearOpen();
       clearClose();

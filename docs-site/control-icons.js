@@ -25,13 +25,26 @@ const ICON_PATHS = Object.freeze({
   'sidebar-simple': ['M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM40,56H80V200H40ZM216,200H96V56H216V200Z'],
 });
 
+// Small stroke icons drawn on a 16px grid for shell chrome.
+const STROKE_ICONS = Object.freeze({
+  book: 'M2 3.2c2-.8 4-.8 6 .6 2-1.4 4-1.4 6-.6v9.6c-2-.8-4-.8-6 .6-2-1.4-4-1.4-6-.6Z M8 3.8v9.6',
+  warning: 'M8 1.8 15 14H1L8 1.8Z M8 6.5v3.2 M8 11.6v.01',
+  search: 'M7 11.5a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Z m3.5 -1 3 3',
+  chevron: 'M2.5 4.5 6 8l3.5-3.5',
+  check: 'M3.5 8.5 6.5 11.5 12.5 4.5',
+});
+
 export function controlIcon(name, { size = 20, className = '' } = {}) {
+  const classAttribute = className ? ` class="${className}"` : '';
+  if (STROKE_ICONS[name]) {
+    const box = name === 'chevron' ? 12 : 16;
+    return `<svg${classAttribute} width="${size}" height="${size}" viewBox="0 0 ${box} ${box}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="${STROKE_ICONS[name]}"/></svg>`;
+  }
   const paths = ICON_PATHS[name];
   if (!paths) return '';
-  const classAttribute = className ? ` class="${className}"` : '';
   return `<svg${classAttribute} width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" focusable="false">${paths.map(path => `<path d="${path}"/>`).join('')}</svg>`;
 }
 
 export function hasControlIcon(name) {
-  return Boolean(ICON_PATHS[name]);
+  return Boolean(ICON_PATHS[name] || STROKE_ICONS[name]);
 }

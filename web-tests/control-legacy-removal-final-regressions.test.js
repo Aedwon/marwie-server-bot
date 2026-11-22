@@ -23,16 +23,17 @@ test('Commands column labels use the same grid geometry as command rows', () => 
   assert.match(featureCss, /\.control-command-table-head\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*minmax\(180px, \.9fr\) minmax\(0, 1\.4fr\) auto;/);
 });
 
-test('context column reserves its own track and never pads the center workspace', () => {
+test('the shell has no context column track and the sidebar panel never pads the main area', () => {
+  assert.doesNotMatch(shellCss, /data-context-mode|--control-right-width|control-context-shell/);
   assert.match(
     shellCss,
-    /\.control-shell\[data-nav-mode=\"rail\"\]\[data-context-mode=\"column\"\] \{[^}]*var\(--control-rail-width\)[^}]*var\(--control-right-width\)/,
+    /\.control-shell\[data-nav-mode="rail"\] \{ --nav-col: var\(--rail-w\); \}/,
   );
+  assert.match(shellCss, /\.control-shell \{[^}]*grid-template-columns: var\(--nav-col\) minmax\(0, 1fr\);/s);
   assert.match(
     shellCss,
-    /\.control-shell\[data-context-mode=\"drawer\"\] \.control-context-shell \{[^}]*position: fixed;/,
+    /\.control-shell\[data-nav-mode="rail"\]\[data-peek="true"\] \.control-panel \{[^}]*width: var\(--nav-w\);/s,
   );
-  assert.doesNotMatch(shellCss, /padding-right:\s*calc\(var\(--control-right-width\)/);
 });
 
 test('mobile save bar status wraps inside the floating action bar', () => {

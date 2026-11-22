@@ -7,96 +7,62 @@ import {
   installShellLayout,
   readNavPreference,
   resolveShellLayout,
+  shellThresholds,
   writeNavPreference,
 } from '../docs-site/control-shell-layout.js';
 
-function layout(width, hasContext, navPreference = 'auto') {
-  return resolveShellLayout({ width, hasContext, navPreference });
+function layout(width, navPreference = 'auto') {
+  return resolveShellLayout({ width, navPreference });
 }
 
-test('shell metrics match the approved 240/64/304/600 model', () => {
+test('shell metrics match the 232/60/600 model with no context column', () => {
   assert.deepEqual(SHELL_METRICS, {
     edge: 12,
     gap: 12,
-    rail: 64,
-    labeled: 240,
-    right: 304,
+    rail: 60,
+    labeled: 232,
     centerMin: 600,
+    drawerBelow: 760,
   });
+  assert.equal('right' in SHELL_METRICS, false);
 });
 
-test('navigation becomes a drawer below 700px', () => {
-  assert.equal(layout(699, false).navMode, 'drawer');
-  assert.equal(layout(700, false).navMode, 'rail');
-  assert.equal(layout(699, true).navMode, 'drawer');
-  assert.equal(layout(700, true).navMode, 'rail');
+test('thresholds contain only the drawer and labeled-navigation floors', () => {
+  assert.deepEqual(shellThresholds(), { navDrawer: 760, labelsFit: 868 });
 });
 
-test('labeled navigation needs 876px without context', () => {
-  assert.equal(layout(875, false).navMode, 'rail');
-  assert.equal(layout(876, false).navMode, 'expanded');
-  assert.equal(layout(1120, false).navMode, 'expanded');
+test('navigation becomes a drawer below 760px', () => {
+  assert.equal(layout(759).navMode, 'drawer');
+  assert.equal(layout(760).navMode, 'rail');
 });
 
-test('context column needs 1016px with the rail', () => {
-  assert.equal(layout(1015, true).navMode, 'rail');
-  assert.equal(layout(1015, true).contextMode, 'drawer');
-  assert.equal(layout(1016, true).navMode, 'rail');
-  assert.equal(layout(1016, true).contextMode, 'column');
+test('labeled navigation needs 868px: 232 + 600 + 12 gap + 24 gutters', () => {
+  assert.equal(layout(867).navMode, 'rail');
+  assert.equal(layout(868).navMode, 'expanded');
+  assert.equal(layout(1440).navMode, 'expanded');
 });
 
-test('context column needs 1192px with labeled navigation', () => {
-  assert.equal(layout(1191, true).navMode, 'rail');
-  assert.equal(layout(1191, true).contextMode, 'column');
-  assert.equal(layout(1192, true).navMode, 'expanded');
-  assert.equal(layout(1192, true).contextMode, 'column');
-});
-
-test('an explicit expanded choice turns the context panel into a drawer when labels do not fit', () => {
-  const result = layout(1120, true, 'expanded');
-  assert.equal(result.navMode, 'expanded');
-  assert.equal(result.contextMode, 'drawer');
+test('an explicit expanded choice keeps labels above the drawer floor', () => {
+  assert.equal(layout(800, 'expanded').navMode, 'expanded');
 });
 
 test('an explicit collapsed choice keeps the rail when labels would fit', () => {
-  assert.equal(layout(1400, false, 'collapsed').navMode, 'rail');
-  assert.equal(layout(1400, true, 'collapsed').contextMode, 'column');
+  assert.equal(layout(1400, 'collapsed').navMode, 'rail');
 });
 
-test('the drawer wins over an explicit expanded choice below 700px', () => {
-  assert.equal(layout(640, false, 'expanded').navMode, 'drawer');
-  assert.equal(layout(640, true, 'expanded').contextMode, 'drawer');
+test('the drawer wins over an explicit expanded choice below 760px', () => {
+  assert.equal(layout(640, 'expanded').navMode, 'drawer');
+  assert.equal(layout(640, 'collapsed').navMode, 'drawer');
 });
 
-test('a hover override expands the rail without changing the saved preference', () => {
-  const base = { width: 1400, hasContext: false, navPreference: 'collapsed' };
-  assert.equal(resolveShellLayout(base).navMode, 'rail');
-  const hovered = resolveShellLayout({ ...base, navOverride: 'expanded' });
-  assert.equal(hovered.navMode, 'expanded');
-  assert.equal(hovered.navPreference, 'collapsed');
-});
-
-test('the drawer wins over a hover override below 700px', () => {
-  const result = resolveShellLayout({
-    width: 640,
-    hasContext: true,
-    navPreference: 'collapsed',
-    navOverride: 'expanded',
-  });
-  assert.equal(result.navMode, 'drawer');
-  assert.equal(result.contextMode, 'drawer');
-});
-
-test('an unknown hover override is ignored', () => {
-  assert.equal(resolveShellLayout({ width: 1400, navPreference: 'collapsed', navOverride: 'peek' }).navMode, 'rail');
-});
-
-test('pages without context reserve no context column', () => {
-  assert.equal(layout(1400, false).contextMode, 'none');
+test('the resolver has no context column state', () => {
+  const result = layout(1440);
+  assert.equal('contextMode' in result, false);
+  assert.equal('hasContext' in result, false);
 });
 
 test('invalid preferences fall back to automatic layout', () => {
-  assert.equal(layout(1400, false, 'sideways').navMode, 'expanded');
+  assert.equal(layout(1400, 'sideways').navMode, 'expanded');
 });
 
 test('navigation preference reads and writes safely', () => {
@@ -118,7 +84,7 @@ test('navigation preference reads and writes safely', () => {
   assert.equal(readNavPreference(storage), 'auto');
 });
 
-test('installer sets shell state and reports only layout changes', () => {
+test('installer sets nav mode only and reports only layout changes', () => {
   const listeners = new Map();
   const target = {
     addEventListener(type, handler) {
@@ -128,8 +94,8 @@ test('installer sets shell state and reports only layout changes', () => {
       listeners.delete(type);
     },
   };
-  const shell = { dataset: { context: 'true' } };
-  let width = 1120;
+  const shell = { dataset: {} };
+  let width = 800;
   const seen = [];
   const controller = installShellLayout({
     shell,
@@ -140,54 +106,23 @@ test('installer sets shell state and reports only layout changes', () => {
   });
 
   assert.equal(shell.dataset.navMode, 'rail');
-  assert.equal(shell.dataset.contextMode, 'column');
+  assert.equal('contextMode' in shell.dataset, false);
   assert.equal(seen.length, 1);
 
-  width = 1015;
+  width = 700;
   listeners.get('resize')();
-  assert.equal(shell.dataset.navMode, 'rail');
-  assert.equal(shell.dataset.contextMode, 'drawer');
+  assert.equal(shell.dataset.navMode, 'drawer');
   assert.equal(seen.length, 2);
 
-  width = 1014;
+  width = 650;
   listeners.get('resize')();
   assert.equal(seen.length, 2);
 
-  shell.dataset.context = 'false';
   width = 1120;
   controller.refresh();
   assert.equal(shell.dataset.navMode, 'expanded');
-  assert.equal(shell.dataset.contextMode, 'none');
-
-  controller.destroy();
-  assert.equal(listeners.has('resize'), false);
-});
-
-test('installer applies and clears a hover override', () => {
-  const shell = { dataset: {} };
-  let override = null;
-  const seen = [];
-  const controller = installShellLayout({
-    shell,
-    target: { addEventListener() {}, removeEventListener() {} },
-    getWidth: () => 1400,
-    getPreference: () => 'collapsed',
-    getOverride: () => override,
-    onChange: value => seen.push(value),
-  });
-
-  assert.equal(shell.dataset.navMode, 'rail');
-  assert.equal(seen.length, 1);
-
-  override = 'expanded';
-  controller.refresh();
-  assert.equal(shell.dataset.navMode, 'expanded');
-  assert.equal(seen.length, 2);
-
-  override = null;
-  controller.refresh();
-  assert.equal(shell.dataset.navMode, 'rail');
   assert.equal(seen.length, 3);
 
   controller.destroy();
+  assert.equal(listeners.has('resize'), false);
 });

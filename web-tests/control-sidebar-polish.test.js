@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-import { navigationMarkup } from '../docs-site/control-components.js';
+import { navigationMarkup } from '../docs-site/control-shell.js';
 import { createNavigationState, navigationModel } from '../docs-site/control-navigation.js';
 import { destinationForPath } from '../docs-site/control-router.js';
 
@@ -27,10 +27,13 @@ test('revealing a feature group changes only the revealed menu', () => {
   assert.equal(state.lastByDomain.community, '/control/community/reputation');
 });
 
-test('feature-first groups own primary navigation and Playbooks stay secondary', () => {
+test('feature-first groups own primary navigation; Resources, Playbooks and Reference follow', () => {
   const model = navigationModel(destinationForPath('/control/community/reputation'), 'engagement');
-  assert.deepEqual(model.primary.map(item => item.key), ['engagement', 'publishing', 'support-safety', 'insights', 'system']);
-  assert.deepEqual(model.secondary.map(item => item.path), ['/control/workflows/ticket-handling', '/control/workflows/events']);
+  assert.deepEqual(model.items.filter(item => item.type === 'group').map(item => item.key), ['engagement', 'publishing', 'support-safety', 'insights']);
+  assert.deepEqual(
+    model.items.filter(item => item.type === 'link' && item.key !== 'resources' && !item.external).map(item => item.path),
+    ['/control/workflows/ticket-handling', '/control/workflows/events'],
+  );
 });
 
 test('feature-group markup has no disclosure glyph and marks the current destination independently', () => {
@@ -43,136 +46,133 @@ test('feature-group markup has no disclosure glyph and marks the current destina
   assert.match(markup, /Playbooks/);
 });
 
-test('parent clicks reveal only and ordinary route changes do not rebuild navigation', () => {
-  const renderBlock = sourceBlock(controlApp, 'function renderNavigation()', 'function resetActivityController()');
+test('group clicks only toggle the accordion and route changes never rebuild navigation', () => {
+  const shell = readFileSync(new URL('../docs-site/control-shell.js', import.meta.url), 'utf8');
   const navigateBlock = sourceBlock(controlApp, 'function navigate(', 'function setStatus(');
-  assert.match(renderBlock, /revealNavigationDomain\(button\.dataset\.domainSelect\)/);
-  assert.match(controlApp, /navState\.revealDomain\(domainKey\)/);
-  assert.doesNotMatch(renderBlock, /navigate\(destination\.path\)/);
-  assert.doesNotMatch(navigateBlock, /renderNavigation\(\)/);
+  const clickBlock = sourceBlock(shell, "nav.addEventListener('click'", '/* Layout, rail toggle, peek */');
+  assert.match(clickBlock, /setOpen\(openGroup === key \? '' : key\)/);
+  assert.match(clickBlock, /indicator\.track\(\)/);
+  assert.doesNotMatch(clickBlock, /innerHTML/);
+  assert.doesNotMatch(navigateBlock, /navigationMarkup|innerHTML/);
+  assert.doesNotMatch(shell, /nav\.innerHTML\s*=/);
+  assert.match(navigateBlock, /shellController\?\.setCurrent\(navState\.current\.path\)/);
 });
 
-test('revealing a different section uses the approved reflow hooks only for section changes', () => {
-  assert.match(controlApp, /function revealNavigationDomain\(/);
-  assert.match(controlApp, /getBoundingClientRect\(\)/);
-  assert.match(controlApp, /requestAnimationFrame\(/);
-  assert.match(controlApp, /control-nav-reflow/);
-  assert.match(controlApp, /control-nav-children-reveal/);
+test('accordion and indicator motion are CSS and layout sampling, not FLIP reflow of sections', () => {
+  const shell = readFileSync(new URL('../docs-site/control-shell.js', import.meta.url), 'utf8');
+  assert.match(shell, /animation\.transitionProperty === 'grid-template-rows'/);
+  assert.match(shell, /getBoundingClientRect\(\)/);
+  assert.match(shell, /nav\.getAnimations\?\.\(\{ subtree: true \}\)/);
+  assert.doesNotMatch(controlApp, /control-nav-reflow|control-nav-children-reveal|revealNavigationDomain/);
+  assert.match(controlCss, /\.control-nav-kids \{[^}]*grid-template-rows: 0fr;[^}]*transition: grid-template-rows var\(--motion-enter\) var\(--ease-out\)/s);
+  assert.match(controlCss, /\.control-nav-group\[data-open="true"\] > \.control-nav-kids \{ grid-template-rows: 1fr; \}/);
+  assert.match(controlCss, /\.control-nav-indicator \{[^}]*transition: transform var\(--motion-enter\) var\(--ease-out\)/s);
 });
 
-test('top brand and footer appearance controls match the approved compact presentation', () => {
-  assert.match(controlHtml, /<span>Rob-bot Control Panel<\/span>/);
-  assert.match(controlHtml, /aria-label="Rob-bot Control Panel"/);
-  assert.doesNotMatch(controlHtml, /<span>Rob-bot<small>Control<\/small><\/span>/);
-  const headStart = controlHtml.indexOf('class="control-rail-head"');
-  const headEnd = controlHtml.indexOf('</div>', headStart);
-  assert.ok(headStart >= 0 && headEnd > headStart);
-  assert.match(controlHtml.slice(headStart, headEnd), /class="control-brand"/);
-  const footStart = controlHtml.indexOf('class="control-rail-foot"');
-  const footEnd = controlHtml.indexOf('</aside>', footStart);
-  assert.ok(footStart >= 0 && footEnd > footStart);
-  assert.match(controlHtml.slice(footStart, footEnd), /id="controlIdentity"/);
-  assert.match(controlHtml.slice(footStart, footEnd), /class="control-appearance"/);
-  const start = controlHtml.indexOf('class="control-appearance"');
-  const end = controlHtml.indexOf('</div>', start);
-  const appearance = controlHtml.slice(start, end);
-  assert.doesNotMatch(appearance, />Dark<|>Light<|>System</);
-  assert.match(appearance, /aria-label="Dark theme"/);
-  assert.match(appearance, /aria-label="Light theme"/);
-  assert.match(appearance, /aria-label="Follow system theme"/);
-  assert.match(appearance, /<svg[\s\S]*?<\/svg>/);
+test('the top bar holds the toggle and identity; the sidebar has no brand, footer or two-line title', () => {
+  assert.doesNotMatch(controlHtml, /Rob-bot Control Panel|control-brand|control-rail-head|control-rail-foot|control-appearance/);
+  const barStart = controlHtml.indexOf('<header class="control-topbar"');
+  const bar = controlHtml.slice(barStart, controlHtml.indexOf('</header>', barStart));
+  assert.match(bar, /id="controlNavToggle"/);
+  assert.match(bar, /id="controlIdentity"/);
+  assert.ok(bar.indexOf('id="controlNavToggle"') < bar.indexOf('id="controlServerButton"'));
+  const account = controlHtml.slice(controlHtml.indexOf('id="controlAccountMenu"'), controlHtml.indexOf('id="controlServerMenu"'));
+  assert.match(account, /class="control-seg"/);
+  assert.match(account, />Light<\/button>/);
+  assert.match(account, />Dark<\/button>/);
+  assert.match(account, />Auto<\/button>/);
+  assert.match(account, /data-account-sign-out/);
 });
 
-test('rail footer keeps the account above appearance and opens its menu upward', () => {
-  assert.match(controlCss, /\.control-rail-foot \{[^}]*display: grid;/);
-  assert.match(controlCss, /\.control-account-menu \{[\s\S]*?bottom: calc\(100% \+ 6px\);/);
-  assert.match(controlCss, /data-nav-mode="rail"\] \.control-account-menu \{[\s\S]*?bottom: 0;/);
+test('menus are popovers that open below their trigger and fade and rise with the motion tokens', () => {
+  assert.match(controlCss, /\.control-pop \{[^}]*position: fixed;/s);
+  assert.match(controlCss, /\.control-pop\[data-open="true"\] \{[^}]*transition: opacity var\(--motion-enter\) var\(--ease-out\), transform var\(--motion-enter\) var\(--ease-out\)/s);
+  const account = readFileSync(new URL('../docs-site/control-account.js', import.meta.url), 'utf8');
+  assert.match(account, /menu\.style\.top = `\$\{Math\.round\(rect\.bottom \+ 6\)\}px`/);
 });
 
-test('canonical shell keeps side regions floating and center workspace flat', () => {
-  assert.match(controlCss, /\.control-rail, \.control-context-shell \{[\s\S]*?border-radius: var\(--radius-shell\)/);
-  assert.match(controlCss, /\.control-rail \{[^}]*z-index: 2;/);
-  assert.match(controlCss, /\.control-main \{[\s\S]*?padding:/);
+test('canonical shell keeps the sidebar panel floating and the main area flat', () => {
+  assert.match(controlCss, /\.control-panel \{[\s\S]*?border-radius: var\(--radius-shell\)/);
+  assert.match(controlCss, /\.control-panel \{[\s\S]*?box-shadow: var\(--shadow-shell\)/);
+  assert.match(controlCss, /\.control-main \{[\s\S]*?padding: 28px 40px 140px;/);
   assert.doesNotMatch(controlCss, /--control-card-shadow/);
+  assert.doesNotMatch(controlCss, /\.control-rail \{[^}]*box-shadow/);
 });
 
-test('labeled navigation renders Phosphor icons for groups and destinations', () => {
+test('labeled navigation renders Phosphor icons for groups and top-level items only', () => {
   const model = navigationModel(destinationForPath('/control/community/reputation'), 'engagement');
   const markup = navigationMarkup(model);
   assert.match(markup, /control-nav-group-icon/);
   assert.match(markup, /control-nav-icon/);
   assert.match(markup, /<svg[^>]*viewBox="0 0 256 256"/);
   assert.match(markup, /data-domain-select="engagement"/);
-  assert.match(markup, /control-nav-label/);
+  assert.match(markup, /control-nav-lbl/);
 });
 
-test('icon rail keeps every destination and removes group disclosures', () => {
+test('the rail is the same DOM as the expanded sidebar: labels fade out and icons keep their x position', () => {
   const model = navigationModel(destinationForPath('/control/community/reputation'), 'engagement');
-  const markup = navigationMarkup(model, { rail: true });
-  assert.match(markup, /control-primary-nav-rail/);
-  assert.doesNotMatch(markup, /data-domain-select/);
-  assert.doesNotMatch(markup, /control-nav-marker/);
-  assert.match(markup, /aria-label="Reputation"/);
-  assert.match(markup, /aria-label="Ticket handling"/);
+  const markup = navigationMarkup(model);
+  assert.equal(navigationMarkup(model, { rail: true }), markup);
+  assert.doesNotMatch(markup, /control-primary-nav-rail|sr-only/);
+  assert.match(markup, /data-domain-select/);
   assert.match(markup, /aria-current="page"/);
-  assert.match(markup, /<svg[^>]*viewBox="0 0 256 256"/);
-  assert.doesNotMatch(markup, /control-nav-label">Reputation/);
+  assert.match(controlCss, /data-nav-mode="rail"\]:not\(\[data-peek="true"\]\) :is\(\.control-nav-lbl, \.control-nav-chev, \.control-nav-label, \.control-nav-flag\) \{ opacity: 0; pointer-events: none; \}/);
+  assert.match(controlCss, /\.control-shell\[data-nav-mode="rail"\] \{ --nav-col: var\(--rail-w\); \}/);
+  assert.match(controlCss, /\.control-nav-row \{[^}]*padding: 0 12px;/s);
 });
 
-test('shell markup has one navigation toggle and state-driven context triggers', () => {
+test('shell markup has one navigation toggle and no context triggers', () => {
   assert.match(controlHtml, /id="controlNavToggle"/);
   assert.match(controlHtml, /id="controlNavToggle"[\s\S]*?M216,40H40A16,16,0/);
-  assert.match(controlHtml, /control-nav-toggle-icon/);
-  assert.doesNotMatch(controlHtml, /control-nav-toggle-icon-expanded|control-nav-toggle-icon-collapsed/);
+  assert.equal((controlHtml.match(/id="controlNavToggle"/g) || []).length, 1);
   assert.match(controlHtml, /data-nav-mode="expanded"/);
-  assert.match(controlHtml, /data-context-mode="none"/);
-  assert.match(controlHtml, /data-context-trigger="topbar"/);
-  assert.match(controlApp, /installShellLayout/);
-  assert.match(controlApp, /writeNavPreference/);
-  assert.doesNotMatch(controlApp, /NAV_QUERY|CONTEXT_QUERY|navMedia|contextMedia/);
+  assert.doesNotMatch(controlHtml, /data-context-mode|data-context-trigger/);
+  assert.match(controlApp, /installShell\(/);
+  assert.doesNotMatch(controlApp, /NAV_QUERY|CONTEXT_QUERY|navMedia|contextMedia|installContextDrawerController/);
+  const shell = readFileSync(new URL('../docs-site/control-shell.js', import.meta.url), 'utf8');
+  assert.match(shell, /installShellLayout/);
+  assert.match(shell, /writeNavPreference/);
 });
 
-test('status pills and the current navigation group use text only, without leading dots', () => {
+test('status pills and the current navigation row use text only, without leading dots', () => {
   assert.doesNotMatch(controlCss, /\.control-state-chip::before/);
   assert.doesNotMatch(controlCss, /\.control-nav-marker/);
-  const currentStateBlock = sourceBlock(controlApp, 'function syncNavigationCurrentState()', 'function revealNavigationDomain(');
-  assert.doesNotMatch(currentStateBlock, /control-nav-marker/);
+  assert.doesNotMatch(featureCss, /control-save-bar-dot/);
 });
 
 test('drawer modes open one drawer at a time and close ignores non-drawer state', () => {
   const navigation = readFileSync(new URL('../docs-site/control-navigation.js', import.meta.url), 'utf8');
   assert.match(navigation, /const wasOpen = openedAsDrawer;\n    if \(!wasOpen\) return;/);
-  assert.match(controlApp, /onOpen: \(\) => contextDrawer\?\.close\(\{ restoreFocus: false \}\)/);
-  assert.match(controlApp, /onOpen: \(\) => navDrawer\?\.close\(\{ restoreFocus: false \}\)/);
+  assert.match(navigation, /setBackgroundInert\(true\)/);
+  assert.match(navigation, /setBackgroundInert\(false\)/);
+  assert.doesNotMatch(controlApp, /contextDrawer/);
 });
 
-test('rail destinations fit inside the rail padding', () => {
-  assert.match(controlCss, /data-nav-mode="rail"\] \.control-rail \{[^}]*padding: 10px 9px;/);
-  assert.match(
-    controlCss,
-    /data-nav-mode="rail"\] \.control-nav-children a,\n\.control-shell\[data-nav-mode="rail"\] \.control-secondary-nav a \{[^}]*width: 100%;[^}]*max-width: 44px;/,
-  );
+test('rail rows fit the rail panel and the panel clips them', () => {
+  assert.match(controlCss, /\.control-panel \{[^}]*overflow: hidden;/s);
+  assert.match(controlCss, /\.control-nav \{[^}]*padding: 8px;/s);
+  assert.match(controlCss, /--rail-w: 60px;/);
 });
 
-test('the app installs hover expansion without saving a preference', () => {
-  assert.match(controlApp, /installNavHoverExpand/);
-  assert.match(controlApp, /getOverride/);
-  const hoverBlock = sourceBlock(controlApp, 'navHover = installNavHoverExpand(', 'installThemeControls(');
+test('the shell installs hover peek without saving a preference', () => {
+  const shell = readFileSync(new URL('../docs-site/control-shell.js', import.meta.url), 'utf8');
+  assert.match(shell, /installNavHoverExpand/);
+  const hoverBlock = sourceBlock(shell, 'const hover = installNavHoverExpand(', '/* Drawer */');
   assert.doesNotMatch(hoverBlock, /writeNavPreference/);
+  assert.match(hoverBlock, /setPeek\(true\)/);
+  assert.match(controlCss, /\.control-shell\[data-nav-mode="rail"\]\[data-peek="true"\] \.control-panel \{[^}]*width: var\(--nav-w\)/s);
 });
 
-test('rail motion animates the shell, the rail, and the swapped content', () => {
-  assert.match(controlCss, /\.control-shell\[data-nav-motion="true"\] \{[^}]*transition: grid-template-columns/);
-  assert.match(controlCss, /\.control-shell\[data-nav-motion="true"\] \.control-rail \{[^}]*transition: width/);
-  assert.match(controlCss, /@keyframes control-nav-enter/);
-  assert.match(controlCss, /\.control-nav-enter \{[^}]*animation: control-nav-enter/);
-  assert.match(controlCss, /prefers-reduced-motion: reduce[\s\S]*?data-nav-motion="true"/);
-  assert.match(controlApp, /installNavMotion/);
-  assert.match(controlApp, /navMotion\?\.sync\(mode\)/);
+test('rail motion animates the shell grid and the panel width with the layout and peek tokens', () => {
+  assert.match(controlCss, /\.control-shell \{[^}]*transition: grid-template-columns var\(--motion-layout\) var\(--ease-out\)/s);
+  assert.match(controlCss, /\.control-panel \{[^}]*transition: width var\(--motion-exit\) var\(--ease-in\)/s);
+  assert.match(controlCss, /\[data-peek="true"\] \.control-panel \{[^}]*transition: width var\(--motion-enter\) var\(--ease-out\)/s);
+  assert.doesNotMatch(controlCss, /control-nav-enter|data-nav-motion/);
+  assert.match(controlCss, /prefers-reduced-motion: reduce[\s\S]*?\.control-nav-kids[\s\S]*?transition: none !important/);
 });
 
 test('shell styles expose the rail and use center container queries', () => {
-  assert.match(controlCss, /--control-rail-width: 4rem;/);
+  assert.match(controlCss, /--rail-w: 60px;/);
   assert.match(controlCss, /--control-center-min: 37.5rem;/);
   assert.match(controlCss, /container-type: inline-size;/);
   assert.match(controlCss, /container-name: control-main;/);
@@ -180,7 +180,7 @@ test('shell styles expose the rail and use center container queries', () => {
   assert.doesNotMatch(controlCss, /@media \(min-width: 1200px\)/);
   assert.match(featureCss, /@container control-main \(max-width: 720px\)/);
   assert.match(featureCss, /@container control-main \(min-width: 760px\)/);
-  assert.match(controlCss, /\.control-shell\[data-context-mode="drawer"\] \.control-context-shell \{ inset: 0; width: auto; height: auto;/);
+  assert.doesNotMatch(controlCss, /control-context-shell/);
 });
 
 test('feature stylesheet uses flat section rows instead of legacy card grids', () => {

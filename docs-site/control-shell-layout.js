@@ -3,10 +3,10 @@ export const NAV_PREFERENCE_KEY = 'rob-control-nav-preference';
 export const SHELL_METRICS = Object.freeze({
   edge: 12,
   gap: 12,
-  rail: 64,
-  labeled: 240,
-  right: 304,
+  rail: 60,
+  labeled: 232,
   centerMin: 600,
+  drawerBelow: 760,
 });
 
 const NAV_PREFERENCES = new Set(['auto', 'expanded', 'collapsed']);
@@ -16,50 +16,25 @@ function normalizedPreference(value) {
 }
 
 export function shellThresholds() {
-  const { edge, gap, rail, labeled, right, centerMin } = SHELL_METRICS;
+  const { edge, gap, labeled, centerMin, drawerBelow } = SHELL_METRICS;
   return {
-    navDrawer: rail + centerMin + gap + (2 * edge),
-    labelsNoContext: labeled + centerMin + gap + (2 * edge),
-    contextRail: rail + right + centerMin + (2 * gap) + (2 * edge),
-    contextLabels: labeled + right + centerMin + (2 * gap) + (2 * edge),
+    navDrawer: drawerBelow,
+    labelsFit: labeled + centerMin + gap + (2 * edge),
   };
 }
 
-export function resolveShellLayout({ width = 0, hasContext = false, navPreference = 'auto', navOverride = null } = {}) {
+export function resolveShellLayout({ width = 0, navPreference = 'auto' } = {}) {
   const thresholds = shellThresholds();
   const preference = normalizedPreference(navPreference);
   const safeWidth = Number.isFinite(Number(width)) ? Math.max(0, Number(width)) : 0;
 
   let navMode;
-  if (safeWidth < thresholds.navDrawer) {
-    navMode = 'drawer';
-  } else if (navOverride === 'expanded') {
-    navMode = 'expanded';
-  } else if (preference === 'collapsed') {
-    navMode = 'rail';
-  } else if (preference === 'expanded') {
-    navMode = 'expanded';
-  } else {
-    const labelsFit = hasContext
-      ? safeWidth >= thresholds.contextLabels
-      : safeWidth >= thresholds.labelsNoContext;
-    navMode = labelsFit ? 'expanded' : 'rail';
-  }
+  if (safeWidth < thresholds.navDrawer) navMode = 'drawer';
+  else if (preference === 'collapsed') navMode = 'rail';
+  else if (preference === 'expanded') navMode = 'expanded';
+  else navMode = safeWidth >= thresholds.labelsFit ? 'expanded' : 'rail';
 
-  let contextMode = 'none';
-  if (hasContext) {
-    const floor = navMode === 'expanded' ? thresholds.contextLabels : thresholds.contextRail;
-    contextMode = safeWidth >= floor ? 'column' : 'drawer';
-  }
-
-  return {
-    width: safeWidth,
-    hasContext: Boolean(hasContext),
-    navPreference: preference,
-    navMode,
-    contextMode,
-    thresholds,
-  };
+  return { width: safeWidth, navPreference: preference, navMode, thresholds };
 }
 
 export function readNavPreference(storage) {
@@ -98,24 +73,16 @@ export function installShellLayout({
   target = defaultTarget(),
   getWidth = defaultWidth,
   getPreference = () => 'auto',
-  getOverride = () => null,
   onChange = () => {},
 } = {}) {
   if (!shell) return { refresh: () => null, destroy: () => {} };
 
-  let lastKey = '';
+  let lastMode = '';
   const refresh = () => {
-    const result = resolveShellLayout({
-      width: getWidth(),
-      hasContext: shell.dataset.context === 'true',
-      navPreference: getPreference(),
-      navOverride: getOverride(),
-    });
+    const result = resolveShellLayout({ width: getWidth(), navPreference: getPreference() });
     shell.dataset.navMode = result.navMode;
-    shell.dataset.contextMode = result.contextMode;
-    const key = `${result.navMode}:${result.contextMode}`;
-    if (key !== lastKey) {
-      lastKey = key;
+    if (result.navMode !== lastMode) {
+      lastMode = result.navMode;
       onChange(result);
     }
     return result;

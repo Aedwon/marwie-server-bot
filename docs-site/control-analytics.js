@@ -3,7 +3,7 @@ import {
   registerControlPage,
   registeredControlPage,
 } from './control-page-registry.js';
-import { contextDefinitionListMarkup, contextSectionMarkup, controlPageHeaderMarkup, saveBarStatusMarkup } from './control-components.js?v=22';
+import { contextDefinitionListMarkup, contextSectionMarkup, controlPageHeaderMarkup, saveBarStatusMarkup } from './control-components.js?v=23';
 import { featureResourceKeys } from './control-resource-contract.js';
 import { resourceBindingState, withResourceBindings } from './control-resource-bindings.js';
 

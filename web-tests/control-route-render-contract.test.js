@@ -222,31 +222,30 @@ test('Analytics no longer duplicates the report resource table in the center', (
   assert.match(context, /Report destination/);
 });
 
-test('the shell declares context presence so the right column can collapse', () => {
+test('the shell declares nav mode and peek state and has no context column', () => {
   const html = readFileSync(new URL('../docs-site/control.html', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../docs-site/control.css', import.meta.url), 'utf8');
   const features = readFileSync(new URL('../docs-site/control-features.css', import.meta.url), 'utf8');
 
   assert.doesNotMatch(html, /styles\.css/);
   assert.doesNotMatch(html, /control-emoji-picker\.css/);
-  assert.match(html, /class="control-shell"[^>]*data-context="false"/);
-  assert.match(html, /data-nav-mode="expanded"/);
-  assert.match(html, /data-context-mode="none"/);
-  assert.match(css, /\.control-shell\[data-nav-mode="expanded"\]\[data-context-mode="column"\]/);
-  assert.match(css, /\.control-shell\[data-nav-mode="rail"\]\[data-context-mode="column"\]/);
-  assert.match(css, /\.control-shell\[data-nav-mode="drawer"\]\[data-context-mode="drawer"\]/);
+  assert.match(html, /class="control-shell" data-nav-mode="expanded" data-peek="false"/);
+  assert.doesNotMatch(html, /data-context/);
+  assert.match(css, /\.control-shell\[data-nav-mode="rail"\]\[data-peek="true"\] \.control-panel/);
+  assert.match(css, /\.control-shell\[data-nav-mode="drawer"\] \.control-rail/);
   assert.match(css, /\.sr-only/);
   assert.match(features, /font-size: 28px/);
   assert.match(features, /font-size: 18px/);
-  assert.match(css, /grid-template-columns: var\(--control-left-width\) minmax\(0, 1fr\)/);
+  assert.match(css, /grid-template-columns: var\(--nav-col\) minmax\(0, 1fr\)/);
   assert.match(features, /@container control-main/);
 });
 
-test('page headers carry a hidden page context trigger', () => {
+test('page headers carry no context trigger and former context content renders in a Details disclosure', () => {
   const markup = controlPageHeaderMarkup({ title: 'Reputation' });
-  assert.match(markup, /data-control-context-open/);
-  assert.match(markup, /data-context-trigger="page"/);
-  assert.match(markup, /aria-controls="controlContextDrawer"/);
-  assert.match(markup, /Open page context/);
-  assert.match(markup, /hidden/);
+  assert.doesNotMatch(markup, /data-control-context-open|controlContextDrawer|Open page context/);
+  const app = readFileSync(new URL('../docs-site/control-app.js', import.meta.url), 'utf8');
+  assert.match(app, /data-details-toggle aria-expanded="\$\{open\}"/);
+  assert.match(app, /renderRegisteredControlContext\(navState\.current\.path/);
+  assert.match(app, /querySelector\('\[data-details-body\]'\)/);
+  assert.match(app, />Details\$\{controlIcon\('chevron'/);
 });

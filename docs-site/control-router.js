@@ -97,15 +97,24 @@ export const CONTROL_NAV_GROUPS = Object.freeze([
     navItem('/control/analytics', 'Analytics', { icon: 'chart-line-up' }),
     navItem('/control/activity', 'Activity', { icon: 'pulse' }),
   ]) }),
-  Object.freeze({ key: 'system', label: 'System', icon: 'gear-six', items: Object.freeze([
-    navItem('/control/mappings/channels', 'Resources', { key: 'resources', icon: 'database', matchPaths: MAPPING_PATHS, matchDomain: 'mappings' }),
-    navItem('/control/commands', 'Commands', { icon: 'terminal-window' }),
-  ]) }),
 ]);
+
+export const CONTROL_NAV_RESOURCES = navItem('/control/mappings/channels', 'Resources', {
+  key: 'resources',
+  icon: 'database',
+  matchPaths: MAPPING_PATHS,
+  matchDomain: 'mappings',
+});
 
 export const CONTROL_PLAYBOOKS = Object.freeze([
   navItem('/control/workflows/ticket-handling', 'Ticket handling', { kind: 'playbook', icon: 'headset' }),
   navItem('/control/workflows/events', 'Events', { kind: 'playbook', icon: 'calendar-dots' }),
+]);
+
+// Public documents that share the Control shell. They are real navigations, not Control routes.
+export const CONTROL_REFERENCE = Object.freeze([
+  Object.freeze({ key: 'commands', label: 'Commands', path: '/commands', icon: 'terminal-window', kind: 'reference', matchPaths: Object.freeze(['/commands', '/control/commands']) }),
+  Object.freeze({ key: 'handbook', label: 'Handbook', path: '/handbook', icon: 'book', kind: 'reference', matchPaths: Object.freeze(['/handbook']) }),
 ]);
 
 const NAV_GROUP_BY_PATH = new Map();

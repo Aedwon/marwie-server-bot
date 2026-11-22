@@ -1,10 +1,12 @@
 import {
   CONTROL_NAV_GROUPS,
+  CONTROL_NAV_RESOURCES,
   CONTROL_PLAYBOOKS,
+  CONTROL_REFERENCE,
   destinationForDomain,
   destinationForPath,
   navGroupForPath,
-} from './control-router.js';
+} from './control-router.js?v=2';
 
 const NAV_GROUP_KEYS = new Set(CONTROL_NAV_GROUPS.map(item => item.key));
 const DEFAULT_GROUP = 'engagement';
@@ -42,23 +44,63 @@ function targetForItem(item, lastByDomain) {
   return remembered?.domain === 'mappings' ? remembered.path : item.path;
 }
 
-export function navigationModel(current, expandedDomain = DEFAULT_GROUP, lastByDomain = {}) {
+function matches(item, path) {
+  return (item.matchPaths || [item.path]).includes(path);
+}
+
+// One ordered list drives the sidebar in every mode and in all three documents.
+// `flags` is an optional Set of destination paths that have a problem to fix.
+export function navigationModel(current, expandedDomain = DEFAULT_GROUP, lastByDomain = {}, { flags = null } = {}) {
   const expanded = NAV_GROUP_KEYS.has(expandedDomain) ? expandedDomain : (navGroupForPath(current?.path)?.key || DEFAULT_GROUP);
-  return {
-    primary: CONTROL_NAV_GROUPS.map(group => ({
+  const flagged = path => Boolean(flags?.has?.(path));
+  const link = (item, extra = {}) => ({
+    type: 'link',
+    key: item.key,
+    label: item.label,
+    icon: item.icon,
+    path: item.path,
+    current: matches(item, current?.path),
+    flagged: flagged(item.path),
+    ...extra,
+  });
+
+  const items = CONTROL_NAV_GROUPS.map(group => {
+    const children = group.items.map(item => ({
+      key: item.key,
+      label: item.label,
+      path: item.path,
+      current: matches(item, current?.path),
+      flagged: flagged(item.path),
+    }));
+    return {
+      type: 'group',
       key: group.key,
       label: group.label,
       icon: group.icon,
       expanded: group.key === expanded,
-      current: group.items.some(item => (item.matchPaths || [item.path]).includes(current?.path)),
-      children: group.items.map(item => {
-        const targetPath = targetForItem(item, lastByDomain);
-        const currentItem = (item.matchPaths || [item.path]).includes(current?.path);
-        return { ...item, path: targetPath, current: currentItem };
-      }),
-    })),
-    secondary: CONTROL_PLAYBOOKS.map(item => ({ ...item, current: current?.path === item.path })),
-  };
+      current: children.some(child => child.current),
+      flagged: children.some(child => child.flagged),
+      children,
+    };
+  });
+
+  const resourcesPath = targetForItem(CONTROL_NAV_RESOURCES, lastByDomain);
+  items.push(link({ ...CONTROL_NAV_RESOURCES, path: resourcesPath }, {
+    current: matches(CONTROL_NAV_RESOURCES, current?.path),
+    flagged: CONTROL_NAV_RESOURCES.matchPaths.some(flagged),
+    matchDomain: CONTROL_NAV_RESOURCES.matchDomain,
+  }));
+  items.push({ type: 'label', label: 'Playbooks' });
+  CONTROL_PLAYBOOKS.forEach(item => items.push(link(item)));
+  items.push({ type: 'label', label: 'Reference' });
+  CONTROL_REFERENCE.forEach(item => items.push(link(item, { external: true })));
+  return { items };
+}
+
+// In-app navigation is refused while the page being left has unsaved changes.
+export function isNavigationBlocked(store, currentPath, targetPath) {
+  if (!currentPath || currentPath === targetPath) return false;
+  return Boolean(store?.dirtyPages?.().includes(currentPath));
 }
 
 function focusableWithin(node) {
@@ -75,6 +117,7 @@ export function installDrawerController({
   isAvailable = () => true,
   delegateRoot = null,
   delegateSelector = '',
+  background = [],
   onOpen = () => {},
   onClose = () => {},
 } = {}) {
@@ -94,6 +137,8 @@ export function installDrawerController({
   };
   const isModal = () => Boolean(isAvailable() && isDrawer());
   const setExpanded = value => triggerItems().forEach(item => item.setAttribute('aria-expanded', String(value)));
+  const backgroundItems = () => [...(typeof background === 'function' ? background() : background)].filter(Boolean);
+  const setBackgroundInert = value => backgroundItems().forEach(item => { item.inert = value; });
 
   const close = ({ restoreFocus = true } = {}) => {
     const wasOpen = openedAsDrawer;
@@ -101,6 +146,7 @@ export function installDrawerController({
     openedAsDrawer = false;
     drawer.dataset.open = 'false';
     setExpanded(false);
+    setBackgroundInert(false);
     if (isModal()) {
       drawer.setAttribute('aria-hidden', 'true');
       drawer.inert = true;
@@ -116,16 +162,20 @@ export function installDrawerController({
   const open = () => {
     if (!isModal() || openedAsDrawer) return;
     openedAsDrawer = true;
-    opener = document.activeElement instanceof HTMLElement ? document.activeElement : triggerItems()[0];
+    // Focus returns to the trigger on close, even where a click does not focus buttons.
+    const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    opener = triggerItems().find(item => item === active) || triggerItems()[0] || active;
     drawer.inert = false;
     drawer.removeAttribute('aria-hidden');
     drawer.dataset.open = 'true';
     setExpanded(true);
+    setBackgroundInert(true);
     focusableWithin(drawer)[0]?.focus();
     onOpen();
   };
 
   const sync = () => {
+    if (!openedAsDrawer) setBackgroundInert(false);
     if (!isAvailable()) {
       openedAsDrawer = false;
       drawer.dataset.open = 'false';

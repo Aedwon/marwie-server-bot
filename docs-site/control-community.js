@@ -8,7 +8,7 @@ import {
   controlPageHeaderMarkup,
   controlSectionMarkup,
   saveBarStatusMarkup,
-} from './control-components.js?v=22';
+} from './control-components.js?v=23';
 import { featureResourceKeys } from './control-resource-contract.js';
 import { resourceBindingState, withResourceBindings } from './control-resource-bindings.js';
 

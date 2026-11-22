@@ -40,6 +40,7 @@ Sheets in `~/Documents/Projects/agent-standards/`.
 - Accessibility: WEB-A1, WEB-A2, WEB-WCAG20AA (project target WCAG 2.2 AA).
 - Tokens: WEB-K2, WEB-K4, WEB-K5, WEB-K6.
 - Anti-patterns to avoid: WEB-G4 (three equal icon cards), WEB-G5, WEB-G6 (left accent bars), WEB-G7, WEB-G9, WEB-G10 (page-wide staggered fade), WEB-G12 (remove-one test).
+- Charts (Analytics, Overview bars): `data-visualization.md` DV-ZERO, DV-TICKS, DV-TIME, DV-LABEL, DV-VALUE, DV-ALT, DV-INK, DV-CONTRAST, DV-HIGHLIGHT, DV-NODATA, DV-KPI, DV-SPARK, DV-MOTION.
 - Copy: UXW-CONCISE, UXW-FRONT, UXW-PLAIN, UXW-BUTTON, UXW-ERROR, UXW-TERMS, UXW-CASE, UXW-LEAVE.
 - Owner taste rules (decision 2): no dotted pills, healthy says nothing, one fact once, disclose secondary content.
 

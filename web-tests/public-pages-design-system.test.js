@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { runInNewContext } from 'node:vm';
 
 const read = name => readFileSync(new URL(`../docs-site/${name}`, import.meta.url), 'utf8');
 const legacyColors = /#(?:365544|eaf0ec|2f4d3d|a8c9b2|25352b|bee0c8|28623b|8fd49e|171719|1d1d1f|f5f5f7)\b/gi;
@@ -48,39 +47,33 @@ test('Commands keeps the desktop search field distinct and mobile input readable
   assert.match(read('commands.html'), /<kbd aria-hidden="true">\/<\/kbd>/);
 });
 
-test('Commands scrolls its navigation body and loads the pinned asset versions', () => {
+test('Commands loads the pinned asset versions and the shared sidebar scrolls its own body', () => {
   const html = read('commands.html');
-  assert.match(html, /href="\/control\.css\?v=33"/);
-  assert.match(html, /href="\/commands\.css\?v=8"/);
-  assert.match(html, /src="\/commands\.js\?v=8"/);
-  assert.match(html, /class="commands-nav-body">\s*<nav class="control-primary-nav[\s\S]*?<nav class="control-secondary-nav/);
-  assert.match(html, /class="control-rail-foot">\s*<a class="control-brand"/);
-  assert.match(read('commands.css'), /\.commands-nav-body\s*\{[^}]*flex:\s*1 1 auto;[^}]*min-height:\s*0;[^}]*overflow-y:\s*auto;[^}]*overflow-x:\s*hidden;/);
+  assert.match(html, /href="\/control\.css\?v=34"/);
+  assert.match(html, /href="\/commands\.css\?v=9"/);
+  assert.match(html, /src="\/commands\.js\?v=9"/);
+  assert.match(html, /<nav class="manual-nav" aria-label="Command workflows">/);
+  assert.match(read('control.css'), /\.control-nav \{[^}]*flex:\s*1 1 auto;[^}]*min-height:\s*0;[^}]*overflow-x:\s*hidden;[^}]*overflow-y:\s*auto;/s);
 });
 
-test('Commands synchronizes its drawer at 875px and yields keyboard shortcuts to open overlays', () => {
+test('Commands yields keyboard shortcuts to open overlays and leaves the drawer to the shared shell', () => {
   const js = read('commands.js');
-  assert.match(js, /matchMedia\('\(max-width: 875px\)'\)/);
-  assert.match(js, /isDrawer: \(\) => commandNarrow\.matches/);
-  assert.match(js, /function syncCommandShell\(\)\s*\{[^}]*dataset\.navMode\s*=\s*commandNarrow\.matches\s*\? 'drawer' : 'expanded'[^}]*drawerController\.sync\(\)/);
-  assert.match(js, /syncCommandShell\(\);\s*commandNarrow\.addEventListener\?\.\('change', syncCommandShell\)/);
-  assert.match(js, /drawerController\.close\(\{ restoreFocus: false \}\)/);
-  assert.match(js, /commandWorkspace\s*=\s*document\.querySelector\('\.commands-workspace'\)/);
-  assert.match(js, /onOpen:\s*\(\)\s*=>\s*\{[\s\S]*?if \(commandWorkspace\) commandWorkspace\.inert = true;/);
-  assert.match(js, /onClose:\s*\(\)\s*=>\s*\{[\s\S]*?if \(commandWorkspace\) commandWorkspace\.inert = false;[\s\S]*?commandMenuButton\?\.focus\(\);/);
-  assert.match(js, /addEventListener\('keydown',\s*event\s*=>\s*\{[\s\S]*?event\.key !== 'Escape'[\s\S]*?commandNarrow\.matches && commandDrawer\?\.dataset\.open === 'true'[\s\S]*?event\.preventDefault\(\);[\s\S]*?drawerController\.close\(\);/);
-  assert.match(js, /function setupCommandSearch[\s\S]*?event\.defaultPrevented \|\| dialog\?\.open \|\| commandDrawer\?\.dataset\.open === 'true'/);
+  assert.doesNotMatch(js, /matchMedia\('\(max-width: 875px\)'\)|commandWorkspace|commandMenuButton|installDrawerController/);
+  assert.match(js, /function setupCommandSearch[\s\S]*?event\.defaultPrevented \|\| dialog\?\.open \|\| overlayOpen\(\)/);
+  assert.match(js, /const overlayOpen = \(\) => document\.querySelector\('#controlPalette'\)\?\.dataset\.open === 'true'[\s\S]*?#controlNavDrawer[\s\S]*?dataset\.open === 'true'/);
+  assert.match(js, /event\.key === ['"]\/['"]/);
 });
 
 test('Handbook uses System appearance, current assets, and confirmation copy', () => {
   const html = read('index.html');
   assert.match(html, /<html[^>]*data-theme="light"[^>]*data-preference="system"/);
   assert.match(html, /localStorage\.getItem\('rob-doc-theme'\) \|\| 'system'/);
-  assert.match(html, /<meta name="theme-color" content="#fcfcfb" id="themeColor">/);
+  assert.match(html, /<meta name="theme-color" content="#fcfcfb">/);
   assert.match(html, /fonts\.googleapis\.com\/css2\?family=Figtree:wght@400;500;600/);
-  assert.match(html, /href="\/styles\.css\?v=15"/);
-  assert.match(html, /href="\/home\.css\?v=3"/);
-  assert.match(html, /src="\/app\.js\?v=19" defer/);
+  assert.match(html, /href="\/control\.css\?v=34"/);
+  assert.match(html, /href="\/styles\.css\?v=16"/);
+  assert.match(html, /href="\/home\.css\?v=4"/);
+  assert.match(html, /<script type="module" src="\/app\.js\?v=20">/);
   assert.match(html, /<div class="release">V1 · slash commands require confirmation<\/div>/);
   assert.doesNotMatch(html, /45 slash commands/);
 });
@@ -115,89 +108,53 @@ test('Handbook resolves both themes from canonical tokens in its base stylesheet
   assert.match(css, /body\s*\{[^}]*font:\s*16px\/1\.6 var\(--font-sans\)/);
 });
 
-test('Handbook view styles preserve the base navigation and appearance rules', () => {
+test('Handbook view styles keep the view palette and carry no shell rules of their own', () => {
   const base = read('styles.css');
   const home = read('home.css');
   const visual = read('visual.css');
-  assert.match(home, /@import url\('\/visual\.css\?v=2'\);/);
+  assert.match(home, /@import url\('\/visual\.css\?v=3'\);/);
   assert.match(visual, /--page-surface:\s*var\(--surface-secondary\)/);
   assert.match(visual, /--page-surface-strong:\s*var\(--surface-selected\)/);
   assert.match(visual, /--hairline:\s*var\(--stroke-subtle\)/);
-  assert.match(base, /\.nav a\s*\{[^}]*min-height:\s*36px/);
-  assert.match(base, /@media \(max-width: 600px\)\s*\{[^}]*\.nav a\s*\{[^}]*min-height:\s*44px/);
-  assert.match(base, /\.nav a\[aria-current="true"\]\s*\{[^}]*var\(--surface-selected\)[^}]*var\(--text-primary\)[^}]*var\(--stroke-selected\)/);
-  assert.match(base, /\.theme-switcher\s*\{[^}]*padding:\s*3px[^}]*border-radius:\s*10px[^}]*background:\s*var\(--surface-secondary\)/);
-  assert.match(base, /\.theme-switcher button\[aria-pressed="true"\]\s*\{[^}]*var\(--surface-primary\)[^}]*var\(--text-primary\)/);
-  assert.doesNotMatch(visual, /(?:\.theme-switcher|\.nav a)[^{]*\{[^}]*(?:background|color|min-height|font-size):/);
+  for (const css of [base, home, visual]) {
+    assert.doesNotMatch(css, /\.sidebar\b|\.mobilebar|\.theme-switcher|\.nav a|\.menubtn|\.appearance|\.nav-section|\.layout\s*\{/);
+  }
   assert.match(home, /\.setup-principle\s*\{[^}]*background:\s*var\(--status-info-bg\)[^}]*border:\s*1px solid var\(--status-info-stroke\)/);
   assert.match(home, /\.task-card\s*\{[^}]*background:\s*var\(--surface-primary\)/);
   assert.match(home, /\.task-card:hover\s*\{[^}]*background:\s*var\(--surface-hover\)/);
 });
 
-test('Handbook only persists explicit theme choices', () => {
-  const js = read('app.js');
-  assert.match(js, /if \(persist\) localStorage\.setItem\('rob-doc-theme', pref\)/);
-  assert.match(js, /applyTheme\(button\.dataset\.themeChoice, \{ persist: true \}\)/);
-  assert.match(js, /applyTheme\('system', \{ persist: false \}\)/);
-  assert.match(js, /applyTheme\(root\.dataset\.preference \|\| 'system', \{ persist: false \}\)/);
-  assert.match(js, /themeColor\.content = actual === 'dark' \? '#0f0f11' : '#fcfcfb'/);
-});
-
-test('Handbook drawer restores the mobile trigger or fragment destination when dismissed', () => {
+test('Handbook renders in the shared shell with a sticky On this page list that hides below 1100px of main width', () => {
   const html = read('index.html');
-  const js = read('app.js');
-  assert.match(html, /<aside[^>]*id="sidebar"[^>]*>\s*<button[^>]*id="menuClose"[^>]*hidden>/);
-  assert.match(js, /matchMedia\('\(max-width: 900px\)'\)/);
-  assert.match(js, /side\.inert\s*=\s*menuNarrow\.matches && !open/);
-  assert.match(js, /side\.setAttribute\('aria-hidden', 'true'\)/);
-  assert.match(js, /side\.removeAttribute\('aria-hidden'\)/);
-  assert.match(js, /menuNarrow\.addEventListener\?\.\('change', \(\) => \{[\s\S]*?syncMenu\(\)/);
-  assert.match(js, /function closeMenu\(focusTarget = menuBtn\) \{[\s\S]*?syncMenu\(\);\s*focusTarget\.focus\(/);
-  assert.match(js, /menuClose\.addEventListener\('click', \(\) => closeMenu\(\)\)/);
-  assert.match(js, /querySelectorAll\('a\[href\]'\)[\s\S]*?closeMenu\(destination \|\| menuBtn\)/);
-  assert.match(js, /!side\.contains\(event\.target\)[\s\S]*?closeMenu\(\)/);
-  assert.match(js, /event\.key === 'Escape'[\s\S]*?closeMenu\(\)/);
+  const home = read('home.css');
+  assert.doesNotMatch(html, /id="sidebar"|id="menuBtn"|id="menuClose"|class="mobilebar"|class="layout"/);
+  assert.match(html, /<main id="controlMain" class="control-main handbook-main"/);
+  assert.match(html, /<aside class="handbook-toc" aria-label="On this page">/);
+  const toc = html.slice(html.indexOf('class="handbook-toc"'), html.indexOf('</aside>', html.indexOf('class="handbook-toc"')));
+  assert.equal((toc.match(/<a href="#/g) || []).length, 10);
+  assert.match(home, /\.handbook-toc \{ display: none; \}/);
+  assert.match(home, /@container control-main \(min-width: 1100px\) \{[\s\S]*?\.handbook-toc \{ display: block; position: sticky;/);
+  assert.match(read('app.js'), /querySelectorAll\('\.handbook-toc a\[href\^="#"\]'\)/);
 });
 
-test('Handbook mobile drawer makes the skip link, top bar, and main content inert while open', () => {
+test('Handbook delegates theme choice to the shared theme controls and only persists explicit choices', () => {
   const js = read('app.js');
-  assert.match(js, /querySelectorAll\('\.skip, \.mobilebar, main'\)/, 'Include the skip link and top bar in the drawer background');
-  assert.match(js, /menuBackground\.forEach\(element => \{ element\.inert = open; \}\)/);
+  assert.doesNotMatch(js, /applyTheme|menuBtn|menuNarrow|side\.classList/);
+  assert.match(js, /installShell\(\{ currentPath: '\/handbook' \}\)/);
+  const theme = read('control-theme.js');
+  assert.match(theme, /if \(persist\) storage\?\.setItem\?\.\(STORAGE_KEY, resolved\.preference\)/);
+  assert.match(theme, /apply\(button\.dataset\.themeChoice, \{ persist: true \}\)/);
+  assert.match(theme, /apply\('system'\)/);
+  assert.match(theme, /apply\(currentPreference\);/);
+  assert.match(theme, /themeColor\.content = resolved\.theme === 'dark' \? '#0f0f11' : '#fcfcfb'/);
 });
 
-test('Handbook mobile drawer cancels native Tab movement only when wrapping focus', () => {
-  const handler = read('app.js').match(/^addEventListener\('keydown', event => \{\n  if \(!side\.classList\.contains\('open'\)\) return;[\s\S]*?^\}\);/m)?.[0];
-  assert.ok(handler, 'Expected the Handbook drawer keydown listener');
-
-  const document = { activeElement: null };
-  const controls = ['Close button', 'first link', 'last link'].map(name => ({
-    name,
-    tabIndex: 0,
-    getClientRects: () => [{}],
-    focus() { document.activeElement = this; },
-  }));
-  const [close, firstLink, lastLink] = controls;
-  const side = {
-    classList: { contains: name => name === 'open' },
-    contains: item => controls.includes(item),
-    querySelectorAll: () => controls,
-  };
-  const window = new EventTarget();
-  runInNewContext(handler, { document, side, addEventListener: window.addEventListener.bind(window) });
-
-  for (const [start, shiftKey, expectedFocus, wraps] of [
-    [lastLink, false, close, true],
-    [close, true, lastLink, true],
-    [firstLink, false, firstLink, false],
-    [firstLink, true, firstLink, false],
-  ]) {
-    start.focus();
-    const event = new Event('keydown', { cancelable: true });
-    Object.assign(event, { key: 'Tab', shiftKey });
-    window.dispatchEvent(event);
-
-    const movement = `${shiftKey ? 'Shift+Tab' : 'Tab'} from the ${start.name}`;
-    assert.equal(event.defaultPrevented, wraps, `${movement} cancellation`);
-    assert.equal(document.activeElement, expectedFocus, `${movement} scripted focus`);
-  }
+test('Handbook drawer is the shared shell drawer: inert background, focus return and Escape', () => {
+  const shell = read('control-shell.js');
+  const navigation = read('control-navigation.js');
+  assert.match(shell, /background: \(\) => \[main, topbar\]/);
+  assert.match(shell, /trigger: menuButton/);
+  assert.match(navigation, /opener\?\.focus\?\.\(\)/);
+  assert.match(navigation, /event\.key === 'Escape'/);
+  assert.match(navigation, /setBackgroundInert\(true\)/);
 });

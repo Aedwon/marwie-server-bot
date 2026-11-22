@@ -4,34 +4,17 @@ html[data-theme="dark"] { color-scheme: dark; }
 .commands-page { min-width: 0; }
 .commands-page :is(h2, h3, h4, h5, h6, strong, b) { font-weight: 600; }
 
-.commands-nav-body {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
+.commands-main > * { max-width: 960px; }
+.commands-main { padding-bottom: 80px; }
 
-.commands-main {
-  width: min(100%, 1040px);
-  margin: 0 auto;
-  min-width: 0;
+.manual-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding: 0 0 14px;
 }
-
-.commands-nav-context {
-  font-size: 13px;
-  line-height: 18px;
-  font-weight: 600;
-}
-
-.commands-primary-nav > a,
-.manual-nav > a { text-decoration: none; }
-
-.commands-primary-nav > a[aria-current='page'] {
-  background: var(--surface-selected);
-  color: var(--text-primary);
-  box-shadow: inset 0 0 0 1px var(--stroke-selected);
-  font-weight: 600;
-}
+.manual-nav > a { color: var(--text-tertiary); font-size: 13px; text-decoration: none; }
+.manual-nav > a:hover, .manual-nav > a[aria-current='page'] { color: var(--text-primary); text-decoration: underline; text-underline-offset: .16em; }
 
 .commands-hero {
   padding-bottom: 22px;
@@ -289,16 +272,11 @@ html[data-theme="dark"] { color-scheme: dark; }
 .commands-footer a, .commands-note a { color: inherit; text-decoration: none; }
 .commands-footer a:hover, .commands-note a:hover { text-decoration: underline; }
 
-@media (max-width: 875px) {
-  .commands-nav-context { display: none; }
-}
-
 @media (max-width: 639px) {
   .command-search-field input { font-size: 16px; }
 }
 
 @media (max-width: 560px) {
-  .commands-main { width: 100%; }
   .commands-hero { padding-bottom: 18px; }
   .command-search-row { align-items: stretch; }
   .command-search-field { min-width: 0; }

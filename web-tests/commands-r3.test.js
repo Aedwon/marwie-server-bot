@@ -19,7 +19,9 @@ function previewKeys() {
 
 test('public Commands hero and search use the simplified R3 language', () => {
   assert.match(html, /Find the right command by task, permission, or name\./);
-  assert.doesNotMatch(html, /control-eyebrow|>\s*Reference\s*<|Public reference · No sign-in required/);
+  const hero = html.slice(html.indexOf('<section class="control-page-section commands-hero"'), html.indexOf('</section>'));
+  assert.doesNotMatch(hero, /control-eyebrow|Reference|Public reference · No sign-in required/);
+  assert.doesNotMatch(html, /control-eyebrow|Public reference · No sign-in required/);
   assert.doesNotMatch(source, /Using this manual/);
   assert.match(html, /id="commandSearch"/);
   assert.match(source, /event\.key === ['"]\/['"]/);
@@ -55,14 +57,16 @@ test('command cards do not expand inline and a focused dialog owns complete deta
   assert.match(source, /location\.hash/);
 });
 
-test('Commands shell reuses Control brand and icon appearance language', () => {
-  assert.match(html, /Rob-bot Control Panel/);
-  assert.match(html, /aria-label="Dark theme"/);
-  assert.match(html, /aria-label="Light theme"/);
-  assert.match(html, /aria-label="Follow system theme"/);
-  assert.match(html, /control-primary-nav/);
-  assert.match(html, /aria-current="page"/);
-  assert.match(html, />Commands<\/a>/);
+test('Commands renders the shared Control shell with Commands current and Appearance in the account menu', () => {
+  assert.match(html, /<nav id="controlNavContent" class="control-nav"/);
+  assert.match(html, /href="\/commands"[^>]*aria-current="page"/);
+  assert.doesNotMatch(html, /href="\/handbook"[^>]*aria-current="page"/);
+  const seg = html.slice(html.indexOf('class="control-seg"'), html.indexOf('data-account-sign-out'));
+  assert.ok(seg.indexOf('data-theme-choice="light"') < seg.indexOf('data-theme-choice="dark"'));
+  assert.ok(seg.indexOf('data-theme-choice="dark"') < seg.indexOf('data-theme-choice="system"'));
+  assert.match(seg, />Light<\/button>/);
+  assert.match(seg, />Auto<\/button>/);
+  assert.doesNotMatch(html, /Rob-bot Control Panel|control-appearance|aria-label="Dark theme"/);
 });
 
 test('Commands CSS has modal overlay styling and no open-card expansion contract', () => {

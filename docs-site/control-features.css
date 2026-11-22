@@ -27,23 +27,6 @@
 }
 
 .control-page-header-actions { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: flex-end; gap: 8px; }
-.control-context-trigger {
-  width: 38px;
-  height: 38px;
-  flex: 0 0 38px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: 1px solid var(--stroke-control);
-  border-radius: var(--radius-control);
-  background: var(--surface-primary);
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-.control-context-trigger[hidden] { display: none; }
-.control-context-trigger:hover { background: var(--surface-hover); color: var(--text-primary); }
-.control-context-trigger svg { width: 18px; height: 18px; }
 
 :is(.community-page-header, .content-page-header, .utility-page-header, .analytics-page-header, .workflow-page-header, .mapping-page-header, .control-page-header) h1,
 .control-commands-page h1,
@@ -68,6 +51,7 @@
   line-height: 1.55;
 }
 
+/* Save bar content. The app moves the page's wrapper into the floating ink bar (see control.css). */
 .control-save-bar,
 .community-page-actions,
 .content-page-actions,
@@ -75,51 +59,36 @@
 .analytics-page-actions,
 .mapping-page-actions,
 .workflow-save-actions {
-  position: sticky;
-  z-index: 20;
-  bottom: max(14px, env(safe-area-inset-bottom));
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  justify-content: flex-end;
   gap: 8px;
-  padding: 12px 14px;
-  border: 1px solid var(--stroke-subtle);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--surface-primary) 94%, transparent);
-  box-shadow: var(--shadow-save-bar);
-  backdrop-filter: blur(10px) saturate(1.05);
-  -webkit-backdrop-filter: blur(10px) saturate(1.05);
+  padding: 8px 8px 8px 16px;
 }
 .control-save-bar > div,
-.utility-save-bar > div { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.utility-save-bar > div { display: flex; align-items: center; gap: 8px; }
 .control-save-bar-status {
   min-width: 0;
   margin-right: auto;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  color: var(--text-secondary);
+  gap: 8px;
+  color: var(--surface-page);
   font-size: 13px;
   line-height: 18px;
   overflow-wrap: anywhere;
 }
-.control-save-bar-dot { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: var(--text-tertiary); }
-.control-save-bar-dot[data-tone="good"] { background: var(--status-success-fg); }
-.control-save-bar-dot[data-tone="bad"] { background: var(--status-error-fg); }
-.control-save-bar-message { color: var(--status-error-fg); }
+.control-save-bar-message { color: var(--surface-page); }
 .control-save-bar-message[hidden] { display: none; }
-.control-main > .control-page:has(.control-save-bar) {
-  display: flex;
-  flex-direction: column;
-  min-height: calc(100dvh - 2rem);
+.control-save-host .control-button {
+  border-color: transparent;
+  background: transparent;
+  color: color-mix(in srgb, var(--surface-page) 72%, transparent);
 }
-.control-main > .control-page:has(.control-save-bar) > .control-save-bar {
-  margin-top: auto;
-}
-.control-main:has(.control-save-bar) {
-  padding-bottom: max(14px, env(safe-area-inset-bottom));
-}
+.control-save-host .control-button:hover:not(:disabled) { background: color-mix(in srgb, var(--surface-page) 12%, transparent); color: var(--surface-page); }
+.control-save-host .control-button-primary { order: 3; background: var(--surface-page); color: var(--text-primary); }
+.control-save-host .control-button-primary:hover:not(:disabled) { background: color-mix(in srgb, var(--surface-page) 88%, var(--text-primary)); color: var(--text-primary); }
+.control-save-host .control-button-secondary { order: 2; }
 
 .control-section,
 .community-ops-section,
@@ -928,10 +897,8 @@ fieldset.utility-editor-row + fieldset.utility-editor-row { margin-top: 12px; }
 @container control-main (max-width: 600px) {
   .community-page, .content-page, .utility-page, .analytics-page, .workflow-page, .mapping-page, .control-commands-page, .control-activity-page { gap: 24px; }
   .control-section-heading { flex-wrap: wrap; }
-  .control-save-bar { align-items: stretch; padding: 10px 12px; }
-  .control-save-bar > span { width: 100%; }
-  .control-save-bar > div { width: 100%; }
-  .control-save-bar .control-button { flex: 1 1 0; min-width: 0; }
+  .control-save-bar { padding: 8px 8px 8px 14px; }
+  .control-save-bar .control-button { min-width: 0; }
   .control-feature-header-actions { width: 100%; align-items: flex-start; }
   .content-color-values { grid-template-columns: 1fr; }
   .utility-notification-button-summary dl { grid-template-columns: 1fr; gap: 8px; }

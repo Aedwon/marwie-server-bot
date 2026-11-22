@@ -47,7 +47,14 @@ export function installThemeControls({
 
   const buttonHandlers = new Map();
   for (const button of buttons || []) {
-    const handler = () => apply(button.dataset.themeChoice, { persist: true });
+    const handler = () => {
+      const run = () => apply(button.dataset.themeChoice, { persist: true });
+      const doc = root?.ownerDocument;
+      const reduced = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+      // Cross-fade the whole page where View Transitions exist; otherwise switch at once.
+      if (doc?.startViewTransition && !reduced) doc.startViewTransition(run);
+      else run();
+    };
     buttonHandlers.set(button, handler);
     button.addEventListener('click', handler);
   }

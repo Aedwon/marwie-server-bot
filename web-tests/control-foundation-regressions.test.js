@@ -2,10 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-import {
-  identityMarkup,
-  pageMarkup,
-} from '../docs-site/control-components.js';
+import { pageMarkup } from '../docs-site/control-components.js';
 import {
   CONTROL_DESTINATIONS,
   resolveControlRoute,
@@ -141,27 +138,23 @@ test('invalid child URLs use the domain first child, never remembered child', ()
   assert.equal(resolveControlRoute(resolved.path).path, resolved.path);
 });
 
-test('sidebar hierarchy is branding, navigation, account, then Appearance', () => {
+test('the top bar carries toggle, server, search and account; the sidebar carries navigation only', () => {
+  const barStart = controlHtml.indexOf('<header class="control-topbar"');
+  const barEnd = controlHtml.indexOf('</header>', barStart);
   const asideStart = controlHtml.indexOf('<aside id="controlNavDrawer"');
   const asideEnd = controlHtml.indexOf('</aside>', asideStart);
-  const identity = controlHtml.indexOf('id="controlIdentity"', asideStart);
-  const navigation = controlHtml.indexOf('id="controlNavContent"', asideStart);
-  const brand = controlHtml.indexOf('class="control-brand"', asideStart);
-  const appearance = controlHtml.indexOf('class="control-appearance"', asideStart);
+  const bar = controlHtml.slice(barStart, barEnd);
+  const aside = controlHtml.slice(asideStart, asideEnd);
 
-  assert.ok(asideStart >= 0);
-  assert.ok(
-    asideStart < brand
-      && brand < navigation
-      && navigation < identity
-      && identity < appearance
-      && appearance < asideEnd,
-  );
+  assert.ok(barStart >= 0 && barEnd < asideStart);
+  const order = ['id="controlNavToggle"', 'id="controlServerButton"', 'id="controlSearch"', 'id="controlLogin"', 'id="controlAccountButton"']
+    .map(marker => bar.indexOf(marker));
+  assert.ok(order.every(index => index >= 0));
+  assert.deepEqual([...order].sort((left, right) => left - right), order);
+  assert.ok(bar.indexOf('id="controlIdentity"') < bar.indexOf('id="controlLogin"'));
 
-  assert.doesNotMatch(
-    controlHtml.slice(asideStart, asideEnd),
-    /server-picker|liveServerPicker/,
-  );
+  assert.ok(aside.indexOf('id="controlNavContent"') >= 0);
+  assert.doesNotMatch(aside, /control-brand|control-appearance|id="controlIdentity"|data-theme-choice|server-picker|liveServerPicker/);
 });
 
 test('appearance defaults to System and resolves Dark, Light and System correctly', async () => {
@@ -240,20 +233,17 @@ test('appearance defaults to System and resolves Dark, Light and System correctl
   remove();
 });
 
-test('appearance controls are ordered Dark, Light, System', () => {
-  const appearance = controlHtml.indexOf('class="control-appearance"');
-  const end = controlHtml.indexOf('</div>', appearance);
-  const block = controlHtml.slice(appearance, end);
+test('appearance lives in the account menu as a Light, Dark, Auto segmented control', () => {
+  const segment = controlHtml.indexOf('class="control-seg"');
+  const end = controlHtml.indexOf('data-account-sign-out', segment);
+  const block = controlHtml.slice(segment, end);
 
-  assert.ok(block.indexOf('data-theme-choice="dark"') >= 0);
-  assert.ok(
-    block.indexOf('data-theme-choice="dark"')
-      < block.indexOf('data-theme-choice="light"'),
-  );
-  assert.ok(
-    block.indexOf('data-theme-choice="light"')
-      < block.indexOf('data-theme-choice="system"'),
-  );
+  assert.ok(block.indexOf('data-theme-choice="light"') >= 0);
+  assert.ok(block.indexOf('data-theme-choice="light"') < block.indexOf('data-theme-choice="dark"'));
+  assert.ok(block.indexOf('data-theme-choice="dark"') < block.indexOf('data-theme-choice="system"'));
+  assert.match(block, />Light<\/button>[\s\S]*>Dark<\/button>[\s\S]*>Auto<\/button>/);
+  assert.match(block, /data-theme-choice="system"[^>]*aria-pressed="true"/);
+  assert.ok(controlHtml.indexOf('id="controlAccountMenu"') < segment);
 
   assert.match(
     controlHtml,
@@ -265,68 +255,51 @@ test('appearance controls are ordered Dark, Light, System', () => {
   );
 });
 
-test('authenticated account menu opens, closes with Escape and signs out', async () => {
-  const markup = identityMarkup(
-    {
-      authenticated: true,
-      user: {
-        name: 'Admin',
-        avatar_url: null,
-      },
-    },
-    {
-      id: '123',
-      name: 'AI App Builders',
-    },
-  );
-
-  assert.match(markup, /data-account-trigger/);
-  assert.match(markup, /aria-haspopup=["']menu["']/);
-  assert.match(markup, /data-account-menu/);
-  assert.match(markup, /data-account-sign-out/);
-
-  const { installAccountMenu } =
-    await import('../docs-site/control-account.js');
+test('account menu opens, closes with Escape, returns focus and signs out', async () => {
+  const { installAccountMenu } = await import('../docs-site/control-account.js');
 
   const trigger = new FakeTarget();
-  const menu = new FakeTarget({ hidden: true });
+  const menu = new FakeTarget();
+  menu.style = {};
+  menu.inert = true;
+  menu.contains = target => target === menu;
+  const first = new FakeTarget();
+  menu.querySelectorAll = () => [first];
   const signOut = new FakeTarget();
   const doc = new FakeTarget();
 
-  const root = {
-    ownerDocument: doc,
-    querySelector(selector) {
-      if (selector === '[data-account-trigger]') return trigger;
-      if (selector === '[data-account-menu]') return menu;
-      if (selector === '[data-account-sign-out]') return signOut;
-      return null;
-    },
-    contains(target) {
-      return [trigger, menu, signOut].includes(target);
-    },
-  };
-
   let signOutCount = 0;
-  const remove = installAccountMenu(root, {
+  const controller = installAccountMenu({
+    trigger,
+    menu,
+    signOut,
+    doc,
     onSignOut: async () => {
       signOutCount += 1;
     },
   });
 
+  assert.equal(menu.inert, true);
   await trigger.emit('click');
-  assert.equal(menu.hidden, false);
+  assert.equal(menu.dataset.open, 'true');
+  assert.equal(menu.inert, false);
   assert.equal(trigger.getAttribute('aria-expanded'), 'true');
+  assert.equal(first.focused, true);
 
   await doc.emit('keydown', { key: 'Escape', target: doc });
-  assert.equal(menu.hidden, true);
+  assert.equal(menu.dataset.open, 'false');
+  assert.equal(menu.inert, true);
   assert.equal(trigger.getAttribute('aria-expanded'), 'false');
   assert.equal(trigger.focused, true);
 
   await trigger.emit('click');
+  await doc.emit('click', { target: doc });
+  assert.equal(menu.dataset.open, 'false');
+
   await signOut.emit('click');
   assert.equal(signOutCount, 1);
 
-  remove();
+  controller.destroy();
 });
 
 test('ordinary user-facing pages contain no Foundation or migration commentary', () => {
@@ -354,15 +327,15 @@ test('shell uses derived layout states instead of fixed desktop bands', () => {
   assert.doesNotMatch(controlCss, /@media \(min-width: 1200px\)/);
   assert.match(
     controlCss,
-    /\.control-shell\[data-nav-mode="rail"\]\[data-context-mode="column"\] \{[\s\S]*?var\(--control-rail-width\)[\s\S]*?var\(--control-right-width\)/,
+    /\.control-shell\[data-nav-mode="rail"\] \{ --nav-col: var\(--rail-w\); \}/,
   );
   assert.match(
     controlCss,
-    /body:has\(\.control-shell\[data-nav-mode="drawer"\]\) \.control-topbar \{ display: flex; \}/,
+    /\.control-shell\[data-nav-mode="drawer"\] \.control-topbar \{[\s\S]*?grid-template-columns: auto minmax\(0, 1fr\);/,
   );
   assert.match(
     controlCss,
-    /\.control-shell\[data-context-mode="drawer"\] \.control-context-shell \{[\s\S]*?position: fixed;/,
+    /\.control-shell\[data-nav-mode="drawer"\] \.control-rail \{[\s\S]*?position: fixed;/,
   );
   assert.match(
     controlFeaturesCss,

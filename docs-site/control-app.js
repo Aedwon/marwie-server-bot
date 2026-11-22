@@ -1,24 +1,26 @@
-import { identityMarkup, navigationMarkup, pageMarkup } from './control-components.js?v=22';
-import { installAccountMenu } from './control-account.js';
-import { registerContentPages } from './control-content.js?v=20';
-import { registerAnalyticsPage } from './control-analytics.js?v=21';
-import { registerCommunityPages } from './control-community.js?v=20';
-import { registerMappingPages } from './control-mappings.js?v=20';
-import { registerUtilitiesPages } from './control-utilities.js?v=21';
-import { installThemeControls } from './control-theme.js';
-import { installContextDrawerController, syncContextAvailability, syncContextTriggers } from './control-layout.js';
-import { createNavigationState, installDrawerController, navigationModel } from './control-navigation.js';
-import { installNavHoverExpand } from './control-nav-hover.js?v=3';
-import { installNavMotion } from './control-nav-motion.js?v=1';
-import { installShellLayout, readNavPreference, writeNavPreference } from './control-shell-layout.js?v=2';
-import { navGroupForPath, resolveControlRoute } from './control-router.js';
+import {
+  SAVE_BAR_HOLD_MS,
+  pageMarkup,
+  saveBarView,
+} from './control-components.js?v=23';
+import { registerContentPages } from './control-content.js?v=21';
+import { registerAnalyticsPage } from './control-analytics.js?v=22';
+import { registerCommunityPages } from './control-community.js?v=21';
+import { registerMappingPages } from './control-mappings.js?v=21';
+import { registerUtilitiesPages } from './control-utilities.js?v=22';
+import { controlIcon } from './control-icons.js?v=2';
+import { GUILD_STORAGE_KEY, pickGuild } from './control-account.js?v=2';
+import { createNavigationState, isNavigationBlocked } from './control-navigation.js?v=2';
+import { installShell } from './control-shell.js?v=1';
+import { resolveControlRoute } from './control-router.js?v=2';
 import { createActivityController, installActivityPage } from './control-secondary.js';
-import { registerWorkflowPages, workflowPageMarkup } from './control-workflows.js?v=20';
+import { registerWorkflowPages, workflowPageMarkup } from './control-workflows.js?v=21';
 import {
   controlState,
   hydrateControlPages,
   installControlStateGuards,
   installRegisteredControlPage,
+  registeredControlPage,
   renderRegisteredControlContext,
   renderRegisteredControlPage,
 } from './control-page-registry.js';
@@ -33,37 +35,28 @@ import {
 const ROUTE_KEY = 'rob-control-last-route';
 const DOMAIN_ROUTE_KEY = 'rob-control-last-domain-routes';
 const EXPANDED_KEY = 'rob-control-expanded-domain';
+const BLOCKED_MS = 3000;
+const SAVE_BAR_EXIT_MS = 180;
 
 const shell = {
-  root: document.querySelector('.control-shell'),
-  nav: document.querySelector('#controlNavContent'),
-  rail: document.querySelector('.control-rail'),
-  drawer: document.querySelector('#controlNavDrawer'),
-  toggle: document.querySelector('#controlNavToggle'),
-  menu: document.querySelector('#controlMenuButton'),
-  close: document.querySelector('#controlNavClose'),
   main: document.querySelector('#controlMain'),
-  identity: document.querySelector('#controlIdentity'),
-  contextDrawer: document.querySelector('#controlContextDrawer'),
-  context: document.querySelector('#controlContext'),
-  contextButton: document.querySelector('#controlContextButton'),
-  contextClose: document.querySelector('#controlContextClose'),
+  wrap: document.querySelector('#controlMainWrap'),
+  saveBar: document.querySelector('#controlSaveBar'),
 };
 
 let session = null;
 let guild = null;
 let guildState = null;
 let snapshot = null;
-let removeAccountMenu = () => {};
 let removePageInteractions = () => {};
 let activityController = null;
 let activityGuildId = null;
-let navPreference = readNavPreference(localStorage);
-let shellLayout = null;
-let navDrawer = null;
-let navHover = null;
-let navMotion = null;
-let contextDrawer = null;
+let shellController = null;
+let blockedUntil = 0;
+let blockedTimer = null;
+let barExitTimer = null;
+let lastBarKind = 'hidden';
+const detailsOpen = new Set();
 let serverStatus = { message: 'Server state has not loaded yet.', tone: 'neutral' };
 
 
@@ -73,21 +66,6 @@ registerUtilitiesPages();
 registerAnalyticsPage();
 registerWorkflowPages();
 registerMappingPages();
-
-function syncSaveBarStatus() {
-  const status = shell.main?.querySelector?.('[data-save-bar-status]');
-  if (!status) return;
-  const tone = serverStatus.tone || 'neutral';
-  status.dataset.tone = tone;
-  status.title = serverStatus.message;
-  const dot = status.querySelector?.('[data-save-bar-dot]');
-  if (dot) dot.dataset.tone = tone;
-  const message = status.querySelector?.('[data-save-bar-message]');
-  if (!message) return;
-  const show = tone === 'bad' && Boolean(serverStatus.message);
-  message.hidden = !show;
-  message.textContent = show ? serverStatus.message : '';
-}
 
 function readJson(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key) || '') || fallback; } catch { return fallback; }
@@ -105,119 +83,6 @@ const navState = createNavigationState({
 function persistNavigation() {
   localStorage.setItem(ROUTE_KEY, navState.current.path);
   localStorage.setItem(DOMAIN_ROUTE_KEY, JSON.stringify(navState.lastByDomain));
-  localStorage.setItem(EXPANDED_KEY, navState.expandedDomain);
-}
-
-function navigationDomainSections() {
-  return [...shell.nav.querySelectorAll('.control-nav-domain')];
-}
-
-function syncNavigationCurrentState() {
-  shell.nav.querySelectorAll('[data-nav-path]').forEach(link => {
-    if (link.dataset.navKey === 'resources') {
-      const remembered = navState.lastByDomain.mappings || '/control/mappings/channels';
-      link.href = remembered;
-      link.dataset.navPath = remembered;
-    }
-    const matchesDomain = link.dataset.navMatchDomain && link.dataset.navMatchDomain === navState.current.domain;
-    if (matchesDomain || link.dataset.navPath === navState.current.path) link.setAttribute('aria-current', 'page');
-    else link.removeAttribute('aria-current');
-  });
-
-  const currentGroup = navGroupForPath(navState.current.path)?.key || null;
-  navigationDomainSections().forEach(section => {
-    const current = section.dataset.domain === currentGroup;
-    section.classList.toggle('control-nav-domain-current', current);
-  });
-}
-
-function revealNavigationDomain(domainKey) {
-  if (!domainKey || domainKey === navState.expandedDomain) return;
-  const sections = navigationDomainSections();
-  const before = new Map(sections.map(section => [
-    section.dataset.domain,
-    section.getBoundingClientRect(),
-  ]));
-
-  navState.revealDomain(domainKey);
-  persistNavigation();
-
-  sections.forEach(section => {
-    const open = section.dataset.domain === navState.expandedDomain;
-    section.classList.toggle('control-nav-domain-open', open);
-    const button = section.querySelector('[data-domain-select]');
-    const children = section.querySelector('.control-nav-children');
-    button?.setAttribute('aria-expanded', String(open));
-    if (!children) return;
-    children.hidden = !open;
-    if (open) {
-      children.classList.remove('control-nav-children-reveal');
-      void children.offsetWidth;
-      children.classList.add('control-nav-children-reveal');
-      setTimeout(() => children.classList.remove('control-nav-children-reveal'), 180);
-    }
-  });
-
-  requestAnimationFrame(() => {
-    sections.forEach(section => {
-      const previous = before.get(section.dataset.domain);
-      if (!previous) return;
-      const deltaY = previous.top - section.getBoundingClientRect().top;
-      if (Math.abs(deltaY) < 1) return;
-      section.style.transition = 'none';
-      section.style.transform = `translateY(${deltaY}px)`;
-      requestAnimationFrame(() => {
-        section.classList.add('control-nav-reflow');
-        section.style.transition = '';
-        section.style.transform = '';
-        setTimeout(() => section.classList.remove('control-nav-reflow'), 240);
-      });
-    });
-  });
-}
-
-function setNavToggleState() {
-  if (!shell.toggle) return;
-  const mode = shell.root?.dataset.navMode || 'expanded';
-  const collapsed = mode === 'rail';
-  const label = collapsed ? 'Expand navigation' : 'Collapse navigation';
-  shell.toggle.setAttribute('aria-label', label);
-  shell.toggle.title = label;
-  shell.toggle.setAttribute('aria-pressed', String(collapsed));
-  shell.toggle.hidden = mode === 'drawer';
-}
-
-function syncShellChrome() {
-  if (!shell.root) return;
-  const mode = shell.root.dataset.navMode || 'expanded';
-  if (mode === 'drawer') navHover?.reset();
-  navMotion?.sync(mode);
-  setNavToggleState();
-  syncContextTriggers({ shell: shell.root, trigger: shell.contextButton, pageRoot: document });
-  navDrawer?.sync();
-  contextDrawer?.sync();
-}
-
-function renderNavigation() {
-  const mode = shell.root?.dataset.navMode || 'expanded';
-  shell.nav.innerHTML = navigationMarkup(
-    navigationModel(navState.current, navState.expandedDomain, navState.lastByDomain),
-    { rail: mode === 'rail' },
-  );
-  shell.nav.dataset.navMode = mode;
-  shell.nav.querySelectorAll('a[href^="/control/"]').forEach(link => {
-    link.addEventListener('click', event => {
-      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-      event.preventDefault();
-      navigate(link.getAttribute('href'));
-    });
-  });
-  shell.nav.querySelectorAll('[data-domain-select]').forEach(button => {
-    button.addEventListener('click', () => {
-      revealNavigationDomain(button.dataset.domainSelect);
-    });
-  });
-  syncNavigationCurrentState();
 }
 
 function resetActivityController() {
@@ -248,7 +113,97 @@ function currentContextMarkup() {
     : '';
 }
 
-function renderMain() {
+// Until each page owns its former context content, it renders at the end of the page in a closed disclosure.
+function detailsMarkup(markup, open) {
+  return `<div class="control-details" data-control-details data-open="${open}">
+    <button type="button" class="control-disclose" data-details-toggle aria-expanded="${open}" aria-controls="controlDetailsBody">Details${controlIcon('chevron', { size: 12, className: 'control-disclose-chev' })}</button>
+    <div class="control-reveal" id="controlDetailsBody"><div${open ? '' : ' inert'} data-details-body>${markup}</div></div>
+  </div>`;
+}
+
+/* ---------- Save bar ---------- */
+
+function activeBarState() {
+  const pageKey = navState.current.path;
+  if (!session?.authenticated || !registeredControlPage(pageKey)) return null;
+  return controlState.get(pageKey);
+}
+
+function applyBarView(wrapper, view) {
+  const status = wrapper.querySelector('[data-save-bar-status]');
+  const text = wrapper.querySelector('[data-save-bar-status-text]');
+  if (status) status.dataset.tone = ['failed', 'conflict', 'blocked'].includes(view.kind) ? 'bad' : 'neutral';
+  status?.querySelectorAll('.control-spinner, .control-save-bar-check').forEach(node => node.remove());
+  if (text) {
+    text.textContent = view.message;
+    if (view.spinner) text.insertAdjacentHTML('beforebegin', '<span class="control-spinner" aria-hidden="true"></span>');
+    if (view.check) text.insertAdjacentHTML('beforebegin', `<span class="control-save-bar-check" aria-hidden="true">${controlIcon('check', { size: 16 })}</span>`);
+  }
+  const save = wrapper.querySelector('.control-button-primary');
+  if (save && view.kind === 'failed') save.textContent = view.saveLabel;
+  wrapper.querySelector('[data-save-bar-reload]')?.remove();
+  if (view.showReload) {
+    wrapper.insertAdjacentHTML('beforeend', '<button class="control-button control-button-secondary" type="button" data-save-bar-reload>Reload</button>');
+  }
+}
+
+function syncSaveBar() {
+  const host = shell.saveBar;
+  if (!host) return;
+  const state = activeBarState();
+  const view = saveBarView(state, { blocked: Date.now() < blockedUntil });
+  const staged = shell.main.querySelector('.control-save-bar');
+  const docked = host.querySelector(':scope > .control-save-bar:not(.control-save-bar-saved)');
+
+  if (view.visible) {
+    clearTimeout(barExitTimer);
+    if (staged) {
+      staged.remove();
+      applyBarView(staged, view);
+      host.replaceChildren(staged);
+    } else if (view.kind === 'saved') {
+      host.innerHTML = `<div class="control-save-bar control-save-bar-saved"><span data-save-bar-status data-tone="neutral" class="control-save-bar-status"><span class="control-save-bar-check" aria-hidden="true">${controlIcon('check', { size: 16 })}</span><span data-save-bar-status-text>Saved</span></span></div>`;
+    } else if (docked) {
+      applyBarView(docked, view);
+    }
+    host.inert = false;
+    host.dataset.bar = view.kind;
+  } else {
+    staged?.remove();
+    host.inert = true;
+    if (host.dataset.bar !== 'hidden') {
+      host.dataset.bar = 'hidden';
+      clearTimeout(barExitTimer);
+      barExitTimer = setTimeout(() => { if (host.dataset.bar === 'hidden') host.replaceChildren(); }, SAVE_BAR_EXIT_MS);
+    }
+  }
+
+  if (view.nudge) {
+    host.classList.remove('nudge');
+    void host.offsetWidth;
+    host.classList.add('nudge');
+  }
+  if (view.kind !== lastBarKind && ['failed', 'conflict', 'blocked', 'saved'].includes(view.kind)) {
+    shellController?.announce(view.message);
+  }
+  lastBarKind = view.kind;
+}
+
+shell.saveBar?.addEventListener('animationend', () => shell.saveBar.classList.remove('nudge'));
+
+function flashBlocked() {
+  blockedUntil = Date.now() + BLOCKED_MS;
+  syncSaveBar();
+  clearTimeout(blockedTimer);
+  blockedTimer = setTimeout(() => {
+    blockedUntil = 0;
+    syncSaveBar();
+  }, BLOCKED_MS);
+}
+
+/* ---------- Rendering ---------- */
+
+function renderMain({ entrance = false } = {}) {
   removePageInteractions();
   removePageInteractions = () => {};
   const pageKey = navState.current.path;
@@ -260,29 +215,25 @@ function renderMain() {
     : null;
   const workflowMarkup = session?.authenticated ? workflowPageMarkup(pageKey) : '';
   const contextMarkup = currentContextMarkup();
+  const scrollTop = shell.main.scrollTop;
 
-  if (shell.root?.dataset.contextMode === 'drawer') contextDrawer?.close({ restoreFocus: false });
-
-  syncContextAvailability({
-    drawer: shell.contextDrawer,
-    trigger: shell.contextButton,
-    root: shell.context,
-    markup: contextMarkup,
-  });
-
-  shell.main.replaceChildren?.();
-  shell.main.innerHTML = registeredMarkup ?? (workflowMarkup || pageMarkup(navState.current, {
+  const pageHtml = registeredMarkup ?? (workflowMarkup || pageMarkup(navState.current, {
     authenticated: Boolean(session?.authenticated),
     state: guildState,
     snapshot,
     activityState: activity?.state || null,
   }));
+  const details = contextMarkup.trim() ? detailsMarkup(contextMarkup, detailsOpen.has(pageKey)) : '';
+  shell.main.innerHTML = `<div class="control-page-frame${entrance ? ' control-page-enter' : ''}">${pageHtml}${details}</div>`;
   shell.main.dataset.pageKey = pageKey;
+  shell.main.scrollTop = entrance ? 0 : scrollTop;
 
   if (registeredMarkup !== null) {
-    removePageInteractions = installRegisteredControlPage(pageKey, shell.main, {
+    // Resource bindings live in the Details disclosure until Stage 2 moves them into the page.
+    const contextRoot = shell.main.querySelector('[data-details-body]') || document.createElement('div');
+    removePageInteractions = installRegisteredControlPage(pageKey, shell.wrap, {
       snapshot: guildState,
-      contextRoot: shell.context,
+      contextRoot,
       onSave: requestRegisteredPageSave,
       onApplySuggestions: requestMappingSuggestions,
       onAction: requestContentAction,
@@ -292,24 +243,36 @@ function renderMain() {
   } else if (activity) {
     removePageInteractions = installActivityPage(shell.main, activity);
   }
-  shellLayout?.refresh();
-  syncShellChrome();
   shell.main.focus({ preventScroll: true });
-  syncSaveBarStatus();
+  syncSaveBar();
 }
 
+shell.main.addEventListener('click', event => {
+  const toggle = event.target.closest?.('[data-details-toggle]');
+  if (!toggle) return;
+  const container = toggle.closest('[data-control-details]');
+  const open = container.dataset.open !== 'true';
+  container.dataset.open = String(open);
+  toggle.setAttribute('aria-expanded', String(open));
+  container.querySelector('[data-details-body]').inert = !open;
+  if (open) detailsOpen.add(navState.current.path);
+  else detailsOpen.delete(navState.current.path);
+});
+
 function navigate(path, { replace = false } = {}) {
-  navState.select(resolveControlRoute(path, navState.current.path, navState.lastByDomain).path);
+  const target = resolveControlRoute(path, navState.current.path, navState.lastByDomain).path;
+  if (isNavigationBlocked(controlState, navState.current.path, target)) {
+    flashBlocked();
+    return false;
+  }
+  navState.select(target);
   persistNavigation();
   if (location.pathname !== navState.current.path) {
     history[replace ? 'replaceState' : 'pushState']({ control: true }, '', navState.current.path);
   }
-  syncNavigationCurrentState();
-  renderMain();
-  if (shell.root?.dataset.navMode === 'drawer') shell.close.click();
-  if (shell.root?.dataset.contextMode === 'drawer' && shell.contextDrawer?.dataset.open === 'true') {
-    shell.contextClose?.click();
-  }
+  shellController?.setCurrent(navState.current.path);
+  renderMain({ entrance: true });
+  return true;
 }
 
 function setStatus(message, tone = '') {
@@ -317,7 +280,7 @@ function setStatus(message, tone = '') {
     message: message || '',
     tone: tone === 'good' || tone === 'bad' ? tone : 'neutral',
   };
-  syncSaveBarStatus();
+  if (serverStatus.tone === 'bad' && serverStatus.message) shellController?.announce(serverStatus.message);
 }
 
 async function request(url, options = {}) {
@@ -331,11 +294,15 @@ async function request(url, options = {}) {
   return data;
 }
 
-function mountIdentity(markup) {
-  removeAccountMenu();
-  shell.identity.innerHTML = markup;
-  removeAccountMenu = installAccountMenu(shell.identity, {
-    onSignOut: signOut,
+function mountIdentity(nextGuild = null) {
+  const online = snapshot ? snapshot.fresh !== false : nextGuild?.online;
+  shellController?.renderIdentity({
+    session,
+    guild: nextGuild && {
+      ...nextGuild,
+      snapshot_updated_at: snapshot?.updated_at ?? nextGuild.snapshot_updated_at,
+      online,
+    },
   });
 }
 
@@ -359,7 +326,7 @@ async function signOut() {
 
 async function loadSession() {
   session = await request('/api/session');
-  mountIdentity(identityMarkup(session, null));
+  mountIdentity(null);
   if (!session.authenticated) {
     guild = null;
     guildState = null;
@@ -370,10 +337,9 @@ async function loadSession() {
     return;
   }
 
-  // Product IA intentionally has no server selector. Control uses the first
-  // installed/manageable Rob-bot guild returned by the authenticated session.
-  guild = session.guilds?.[0] || null;
-  mountIdentity(identityMarkup(session, guild));
+  // The server menu lists every manageable guild; the remembered choice wins, then the first guild.
+  guild = pickGuild(session, localStorage.getItem(GUILD_STORAGE_KEY));
+  mountIdentity(guild);
   if (!guild) {
     resetActivityController();
     setStatus('No manageable Rob-bot server is available for this account.', 'bad');
@@ -388,6 +354,7 @@ async function loadSession() {
     snapshot = data.snapshot;
     hydrateControlPages(guildState, snapshot?.page_revisions || guildState?.meta?.page_revisions || {});
     setStatus(snapshot?.fresh ? 'Server state is current.' : 'Server state is unavailable.', snapshot?.fresh ? 'good' : 'bad');
+    mountIdentity(guild);
   } catch (error) {
     guildState = null;
     snapshot = null;
@@ -396,7 +363,7 @@ async function loadSession() {
     renderMain();
     return;
   }
-  renderMain();
+  renderMain({ entrance: true });
 }
 
 function announcePageState(pageKey) {
@@ -436,11 +403,14 @@ async function requestRegisteredPageSave(pageKey, request) {
     announcePageState(pageKey);
     renderMain();
     if (controlState.get(pageKey).status === 'saved') {
+      // Hold the saved bar for 900ms, let it exit, then clear the page's saved message.
       setTimeout(() => {
         controlState.settleSaved(pageKey);
         announcePageState(pageKey);
-        if (navState.current.path === pageKey) renderMain();
-      }, 2500);
+        if (navState.current.path !== pageKey) return;
+        syncSaveBar();
+        setTimeout(() => { if (navState.current.path === pageKey) renderMain(); }, SAVE_BAR_EXIT_MS);
+      }, SAVE_BAR_HOLD_MS);
     }
   } catch (error) {
     controlState.markSaveError(pageKey, error.message);
@@ -502,70 +472,57 @@ async function requestContentAction(action) {
 
 window.addEventListener('popstate', () => {
   const destination = resolveControlRoute(location.pathname, navState.current.path, navState.lastByDomain);
+  if (isNavigationBlocked(controlState, navState.current.path, destination.path)) {
+    // Undo the browser's history step and keep the current page.
+    history.pushState({ control: true }, '', navState.current.path);
+    flashBlocked();
+    return;
+  }
   navState.select(destination.path);
   persistNavigation();
-  syncNavigationCurrentState();
-  renderMain();
-  if (shell.root?.dataset.navMode === 'drawer') navDrawer?.close({ restoreFocus: false });
-  if (shell.root?.dataset.contextMode === 'drawer') contextDrawer?.close({ restoreFocus: false });
+  shellController?.setCurrent(navState.current.path);
+  renderMain({ entrance: true });
+  shellController?.closeDrawer({ restoreFocus: false });
 });
 
-navDrawer = installDrawerController({
-  drawer: shell.drawer,
-  trigger: shell.menu,
-  closeButton: shell.close,
-  isDrawer: () => shell.root?.dataset.navMode === 'drawer',
-  onOpen: () => contextDrawer?.close({ restoreFocus: false }),
+shell.wrap?.addEventListener('click', async event => {
+  if (!event.target.closest?.('[data-save-bar-reload]')) return;
+  const pageKey = navState.current.path;
+  if (!session?.authenticated || !guild) return;
+  try {
+    const data = await loadGuildState(guild.id);
+    guildState = data.state;
+    snapshot = data.snapshot;
+    hydrateControlPages(guildState, snapshot?.page_revisions || guildState?.meta?.page_revisions || {});
+    const state = controlState.get(pageKey);
+    // The draft stays; it now sits on the latest revision so the user can review and save again.
+    if (state.status === 'conflict') state.status = state.dirty ? 'dirty' : 'clean';
+    renderMain();
+  } catch (error) {
+    setStatus(error?.message || 'Rob-bot could not reload server state.', 'bad');
+  }
 });
-contextDrawer = installContextDrawerController({
-  drawer: shell.contextDrawer,
-  trigger: shell.contextButton,
-  closeButton: shell.contextClose,
-  isDrawer: () => shell.root?.dataset.contextMode === 'drawer',
-  isAvailable: () => shell.root?.dataset.context === 'true',
-  delegateRoot: document,
-  delegateSelector: '[data-control-context-open]',
-  onOpen: () => navDrawer?.close({ restoreFocus: false }),
-});
-shell.toggle?.addEventListener('click', () => {
-  const mode = shell.root?.dataset.navMode;
-  if (mode === 'drawer') return;
-  navPreference = mode === 'rail' ? 'expanded' : 'collapsed';
-  writeNavPreference(localStorage, navPreference);
-  shellLayout?.refresh();
-  syncShellChrome();
-});
-navMotion = installNavMotion({
-  shell: shell.root,
-  nav: shell.nav,
-  render: renderNavigation,
-});
-shellLayout = installShellLayout({
-  shell: shell.root,
-  getPreference: () => navPreference,
-  getOverride: () => (navHover?.isExpanded() ? 'expanded' : null),
-  onChange: () => syncShellChrome(),
-});
-navHover = installNavHoverExpand({
-  rail: shell.rail,
-  getMode: () => shell.root?.dataset.navMode || 'expanded',
-  isHoverCapable: () => matchMedia('(hover: hover) and (pointer: fine)').matches,
-  hasFocusInside: () => Boolean(shell.rail?.contains(document.activeElement)),
-  expand: () => shellLayout?.refresh(),
-  collapse: () => shellLayout?.refresh(),
-});
-installThemeControls({
-  root: document.documentElement,
-  buttons: [...document.querySelectorAll('[data-theme-choice]')],
-  media: matchMedia('(prefers-color-scheme: dark)'),
-  storage: localStorage,
-  themeColor: document.querySelector('meta[name="theme-color"]'),
+
+shellController = installShell({
+  currentPath: navState.current.path,
+  onNavigate: path => navigate(path),
+  onSignOut: () => signOut(),
+  getLastByDomain: () => navState.lastByDomain,
+  onSelectGuild: () => {
+    if (controlState.hasDirty()) {
+      flashBlocked();
+      return;
+    }
+    loadSession().catch(error => {
+      setStatus(error.message, 'bad');
+      renderMain();
+    });
+  },
 });
 installControlStateGuards({
   getCurrentPageKey: () => navState.current.path,
   onSave: requestRegisteredPageSave,
 });
-syncShellChrome();
 
 if (location.pathname !== resolvedInitial.path) history.replaceState({ control: true }, '', resolvedInitial.path);
 

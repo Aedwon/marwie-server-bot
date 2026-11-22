@@ -477,10 +477,10 @@ test('coverage can stack in a narrow workspace and chart points have a visible f
 test('Control and public Commands load the same version of the shared Control stylesheet', () => {
   const html = readAsset('control.html');
   const commands = readAsset('commands.html');
-  for (const markup of [html, commands]) assert.match(markup, /href="\/control\.css\?v=33"/);
-  assert.match(html, /href="\/control-features\.css\?v=18"/);
-  assert.match(html, /src="\/control-app\.js\?v=30"/);
-  assert.match(readAsset('control-app.js'), /from '\.\/control-analytics\.js\?v=21'/);
+  for (const markup of [html, commands]) assert.match(markup, /href="\/control\.css\?v=34"/);
+  assert.match(html, /href="\/control-features\.css\?v=19"/);
+  assert.match(html, /src="\/control-app\.js\?v=31"/);
+  assert.match(readAsset('control-app.js'), /from '\.\/control-analytics\.js\?v=22'/);
 });
 
 test('absent closure count renders Unavailable and zero closures renders No closures even if median seconds is set', () => {

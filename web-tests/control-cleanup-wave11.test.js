@@ -76,8 +76,9 @@ test('Wave 11 cutover keeps drawer state accessible and touch targets usable', (
   assert.match(navigation, /const open = \(\) => \{[\s\S]*setExpanded\(true\)/);
   assert.match(navigation, /if \(restoreFocus && wasOpen\) opener\?\.focus\?\.\(\)/);
   assert.match(navigation, /event\.key === 'Escape'/);
-  assert.match(css, /\.control-appearance button \{[^}]*min-height: 44px/s);
-  assert.match(css, /\.control-context-button, \.control-context-close, \.control-menu-button, \.control-nav-close \{[^}]*min-height: 44px/s);
+  assert.match(css, /\.control-shell\[data-nav-mode="drawer"\] \.control-nav-close \{[^}]*min-height: 44px/s);
+  assert.match(css, /@media \(pointer: coarse\) \{[^}]*\.control-nav-row[^}]*min-height: 44px/s);
+  assert.match(css, /@media \(pointer: coarse\) \{[\s\S]*?\.control-icon-button \{ width: 44px; height: 44px/s);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(css, /overflow-wrap: anywhere/);
 });

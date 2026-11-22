@@ -36,12 +36,12 @@ test('canonical Control styles never use numeric text below the approved 12px me
 });
 
 for (const [name, selector] of [
-  ['control.css', '.control-brand small'],
+  ['control.css', '.control-offline'],
   ['control.css', '.control-global-status'],
   ['control.css', '.control-eyebrow'],
   ['control.css', '.control-state-chip'],
-  ['control.css', '.control-context'],
-  ['control.css', '.control-account-copy small'],
+  ['control.css', '.control-pop-note'],
+  ['control.css', '.control-pop-who span'],
   ['control-features.css', '.control-stat-row dt'],
 ]) {
   test(`${selector} uses the approved 13px / 18px metadata treatment`, () => {
@@ -52,9 +52,9 @@ for (const [name, selector] of [
 }
 
 for (const selector of [
-  '.control-account-copy strong',
-  '.control-account-menu :is(a, button)',
-  '.control-appearance button',
+  '.control-seg button',
+  '.control-offline',
+  '.control-pop-note',
 ]) {
   test(`${selector} keeps routine UI text at the 13px floor`, () => {
     const block = typographyBlock('control.css', selector);

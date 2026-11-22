@@ -1,5 +1,6 @@
 import { activityPageMarkup, commandsPageMarkup } from './control-secondary.js';
-import { controlIcon, hasControlIcon } from './control-icons.js';
+
+export { navigationMarkup } from './control-shell.js?v=1';
 
 export function escapeHtml(value) {
   return String(value ?? '')
@@ -69,19 +70,49 @@ export function pendingChangeCount(state = {}) {
 }
 
 export function saveBarStatusLabel(state = {}) {
-  if (state.status === 'saving') return 'Saving changes…';
+  if (state.status === 'saving') return 'Saving';
   const count = pendingChangeCount(state);
-  if (count < 1) return 'No pending changes';
-  return `${count} pending change${count === 1 ? '' : 's'}`;
+  if (count < 1) return 'No unsaved changes';
+  return `${count} unsaved change${count === 1 ? '' : 's'}`;
 }
 
 export function saveBarStatusMarkup(state = {}) {
   const label = saveBarStatusLabel(state);
-  return `<span class="control-save-bar-status" data-save-bar-status data-tone="neutral" title="Server state has not loaded yet.">
-    <span class="control-save-bar-dot" data-save-bar-dot data-tone="neutral" aria-hidden="true"></span>
+  return `<span class="control-save-bar-status" data-save-bar-status data-tone="neutral">
     <span data-save-bar-status-text data-default-label="${escapeHtml(label)}">${escapeHtml(label)}</span>
-    <span class="control-save-bar-message" data-save-bar-message role="alert" hidden></span>
+    <span class="control-save-bar-message" data-save-bar-message hidden></span>
   </span>`;
+}
+
+export const SAVE_BAR_HOLD_MS = 900;
+export const SAVE_BAR_BLOCKED_MESSAGE = 'Save or discard your changes first';
+export const SAVE_BAR_CONFLICT_MESSAGE = 'Server settings changed. Review and save again.';
+
+// Pure: maps one page's store state to what the floating save bar shows.
+export function saveBarView(state, { blocked = false } = {}) {
+  const hidden = {
+    kind: 'hidden', visible: false, message: '', count: 0, saveLabel: 'Save changes',
+    saveDisabled: true, discardDisabled: true, spinner: false, check: false, showReload: false, nudge: false, holdMs: 0,
+  };
+  if (!state) return hidden;
+  const count = pendingChangeCount(state);
+  const dirty = Boolean(state.dirty);
+  const invalid = Boolean(Object.keys(state.errors || {}).length);
+  const saving = state.status === 'saving';
+  const view = (kind, extra = {}) => ({
+    ...hidden, kind, visible: true, count,
+    saveDisabled: !dirty || invalid || saving, discardDisabled: saving, ...extra,
+  });
+
+  if (blocked && dirty) return view('blocked', { message: SAVE_BAR_BLOCKED_MESSAGE, nudge: true });
+  if (saving) return view('saving', { message: 'Saving', spinner: true, saveDisabled: true, discardDisabled: true });
+  if (state.status === 'conflict') return view('conflict', { message: SAVE_BAR_CONFLICT_MESSAGE, showReload: true });
+  if (state.saveError) return view('failed', { message: String(state.saveError), saveLabel: 'Retry' });
+  if (state.status === 'saved') {
+    return view('saved', { message: 'Saved', check: true, saveDisabled: true, discardDisabled: true, holdMs: SAVE_BAR_HOLD_MS });
+  }
+  if (dirty) return view('dirty', { message: saveBarStatusLabel(state) });
+  return hidden;
 }
 
 export function controlPageHeaderMarkup({
@@ -115,14 +146,13 @@ export function controlPageHeaderMarkup({
       })
       : '')
     : '');
-  const contextTrigger = `<button class="control-context-trigger" type="button" data-control-context-open data-context-trigger="page" aria-controls="controlContextDrawer" aria-expanded="false" aria-label="Open page context" title="Context" hidden>${controlIcon('sidebar-simple', { size: 18 })}<span class="sr-only">Context</span></button>`;
   return `<header class="control-page-header" data-page-header>
     <div class="control-page-heading">
       <h1>${escapeHtml(title)}</h1>
       ${description ? `<p class="control-page-intro">${escapeHtml(description)}</p>` : ''}
       ${metaMarkup}
     </div>
-    <div class="control-page-header-actions">${contextTrigger}${resolvedActions || ''}</div>
+    <div class="control-page-header-actions">${resolvedActions || ''}</div>
   </header>`;
 }
 
@@ -195,80 +225,9 @@ export function featureHeaderActionsMarkup({
   return `<div class="control-feature-header-actions">${toggles}</div>`;
 }
 
-function navIconMarkup(name, { rail = false, group = false } = {}) {
-  if (!hasControlIcon(name)) return '';
-  const className = group ? 'control-nav-group-icon' : (rail ? 'control-nav-icon control-nav-icon-rail' : 'control-nav-icon');
-  return controlIcon(name, { size: group ? 16 : (rail ? 20 : 17), className });
-}
-
-function navLabelMarkup(label, { rail = false } = {}) {
-  return rail
-    ? `<span class="sr-only">${escapeHtml(label)}</span>`
-    : `<span class="control-nav-label">${escapeHtml(label)}</span>`;
-}
-
-export function navigationMarkup(model, { rail = false } = {}) {
-  const primary = model.primary.map(group => {
-    const children = group.children.map(child => {
-      const matchDomain = child.matchDomain ? ` data-nav-match-domain="${escapeHtml(child.matchDomain)}"` : '';
-      const accessibleLabel = rail ? ` aria-label="${escapeHtml(child.label)}"` : '';
-      return `
-      <a href="${child.path}" data-nav-path="${child.path}" data-nav-key="${escapeHtml(child.key)}"${matchDomain}${accessibleLabel}${child.current ? ' aria-current="page"' : ''}>${navIconMarkup(child.icon, { rail })}${navLabelMarkup(child.label, { rail })}</a>`;
-    }).join('');
-
-    if (rail) {
-      return `<section class="control-nav-domain control-nav-domain-rail${group.current ? ' control-nav-domain-current' : ''}" data-domain="${group.key}">
-      <div class="control-nav-children">${children}</div>
-    </section>`;
-    }
-
-    return `<section class="control-nav-domain${group.expanded ? ' control-nav-domain-open' : ''}${group.current ? ' control-nav-domain-current' : ''}" data-domain="${group.key}">
-      <button type="button" data-domain-select="${group.key}" aria-expanded="${group.expanded ? 'true' : 'false'}">
-        <span class="control-nav-domain-label">${navIconMarkup(group.icon, { group: true })}<span>${escapeHtml(group.label)}</span></span>
-      </button>
-      <div class="control-nav-children"${group.expanded ? '' : ' hidden'}>${children}</div>
-    </section>`;
-  }).join('');
-
-  const secondary = model.secondary.map(item => {
-    const accessibleLabel = rail ? ` aria-label="${escapeHtml(item.label)}"` : '';
-    return `
-    <a href="${item.path}" data-nav-path="${item.path}"${accessibleLabel}${item.current ? ' aria-current="page"' : ''}>${navIconMarkup(item.icon, { rail })}${navLabelMarkup(item.label, { rail })}</a>`;
-  }).join('');
-  const playbooks = secondary
-    ? `<div class="control-playbooks${rail ? ' control-playbooks-rail' : ''}">${rail ? '' : '<p class="control-nav-group-label">Playbooks</p>'}<nav class="control-secondary-nav" aria-label="Control playbooks">${secondary}</nav></div>`
-    : '';
-
-  return `<nav class="control-primary-nav${rail ? ' control-primary-nav-rail' : ''}" aria-label="Control destinations">${primary}</nav>${playbooks}`;
-}
-
-export function identityMarkup(session, guild) {
-  if (!session?.authenticated) {
-    return '<a class="control-login" href="/api/auth/start"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515c.074.134.144.273.21.416a18.27 18.27 0 0 0-5.356 0c.067-.143.137-.282.21-.416A19.74 19.74 0 0 0 3.678 4.37C.533 9.046-.321 13.58.106 18.058a19.9 19.9 0 0 0 5.994 3.03c.49-.669.927-1.383 1.302-2.134a12.93 12.93 0 0 1-2.058-.988c.172-.126.341-.255.505-.391 3.862 1.763 8.052 1.763 11.868 0 .165.136.333.265.505.391-.653.39-1.343.721-2.059.988.376.751.813 1.465 1.303 2.134a19.89 19.89 0 0 0 5.992-3.03c.501-5.177-.854-9.673-3.548-13.688ZM7.822 14.709c-1.171 0-2.139-1.076-2.139-2.397s.948-2.397 2.139-2.397c1.201 0 2.159 1.086 2.139 2.397 0 1.321-.948 2.397-2.139 2.397Zm7.457 0c-1.171 0-2.139-1.076-2.139-2.397s.948-2.397 2.139-2.397c1.201 0 2.159 1.086 2.139 2.397 0 1.321-.938 2.397-2.139 2.397Z"/></svg><span>Sign in with Discord</span></a>';
-  }
-  const avatar = session.user?.avatar_url
-    ? `<img src="${escapeHtml(session.user.avatar_url)}" alt="">`
-    : `<span class="control-avatar" aria-hidden="true">${escapeHtml((session.user?.name || '?').slice(0, 1))}</span>`;
-  return `<div class="control-account">
-      <button class="control-user control-account-trigger" type="button"
-        data-account-trigger aria-haspopup="menu" aria-expanded="false">
-        ${avatar}
-        <span class="control-account-copy">
-          <strong>${escapeHtml(session.user?.name || 'Discord user')}</strong>
-          <small>${escapeHtml(guild?.name || 'Rob-bot server')}</small>
-        </span>
-      </button>
-      <div class="control-account-menu" data-account-menu role="menu" hidden>
-        <a href="/" role="menuitem">Rob-bot Handbook</a>
-        <a href="/commands" role="menuitem">Commands</a>
-        <button type="button" role="menuitem" data-account-sign-out>Sign out</button>
-      </div>
-    </div>`;
-}
-
 export function pageMarkup(destination, { authenticated = false, activityState = null } = {}) {
   if (!authenticated) {
-    return `<section class="control-empty"><h1>${escapeHtml(destination.label)}</h1><p>Sign in with Discord from the navigation to load Control.</p></section>`;
+    return `<section class="control-empty"><h1>${escapeHtml(destination.label)}</h1><p>Sign in with Discord from the top bar to load Control.</p></section>`;
   }
 
   if (destination.path === '/control/commands') return commandsPageMarkup();

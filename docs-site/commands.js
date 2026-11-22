@@ -1,10 +1,6 @@
-import { installDrawerController } from './control-navigation.js';
-import { installThemeControls } from './control-theme.js';
-
-const root = document.documentElement;
-const themeButtons = [...document.querySelectorAll('[data-theme-choice]')];
-const themeColor = document.querySelector('#themeColor');
-const scheme = matchMedia('(prefers-color-scheme: dark)');
+import { installShell, loadShellSession } from './control-shell.js?v=1';
+import { GUILD_STORAGE_KEY, pickGuild } from './control-account.js?v=2';
+import { plainHeading, slug } from './control-palette.js?v=1';
 
 const WORKFLOWS = [
   { id: 'workflow-setup', title: 'Setup & health', intro: 'Connect Discord resources, review configuration health, and adjust server settings.', commands: ['/ping', '/setup auto', '/setup status', '/setup role-panel', '/setup text-channel', '/setup voice-channel', '/setup forum', '/setup category', '/setup role', '/setup feature', '/setup log-ignore'] },
@@ -63,65 +59,16 @@ const COMMAND_PREVIEWS = Object.freeze({
   '/app-of-week': Object.freeze({ permission: 'Manage Server', description: 'Spotlight an eligible showcase thread as App of the Week.' }),
 });
 
-installThemeControls({
-  root,
-  buttons: themeButtons,
-  media: scheme,
-  storage: localStorage,
-  themeColor,
+// The top bar, sidebar, theme, drawer and palette come from the shared Control shell.
+const shell = installShell({ currentPath: '/commands' });
+loadShellSession().then(session => {
+  shell?.renderIdentity({ session, guild: pickGuild(session, localStorage.getItem(GUILD_STORAGE_KEY)) });
 });
 
-const commandShell = document.querySelector('.commands-shell');
-const commandWorkspace = document.querySelector('.commands-workspace');
-const commandDrawer = document.querySelector('#commandsNavDrawer');
-const commandMenuButton = document.querySelector('#commandsMenuButton');
-const commandNavClose = document.querySelector('#commandsNavClose');
-const commandNarrow = matchMedia('(max-width: 875px)');
-
-let restoreMenuFocus = false;
-
-const drawerController = installDrawerController({
-  drawer: commandDrawer,
-  trigger: commandMenuButton,
-  closeButton: commandNavClose,
-  isDrawer: () => commandNarrow.matches,
-  onOpen: () => {
-    restoreMenuFocus = true;
-    if (commandWorkspace) commandWorkspace.inert = true;
-  },
-  onClose: () => {
-    if (commandWorkspace) commandWorkspace.inert = false;
-    if (restoreMenuFocus && commandNarrow.matches) commandMenuButton?.focus();
-    restoreMenuFocus = false;
-  },
-});
-
-function syncCommandShell() {
-  commandShell.dataset.navMode = commandNarrow.matches ? 'drawer' : 'expanded';
-  drawerController.sync();
-  // The controller also marks desktop navigation open. Reserve that flag here for the drawer.
-  if (!commandNarrow.matches && commandDrawer) delete commandDrawer.dataset.open;
-  if (!commandNarrow.matches) restoreMenuFocus = false;
-  if (commandWorkspace) commandWorkspace.inert = Boolean(commandNarrow.matches && commandDrawer?.dataset.open === 'true');
-}
-
-syncCommandShell();
-commandNarrow.addEventListener?.('change', syncCommandShell);
-
-addEventListener('keydown', event => {
-  if (event.defaultPrevented || event.key !== 'Escape') return;
-  if (commandNarrow.matches && commandDrawer?.dataset.open === 'true') {
-    event.preventDefault();
-    drawerController.close();
-  }
-});
-
-commandDrawer?.querySelectorAll('a[href^="#workflow-"]').forEach(link => {
-  link.addEventListener('click', () => {
-    restoreMenuFocus = false;
-    drawerController.close({ restoreFocus: false });
-  });
-});
+// The search shortcut yields to the command palette and to the navigation drawer.
+const overlayOpen = () => document.querySelector('#controlPalette')?.dataset.open === 'true'
+  || (document.querySelector('.control-shell')?.dataset.navMode === 'drawer'
+    && document.querySelector('#controlNavDrawer')?.dataset.open === 'true');
 
 const escapeHtml = value => value
   .replaceAll('&', '&amp;')
@@ -140,23 +87,6 @@ function inlineMarkdown(value) {
     safe = safe.replace(/\*([^*]+)\*/g, '<em>$1</em>');
     return safe;
   }).join('');
-}
-
-function plainHeading(value) {
-  return value
-    .replace(/`([^`]*)`/g, '$1')
-    .replace(/\*\*([^*]+)\*\*/g, '$1')
-    .replace(/\*([^*]+)\*/g, '$1')
-    .trim();
-}
-
-function slug(value) {
-  return value
-    .toLowerCase()
-    .replace(/^\//, '')
-    .replace(/&/g, ' and ')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '') || 'section';
 }
 
 function splitTableRow(line) {
@@ -544,7 +474,7 @@ function setupCommandSearch(container, cards, dialog) {
   input?.addEventListener('input', applyFilter);
   clear?.addEventListener('click', clearSearch);
   addEventListener('keydown', event => {
-    if (event.defaultPrevented || dialog?.open || commandDrawer?.dataset.open === 'true') return;
+    if (event.defaultPrevented || dialog?.open || overlayOpen()) return;
     const target = event.target;
     const typing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target?.isContentEditable;
     if (event.key === '/' && !typing) {
