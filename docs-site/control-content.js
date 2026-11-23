@@ -4,14 +4,30 @@ import {
   registeredControlPage,
 } from './control-page-registry.js';
 import {
-  contextDefinitionListMarkup,
-  contextSectionMarkup,
-  controlPageHeaderMarkup,
-  controlSectionMarkup,
-  saveBarStatusMarkup,
+  disclosure,
+  masterSwitchRow,
+  problemLine,
+  setDisclosureOpen,
+  settingRow,
+  settingsRows,
+  settingsSection,
+  switchMarkup,
 } from './control-components.js?v=24';
 import { featureResourceKeys } from './control-resource-contract.js';
-import { resourceBindingState, withResourceBindings } from './control-resource-bindings.js?v=2';
+import { withResourceBindings } from './control-resource-bindings.js?v=2';
+import {
+  fieldMarkup,
+  itemHead,
+  itemRow,
+  supportPageFrame,
+  supportResourceSection,
+  textArea,
+  textInput,
+} from './control-support-shared.js?v=1';
+
+const FEEDS = '/control/content/feeds';
+const ANNOUNCEMENTS = '/control/content/announcements';
+const LIVE = '/control/content/live';
 
 export const CONTENT_PAGE_CONFIGS = Object.freeze({
   '/control/content/feeds': Object.freeze({
@@ -33,6 +49,7 @@ export const CONTENT_PAGE_CONFIGS = Object.freeze({
 
 let sourceSequence = 0;
 const DEFAULT_ANNOUNCEMENT_COLOR = '5865F2';
+let liveComposerState = { topic: '', ping: false };
 let announcementComposerState = {
   destinationId: null,
   message: '',
@@ -132,13 +149,6 @@ function resource(snapshot, key) {
 function mappedResourceId(snapshot, key) {
   const row = resource(snapshot, key);
   return row?.id && row.exists ? String(row.id) : null;
-}
-
-function mappedResourceLabel(snapshot, key) {
-  const row = resource(snapshot, key);
-  if (!row?.id) return 'Not connected';
-  if (!row.exists) return 'Unavailable';
-  return row.name ? `#${row.name}` : 'Connected Discord resource';
 }
 
 function cloneSource(source) {
@@ -295,38 +305,28 @@ function simpleDiff(feature, persisted, draft) {
   }];
 }
 
-function statusMarkup(state) {
-  if (state?.saveError) return `<p class="content-message" role="alert">${escapeHtml(state.saveError)}</p>`;
-  if (state?.status === 'conflict') {
-    return '<p class="content-message" role="alert">Server state changed while you were editing. Review your draft before saving again.</p>';
-  }
-  if (state?.status === 'saved') {
-    return '<p class="content-message" role="status" aria-live="polite">Changes saved.</p>';
-  }
-  return '<p class="content-message" data-content-operation role="status" aria-live="polite"></p>';
-}
-
-function contentHeaderMarkup(config, state, description) {
-  const enabled = state.mode === 'edit' ? state.draft.enabled : state.persisted.enabled;
-  return controlPageHeaderMarkup({
-    title: config.title,
-    description,
+function contentFrame(pageKey, state, { lede = '', enabled, body, className = '' }) {
+  return supportPageFrame({
+    pageKey,
+    className: `content-page${className ? ` ${className}` : ''}`,
+    title: CONTENT_PAGE_CONFIGS[pageKey].title,
+    lede,
     enabled,
-    editing: state.mode === 'edit',
-    editAttribute: 'data-content-edit',
-    toggleAttribute: 'data-content-feature-toggle',
+    body,
+    state,
+    save: 'data-content-save',
+    discard: 'data-content-discard',
   });
 }
 
-function settingsActionsMarkup(state) {
-  if (state.mode !== 'edit') return '';
-  const disabled = !state.dirty || Object.keys(state.errors || {}).length || state.status === 'saving';
-  return `
-    <div class="content-page-actions control-save-bar">
-      ${saveBarStatusMarkup(state)}
-      <button class="control-button control-button-primary" type="button" data-content-save${disabled ? ' disabled' : ''}>${state.status === 'saving' ? 'Saving…' : 'Save changes'}</button>
-      <button class="control-button control-button-secondary" type="button" data-content-discard${state.status === 'saving' ? ' disabled' : ''}>Discard</button>
-    </div>`;
+function masterRows({ title, label, offHint, enabled }) {
+  return settingsRows(masterSwitchRow({
+    label,
+    offHint,
+    checked: enabled,
+    field: 'enabled',
+    attribute: 'data-content-field',
+  }), { label: `${title} settings` });
 }
 
 function fieldError(state, source, field) {
@@ -334,66 +334,44 @@ function fieldError(state, source, field) {
   return state.errors?.[key] || '';
 }
 
-function feedRowRead(source) {
-  const checked = source.last_checked_at
-    ? new Date(source.last_checked_at).toLocaleString()
-    : 'Never';
-  return `
-    <tr class="content-feed-row">
-      <th scope="row"><strong>${escapeHtml(source.name)}</strong><span>${escapeHtml(source.category)}</span></th>
-      <td data-label="URL"><a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.url)}</a></td>
-      <td data-label="Last checked">${escapeHtml(checked)}</td>
-      <td class="content-state" data-label="State" data-enabled="${String(source.enabled)}">${source.enabled ? 'Enabled' : 'Disabled'}</td>
-    </tr>`;
+function sourceHost(url) {
+  try { return new URL(String(url || '')).hostname; } catch { return ''; }
 }
 
-function feedRowEdit(source, state) {
+function feedSourceRow(source, state) {
   const identity = sourceIdentity(source);
-  const nameError = fieldError(state, source, 'name');
-  const urlError = fieldError(state, source, 'url');
-  const categoryError = fieldError(state, source, 'category');
-  return `
-    <article class="content-feed-editor" data-source-row="${escapeHtml(identity)}">
-      <label>Source name
-        <input type="text" maxlength="100" value="${escapeHtml(source.name)}" data-source-field="name" data-source-key="${escapeHtml(identity)}">
-        ${nameError ? `<span class="content-field-error" role="alert">${escapeHtml(nameError)}</span>` : ''}
-      </label>
-      <label>Category
-        <input type="text" maxlength="50" value="${escapeHtml(source.category)}" data-source-field="category" data-source-key="${escapeHtml(identity)}">
-        ${categoryError ? `<span class="content-field-error" role="alert">${escapeHtml(categoryError)}</span>` : ''}
-      </label>
-      <label class="content-feed-url">Feed URL
-        <input type="url" maxlength="1000" value="${escapeHtml(source.url)}" data-source-field="url" data-source-key="${escapeHtml(identity)}">
-        ${urlError ? `<span class="content-field-error" role="alert">${escapeHtml(urlError)}</span>` : ''}
-      </label>
-      <label class="content-switch content-source-switch">
-        <input type="checkbox" data-source-field="enabled" data-source-key="${escapeHtml(identity)}"${source.enabled ? ' checked' : ''}>
-        <span>${source.enabled ? 'Enabled' : 'Disabled'}</span>
-      </label>
-      ${source.id == null ? '<button class="control-button control-button-secondary" type="button" data-source-remove>Remove</button>' : ''}
-    </article>`;
+  const attrs = field => `data-source-field="${field}" data-source-key="${escapeHtml(identity)}"`;
+  const errors = Object.fromEntries(['name', 'category', 'url', 'enabled'].map(field => [field, fieldError(state, source, field)]));
+  const checked = source.last_checked_at ? new Date(source.last_checked_at).toLocaleString() : '';
+  const body = `${checked ? `<p class="control-setting-hint">Last checked ${escapeHtml(checked)}</p>` : ''}
+    ${fieldMarkup({ id: `feed-${identity}-name`, label: 'Source name', problem: errors.name, control: textInput({ id: `feed-${identity}-name`, value: source.name, maxlength: 100, attributes: attrs('name'), invalid: Boolean(errors.name) }) })}
+    ${fieldMarkup({ id: `feed-${identity}-category`, label: 'Category', problem: errors.category, control: textInput({ id: `feed-${identity}-category`, value: source.category, maxlength: 50, attributes: attrs('category'), invalid: Boolean(errors.category) }) })}
+    ${fieldMarkup({ id: `feed-${identity}-url`, label: 'Feed URL', problem: errors.url, control: textInput({ id: `feed-${identity}-url`, type: 'url', value: source.url, maxlength: 1000, attributes: attrs('url'), invalid: Boolean(errors.url) }) })}
+    ${errors.enabled ? problemLine(errors.enabled) : ''}
+    ${source.id == null ? '<div class="control-item-actions"><button class="control-button control-button-secondary" type="button" data-source-remove>Remove source</button></div>' : ''}`;
+  return itemRow({
+    id: `feed-source-${identity}`,
+    rowKey: source.id == null ? `source:${identity}` : `source:${source.id}`,
+    head: itemHead(source.name || 'New source', sourceHost(source.url)),
+    aside: switchMarkup({ id: `feed-${identity}-enabled`, checked: source.enabled, label: `${source.name || 'New source'} enabled`, attributes: attrs('enabled') }),
+    body,
+    error: Object.values(errors).some(Boolean),
+    dataAttributes: `data-source-row="${escapeHtml(identity)}"`,
+  });
 }
 
-function feedsMarkup(config, state, snapshot) {
-  const mapping = mappedResourceLabel(snapshot, 'ai_updates');
-  const sources = state.mode === 'edit' ? state.draft.sources : state.persisted.sources;
-  return `
-    <section class="control-page content-page content-page-compact" data-page-key="/control/content/feeds">
-      ${contentHeaderMarkup(config, state, 'Manage authoritative RSS and Atom sources. Automatic polling remains scheduled by Rob-bot.')}
-      ${statusMarkup(state)}
-      ${controlSectionMarkup({
-    title: 'Sources',
-    description: `Destination: ${mapping}. Rob-bot posts fetched candidates there.`,
-    body: `${state.mode === 'edit'
-      ? `<div class="content-feed-edit-list">${sources.length ? sources.map(source => feedRowEdit(source, state)).join('') : '<p class="content-empty">No feed sources are configured.</p>'}</div>`
-      : sources.length
-        ? `<div class="control-summary-table-wrap"><table class="control-summary-table content-feed-table"><thead><tr><th>Source</th><th>URL</th><th>Last checked</th><th>State</th></tr></thead><tbody>${sources.map(feedRowRead).join('')}</tbody></table></div>`
-        : '<p class="content-empty">No feed sources are configured.</p>'}
-        ${state.mode === 'edit' ? '<div class="control-list-add"><button class="control-button control-button-secondary" type="button" data-source-add>Add source</button></div>' : ''}
-        <p class="content-note">Manual feed polling is available through <code>/ai-source poll</code>, where fetched candidates are previewed before Post or Cancel. This Control page never polls or publishes feeds.</p>`,
-  })}
-      ${settingsActionsMarkup(state)}
-    </section>`;
+function feedsMarkup(state, snapshot) {
+  const value = state.draft ?? state.persisted;
+  const list = value.sources.length
+    ? `<div class="control-question-list">${value.sources.map(source => feedSourceRow(source, state)).join('')}</div>`
+    : '<p class="control-empty-line">No sources yet. Add one to start checking feeds.</p>';
+  return contentFrame(FEEDS, state, {
+    lede: 'Post new items with /ai-source poll in Discord.',
+    enabled: value.enabled,
+    body: `${masterRows({ title: 'Feeds', label: 'Check feeds', offHint: 'Rob-bot stops checking sources.', enabled: value.enabled })}
+      ${settingsSection({ id: 'feed-sources-heading', title: 'Sources', body: `${list}<div class="control-list-add"><button class="control-button control-button-secondary" type="button" data-source-add>Add source</button></div>` })}
+      ${supportResourceSection(FEEDS, state, snapshot, 'Channels')}`,
+  });
 }
 
 export function announcementDestinationOptions(snapshot) {
@@ -491,118 +469,90 @@ function announcementCanPost(snapshot, state, featureEnabled) {
   return true;
 }
 
-function announcementMarkup(config, state, snapshot) {
+// The one problem that blocks sending: no permitted channel, or a channel that cannot take the embed.
+export function announcementBlockingProblem(snapshot, composer) {
+  const options = announcementDestinationOptions(snapshot);
+  if (!options.length) return "Rob-bot can't send messages in any text channel.";
+  const channel = options.find(item => String(item.id) === String(composer?.destinationId || ''));
+  if (channel && announcementHasEmbed(composer) && channel.embed_links !== true) return "Rob-bot can't embed links in that channel.";
+  return '';
+}
+
+function announcementColorMarkup(composer) {
+  const picker = hexToHsv(composer.color);
+  return `<div class="content-color-field"><span class="control-field-label">Embed color</span><button class="content-color-swatch" id="announcement-color-swatch" type="button" data-announcement-color-swatch aria-haspopup="dialog" aria-expanded="false" style="--swatch:#${escapeHtml(composer.color)}"><span aria-hidden="true"></span><strong>#${escapeHtml(composer.color)}</strong></button><div class="content-color-popover" data-announcement-color-popover role="dialog" aria-label="Embed color picker" hidden><div class="content-color-popover-heading"><strong>Embed color</strong><button type="button" data-announcement-color-close aria-label="Close color picker">Close</button></div><div class="content-color-selected-row"><span class="content-color-selected" data-announcement-color-preview style="--swatch:#${escapeHtml(composer.color)}" aria-hidden="true"></span><output data-announcement-color-output>#${escapeHtml(composer.color)}</output></div><div class="content-color-plane" data-announcement-color-plane role="slider" tabindex="0" aria-label="Saturation and brightness" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${picker.s}" aria-valuetext="Saturation ${picker.s}%, brightness ${picker.v}%" data-saturation="${picker.s}" data-value="${picker.v}" style="--picker-hue:${picker.h};--picker-saturation:${picker.s}%;--picker-value:${picker.v}%"><span aria-hidden="true"></span></div><label class="content-color-hue-field">Hue<input type="range" min="0" max="359" step="1" value="${picker.h}" data-announcement-color-hue aria-label="Hue"></label><div class="content-color-values"><label>Hex<input type="text" id="announcement-color" maxlength="7" inputmode="text" autocomplete="off" spellcheck="false" data-announcement-color value="#${escapeHtml(composer.color)}" aria-label="Hex color"></label>${['r', 'g', 'b'].map(channel => `<label>${channel.toUpperCase()}<input type="number" min="0" max="255" step="1" inputmode="numeric" data-announcement-color-${channel} aria-label="${channel.toUpperCase()} value"></label>`).join('')}</div><div class="content-color-presets" role="group" aria-label="Color presets">${COLOR_PRESETS.map(color => `<button type="button" data-announcement-color-preset="${color}" aria-label="Use ${color} preset" style="--swatch:#${color}"><span aria-hidden="true"></span></button>`).join('')}</div><button type="button" class="content-color-reset" data-announcement-color-reset>Reset</button></div></div>`;
+}
+
+const OPERATION_STATUS = '<p class="control-composer-status" data-content-operation role="status" aria-live="polite"></p>';
+
+function announcementMarkup(state, snapshot) {
   const composer = ensureAnnouncementComposer(snapshot);
   const destinations = announcementDestinationOptions(snapshot);
-  const enabled = state.mode === 'edit' ? state.draft.enabled : state.persisted.enabled;
-  const canPost = announcementCanPost(snapshot, composer, enabled);
+  const value = state.draft ?? state.persisted;
+  const canPost = announcementCanPost(snapshot, composer, value.enabled);
+  const problem = announcementBlockingProblem(snapshot, composer);
   const destinationOptions = destinations.map(channel => `<option value="${escapeHtml(channel.id)}"${String(channel.id) === String(composer.destinationId) ? ' selected' : ''}>#${escapeHtml(channel.name)}</option>`).join('');
-  const picker = hexToHsv(composer.color);
-  return `
-    <section class="control-page content-page content-page-compact" data-page-key="/control/content/announcements">
-      ${contentHeaderMarkup(config, state, 'Build a one-off server announcement and preview exactly what Rob-bot will post.')}
-      ${statusMarkup(state)}
-      <div class="content-announcement-layout">
-        <section class="control-section content-announcement-composer">
-          <div class="control-section-heading"><div><h2>Announcement builder</h2><p>Composer values are local until you post.</p></div><div class="content-announcement-actions"><button class="content-clear-action" type="button" data-announcement-clear>Clear all</button><button class="control-button control-button-primary content-announcement-post" type="button" data-announcement-send${canPost ? '' : ' disabled'}>Post</button></div></div>
-          <label>Destination channel<select data-announcement-destination>${destinationOptions || '<option value="">No permitted text channels</option>'}</select></label>
-          <label>Message / mentions<textarea maxlength="2000" rows="4" data-announcement-message placeholder="Literal Discord syntax: <@123>, <@&456>, <#789>, @everyone, @here">${escapeHtml(composer.message)}</textarea><span class="content-field-counter" data-announcement-counter="message">${announcementRemaining(composer.message, 2000)}</span></label>
-          <label>Title<input type="text" maxlength="256" data-announcement-title value="${escapeHtml(composer.title)}"><span class="content-field-counter" data-announcement-counter="title">${announcementRemaining(composer.title, 256)}</span></label>
-          <label>Body<textarea maxlength="4096" rows="7" data-announcement-body>${escapeHtml(composer.body)}</textarea><span class="content-field-counter" data-announcement-counter="body">${announcementRemaining(composer.body, 4096)}</span></label>
-          <div class="content-field-grid">
-            <label>Footer<input type="text" maxlength="2048" data-announcement-footer value="${escapeHtml(composer.footer)}"><span class="content-field-counter" data-announcement-counter="footer">${announcementRemaining(composer.footer, 2048)}</span></label>
-            <div class="content-color-field"><span>Embed color</span><button class="content-color-swatch" type="button" data-announcement-color-swatch aria-haspopup="dialog" aria-expanded="false" style="--swatch:#${escapeHtml(composer.color)}"><span aria-hidden="true"></span><strong>#${escapeHtml(composer.color)}</strong></button><div class="content-color-popover" data-announcement-color-popover role="dialog" aria-label="Embed color picker" hidden><div class="content-color-popover-heading"><strong>Embed color</strong><button type="button" data-announcement-color-close aria-label="Close color picker">Close</button></div><div class="content-color-selected-row"><span class="content-color-selected" data-announcement-color-preview style="--swatch:#${escapeHtml(composer.color)}" aria-hidden="true"></span><output data-announcement-color-output>#${escapeHtml(composer.color)}</output></div><div class="content-color-plane" data-announcement-color-plane role="slider" tabindex="0" aria-label="Saturation and brightness" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${picker.s}" aria-valuetext="Saturation ${picker.s}%, brightness ${picker.v}%" data-saturation="${picker.s}" data-value="${picker.v}" style="--picker-hue:${picker.h};--picker-saturation:${picker.s}%;--picker-value:${picker.v}%"><span aria-hidden="true"></span></div><label class="content-color-hue-field">Hue<input type="range" min="0" max="359" step="1" value="${picker.h}" data-announcement-color-hue aria-label="Hue"></label><div class="content-color-values"><label>Hex<input type="text" maxlength="7" inputmode="text" autocomplete="off" spellcheck="false" data-announcement-color value="#${escapeHtml(composer.color)}" aria-label="Hex color"></label>${['r', 'g', 'b'].map(channel => `<label>${channel.toUpperCase()}<input type="number" min="0" max="255" step="1" inputmode="numeric" data-announcement-color-${channel} aria-label="${channel.toUpperCase()} value"></label>`).join('')}</div><div class="content-color-presets" role="group" aria-label="Color presets">${COLOR_PRESETS.map(color => `<button type="button" data-announcement-color-preset="${color}" aria-label="Use ${color} preset" style="--swatch:#${color}"><span aria-hidden="true"></span></button>`).join('')}</div><button type="button" class="content-color-reset" data-announcement-color-reset>Reset</button></div></div>
-          </div>
-          <label>Image URL <span class="content-field-meta">1 max</span><input type="url" maxlength="1000" data-announcement-image value="${escapeHtml(composer.imageUrl)}" placeholder="https://example.com/image.png"></label>
-          <p class="content-note">Message alone is postable. An embed is created only when Title and/or Body has content. Footer, color, and image apply only to that embed.</p>
-        </section>
+  const more = `${fieldMarkup({ id: 'announcement-message', label: 'Text above the message', hint: 'Mentions like @everyone, <@&role> or <@user> go here.', control: textArea({ id: 'announcement-message', value: composer.message, maxlength: 2000, rows: 3, attributes: 'data-announcement-message', placeholder: 'Literal Discord syntax: <@123>, <@&456>, <#789>, @everyone, @here' }) })}
+    ${fieldMarkup({ id: 'announcement-footer', label: 'Footer', control: textInput({ id: 'announcement-footer', value: composer.footer, maxlength: 2048, attributes: 'data-announcement-footer' }) })}
+    ${announcementColorMarkup(composer)}
+    ${fieldMarkup({ id: 'announcement-image', label: 'Image URL', control: textInput({ id: 'announcement-image', type: 'url', value: composer.imageUrl, maxlength: 1000, attributes: 'data-announcement-image', placeholder: 'https://example.com/image.png' }) })}`;
+  const composerMarkup = `<section class="control-composer" aria-label="Announcement">
+      <div class="control-field"${problem ? ' data-problem' : ''}>
+        <label class="control-field-label" for="announcement-destination">Destination</label>
+        <select id="announcement-destination" data-announcement-destination>${destinationOptions || '<option value="">No permitted text channels</option>'}</select>
+        <div data-announcement-problem>${problemLine(problem)}</div>
       </div>
-      ${settingsActionsMarkup(state)}
+      ${fieldMarkup({ id: 'announcement-title', label: 'Title', control: textInput({ id: 'announcement-title', value: composer.title, maxlength: 256, attributes: 'data-announcement-title' }) })}
+      ${fieldMarkup({ id: 'announcement-body', label: 'Message', control: textArea({ id: 'announcement-body', value: composer.body, maxlength: 4096, rows: 6, attributes: 'data-announcement-body' }) })}
+      ${disclosure({ id: 'announcement-more', label: 'More options', body: `<div class="control-item-fields">${more}</div>` })}
+      <div class="control-composer-actions">
+        <button class="content-clear-action" type="button" data-announcement-clear>Clear all</button>
+        ${OPERATION_STATUS}
+        <button class="control-button control-button-primary" type="button" data-announcement-send${canPost ? '' : ' disabled'}>Send announcement</button>
+      </div>
     </section>`;
-}
-
-function announcementContextMarkup(state, snapshot) {
-  const composer = ensureAnnouncementComposer(snapshot);
-  const canonical = resourceBindingState(snapshot, 'announcements');
-  const channel = (snapshot?.channels || []).find(item => String(item.id) === String(canonical.id || ''));
-  const enabled = state.mode === 'edit' ? state.draft.enabled : state.persisted.enabled;
-  const sendReady = channel?.send_messages === true;
-  const postReady = Boolean(enabled && canonical.tone === 'good' && announcementHasPostableContent(composer) && sendReady);
-  return `${contextSectionMarkup({
-    id: 'preview',
-    title: 'Preview',
-    description: 'Approximate Discord rendering before publish.',
-    body: `<div class="discord-preview-shell" data-announcement-preview>${announcementPreviewMarkup(snapshot, composer)}</div>`,
-  })}${contextSectionMarkup({
-    id: 'send-readiness',
-    title: 'Send readiness',
-    body: contextDefinitionListMarkup([
-      ...(state.mode === 'edit' ? [] : [{ label: 'Destination', value: `${canonical.name || canonical.current} (${canonical.label})` }]),
-      { label: 'Send permission', value: sendReady ? 'Allowed' : 'Missing Send Messages' },
-      { label: 'Feature', value: enabled ? 'Enabled' : 'Disabled' },
-      { label: 'Post', value: postReady ? 'Ready' : 'Add content or fix readiness' },
-    ]),
-  })}`;
-}
-
-function feedsContextMarkup(state, snapshot) {
-  const destination = resourceBindingState(snapshot, 'ai_updates');
-  return contextSectionMarkup({
-    id: 'polling',
-    title: 'Polling',
-    description: 'Rob-bot polls these sources on its own schedule.',
-    body: contextDefinitionListMarkup([
-      ...(state.mode === 'edit' ? [] : [{ label: 'Channel', value: `${destination.name || destination.current} (${destination.label})` }]),
-      { label: 'Manual poll', value: 'Use /ai-source poll in Discord' },
-      { label: 'Publishing', value: 'Control never posts feeds directly' },
-    ]),
+  const preview = `<aside class="control-preview" aria-labelledby="announcement-preview-heading"><h2 id="announcement-preview-heading">Preview</h2><div class="discord-preview-shell" data-announcement-preview>${announcementPreviewMarkup(snapshot, composer)}</div></aside>`;
+  return contentFrame(ANNOUNCEMENTS, state, {
+    enabled: value.enabled,
+    body: `${masterRows({ title: 'Announcements', label: 'Send announcements from Control', offHint: "Announcements can't be sent from Control.", enabled: value.enabled })}
+      <div class="control-composer-layout">${composerMarkup}${preview}</div>`,
   });
 }
 
-function liveContextMarkup(state, snapshot) {
-  const destination = resourceBindingState(snapshot, 'live_announcements');
-  const ping = resourceBindingState(snapshot, 'live_ping_role');
-  const channel = (snapshot?.channels || []).find(item => String(item.id) === String(destination.id || ''));
-  if (state.mode === 'edit') {
-    return contextSectionMarkup({
-      id: 'dispatch-readiness',
-      title: 'Dispatch readiness',
-      body: contextDefinitionListMarkup([
-        { label: 'Send permission', value: channel?.send_messages === true ? 'Allowed' : 'Missing Send Messages' },
-      ]),
-    });
-  }
-  return contextSectionMarkup({
-    id: 'dispatch-readiness',
-    title: 'Dispatch readiness',
-    body: contextDefinitionListMarkup([
-      { label: 'Live announcements', value: `${destination.name || destination.current} (${destination.label})` },
-      { label: 'Send permission', value: channel?.send_messages === true ? 'Allowed' : 'Missing Send Messages' },
-      { label: 'Live ping role', value: `${ping.name || ping.current} (${ping.label})` },
-    ]),
-  });
+function liveSendBlocked(snapshot) {
+  const id = mappedResourceId(snapshot, 'live_announcements') || mappedResourceId(snapshot, 'announcements');
+  if (!id) return true;
+  const channel = (snapshot?.channels || []).find(item => String(item.id) === String(id));
+  // A mapped channel that no longer exists in Discord blocks posting just like a missing permission.
+  if (!channel) return true;
+  return channel.send_messages === false;
 }
 
-function liveMarkup(config, state, snapshot) {
-  const destination = mappedResourceLabel(snapshot, 'live_announcements');
-  const fallback = mappedResourceId(snapshot, 'live_announcements') || mappedResourceId(snapshot, 'announcements');
+function liveMarkup(state, snapshot) {
+  const value = state.draft ?? state.persisted;
   const pingRole = resource(snapshot, 'live_ping_role');
   const pingAvailable = Boolean(pingRole?.id && pingRole.exists);
-  return `
-    <section class="control-page content-page content-page-compact" data-page-key="/control/content/live">
-      ${contentHeaderMarkup(config, state, 'Post the configured live-host notice to the mapped Live destination.')}
-      ${statusMarkup(state)}
-      <section class="control-section content-live-dispatch" aria-labelledby="live-dispatch-heading">
-        <div class="control-section-heading"><div><h2 id="live-dispatch-heading">Live notice</h2><p>Review each dispatch step before publishing.</p></div></div>
-        <ol class="content-dispatch-flow">
-          <li><span class="content-dispatch-number">1</span><div><strong>Destination</strong><p>${escapeHtml(destination)}</p></div></li>
-          <li><span class="content-dispatch-number">2</span><label>Topic<input type="text" maxlength="200" data-live-topic placeholder="Optional stream topic"><small>Optional. Included with the configured live-host notice.</small></label></li>
-          <li><span class="content-dispatch-number">3</span><label class="content-switch"><input type="checkbox" data-live-ping${pingAvailable ? '' : ' disabled'}><span>${pingAvailable ? `Ping ${escapeHtml(pingRole.name || 'configured Live role')}` : 'No Live ping role is connected'}</span></label></li>
-        </ol>
-        <div class="content-dispatch-actions"><button class="control-button control-button-primary" type="button" data-live-send${fallback && state.persisted.enabled ? '' : ' disabled'}>Post Live notice</button></div>
-      </section>
-      ${settingsActionsMarkup(state)}
+  const canPost = Boolean(state.persisted.enabled) && !liveSendBlocked(snapshot);
+  const pingRow = settingsRows(settingRow({
+    label: pingAvailable ? `Ping @${pingRole.name || 'Live role'}` : 'Ping a role',
+    hint: pingAvailable ? '' : 'Choose a ping role under Channels.',
+    controlId: 'live-ping',
+    control: switchMarkup({ id: 'live-ping', checked: pingAvailable && liveComposerState.ping, attributes: `data-live-ping${pingAvailable ? '' : ' disabled'}` }),
+  }));
+  const composer = `<section class="control-composer" aria-label="Live notice">
+      ${fieldMarkup({ id: 'live-topic', label: 'Topic', control: textInput({ id: 'live-topic', value: liveComposerState.topic, maxlength: 200, attributes: 'data-live-topic', placeholder: 'Optional stream topic' }) })}
+      ${pingRow}
+      <div class="control-composer-actions">
+        ${OPERATION_STATUS}
+        <button class="control-button control-button-primary" type="button" data-live-send${canPost ? '' : ' disabled'}>Post live notice</button>
+      </div>
     </section>`;
+  return contentFrame(LIVE, state, {
+    enabled: value.enabled,
+    body: `${masterRows({ title: 'Live', label: 'Post live notices', offHint: "Live notices can't be posted from Control.", enabled: value.enabled })}
+      ${supportResourceSection(LIVE, state, snapshot, 'Channels', { labels: { live_announcements: 'Posts to', live_ping_role: 'Ping role' } })}
+      ${composer}`,
+  });
 }
 
 export function createContentPageDefinition(pageKey) {
@@ -611,6 +561,7 @@ export function createContentPageDefinition(pageKey) {
 
   return {
     pageKey,
+    editOnMount: true,
 
     selectPersisted(snapshot) {
       return config.kind === 'feeds'
@@ -642,37 +593,25 @@ export function createContentPageDefinition(pageKey) {
       if (!state?.persisted) {
         return `<section class="control-page content-page"><h1>${escapeHtml(config.title)}</h1><p>Load current server state to manage this page.</p></section>`;
       }
-      if (config.kind === 'feeds') return feedsMarkup(config, state, snapshot);
-      if (config.kind === 'announcements') return announcementMarkup(config, state, snapshot);
-      return liveMarkup(config, state, snapshot);
+      if (config.kind === 'feeds') return feedsMarkup(state, snapshot || {});
+      if (config.kind === 'announcements') return announcementMarkup(state, snapshot || {});
+      return liveMarkup(state, snapshot || {});
     },
 
-    renderContext({ state, snapshot } = {}) {
-      if (!state?.persisted || !snapshot) return '';
-      if (config.kind === 'feeds') return feedsContextMarkup(state, snapshot);
-      if (config.kind === 'announcements') return announcementContextMarkup(state, snapshot);
-      return liveContextMarkup(state, snapshot);
+    // Context content now lives in the page as rows, problems and the Channels section.
+    renderContext() {
+      return '';
     },
 
-    install({ root, contextRoot, store = controlState, snapshot, onSave, onAction, onConfirm, rerender } = {}) {
-      return installContentPageInteractions({
-        root,
-        contextRoot,
-        pageKey,
-        store,
-        snapshot,
-        onSave,
-        onAction,
-        onConfirm,
-        rerender,
-      });
+    install({ root, store = controlState, snapshot, onSave, onAction, onConfirm, rerender } = {}) {
+      return installContentPageInteractions({ root, pageKey, store, snapshot, onSave, onAction, onConfirm, rerender });
     },
   };
 }
 
 export function registerContentPages() {
   for (const pageKey of Object.keys(CONTENT_PAGE_CONFIGS)) {
-    if (!registeredControlPage(pageKey)) registerControlPage(withResourceBindings(createContentPageDefinition(pageKey), featureResourceKeys(pageKey)));
+    if (!registeredControlPage(pageKey)) registerControlPage(withResourceBindings(createContentPageDefinition(pageKey), featureResourceKeys(pageKey), { genericContext: 'never' }));
   }
 }
 
@@ -772,7 +711,7 @@ function confirmationCopy(action) {
 }
 
 export function installContentPageInteractions({
-  root, contextRoot, pageKey, store = controlState, snapshot, onSave, onAction, onConfirm, rerender = () => {},
+  root, pageKey, store = controlState, snapshot, onSave, onAction, onConfirm, rerender = () => {},
 } = {}) {
   if (!root?.addEventListener) return () => {};
   let colorTrigger = null;
@@ -803,14 +742,13 @@ export function installContentPageInteractions({
 
   const syncAnnouncement = () => {
     const composer = readComposer();
-    const limits = { message: 2000, title: 256, body: 4096, footer: 2048 };
-    for (const [key, limit] of Object.entries(limits)) {
-      const counter = root.querySelector(`[data-announcement-counter="${key}"]`);
-      if (counter) counter.textContent = String(announcementRemaining(composer[key], limit));
-    }
-    for (const scope of [root, contextRoot]) {
-      const preview = scope?.querySelector?.('[data-announcement-preview]');
-      if (preview) preview.innerHTML = announcementPreviewMarkup(snapshot, composer);
+    const preview = root.querySelector('[data-announcement-preview]');
+    if (preview) preview.innerHTML = announcementPreviewMarkup(snapshot, composer);
+    const problem = root.querySelector('[data-announcement-problem]');
+    if (problem) {
+      const text = announcementBlockingProblem(snapshot, composer);
+      problem.innerHTML = problemLine(text);
+      problem.closest('.control-field')?.toggleAttribute('data-problem', Boolean(text));
     }
     const send = root.querySelector('[data-announcement-send]');
     const enabled = store.get(pageKey)?.mode === 'edit' ? store.get(pageKey)?.draft?.enabled : store.get(pageKey)?.persisted?.enabled;
@@ -881,10 +819,9 @@ export function installContentPageInteractions({
   };
 
   const onClick = async event => {
-    if (event.target?.closest?.('[data-content-edit]')) { store.beginEdit(pageKey); rerender(); return; }
     if (event.target?.closest?.('[data-content-save]')) { if (store.canSave(pageKey)) onSave?.(pageKey, store.buildSaveRequest(pageKey)); return; }
-    if (event.target?.closest?.('[data-content-discard]')) { store.discard(pageKey); store.get(pageKey).mode = 'read'; rerender(); return; }
-    if (event.target?.closest?.('[data-source-add]')) { store.updateDraft(pageKey, draft => { draft.sources.push(cloneSource({ enabled: true })); }); rerender(); return; }
+    if (event.target?.closest?.('[data-content-discard]')) { store.discard(pageKey); rerender(); return; }
+    if (event.target?.closest?.('[data-source-add]')) { let added = ''; store.updateDraft(pageKey, draft => { const source = cloneSource({ enabled: true }); draft.sources.push(source); added = sourceIdentity(source); }); setDisclosureOpen(`feed-source-${added}`, true); rerender(); return; }
     const remove = event.target?.closest?.('[data-source-remove]');
     if (remove) { const row = remove.closest?.('[data-source-row]'); if (row?.dataset?.sourceRow) { store.updateDraft(pageKey, draft => { draft.sources = draft.sources.filter(item => sourceIdentity(item) !== row.dataset.sourceRow); }); rerender(); } return; }
     const colorButton = event.target?.closest?.('[data-announcement-color-swatch]');
@@ -912,13 +849,14 @@ export function installContentPageInteractions({
       return;
     }
     if (event.target?.closest?.('[data-live-send]')) {
-      try { const action = buildLiveAction(snapshot, { topic: root.querySelector('[data-live-topic]')?.value || '', pingConfiguredRole: Boolean(root.querySelector('[data-live-ping]')?.checked) }); localStatus(root, 'Publishing Live notice…'); const posted = await performAction(action); if (posted) localStatus(root, 'Live notice posted.', 'good'); else localStatus(root, 'Live notice cancelled.'); } catch (error) { localStatus(root, error instanceof Error ? error.message : 'Live notice could not be posted.', 'bad'); }
+      try { const action = buildLiveAction(snapshot, { topic: root.querySelector('[data-live-topic]')?.value || liveComposerState.topic || '', pingConfiguredRole: Boolean(root.querySelector('[data-live-ping]')?.checked) }); localStatus(root, 'Publishing Live notice…'); const posted = await performAction(action); if (posted) localStatus(root, 'Live notice posted.', 'good'); else localStatus(root, 'Live notice cancelled.'); } catch (error) { localStatus(root, error instanceof Error ? error.message : 'Live notice could not be posted.', 'bad'); }
     }
   };
 
   const onChange = event => {
-    const feature = event.target?.closest?.('[data-content-feature-toggle]');
+    const feature = event.target?.closest?.('[data-content-field="enabled"]');
     if (feature) { store.updateDraft(pageKey, draft => { draft.enabled = Boolean(feature.checked); }); rerender(); return; }
+    if (event.target?.closest?.('[data-live-ping]')) { liveComposerState.ping = Boolean(event.target.checked); return; }
     const field = event.target?.closest?.('[data-source-field]');
     if (field?.dataset?.sourceKey && field.dataset.sourceField) { store.updateDraft(pageKey, draft => { const source = sourceForKey(draft, field.dataset.sourceKey); if (!source) return; if (field.dataset.sourceField === 'enabled') source.enabled = Boolean(field.checked); else source[field.dataset.sourceField] = field.value; }); rerender(); return; }
     if (event.target?.closest?.('[data-announcement-destination]')) { syncAnnouncement(); return; }
@@ -931,6 +869,9 @@ export function installContentPageInteractions({
   };
 
   const onInput = event => {
+    const sourceField = event.target?.closest?.('[data-source-field]');
+    if (sourceField?.dataset?.sourceKey && sourceField.type !== 'checkbox') { onChange(event); return; }
+    if (event.target?.closest?.('[data-live-topic]')) { liveComposerState.topic = event.target.value; return; }
     if (event.target?.closest?.('[data-announcement-color-hue]')) {
       const plane = root.querySelector('[data-announcement-color-plane]');
       setColorFromHsv(Number(event.target.value), Number(plane?.dataset?.saturation || 0), Number(plane?.dataset?.value || 0));

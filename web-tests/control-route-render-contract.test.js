@@ -37,14 +37,14 @@ const READ_EXPECTATIONS = {
   '/control/community/quizzes': ['Quizzes', 'Post quizzes on a schedule', 'Posts every', 'Channels', 'Questions', 'What does len return?', 'In rotation', 'Paused'],
   '/control/community/voice-coworking': ['Voice &amp; Coworking', 'Create voice rooms', 'Join to create', 'New rooms go in', 'Coworking lounge'],
   '/control/community/showcase': ['Showcase', 'Run showcase spotlights', 'Showcase forum', 'App of the week', 'Collaboration / LFG'],
-  '/control/utilities/notification-roles': ['Notification roles', 'Preview', 'Builder updates', 'Primary', 'Secondary'],
-  '/control/content/feeds': ['Feeds', 'Sources', 'OpenAI', 'ai-updates'],
-  '/control/content/announcements': ['Announcements', 'Announcement builder', 'Post'],
-  '/control/content/live': ['Live', 'Live notice', '#live', 'Post Live notice'],
-  '/control/utilities/ticket-configuration': ['Tickets', 'Ticket intake', 'Ticket types', 'Support', 'Report'],
-  '/control/utilities/anonymous-questions': ['Anonymous Questions', 'Intake behavior', 'Anonymous Questions'],
-  '/control/workflows/moderation': ['Moderation', 'Configuration', 'Operating guide', 'Prepare'],
-  '/control/analytics': ['Analytics', 'Moderation cases', 'Activity over time'],
+  '/control/utilities/notification-roles': ['Notification roles', 'Preview', 'Builder updates', 'Panel title', 'Role panel', 'Buttons'],
+  '/control/content/feeds': ['Feeds', 'Check feeds', 'Sources', 'OpenAI', 'AI updates', 'Channels'],
+  '/control/content/announcements': ['Announcements', 'Send announcements from Control', 'Destination', 'Send announcement', 'Preview'],
+  '/control/content/live': ['Live', 'Post live notices', 'Posts to', 'Ping role', 'Post live notice'],
+  '/control/utilities/ticket-configuration': ['Tickets', 'Open tickets from the panel', 'Ticket types', 'Support', 'Report', 'Ticket panel', 'Ticket logs', 'Ticket category'],
+  '/control/utilities/anonymous-questions': ['Anonymous Questions', 'Accept anonymous questions', 'Anonymous questions'],
+  '/control/workflows/moderation': ['Moderation', 'Log moderation actions', 'Moderation log', 'Compromised account trap', 'How moderation works', 'Prepare'],
+  '/control/analytics': ['Analytics', 'Moderation cases', 'Post the weekly report', 'Posts to'],
 };
 
 // Converted pages edit in place: they have no separate read view.
@@ -53,6 +53,17 @@ const CONVERTED_ROUTES = new Set([
   '/control/community/quizzes',
   '/control/community/voice-coworking',
   '/control/community/showcase',
+  '/control/utilities/notification-roles',
+  '/control/content/feeds',
+  '/control/content/announcements',
+  '/control/content/live',
+  '/control/utilities/ticket-configuration',
+  '/control/utilities/anonymous-questions',
+  '/control/workflows/moderation',
+  '/control/analytics',
+  '/control/mappings/channels',
+  '/control/mappings/roles',
+  '/control/mappings/categories',
 ]);
 
 const EDIT_EXPECTATIONS = {
@@ -62,24 +73,15 @@ const EDIT_EXPECTATIONS = {
   '/control/community/showcase': ['Save changes', 'Discard'],
   '/control/utilities/notification-roles': ['Buttons', 'Add button', 'Preview', 'Save changes'],
   '/control/content/feeds': ['Sources', 'Add source', 'Save changes'],
-  '/control/content/announcements': ['Announcement builder', 'Post'],
-  '/control/content/live': ['Live notice', 'Post Live notice'],
+  '/control/content/announcements': ['Send announcement', 'More options'],
+  '/control/content/live': ['Post live notice'],
   '/control/utilities/ticket-configuration': ['Ticket types', 'Add ticket type', 'Save changes'],
   '/control/utilities/anonymous-questions': ['Save changes', 'Discard'],
-  '/control/workflows/moderation': ['Operating guide', 'Save changes'],
+  '/control/workflows/moderation': ['How moderation works', 'Save changes'],
   '/control/analytics': ['Moderation cases', 'Save changes'],
 };
 
-const CONTEXT_EXPECTATIONS = {
-  '/control/utilities/notification-roles': ['Role panel'],
-  '/control/content/feeds': ['Channel'],
-  '/control/content/announcements': ['Destination', 'Preview', 'Send readiness'],
-  '/control/content/live': ['Live announcements', 'Live ping role'],
-  '/control/utilities/ticket-configuration': ['Ticket panel', 'Ticket logs', 'Ticket category'],
-  '/control/utilities/anonymous-questions': ['Anonymous questions'],
-  '/control/workflows/moderation': ['Moderation log', 'Compromised account trap'],
-  '/control/analytics': ['Report destination'],
-};
+const CONTEXT_EXPECTATIONS = {};
 
 const NO_CONTEXT_ROUTES = [
   '/control/mappings/channels',
@@ -101,7 +103,8 @@ test('every feature route renders operational content in read mode', () => {
     assert.doesNotMatch(markup, /\bMappings\b/, `${pageKey} must not send the operator to Mappings`);
     assert.doesNotMatch(markup, /control-state-chip/, `${pageKey} must not render a state chip`);
     if (CONVERTED_ROUTES.has(pageKey)) {
-      assert.doesNotMatch(markup, /Edit settings|data-community-edit/, `${pageKey} edits in place`);
+      assert.doesNotMatch(markup, /Edit settings|data-community-edit|data-content-edit|data-utility-edit|data-workflow-edit|control-feature-header-actions/, `${pageKey} edits in place`);
+      assert.doesNotMatch(markup, /data-control-details|control-context-section/, `${pageKey} has no Details or context`);
       assert.equal(controlState.get(pageKey).mode, 'edit', `${pageKey} enters edit state when hydrated`);
       assert.equal(renderRegisteredControlContext(pageKey, { snapshot }), '', `${pageKey} renders no context`);
     }
@@ -128,15 +131,9 @@ test('every feature route renders its editable fields in edit mode', () => {
   }
 });
 
-test('notification roles has no inert feature toggle', () => {
-  const read = renderRegisteredControlPage('/control/utilities/notification-roles', { snapshot });
-  assert.match(read, /Edit settings/, 'notification roles read mode must still expose Edit settings');
-  assert.doesNotMatch(read, /control-feature-toggle/, 'notification roles read mode must not render a feature toggle');
-  controlState.beginEdit('/control/utilities/notification-roles');
-  const edit = renderRegisteredControlPage('/control/utilities/notification-roles', { snapshot });
-  assert.doesNotMatch(edit, /control-feature-toggle/, 'notification roles edit mode must not render an inert feature toggle');
-  controlState.discard('/control/utilities/notification-roles');
-  controlState.get('/control/utilities/notification-roles').mode = 'read';
+test('notification roles has no master switch and no Edit settings', () => {
+  const page = renderRegisteredControlPage('/control/utilities/notification-roles', { snapshot });
+  assert.doesNotMatch(page, /Edit settings|control-feature-toggle|data-master-row|data-master=/);
 });
 
 test('feature routes expose page-specific context and no generic-only panel', () => {
@@ -152,31 +149,15 @@ test('feature routes expose page-specific context and no generic-only panel', ()
 });
 
 test('summary tables expose labels for stacked mobile rows', () => {
-  const tickets = renderRegisteredControlPage('/control/utilities/ticket-configuration', { snapshot });
-  assert.match(tickets, /data-label="Key"/);
-  assert.match(tickets, /data-label="Description"/);
-  const feeds = renderRegisteredControlPage('/control/content/feeds', { snapshot });
-  assert.match(feeds, /data-label="URL"/);
-  assert.match(feeds, /data-label="Last checked"/);
   const mappings = renderRegisteredControlPage('/control/mappings/channels', { snapshot });
-  assert.match(mappings, /data-label="Current"/);
-  assert.match(mappings, /data-label="Status"/);
+  assert.match(mappings, /<th scope="col">Used for<\/th>/);
+  assert.match(mappings, /<th scope="row"><label class="mapping-used-for"/);
 });
 
-test('edit mode context delegates resource status to the generic editor', () => {
-  const cases = [
-    ['/control/content/announcements', /<dt>Destination<\/dt>/],
-    ['/control/content/feeds', /<dt>Channel<\/dt>/],
-    ['/control/analytics', /<dt>Channel<\/dt>/],
-    ['/control/workflows/moderation', /<dt>Moderation log<\/dt>/],
-  ];
-  for (const [pageKey, duplicate] of cases) {
+test('converted Insights and Resources pages render no context panel in edit state', () => {
+  for (const pageKey of ['/control/analytics', '/control/mappings/channels']) {
     controlState.beginEdit(pageKey);
-    const markup = renderRegisteredControlContext(pageKey, { snapshot });
-    assert.match(markup, /Discord resources/, `${pageKey} edit context must expose the generic resource editor`);
-    assert.doesNotMatch(markup, duplicate, `${pageKey} edit context must not repeat the resource status row`);
-    controlState.discard(pageKey);
-    controlState.get(pageKey).mode = 'read';
+    assert.equal(renderRegisteredControlContext(pageKey, { snapshot }), '', `${pageKey} edit context must be empty`);
   }
 });
 
@@ -202,7 +183,8 @@ test('system routes render without a contextual column', () => {
     }],
     nextCursor: null,
   });
-  assertContains(activity, ['Activity', 'Changed Reputation thresholds', 'Completed'], 'Activity');
+  assertContains(activity, ['Activity', 'Changed Reputation thresholds'], 'Activity');
+  assert.doesNotMatch(activity, /Completed|data-task-indicator/);
 });
 
 test('guidance playbooks keep the shared header and step anatomy', () => {
@@ -211,25 +193,23 @@ test('guidance playbooks keep the shared header and step anatomy', () => {
     ['/control/workflows/events', 'Events'],
   ]) {
     const markup = workflowPageMarkup(pageKey);
-    assertContains(markup, [title, 'Prepare', 'Operating guide', 'control-page-header'], `${pageKey} playbook`);
+    assertContains(markup, [title, 'Prepare', 'workflow-step', 'control-page-header'], `${pageKey} playbook`);
     assert.doesNotMatch(markup, /Save changes|Edit settings/);
   }
 });
 
-test('read mode never prints raw notification style enums', () => {
+test('notification roles never prints raw style enums as visible text', () => {
   const markup = renderRegisteredControlPage('/control/utilities/notification-roles', { snapshot });
-  assert.match(markup, /<dd>Primary<\/dd>/);
-  assert.match(markup, /<dd>Secondary<\/dd>/);
-  assert.doesNotMatch(markup, /<dd>primary<\/dd>/);
-  assert.doesNotMatch(markup, /<dd>secondary<\/dd>/);
+  assert.match(markup, /<option value="primary" selected>Primary<\/option>/);
+  assert.match(markup, /<option value="secondary" selected>Secondary<\/option>/);
+  assert.doesNotMatch(markup, />primary<|>secondary</);
 });
 
 test('Analytics no longer duplicates the report resource table in the center', () => {
   const markup = renderRegisteredControlPage('/control/analytics', { snapshot });
   assert.doesNotMatch(markup, /analytics-reporting-table/);
   assert.doesNotMatch(markup, /Report channel/);
-  const context = renderRegisteredControlContext('/control/analytics', { snapshot });
-  assert.match(context, /Report destination/);
+  assert.equal(renderRegisteredControlContext('/control/analytics', { snapshot }), '');
 });
 
 test('the shell declares nav mode and peek state and has no context column', () => {

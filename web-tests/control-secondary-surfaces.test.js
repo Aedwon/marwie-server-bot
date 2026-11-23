@@ -8,6 +8,7 @@ import {
   activityPageMarkup,
   commandsPageMarkup,
   createActivityController,
+  relativeTimeLabel,
 } from '../docs-site/control-secondary.js';
 
 const commandsManual = readFileSync(new URL('../docs/commands.md', import.meta.url), 'utf8');
@@ -87,14 +88,15 @@ test('Activity markup is semantic, human-readable, and keeps raw backend data ou
   assert.match(markup, /<h1>Activity<\/h1>/);
   assert.match(markup, /<ol[^>]*control-activity-list/);
   assert.equal((markup.match(/<li\b/g) || []).length, 2);
-  assert.match(markup, /Actor<\/span> You<\/span>/);
+  assert.match(markup, /<span class="control-activity-actor">You<\/span>/);
   assert.match(markup, /Discord user 222/);
   assert.match(markup, /Updated a quiz question/);
-  assert.match(markup, />Completed</);
-  assert.match(markup, />Failed</);
-  assert.match(markup, /<time datetime="2026-08-29T12:00:00.000Z"/);
-  assert.match(markup, /Could not post\./);
-  assert.match(markup, /REF123/);
+  assert.doesNotMatch(markup, /Completed|data-task-indicator|control-task-status/);
+  assert.match(markup, /<span class="control-activity-status" data-status="failed"><svg[^>]*>[\s\S]*?<\/svg><span>Failed<\/span><\/span>/);
+  assert.match(markup, /<time datetime="2026-08-29T12:00:00.000Z" title="[^"]+">/);
+  assert.equal((markup.match(/data-disclosure-toggle aria-expanded="false"/g) || []).length, 2);
+  assert.match(markup, /<dt>Problem<\/dt><dd>Could not post\.<\/dd>/);
+  assert.match(markup, /<dt>Reference<\/dt><dd>REF123<\/dd>/);
   assert.match(markup, /data-activity-load-more/);
   assert.doesNotMatch(markup, /never render me|never render result|payload_json|result_json/);
   assert.doesNotMatch(markup, /<article[^>]*card|activity-card|data-action-type/);
@@ -113,23 +115,41 @@ test('Activity renders local loading, empty, error, and terminal pagination stat
   assert.doesNotMatch(terminal, /data-activity-load-more/);
 });
 
-test('Activity uses the canonical indicator for genuine queued, running, completed, and pagination async states', () => {
+test('Activity shows status as words only when not completed and keeps the indicator for loading', () => {
   const rows = activityPageMarkup({
     phase: 'ready',
     items: [
       { id: 'q', actor: { id: '1' }, summary: 'Queued work', status: 'queued', timestamp: '2026-08-29T12:00:00Z', failure: null },
       { id: 'r', actor: { id: '1' }, summary: 'Running work', status: 'claimed', timestamp: '2026-08-29T12:01:00Z', failure: null },
       { id: 'd', actor: { id: '1' }, summary: 'Finished work', status: 'completed', timestamp: '2026-08-29T12:02:00Z', failure: null },
+      { id: 'x', actor: { id: '1' }, summary: 'Rejected work', status: 'rejected', timestamp: '2026-08-29T12:03:00Z', failure: null },
     ],
     nextCursor: 'next',
     loadingMore: true,
   });
-  assert.match(rows, /data-state="queued"[^>]*data-size="16"/);
-  assert.match(rows, /data-state="running"[^>]*data-size="16"/);
-  assert.match(rows, /data-state="completed"[^>]*data-size="16"/);
+  assert.match(rows, /data-status="queued">Queued</);
+  assert.match(rows, /data-status="claimed">In progress</);
+  assert.match(rows, /data-status="failed"><svg[^>]*>[\s\S]*?<span>Rejected</);
+  assert.equal((rows.match(/class="control-activity-status"/g) || []).length, 3);
+  assert.equal((rows.match(/data-task-indicator/g) || []).length, 1);
   assert.match(rows, /data-activity-load-more[^>]*disabled[^>]*>[\s\S]*data-state="running"[^>]*data-size="16"/);
-  assert.equal((rows.match(/In progress/g) || []).length, 1);
-  assert.equal((rows.match(/Completed/g) || []).length, 1);
+});
+
+test('Activity shows relative time with the absolute time in the title and newest first order as given', () => {
+  const now = Date.parse('2026-08-29T15:00:00Z');
+  assert.equal(relativeTimeLabel('2026-08-29T14:59:50Z', { now, locale: 'en-US' }), 'Just now');
+  assert.equal(relativeTimeLabel('2026-08-29T12:00:00Z', { now, locale: 'en-US' }), '3 hours ago');
+  assert.equal(relativeTimeLabel('2026-08-28T15:00:00Z', { now, locale: 'en-US' }), 'yesterday');
+  assert.equal(relativeTimeLabel('', { now }), 'Time unavailable');
+  const markup = activityPageMarkup({
+    phase: 'ready', now, locale: 'en-US',
+    items: [
+      { id: 'n', actor: { id: '1' }, summary: 'Newest', status: 'completed', timestamp: '2026-08-29T14:00:00Z', failure: null },
+      { id: 'o', actor: { id: '1' }, summary: 'Oldest', status: 'completed', timestamp: '2026-08-29T09:00:00Z', failure: null },
+    ],
+  });
+  assert.match(markup, /title="[^"]+">1 hour ago<\/time>/);
+  assert.ok(markup.indexOf('Newest') < markup.indexOf('Oldest'));
 });
 
 test('Activity controller performs one initial load and appends later pages in API order', async () => {

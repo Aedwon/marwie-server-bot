@@ -164,7 +164,7 @@ test('Notification roles renders server emoji choices and a Discord-style draft 
   assert.match(markup, /data-notification-emoji-search/);
   assert.match(markup, /data-notification-emoji-option="&lt;:grok:1234&gt;"/);
   assert.match(markup, /data-notification-emoji-option="&lt;a:party:5678&gt;"/);
-  assert.match(markup, /utility-notification-preview/);
+  assert.match(markup, /class="control-preview"/);
   assert.match(markup, /AI Updates preview/);
   assert.match(markup, /https:\/\/cdn\.discordapp\.com\/emojis\/1234\.webp/);
   assert.match(markup, /data-notification-preview-button/);
@@ -211,19 +211,15 @@ test('Notification roles preserves a configured emoji that is no longer availabl
   assert.match(markup, /:deleted:/);
 });
 
-test('Notification role text input updates the preview without rebuilding the editor', async () => {
+test('Notification role text input reaches the draft on input and re-renders the page with the preview', async () => {
   const { createUtilitiesPageDefinition } = await utilitiesModule();
   const definition = createUtilitiesPageDefinition('/control/utilities/notification-roles');
   const listeners = new Map();
-  const preview = { innerHTML: '' };
   const root = {
     addEventListener(name, listener) {
       listeners.set(name, listener);
     },
     removeEventListener() {},
-    querySelector(selector) {
-      return selector === '[data-notification-preview-body]' ? preview : null;
-    },
   };
   const state = {
     draft: {
@@ -265,8 +261,7 @@ test('Notification role text input updates the preview without rebuilding the ed
   });
 
   assert.equal(state.draft.title, 'New title');
-  assert.match(preview.innerHTML, /New title/);
-  assert.equal(rerenders, 0);
+  assert.equal(rerenders, 1);
 });
 
 test('Notification emoji search filters server choices without changing the draft', async () => {

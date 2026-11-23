@@ -152,7 +152,7 @@ function fakeTarget(dataset = {}, value = '') {
       if (selector === '[data-mapping-edit]' && 'mappingEdit' in dataset) return this;
       if (selector === '[data-mapping-save]' && 'mappingSave' in dataset) return this;
       if (selector === '[data-mapping-discard]' && 'mappingDiscard' in dataset) return this;
-      if (selector === '[data-mapping-key]' && 'mappingKey' in dataset) return this;
+      if (selector === '[data-resource-select]' && 'resourceSelect' in dataset) return this;
       return null;
     },
   };
@@ -279,32 +279,40 @@ test('Discard restores the authoritative persisted mapping draft', async () => {
   assert.equal(store.get(pageKey).dirty, false);
 });
 
-test('mapping page markup uses read then edit state, visible health text, labels, and row associations', async () => {
+test('Resources page edits on mount: segmented tabs, Used for table, bordered selects, broken rows first', async () => {
   const { createMappingPageDefinition, mappingPageMarkup } = await mappingsModule();
   const pageKey = PAGE_KEYS.channels;
   const definition = createMappingPageDefinition(pageKey);
+  assert.equal(definition.editOnMount, true);
   const store = (await import('../docs-site/control-state.js')).createControlStateStore();
   store.register(definition);
   store.hydrate(pageKey, baseSnapshot(), 'f'.repeat(64));
-
-  const readMarkup = mappingPageMarkup({ pageKey, state: store.get(pageKey), snapshot: baseSnapshot() });
-  assert.match(readMarkup, /<h1>Resources<\/h1>/);
-  assert.match(readMarkup, /mapping-resource-tabs/);
-  assert.doesNotMatch(readMarkup, /mapping-resource-heading/);
-  assert.match(readMarkup, />Edit settings</);
-  assert.match(readMarkup, />Connected</);
-  assert.match(readMarkup, />Not connected</);
-  assert.match(readMarkup, />Unavailable</);
-  assert.match(readMarkup, /data-mapping-key="ticket_logs"/);
-
   store.beginEdit(pageKey);
-  const editMarkup = mappingPageMarkup({ pageKey, state: store.get(pageKey), snapshot: baseSnapshot() });
-  assert.match(editMarkup, /<label[^>]+for="mapping-moderation_log"/);
-  assert.match(editMarkup, /id="mapping-moderation_log"/);
-  assert.match(editMarkup, />Save changes</);
-  assert.match(editMarkup, />Discard</);
-  assert.match(editMarkup, /Unavailable current mapping/);
-  assert.match(editMarkup, /disabled[^>]*>Unavailable current mapping/);
+
+  const markup = mappingPageMarkup({ pageKey, state: store.get(pageKey), snapshot: baseSnapshot() });
+  assert.match(markup, /<h1>Resources<\/h1>/);
+  assert.match(markup, /The Discord channels, roles and categories each feature uses\./);
+  assert.match(markup, /<nav class="control-segn" data-segn="resource-tabs" aria-label="Resource types" data-count="3"/);
+  assert.match(markup, /<a class="control-segn-item" href="\/control\/mappings\/channels"[^>]*aria-current="page">Channels<\/a>/);
+  assert.match(markup, /<th scope="col">Used for<\/th>/);
+  assert.doesNotMatch(markup, /Edit settings|mapping-resource-tabs|mapping-status-text|>Connected<|>Armed</);
+  assert.match(markup, /<label class="mapping-used-for" for="mapping-moderation_log">Moderation log<\/label>/);
+  assert.match(markup, /<select class="control-select" id="mapping-moderation_log" data-resource-select="moderation_log"/);
+  assert.match(markup, /class="control-save-bar"/);
+  assert.match(markup, /data-mapping-save/);
+
+  // Broken rows (deleted or not connected) sort first, in their usual order; healthy rows follow.
+  const rows = [...markup.matchAll(/<tr data-mapping-row="([^"]+)"[^>]*?( data-broken)?>/g)].map(m => ({ key: m[1], broken: Boolean(m[2]) }));
+  assert.equal(rows.length, CHANNEL_KEYS.length);
+  const firstHealthy = rows.findIndex(row => !row.broken);
+  assert.ok(firstHealthy > 1);
+  assert.ok(rows.slice(firstHealthy).every(row => !row.broken));
+  assert.deepEqual(rows.slice(0, 2).map(row => row.key), ['ticket_panel', 'ticket_logs']);
+  assert.ok(rows.slice(firstHealthy).some(row => row.key === 'moderation_log'));
+  const deleted = markup.slice(markup.indexOf('data-mapping-row="ticket_logs"'), markup.indexOf('</tr>', markup.indexOf('data-mapping-row="ticket_logs"')));
+  assert.match(deleted, /data-problem data-broken/);
+  assert.match(deleted, /<p class="control-problem">[\s\S]*Deleted in Discord\./);
+  assert.match(deleted, /aria-invalid="true"/);
 });
 
 test('field changes mutate local draft without saving or making a network request', async () => {
@@ -333,7 +341,7 @@ test('field changes mutate local draft without saving or making a network reques
     rerender() {},
   });
   try {
-    root.emit('change', fakeTarget({ mappingKey: 'moderation_log' }, '101'));
+    root.emit('change', fakeTarget({ resourceSelect: 'moderation_log' }, '101'));
     assert.equal(store.get(pageKey).draft.moderation_log, '101');
     assert.equal(store.get(pageKey).dirty, true);
     assert.equal(saveCalls, 0);
@@ -389,7 +397,7 @@ test('suggested mappings are grouped only into Channels, Roles, and Categories a
   }
 });
 
-test('healthy mappings make Review suggested mappings visually quiet', async () => {
+test('Suggest matches is a quiet header action that reveals the review inline; healthy data stays quiet', async () => {
   const { createMappingPageDefinition, mappingPageMarkup } = await mappingsModule();
   const snapshot = baseSnapshot();
   snapshot.mappings_review = { plan_hash: '3'.repeat(64), quiet: true, proposed: [] };
@@ -400,8 +408,17 @@ test('healthy mappings make Review suggested mappings visually quiet', async () 
   store.hydrate(pageKey, snapshot, '4'.repeat(64));
 
   const markup = mappingPageMarkup({ pageKey, state: store.get(pageKey), snapshot });
-  assert.match(markup, /Review suggested mappings/);
-  assert.match(markup, /data-suggestions-quiet="true"/);
+  assert.match(markup, /<button class="control-button control-button-quiet" type="button" data-mapping-review aria-expanded="false" aria-controls="mapping-suggestions-body">Suggest matches<\/button>/);
+  assert.match(markup, /data-suggestions-quiet="true"[^>]*data-suggestions-wrap data-open="false"/);
+  assert.match(markup, /<div inert data-suggestions-body>/);
+  assert.doesNotMatch(markup, /Review suggested mappings/);
+});
+
+test('saving mappings sends the same request JSON as before the redesign', async () => {
+  const { insightsSaveRequests } = await import('./fixtures/stage2b-insights-scenarios.js');
+  const expected = JSON.parse(readFileSync(new URL('./fixtures/stage2b-insights-save-requests.json', import.meta.url), 'utf8'));
+  const actual = insightsSaveRequests();
+  for (const key of ['channels', 'roles', 'categories']) assert.deepEqual(actual[key], expected[key]);
 });
 
 test('review payload preserves exact approved item scope and only explicit consequence confirmations', async () => {

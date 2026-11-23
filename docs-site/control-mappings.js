@@ -3,7 +3,10 @@ import {
   registerControlPage,
   registeredControlPage,
 } from './control-page-registry.js';
-import { controlSimplePageHeaderMarkup, saveBarStatusMarkup } from './control-components.js?v=24';
+import { controlPageHeaderMarkup, problemLine } from './control-components.js?v=24';
+import { resourceSelectMarkup } from './control-resource-bindings.js?v=2';
+import { problemsFromSnapshot } from './control-problems.js?v=1';
+import { animateSegmentedThumbs, segmentedControlMarkup, stagedSaveBarMarkup } from './control-page-parts.js';
 
 const COMPROMISED_ACCOUNT_TRAP_KEY = 'compromised_account_trap';
 const CHANNEL_KEYS = Object.freeze([
@@ -234,6 +237,7 @@ export function createMappingPageDefinition(pageKey) {
 
   return {
     pageKey,
+    editOnMount: true,
 
     selectPersisted(snapshot) {
       latestSnapshot = snapshot || {};
@@ -334,57 +338,6 @@ export function registerMappingPages() {
   }
 }
 
-function healthFor(key, row) {
-  if (row?.id && row.exists) {
-    return {
-      label: key === COMPROMISED_ACCOUNT_TRAP_KEY ? 'Armed' : 'Connected',
-      className: 'good',
-    };
-  }
-  if (row?.id) return { label: 'Unavailable', className: 'bad' };
-  return { label: 'Not connected', className: 'neutral' };
-}
-
-function readRow(key, row) {
-  const definition = MAPPING_RESOURCE_DEFINITIONS[key];
-  const health = healthFor(key, row);
-  const current = row?.id && row.exists
-    ? (row.name || 'Connected Discord resource')
-    : row?.id
-      ? 'Previously connected resource is unavailable'
-      : 'No resource connected';
-  return `
-    <tr data-mapping-key="${escapeHtml(key)}">
-      <th scope="row">${escapeHtml(definition.label)}</th>
-      <td class="mapping-current" data-label="Current">${escapeHtml(current)}</td>
-      <td class="mapping-status-text" data-label="Status" data-tone="${health.className}">${escapeHtml(health.label)}</td>
-    </tr>`;
-}
-
-function editRow(key, persisted, selected, snapshot, error) {
-  const definition = MAPPING_RESOURCE_DEFINITIONS[key];
-  const options = mappingOptionsForKey(snapshot, key);
-  const selectedId = selected == null ? '' : String(selected);
-  const staleSelected = Boolean(
-    selectedId
-    && persisted?.id === selectedId
-    && !options.some(option => String(option.id) === selectedId),
-  );
-  const optionMarkup = options.map(option => (
-    `<option value="${escapeHtml(option.id)}"${String(option.id) === selectedId ? ' selected' : ''}>${escapeHtml(optionLabel(option))}</option>`
-  )).join('');
-  return `
-    <div class="mapping-editor-row" data-mapping-key="${escapeHtml(key)}">
-      <label for="mapping-${escapeHtml(key)}">${escapeHtml(definition.label)}</label>
-      <select id="mapping-${escapeHtml(key)}" data-mapping-key="${escapeHtml(key)}"${error ? ` aria-describedby="mapping-${escapeHtml(key)}-error"` : ''}>
-        <option value=""${selectedId === '' ? ' selected' : ''}>Not connected</option>
-        ${staleSelected ? `<option value="${escapeHtml(selectedId)}" disabled selected>Unavailable current mapping</option>` : ''}
-        ${optionMarkup}
-      </select>
-      ${error ? `<span class="mapping-field-error" id="mapping-${escapeHtml(key)}-error" role="alert">${escapeHtml(error)}</span>` : ''}
-    </div>`;
-}
-
 export function mappingSuggestionGroups(snapshot) {
   const groups = { channels: [], roles: [], categories: [] };
   for (const item of snapshot?.mappings_review?.proposed || []) {
@@ -451,16 +404,14 @@ function suggestionMarkup(pageKey, snapshot) {
         ? `<p class="mapping-page-message mapping-suggestion-status" role="alert">${escapeHtml(operation.message)}</p>`
         : '';
 
-  let reviewMarkup = '';
-  if (open) {
-    const sections = [
-      ['channels', 'Channels'],
-      ['roles', 'Roles'],
-      ['categories', 'Categories'],
-    ].map(([group, label]) => {
-      const items = groups[group];
-      if (!items.length) return '';
-      return `
+  const sections = [
+    ['channels', 'Channels'],
+    ['roles', 'Roles'],
+    ['categories', 'Categories'],
+  ].map(([group, label]) => {
+    const items = groups[group];
+    if (!items.length) return '';
+    return `
         <section class="mapping-suggestion-group">
           <h3>${label}</h3>
           ${items.map(item => `
@@ -476,32 +427,27 @@ function suggestionMarkup(pageKey, snapshot) {
                 </label>` : '<span class="mapping-review-only">Review only</span>'}
             </div>`).join('')}
         </section>`;
-    }).join('');
+  }).join('');
 
-    reviewMarkup = quiet
-      ? '<p class="mapping-suggestion-empty">No mapping changes are suggested right now.</p>'
-      : `${sections}
+  const reviewMarkup = quiet
+    ? '<p class="mapping-suggestion-empty">No matches are suggested right now.</p>'
+    : `${sections}
         <div class="mapping-suggestion-actions">
-          <button class="control-button control-button-primary" type="button" data-mapping-apply-suggestions${allConfirmed && !applyPending ? '' : ' disabled'}>${applyPending ? 'Applying…' : 'Apply reviewed mappings'}</button>
+          <button class="control-button control-button-primary" type="button" data-mapping-apply-suggestions${allConfirmed && !applyPending ? '' : ' disabled'}>${applyPending ? 'Applying…' : 'Apply reviewed matches'}</button>
         </div>`;
-  }
 
   return `
-    <section class="mapping-suggestions" data-suggestions-quiet="${String(quiet)}">
-      <div class="mapping-suggestions-heading">
-        <div>
-          <h2>Suggested mappings</h2>
-          <p>Review suggested Discord resources. Nothing changes until you apply the reviewed plan.</p>
-        </div>
-        <button class="control-button control-button-primary" type="button" data-mapping-review>${open ? 'Close review' : 'Review suggested mappings'}</button>
-      </div>
-      ${operationMarkup}
-      ${reviewMarkup}
+    <section class="mapping-suggestions control-disclosure" data-suggestions-quiet="${String(quiet)}" data-suggestions-wrap data-open="${open}" aria-label="Suggested matches">
+      <div class="control-reveal" id="mapping-suggestions-body"><div${open ? '' : ' inert'} data-suggestions-body>
+        <p class="mapping-suggestions-hint">Nothing changes until you apply the reviewed matches.</p>
+        ${operationMarkup}
+        ${reviewMarkup}
+      </div></div>
     </section>`;
 }
 
 function destructiveMappingMarkup(pageKey, state) {
-  const confirmation = destructiveConfirmationStateFor(pageKey, state.persisted, state.draft);
+  const confirmation = destructiveConfirmationStateFor(pageKey, state.persisted, state.draft ?? state.persisted);
   if (!confirmation.required) return '';
 
   const definition = MAPPING_RESOURCE_DEFINITIONS[COMPROMISED_ACCOUNT_TRAP_KEY];
@@ -516,19 +462,70 @@ function destructiveMappingMarkup(pageKey, state) {
 }
 
 function resourcesTabsMarkup(pageKey) {
-  const items = [
-    ['/control/mappings/channels', 'Channels'],
-    ['/control/mappings/roles', 'Roles'],
-    ['/control/mappings/categories', 'Categories'],
-  ];
-  return `<nav class="mapping-resource-tabs" aria-label="Resource types">${items.map(([path, label]) => `<a href="${path}" data-nav-path="${path}"${path === pageKey ? ' aria-current="page"' : ''}>${label}</a>`).join('')}</nav>`;
+  return segmentedControlMarkup({
+    id: 'resource-tabs',
+    label: 'Resource types',
+    navigation: true,
+    selected: pageKey,
+    options: [
+      { key: '/control/mappings/channels', label: 'Channels', href: '/control/mappings/channels' },
+      { key: '/control/mappings/roles', label: 'Roles', href: '/control/mappings/roles' },
+      { key: '/control/mappings/categories', label: 'Categories', href: '/control/mappings/categories' },
+    ],
+  });
+}
+
+const RESOURCES_LEDE = 'The Discord channels, roles and categories each feature uses.';
+
+function selectedBinding(state, key) {
+  if (state.draft) {
+    const value = state.draft[key];
+    return value == null || value === '' ? null : String(value);
+  }
+  return mappingId(state.persisted?.[key]);
+}
+
+// A saved binding that no longer works, as one sentence. Empty when the row is fine.
+function brokenSentence(snapshot, persisted, key, problems) {
+  const found = problems.find(item => item.resourceKey === key);
+  if (found) return `${found.cause} ${found.effect}`;
+  if (persisted?.id && persisted.exists === false) return 'Deleted in Discord.';
+  return '';
+}
+
+function resourceTableMarkup(pageKey, state, snapshot) {
+  const config = MAPPING_PAGE_CONFIGS[pageKey];
+  const problems = problemsFromSnapshot(snapshot);
+  const rows = config.resourceKeys.map((key, order) => {
+    const persisted = state.persisted[key];
+    const selected = selectedBinding(state, key);
+    const sentence = brokenSentence(snapshot, persisted, key, problems);
+    const unchanged = selected === mappingId(persisted);
+    const error = state.errors?.[key];
+    const hideError = key === COMPROMISED_ACCOUNT_TRAP_KEY && error && /^Confirm /.test(error);
+    const text = (sentence && unchanged ? sentence : '') || (hideError ? '' : error || '');
+    return { key, order, broken: Boolean(sentence), text, selected };
+  });
+  rows.sort((left, right) => (Number(right.broken) - Number(left.broken)) || (left.order - right.order));
+  const body = rows.map(({ key, text, selected, broken }) => `
+        <tr data-mapping-row="${escapeHtml(key)}" data-row-key="${escapeHtml(key)}"${text ? ' data-problem' : ''}${broken ? ' data-broken' : ''}>
+          <th scope="row"><label class="mapping-used-for" for="mapping-${escapeHtml(key)}">${escapeHtml(MAPPING_RESOURCE_DEFINITIONS[key].label)}</label>${text ? problemLine(text) : ''}</th>
+          <td>${resourceSelectMarkup({ snapshot, key, value: selected, problem: Boolean(text), id: `mapping-${key}` })}</td>
+        </tr>`).join('');
+  return `<div class="mapping-table-wrap"><table class="mapping-table">
+      <thead><tr><th scope="col">Used for</th><th scope="col">Resource</th></tr></thead>
+      <tbody>${body}</tbody>
+    </table></div>`;
 }
 
 export function mappingPageMarkup({ pageKey, state, snapshot } = {}) {
   const config = MAPPING_PAGE_CONFIGS[pageKey];
   if (!config) return '';
+  const open = suggestionReviewOpen.has(pageKey);
+  const action = `<button class="control-button control-button-quiet" type="button" data-mapping-review aria-expanded="${open}" aria-controls="mapping-suggestions-body">Suggest matches</button>`;
+  const header = controlPageHeaderMarkup({ title: 'Resources', lede: RESOURCES_LEDE, editable: false, actions: action });
   if (!state?.persisted) {
-    return `<section class="control-page mapping-page">${controlSimplePageHeaderMarkup({ title: 'Resources', description: 'Current Discord resources and their connection health.' })}${resourcesTabsMarkup(pageKey)}<h2>${escapeHtml(config.title)}</h2><p>Load current server state to manage these Discord resources.</p></section>`;
+    return `<section class="control-page mapping-page">${header}${resourcesTabsMarkup(pageKey)}<p>Load current server state to manage these Discord resources.</p></section>`;
   }
 
   const statusMarkup = state.saveError
@@ -537,45 +534,16 @@ export function mappingPageMarkup({ pageKey, state, snapshot } = {}) {
       ? '<p class="mapping-page-message" role="alert">Server state changed while you were editing. Review your draft before retrying.</p>'
       : '';
 
-  if (state.mode === 'edit') {
-    return `
+  return `
       <section class="control-page mapping-page" data-page-key="${escapeHtml(pageKey)}">
-        ${controlSimplePageHeaderMarkup({
-      title: 'Resources',
-      description: 'Choose current Discord resources, then save all changes together.',
-    })}
+        ${header}
         ${resourcesTabsMarkup(pageKey)}
         ${statusMarkup}
-        <div class="mapping-edit-grid">
-          ${config.resourceKeys.map(key => editRow(key, state.persisted[key], state.draft[key], snapshot, state.errors?.[key])).join('')}
-        </div>
-        ${destructiveMappingMarkup(pageKey, state)}
         ${suggestionMarkup(pageKey, snapshot)}
-        <div class="mapping-page-actions control-save-bar">
-          ${saveBarStatusMarkup(state)}
-          <button class="control-button control-button-primary" type="button" data-mapping-save${state.dirty && !Object.keys(state.errors || {}).length && state.status !== 'saving' ? '' : ' disabled'}>${state.status === 'saving' ? 'Saving…' : 'Save changes'}</button>
-          <button class="control-button control-button-secondary" type="button" data-mapping-discard${state.status === 'saving' ? ' disabled' : ''}>Discard</button>
-        </div>
+        ${resourceTableMarkup(pageKey, state, snapshot)}
+        ${destructiveMappingMarkup(pageKey, state)}
+        ${stagedSaveBarMarkup(state, { saveAttribute: 'data-mapping-save', discardAttribute: 'data-mapping-discard' })}
       </section>`;
-  }
-
-  return `
-    <section class="control-page mapping-page" data-page-key="${escapeHtml(pageKey)}">
-      ${controlSimplePageHeaderMarkup({
-    title: 'Resources',
-    description: 'Current Discord resources and their connection health.',
-    actions: '<button class="control-button control-button-primary control-edit-settings-button" type="button" data-mapping-edit>Edit settings</button>',
-  })}
-      ${resourcesTabsMarkup(pageKey)}
-      ${statusMarkup}
-      <div class="mapping-table-wrap">
-        <table class="mapping-table">
-          <thead><tr><th>Resource</th><th>Current</th><th>Status</th></tr></thead>
-          <tbody>${config.resourceKeys.map(key => readRow(key, state.persisted[key])).join('')}</tbody>
-        </table>
-      </div>
-      ${suggestionMarkup(pageKey, snapshot)}
-    </section>`;
 }
 
 export function installMappingPageInteractions({
@@ -588,15 +556,9 @@ export function installMappingPageInteractions({
   rerender = () => {},
 } = {}) {
   if (!root?.addEventListener) return () => {};
+  animateSegmentedThumbs(root);
 
   const onClick = async event => {
-    const edit = event.target?.closest?.('[data-mapping-edit]');
-    if (edit) {
-      store.beginEdit(pageKey);
-      rerender();
-      return;
-    }
-
     const save = event.target?.closest?.('[data-mapping-save]');
     if (save) {
       if (store.canSave(pageKey)) onSave?.(pageKey, store.buildSaveRequest(pageKey));
@@ -607,20 +569,30 @@ export function installMappingPageInteractions({
     if (discard) {
       destructiveMappingConfirmations.delete(pageKey);
       store.discard(pageKey);
-      store.get(pageKey).mode = 'read';
       rerender();
       return;
     }
 
     const review = event.target?.closest?.('[data-mapping-review]');
     if (review) {
+      const hadFeedback = operationStateFor(pageKey, snapshot).status !== 'idle';
       if (suggestionReviewOpen.has(pageKey)) {
         suggestionReviewOpen.delete(pageKey);
       } else {
         suggestionReviewOpen.add(pageKey);
       }
       clearOperationFeedback(pageKey, snapshot);
-      rerender();
+      const wrap = root.querySelector?.('[data-suggestions-wrap]');
+      const body = wrap?.querySelector?.('[data-suggestions-body]');
+      if (wrap && body && !hadFeedback) {
+        // Open and close in place so the reveal animates.
+        const open = suggestionReviewOpen.has(pageKey);
+        wrap.dataset.open = String(open);
+        body.inert = !open;
+        review.setAttribute?.('aria-expanded', String(open));
+      } else {
+        rerender();
+      }
       return;
     }
 
@@ -683,9 +655,9 @@ export function installMappingPageInteractions({
   };
 
   const onChange = event => {
-    const field = event.target?.closest?.('[data-mapping-key]');
-    if (field?.dataset?.mappingKey && field.tagName !== 'ARTICLE') {
-      const key = field.dataset.mappingKey;
+    const field = event.target?.closest?.('[data-resource-select]');
+    if (field?.dataset?.resourceSelect) {
+      const key = field.dataset.resourceSelect;
       if (MAPPING_RESOURCE_DEFINITIONS[key] && MAPPING_PAGE_CONFIGS[pageKey].resourceKeys.includes(key)) {
         store.updateDraft(pageKey, draft => {
           draft[key] = field.value === '' ? null : String(field.value);

@@ -71,11 +71,11 @@ class FakeRoot {
 
 function mappingTarget(key, value) {
   return {
-    dataset: { mappingKey: key },
+    dataset: { resourceSelect: key },
     value,
     tagName: 'SELECT',
     closest(selector) {
-      if (selector === '[data-mapping-key]') return this;
+      if (selector === '[data-resource-select]') return this;
       return null;
     },
   };
@@ -107,7 +107,7 @@ test('Channels owns the manual-only compromised account trap mapping', async () 
   });
 });
 
-test('trap read status distinguishes Armed, Unavailable, and Not connected', async () => {
+test('trap row says nothing when healthy, reports a deleted channel, and sorts first when broken', async () => {
   const { createMappingPageDefinition, mappingPageMarkup } = await mappingsModule();
   const definition = createMappingPageDefinition(PAGE_KEY);
 
@@ -120,7 +120,8 @@ test('trap read status distinguishes Armed, Unavailable, and Not connected', asy
     state: healthyStore.get(PAGE_KEY),
     snapshot: healthySnapshot,
   });
-  assert.match(healthyMarkup, /data-mapping-key="compromised_account_trap"[\s\S]*>Armed</);
+  const trapRow = markup => markup.slice(markup.indexOf('data-mapping-row="compromised_account_trap"'), markup.indexOf('</tr>', markup.indexOf('data-mapping-row="compromised_account_trap"')));
+  assert.doesNotMatch(trapRow(healthyMarkup), /data-problem|control-problem|Armed/);
 
   const staleDefinition = createMappingPageDefinition(PAGE_KEY);
   const staleSnapshot = snapshot({ trapId: '999', trapExists: false });
@@ -132,7 +133,8 @@ test('trap read status distinguishes Armed, Unavailable, and Not connected', asy
     state: staleStore.get(PAGE_KEY),
     snapshot: staleSnapshot,
   });
-  assert.match(staleMarkup, /data-mapping-key="compromised_account_trap"[\s\S]*>Unavailable</);
+  assert.match(trapRow(staleMarkup), /data-problem data-broken[\s\S]*Deleted in Discord\./);
+  assert.ok(staleMarkup.indexOf('data-mapping-row="compromised_account_trap"') < staleMarkup.indexOf('data-mapping-row="moderation_log"'));
 
   const emptyDefinition = createMappingPageDefinition(PAGE_KEY);
   const emptySnapshot = snapshot();
@@ -144,7 +146,8 @@ test('trap read status distinguishes Armed, Unavailable, and Not connected', asy
     state: emptyStore.get(PAGE_KEY),
     snapshot: emptySnapshot,
   });
-  assert.match(emptyMarkup, /data-mapping-key="compromised_account_trap"[\s\S]*>Not connected</);
+  assert.match(trapRow(emptyMarkup), /<option value="" selected>Choose a channel<\/option>/);
+  assert.doesNotMatch(trapRow(emptyMarkup), /data-problem/);
 });
 
 test('arming requires explicit destructive acknowledgement before Save can proceed', async () => {

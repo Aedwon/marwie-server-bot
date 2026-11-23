@@ -43,11 +43,11 @@ test('Analytics range row renders a real-series line graph without bars or a vis
   const markup = analyticsPageMarkup({ state: pageState({ enabled: true }), snapshot, selectedRange: '7d' });
 
   for (const key of ['1d', '3d', '7d', '2w', '1m', 'all']) assert.match(markup, new RegExp(`data-analytics-range="${key}"`));
-  assert.match(markup, /class="analytics-range-row"/);
+  assert.match(markup, /class="control-segn" data-segn="analytics-range"/);
   assert.match(markup, /<svg[^>]*class="analytics-line-chart"/);
   assert.match(markup, /class="analytics-axis analytics-axis-x"/);
   assert.match(markup, /class="analytics-axis analytics-axis-y"/);
-  assert.match(markup, /<desc id="analytics-line-chart-summary">3 real buckets/);
+  assert.match(markup, /<desc id="analytics-line-chart-summary">3 [a-z]+s plotted/);
   assert.doesNotMatch(markup, /control-visually-hidden/);
   assert.equal((markup.match(/class="analytics-line-point"/g) || []).length, 3);
   assert.doesNotMatch(markup, /analytics-chart-bars|analytics-chart-bar|View chart data|analytics-series-table|<details/);
@@ -94,7 +94,7 @@ test('Mappings removes generic type helper copy while retaining validation surfa
   const markup = definition.render({ state: pageState(persisted, 'edit', draft), snapshot });
   assert.doesNotMatch(markup, /Choose an available text channel|Choose an available role|Choose an available category|Choose an available forum channel|Choose an available voice channel/i);
   assert.doesNotMatch(markup, /aria-describedby="mapping-[^"]+-help/);
-  assert.match(markup, /data-mapping-key="moderation_log"/);
+  assert.match(markup, /data-resource-select="moderation_log"/);
   assert.match(markup, /<label[^>]+for="mapping-moderation_log"/);
 });
 
@@ -108,12 +108,14 @@ test('Content keeps the color picker functional and the Live flow focused', () =
   assert.match(announcementMarkup, /data-announcement-color-b/);
   assert.match(announcementMarkup, /data-announcement-color-preset/);
   assert.match(announcementMarkup, /data-announcement-color-reset/);
-  assert.match(announcementMarkup, />Post<\/button>/);
+  assert.match(announcementMarkup, />Send announcement<\/button>/);
 
   const live = createContentPageDefinition('/control/content/live');
   const liveMarkup = live.render({ state: pageState({ enabled: true }), snapshot: { features: [{ name: 'live_announcements', enabled: true }], resources: [{ key: 'live_announcements', id: '10', name: 'live', exists: true }, { key: 'live_ping_role', id: '20', name: 'Live Notifications', exists: true }] } });
-  assert.equal((liveMarkup.match(/content-dispatch-number/g) || []).length, 3);
-  assert.doesNotMatch(liveMarkup, /Consequence|content-dispatch-number[^]*4/);
+  assert.match(liveMarkup, /data-live-topic/);
+  assert.match(liveMarkup, /data-live-ping/);
+  assert.match(liveMarkup, />Post live notice<\/button>/);
+  assert.doesNotMatch(liveMarkup, /Consequence|content-dispatch-number/);
 });
 
 test('R3 records preserved ownership and real-data-only constraints before implementation', () => {

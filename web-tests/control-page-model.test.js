@@ -387,5 +387,5 @@ test('changed imports carry bumped versions', () => {
   assert.match(app, /control-components\.js\?v=24/);
   assert.match(app, /control-community\.js\?v=22/);
   assert.match(read('control-community.js'), /control-resource-bindings\.js\?v=2/);
-  assert.match(read('control.html'), /control-features\.css\?v=20/);
+  assert.match(read('control.html'), /control-features\.css\?v=24/);
 });

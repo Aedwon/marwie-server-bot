@@ -146,7 +146,7 @@ test('shared feature header shows Edit settings alone in read mode and the featu
   assert.equal(edit.includes('>Edit settings<'), false);
 });
 
-test('Mappings read view is a semantic Classic admin table with plain status text', async () => {
+test('Resources is a semantic table of Used for rows with bordered selects and no status text', async () => {
   const { createMappingPageDefinition, mappingPageMarkup } = await import('../docs-site/control-mappings.js');
   const pageKey = '/control/mappings/channels';
   const definition = createMappingPageDefinition(pageKey);
@@ -155,11 +155,11 @@ test('Mappings read view is a semantic Classic admin table with plain status tex
   store.hydrate(pageKey, baseSnapshot(), 'f'.repeat(64));
   const markup = mappingPageMarkup({ pageKey, state: store.get(pageKey), snapshot: baseSnapshot() });
   assert.equal(markup.includes('<table class=\"mapping-table'), true);
+  assert.equal(markup.includes('>Used for</th>'), true);
   assert.equal(markup.includes('>Resource</th>'), true);
-  assert.equal(markup.includes('>Current</th>'), true);
-  assert.equal(markup.includes('>Status</th>'), true);
-  assert.equal(markup.includes('class=\"mapping-status-text\"'), true);
-  assert.equal(markup.includes('>Connected</td>'), true);
+  assert.equal(markup.includes('class=\"control-select\"'), true);
+  assert.equal(markup.includes('mapping-status-text'), false);
+  assert.equal(markup.includes('>Connected</td>'), false);
   assert.equal(markup.includes('mapping-health'), false);
   assert.equal(markup.includes('status-pill'), false);
   assert.equal(markup.includes('status-badge'), false);
@@ -215,7 +215,7 @@ test('Discord preview resolves supported literal mention tokens without changing
   for (const expected of ['@Ada', '@Grace', '@Builder', '#general', '@everyone', '@here']) assert.equal(markup.includes(expected), true);
 });
 
-test('Announcement builder renders the composer in the center and the preview in context', async () => {
+test('Announcement builder renders the composer and the preview in the page with no context', async () => {
   const { createContentPageDefinition } = await import('../docs-site/control-content.js');
   const pageKey = '/control/content/announcements';
   const definition = createContentPageDefinition(pageKey);
@@ -225,17 +225,13 @@ test('Announcement builder renders the composer in the center and the preview in
   const state = store.get(pageKey);
   const markup = definition.render({ state, snapshot: baseSnapshot() });
   for (const token of [
-    'content-announcement-layout', 'data-announcement-clear', '>Clear all<', 'data-announcement-send',
+    'control-composer-layout', 'data-announcement-clear', '>Clear all<', 'data-announcement-send',
     'data-announcement-destination', 'maxlength=\"2000\"', 'maxlength=\"256\"', 'maxlength=\"4096\"', 'maxlength=\"2048\"',
     'data-announcement-image', 'data-announcement-color-swatch', 'data-announcement-color-popover',
-    'data-announcement-counter=\"message\"', '>2000<', 'data-announcement-counter=\"title\"', '>256<',
-    'data-announcement-counter=\"body\"', '>4096<', 'data-announcement-counter=\"footer\"', '>2048<',
+    'data-announcement-preview', 'More options',
   ]) assert.equal(markup.includes(token), true, token);
-  assert.equal(markup.includes('data-announcement-preview'), false);
-
-  const context = definition.renderContext({ state, snapshot: baseSnapshot() });
-  assert.equal(context.includes('data-announcement-preview'), true);
-  assert.equal(context.includes('Send readiness'), true);
+  assert.equal(markup.includes('data-announcement-counter'), false);
+  assert.equal(definition.renderContext({ state, snapshot: baseSnapshot() }), '');
 });
 
 test('browser action validation accepts message-only announcements and validates embed limits/image URL', () => {

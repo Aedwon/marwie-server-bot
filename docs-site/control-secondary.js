@@ -1,4 +1,5 @@
-import { controlSimplePageHeaderMarkup, taskIndicatorMarkup } from './control-components.js';
+import { controlSimplePageHeaderMarkup, disclosure, taskIndicatorMarkup } from './control-components.js?v=24';
+import { controlIcon } from './control-icons.js?v=2';
 
 const COMMAND_TASKS = Object.freeze([
   Object.freeze({
@@ -43,20 +44,15 @@ function statusLabel(value) {
   })[String(value)] || 'Unknown';
 }
 
-function activityIndicatorState(value) {
-  return ({
-    queued: 'queued',
-    claimed: 'running',
-    completed: 'completed',
-    failed: 'failed',
-    rejected: 'failed',
-  })[String(value)] || null;
-}
-
+// Completed rows say nothing. Failed and rejected show a word with a warning icon. Others show a plain word.
 function activityStatusMarkup(value) {
-  const label = statusLabel(value);
-  const state = activityIndicatorState(value);
-  return state ? taskIndicatorMarkup({ state, size: 16, label }) : escapeHtml(label);
+  const status = String(value);
+  if (status === 'completed') return '';
+  const label = statusLabel(status);
+  if (status === 'failed' || status === 'rejected') {
+    return `<span class="control-activity-status" data-status="failed">${controlIcon('warning', { size: 14 })}<span>${escapeHtml(label)}</span></span>`;
+  }
+  return `<span class="control-activity-status" data-status="${escapeHtml(status)}">${escapeHtml(label)}</span>`;
 }
 
 function actorLabel(actor, currentActorId) {
@@ -73,6 +69,24 @@ function timestampLabel(value) {
     return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
   } catch {
     return raw;
+  }
+}
+
+// "3 hours ago" style label. Older than 30 days falls back to the date.
+export function relativeTimeLabel(value, { now = Date.now(), locale } = {}) {
+  const time = new Date(String(value || '')).getTime();
+  if (!Number.isFinite(time)) return 'Time unavailable';
+  const seconds = Math.round((time - now) / 1000);
+  const abs = Math.abs(seconds);
+  if (abs < 45) return 'Just now';
+  try {
+    const formatter = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+    if (abs < 3600) return formatter.format(Math.round(seconds / 60), 'minute');
+    if (abs < 86400) return formatter.format(Math.round(seconds / 3600), 'hour');
+    if (abs < 30 * 86400) return formatter.format(Math.round(seconds / 86400), 'day');
+    return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(time);
+  } catch {
+    return timestampLabel(value);
   }
 }
 
@@ -95,32 +109,26 @@ export function commandsPageMarkup() {
   </section>`;
 }
 
-function activityFailureMarkup(failure) {
-  if (!failure?.message) return '';
-  const reference = failure.reference
-    ? ` <span class="control-activity-reference">Reference: ${escapeHtml(failure.reference)}</span>`
-    : '';
-  return `<p class="control-activity-failure"><strong>Failure:</strong> ${escapeHtml(failure.message)}${reference}</p>`;
+function activityDetailsMarkup(item, absolute) {
+  const rows = [['Time', absolute]];
+  if (item?.failure?.message) rows.push(['Problem', item.failure.message]);
+  if (item?.failure?.reference) rows.push(['Reference', item.failure.reference]);
+  return `<dl class="control-activity-details">${rows.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('')}</dl>`;
 }
 
-function activityItemMarkup(item, currentActorId) {
+function activityItemMarkup(item, currentActorId, { now, locale } = {}) {
   const timestamp = String(item?.timestamp || '');
-  return `<li class="control-activity-item">
-    <p class="control-activity-summary">${escapeHtml(item?.summary || 'Performed a Control action')}</p>
-    <div class="control-activity-meta">
-      <span><span class="control-activity-meta-label">Actor</span> ${escapeHtml(actorLabel(item?.actor, currentActorId))}</span>
-      <span><span class="control-activity-meta-label">Status</span> <span class="control-activity-status">${activityStatusMarkup(item?.status)}</span></span>
-      <span><span class="control-activity-meta-label">Time</span> <time datetime="${escapeHtml(timestamp)}">${escapeHtml(timestampLabel(timestamp))}</time></span>
-    </div>
-    ${activityFailureMarkup(item?.failure)}
-  </li>`;
+  const absolute = timestampLabel(timestamp);
+  const status = activityStatusMarkup(item?.status);
+  const trigger = `<span class="control-activity-row"><span class="control-activity-summary">${escapeHtml(item?.summary || 'Performed a Control action')}</span><span class="control-activity-meta"><span class="control-activity-actor">${escapeHtml(actorLabel(item?.actor, currentActorId))}</span>${status}<time datetime="${escapeHtml(timestamp)}" title="${escapeHtml(absolute)}">${escapeHtml(relativeTimeLabel(timestamp, { now, locale }))}</time></span></span>`;
+  return `<li class="control-activity-item" data-activity-id="${escapeHtml(item?.id ?? '')}">${disclosure({ id: `activity-${item?.id ?? timestamp}`, trigger, body: activityDetailsMarkup(item, absolute) })}</li>`;
 }
 
 function activityErrorMarkup(error) {
   if (!error) return '';
   return `<div class="control-activity-error" role="alert">
     <p>${escapeHtml(error)}</p>
-    <button type="button" class="control-secondary-button" data-activity-retry>Retry</button>
+    <button type="button" class="control-button control-button-secondary" data-activity-retry>Retry</button>
   </div>`;
 }
 
@@ -136,20 +144,20 @@ export function activityPageMarkup(state = {}) {
   } else if (phase === 'ready' && items.length === 0) {
     body = '<p class="control-activity-empty">No administrative activity yet.</p>';
   } else {
-    body = `<ol class="control-activity-list">${items.map(item => activityItemMarkup(item, state.actorId)).join('')}</ol>`;
+    body = `<ol class="control-activity-list">${items.map(item => activityItemMarkup(item, state.actorId, { now: state.now, locale: state.locale })).join('')}</ol>`;
     if (state.error) body += activityErrorMarkup(state.error);
     if (state.nextCursor) {
       const loadMoreLabel = state.loadingMore
         ? taskIndicatorMarkup({ state: 'running', size: 16, label: 'Loading…' })
         : 'Load more';
-      body += `<div class="control-activity-pagination"><button type="button" class="control-secondary-button" data-activity-load-more${state.loadingMore ? ' disabled aria-disabled="true"' : ''}>${loadMoreLabel}</button></div>`;
+      body += `<div class="control-activity-pagination"><button type="button" class="control-button control-button-secondary" data-activity-load-more${state.loadingMore ? ' disabled aria-disabled="true"' : ''}>${loadMoreLabel}</button></div>`;
     }
   }
 
   return `<section class="control-page-section control-activity-page">
     ${controlSimplePageHeaderMarkup({
     title: 'Activity',
-    description: 'A chronological history of administrative changes in this server.',
+    description: 'Changes made in Control, newest first.',
   })}
     ${body}
   </section>`;

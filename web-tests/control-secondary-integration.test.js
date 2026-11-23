@@ -36,7 +36,7 @@ test('canonical Activity fallback renders controller state instead of placeholde
     },
   });
   assert.match(markup, /Updated reputation thresholds/);
-  assert.match(markup, /Actor<\/span> You<\/span>/);
+  assert.match(markup, /<span class="control-activity-actor">You<\/span>/);
   assert.doesNotMatch(markup, /Administrative history is sourced/);
 });
 

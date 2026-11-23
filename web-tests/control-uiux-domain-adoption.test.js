@@ -56,7 +56,7 @@ test('Community pages hold feature settings and canonical resources in the page 
   assert.match(center, /<option value="1" selected>@Builder<\/option>/);
 });
 
-test('Utilities keep feature settings in center and ticket resources in Context', () => {
+test('Tickets hold the master switch and ticket resources in the page with no context', () => {
   const snapshot = {
     features: [{ name: 'tickets', enabled: true, config: {} }],
     ticket_types: [],
@@ -71,15 +71,19 @@ test('Utilities keep feature settings in center and ticket resources in Context'
       { key: 'ticket_category', id: '20', name: 'Tickets', exists: true, kind: 'category' },
     ],
   };
-  const view = renderFeature(createUtilitiesPageDefinition('/control/utilities/ticket-configuration'), snapshot);
-  assert.match(view.center, /control-feature-header-actions/);
-  assert.doesNotMatch(view.center, /utility-resource-table|Manage mapping/);
-  assert.match(view.context, /Ticket panel/);
-  assert.match(view.context, /Ticket logs/);
-  assert.match(view.context, /Ticket category/);
+  const definition = createUtilitiesPageDefinition('/control/utilities/ticket-configuration');
+  const wrapped = withResourceBindings(definition, featureResourceKeys(definition.pageKey), { genericContext: 'never' });
+  const store = createControlStateStore();
+  store.register(wrapped);
+  store.hydrate(wrapped.pageKey, snapshot, 'a'.repeat(64));
+  const state = store.get(wrapped.pageKey);
+  const center = wrapped.render({ state, snapshot });
+  assert.doesNotMatch(center, /control-feature-header-actions|utility-resource-table|Manage mapping|Edit settings/);
+  assert.equal(wrapped.renderContext({ state, snapshot }), '');
+  for (const label of ['Open tickets from the panel', 'Ticket panel', 'Ticket logs', 'Ticket category']) assert.match(center, new RegExp(label));
 });
 
-test('Analytics keeps its feature toggle in the header and report destination in Context', () => {
+test('Analytics holds its master switch and report channel in the page with no context', () => {
   const snapshot = {
     features: [{ name: 'analytics', enabled: true, config: {} }],
     channels: [{ id: '20', name: 'analytics', type: 0 }],
@@ -87,9 +91,10 @@ test('Analytics keeps its feature toggle in the header and report destination in
     analytics: null,
   };
   const view = renderFeature(createAnalyticsPageDefinition(), snapshot);
-  assert.match(view.center, /control-feature-header-actions/);
-  assert.doesNotMatch(view.center, /Manage mappings/);
-  assert.match(view.context, /Report destination/);
+  assert.doesNotMatch(view.center, /control-feature-header-actions|Edit settings|Manage mappings/);
+  assert.equal(view.context, '');
+  assert.match(view.center, /Post the weekly report/);
+  assert.match(view.center, /id="resource-analytics"/);
   view.store.beginEdit(view.wrapped.pageKey);
   const state = view.store.get(view.wrapped.pageKey);
   const editMarkup = view.wrapped.render({ state, snapshot });

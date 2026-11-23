@@ -4,15 +4,25 @@ import {
   registeredControlPage,
 } from './control-page-registry.js';
 import {
-  contextDefinitionListMarkup,
-  contextSectionMarkup,
-  controlPageHeaderMarkup,
-  controlSectionMarkup,
-  saveBarStatusLabel,
-  saveBarStatusMarkup,
+  disclosure,
+  masterSwitchRow,
+  problemLine,
+  setDisclosureOpen,
+  settingsRows,
+  settingsSection,
+  switchMarkup,
 } from './control-components.js?v=24';
 import { featureResourceKeys } from './control-resource-contract.js';
-import { resourceBindingState, withResourceBindings } from './control-resource-bindings.js?v=2';
+import { withResourceBindings } from './control-resource-bindings.js?v=2';
+import {
+  fieldMarkup,
+  itemHead,
+  itemRow,
+  supportPageFrame,
+  supportResourceSection,
+  textArea,
+  textInput,
+} from './control-support-shared.js?v=1';
 
 const TICKET_PAGE = '/control/utilities/ticket-configuration';
 const NOTIFICATION_PAGE = '/control/utilities/notification-roles';
@@ -55,21 +65,6 @@ function resourceFor(snapshot, key) {
     exists: false,
     kind: null,
   };
-}
-
-function resourceState(row) {
-  if (row?.id && row.exists) return { label: 'Connected', tone: 'good' };
-  if (row?.id) return { label: 'Unavailable / stale', tone: 'bad' };
-  return { label: 'Not connected', tone: 'neutral' };
-}
-
-function styleLabel(style) {
-  return ({
-    primary: 'Primary',
-    secondary: 'Secondary',
-    success: 'Success',
-    danger: 'Danger',
-  })[String(style || '').toLowerCase()] || 'Primary';
 }
 
 function cloneTicketState(value) {
@@ -252,40 +247,6 @@ function anonymousDiff(persisted, draft) {
   }];
 }
 
-function utilityContextMarkup(pageKey, snapshot, editing) {
-  const definitions = {
-    [TICKET_PAGE]: {
-      title: 'Ticket readiness',
-      copy: 'Tickets need a panel channel, a category for new tickets, and a staff log channel.',
-      rows: [['ticket_panel', 'Ticket panel'], ['ticket_category', 'Ticket category'], ['ticket_logs', 'Ticket logs']],
-    },
-    [NOTIFICATION_PAGE]: {
-      title: 'Panel readiness',
-      copy: 'The role panel posts in the canonical channel. Rob-bot needs Manage Roles above every assigned role.',
-      rows: [['role_panel', 'Role panel']],
-    },
-    [ANONYMOUS_PAGE]: {
-      title: 'Intake readiness',
-      copy: 'Anonymous questions need a destination where Rob-bot can post reviewed submissions.',
-      rows: [['anon_questions', 'Anonymous questions']],
-    },
-  }[pageKey];
-  if (!definitions) return '';
-  const states = definitions.rows.map(([key, label]) => {
-    const state = resourceBindingState(snapshot, key);
-    return {
-      label,
-      value: `${state.name || state.current} (${state.label})`,
-    };
-  });
-  return contextSectionMarkup({
-    id: 'readiness',
-    title: definitions.title,
-    description: definitions.copy,
-    body: editing ? '' : contextDefinitionListMarkup(states),
-  });
-}
-
 export function createUtilitiesPageDefinition(pageKey) {
   if (!UTILITY_PAGE_CONFIGS[pageKey]) {
     throw new Error(`Unknown Utilities page: ${pageKey}`);
@@ -294,6 +255,7 @@ export function createUtilitiesPageDefinition(pageKey) {
   if (pageKey === TICKET_PAGE) {
     return {
       pageKey,
+      editOnMount: true,
       selectPersisted(snapshot) {
         return {
           enabled: featureEnabled(snapshot, 'tickets'),
@@ -312,10 +274,11 @@ export function createUtilitiesPageDefinition(pageKey) {
       },
       diffDraft: ticketDiff,
       render({ state, snapshot } = {}) {
-        return ticketPageMarkup({ state, snapshot });
+        return ticketPageMarkup(state, snapshot || {});
       },
-      renderContext({ state, snapshot } = {}) {
-        return utilityContextMarkup(pageKey, snapshot || {}, state?.mode === 'edit');
+      // Context content now lives in the page as rows, problems and the Channels section.
+      renderContext() {
+        return '';
       },
       install(context = {}) {
         return installUtilitiesPageInteractions({ ...context, pageKey });
@@ -326,6 +289,7 @@ export function createUtilitiesPageDefinition(pageKey) {
   if (pageKey === NOTIFICATION_PAGE) {
     return {
       pageKey,
+      editOnMount: true,
       selectPersisted(snapshot) {
         const panel = snapshot?.notification_panel;
         return {
@@ -343,10 +307,11 @@ export function createUtilitiesPageDefinition(pageKey) {
       validateDraft: notificationErrors,
       diffDraft: notificationDiff,
       render({ state, snapshot } = {}) {
-        return notificationPageMarkup({ state, snapshot });
+        return notificationPageMarkup(state, snapshot || {});
       },
-      renderContext({ state, snapshot } = {}) {
-        return utilityContextMarkup(pageKey, snapshot || {}, state?.mode === 'edit');
+      // Context content now lives in the page as rows, problems and the Channels section.
+      renderContext() {
+        return '';
       },
       install(context = {}) {
         return installUtilitiesPageInteractions({ ...context, pageKey });
@@ -356,6 +321,7 @@ export function createUtilitiesPageDefinition(pageKey) {
 
   return {
     pageKey,
+    editOnMount: true,
     selectPersisted(snapshot) {
       return { enabled: featureEnabled(snapshot, 'anonymous_questions') };
     },
@@ -367,10 +333,11 @@ export function createUtilitiesPageDefinition(pageKey) {
     },
     diffDraft: anonymousDiff,
     render({ state, snapshot } = {}) {
-      return anonymousPageMarkup({ state, snapshot });
+      return anonymousPageMarkup(state, snapshot || {});
     },
-    renderContext({ state, snapshot } = {}) {
-      return utilityContextMarkup(pageKey, snapshot || {}, state?.mode === 'edit');
+    // Context content now lives in the page as rows, problems and the Channels section.
+    renderContext() {
+      return '';
     },
     install(context = {}) {
       return installUtilitiesPageInteractions({ ...context, pageKey });
@@ -381,150 +348,9 @@ export function createUtilitiesPageDefinition(pageKey) {
 export function registerUtilitiesPages() {
   for (const pageKey of Object.keys(UTILITY_PAGE_CONFIGS)) {
     if (!registeredControlPage(pageKey)) {
-      registerControlPage(withResourceBindings(createUtilitiesPageDefinition(pageKey), featureResourceKeys(pageKey)));
+      registerControlPage(withResourceBindings(createUtilitiesPageDefinition(pageKey), featureResourceKeys(pageKey), { genericContext: 'never' }));
     }
   }
-}
-
-function pageFeedback(state) {
-  if (state?.saveError) {
-    return `<p class="utility-message" role="alert">${escapeHtml(state.saveError)}</p>`;
-  }
-  if (state?.status === 'conflict') {
-    return '<p class="utility-message" role="alert">Server state changed while you were editing. Review your draft before retrying.</p>';
-  }
-  if (state?.retryChanges?.length) {
-    return '<p class="utility-message" role="alert">A Discord-side update did not finish. Your draft is preserved so you can retry it.</p>';
-  }
-  if (state?.status === 'saved') {
-    return '<p class="utility-message" role="status">Changes saved.</p>';
-  }
-  return '';
-}
-
-function pageHeader(title, description, state, feature = null, { showFeatureToggle = true } = {}) {
-  const editing = state?.mode === 'edit';
-  return `${controlPageHeaderMarkup({
-    title,
-    description,
-    enabled: feature ? feature.enabled : null,
-    editing,
-    editable: true,
-    editAttribute: 'data-utility-edit',
-    toggleAttribute: feature?.toggleAttribute || '',
-    showFeatureToggle,
-  })}${pageFeedback(state)}`;
-}
-
-function saveActions(state) {
-  const errors = Object.keys(state?.errors || {}).length;
-  const canSave = Boolean(state?.dirty && !errors && state?.status !== 'saving' && state?.revision);
-  return `
-    <div class="utility-save-bar control-save-bar">
-      ${saveBarStatusMarkup(state)}
-      <div>
-        <button class="control-button control-button-primary" type="button" data-utility-save${canSave ? '' : ' disabled'}>${state?.status === 'saving' ? 'Saving…' : 'Save changes'}</button>
-        <button class="control-button control-button-secondary" type="button" data-utility-discard${state?.status === 'saving' ? ' disabled' : ''}>Discard</button>
-      </div>
-    </div>`;
-}
-
-function toggleMarkup({ id, checked, label, help }) {
-  return `
-    <label class="utility-toggle" for="${escapeHtml(id)}">
-      <span><strong>${escapeHtml(label)}</strong><small>${escapeHtml(help)}</small></span>
-      <input id="${escapeHtml(id)}" type="checkbox"${checked ? ' checked' : ''}>
-    </label>`;
-}
-
-function ticketReadRows(types) {
-  if (!types.length) return '<p class="utility-empty">No ticket types are configured.</p>';
-  return `
-    <div class="control-summary-table-wrap">
-      <table class="control-summary-table utility-ticket-table">
-        <thead><tr><th>Ticket type</th><th>Key</th><th>Description</th><th>Status</th></tr></thead>
-        <tbody>${types.map(item => `
-          <tr><th scope="row">${escapeHtml(item.label)}</th><td data-label="Key"><code>${escapeHtml(item.key)}</code></td><td data-label="Description">${escapeHtml(item.description)}</td><td class="control-status-text" data-label="Status" data-tone="${item.enabled ? 'good' : 'neutral'}">${item.enabled ? 'Active' : 'Disabled'}</td></tr>`).join('')}</tbody>
-      </table>
-    </div>`;
-}
-
-function ticketError(state, index, field) {
-  return state?.errors?.[`ticket_types.${index}.${field}`] || '';
-}
-
-function ticketEditRows(state) {
-  const rows = state?.draft?.ticket_types || [];
-  if (!rows.length) {
-    return '<p class="utility-empty">No ticket types yet. Add one to configure ticket intake.</p>';
-  }
-
-  return rows.map((item, index) => {
-    const disabledCopy = !item.enabled && !item.isNew;
-    const keyError = ticketError(state, index, 'key');
-    const labelError = ticketError(state, index, 'label');
-    const descriptionError = ticketError(state, index, 'description');
-    const enabledError = ticketError(state, index, 'enabled');
-    return `
-      <fieldset class="utility-editor-row" data-ticket-row="${index}">
-        <legend>Ticket type ${index + 1}</legend>
-        <div class="control-field-grid">
-          <label>
-            <span>Key</span>
-            <input type="text" maxlength="32" value="${escapeHtml(item.key)}" data-ticket-field="key"${item.isNew ? '' : ' readonly'} aria-invalid="${Boolean(keyError)}">
-            ${keyError ? `<small class="utility-field-error" role="alert">${escapeHtml(keyError)}</small>` : ''}
-          </label>
-          <label>
-            <span>Label</span>
-            <input type="text" maxlength="80" value="${escapeHtml(item.label)}" data-ticket-field="label"${disabledCopy ? ' disabled' : ''} aria-invalid="${Boolean(labelError)}">
-            ${labelError ? `<small class="utility-field-error" role="alert">${escapeHtml(labelError)}</small>` : ''}
-          </label>
-          <label class="utility-wide">
-            <span>Description</span>
-            <input type="text" maxlength="200" value="${escapeHtml(item.description)}" data-ticket-field="description"${disabledCopy ? ' disabled' : ''} aria-invalid="${Boolean(descriptionError)}">
-            ${descriptionError ? `<small class="utility-field-error" role="alert">${escapeHtml(descriptionError)}</small>` : ''}
-          </label>
-        </div>
-        <div class="utility-row-footer">
-          <label class="utility-inline-check">
-            <input type="checkbox" data-ticket-field="enabled"${item.enabled ? ' checked' : ''}>
-            Active
-          </label>
-          ${item.isNew ? '<button class="control-button control-button-secondary" type="button" data-ticket-remove>Remove</button>' : ''}
-        </div>
-        ${enabledError ? `<p class="utility-field-error" role="alert">${escapeHtml(enabledError)}</p>` : ''}
-      </fieldset>`;
-  }).join('');
-}
-
-function ticketPageMarkup({ state, snapshot } = {}) {
-  if (!state?.persisted) return '<section class="control-page utility-page"><h1>Tickets</h1><p>Load current server state to manage tickets.</p></section>';
-  const editing = state.mode === 'edit';
-  const enabled = editing ? state.draft.enabled : state.persisted.enabled;
-  const ticketTypes = editing ? state.draft.ticket_types : state.persisted.ticket_types;
-  return `
-    <section class="control-page utility-page" data-page-key="${TICKET_PAGE}">
-      ${pageHeader('Tickets', 'Manage ticket intake and ticket types.', state, { label: 'Tickets', enabled, toggleAttribute: 'data-utility-feature="tickets"' })}
-      ${controlSectionMarkup({
-    id: 'ticket-intake-heading',
-    title: 'Ticket intake',
-    description: enabled
-      ? 'Intake is active. Members open one ticket at a time from the ticket panel.'
-      : 'Intake is paused. The ticket panel stays posted, but new tickets cannot be opened.',
-    body: `<dl class="control-definition-list">
-      <div><dt>Capacity</dt><dd>One active open or claimed ticket per member.</dd></div>
-      <div><dt>Types</dt><dd>${ticketTypes.filter(item => item.enabled).length} active of ${ticketTypes.length} configured.</dd></div>
-      <div><dt>Handling</dt><dd>Staff claim, close, and reopen tickets. The Ticket handling playbook covers the full flow.</dd></div>
-    </dl>`,
-  })}
-      ${controlSectionMarkup({
-    id: 'ticket-types-heading',
-    title: 'Ticket types',
-    description: 'Create, edit, disable, or re-enable the choices shown to members. Disabled ticket types stay visible.',
-    body: `${editing ? ticketEditRows(state) : ticketReadRows(state.persisted.ticket_types)}${editing ? '<div class="control-list-add"><button class="control-button control-button-secondary" type="button" data-ticket-add>Add ticket type</button></div>' : ''}`,
-  })}
-      ${editing ? saveActions(state) : ''}
-    </section>`;
 }
 
 function manageableRoles(snapshot) {
@@ -592,16 +418,6 @@ function emojiSummaryMarkup(snapshot, value) {
   return `<span class="utility-emoji-placeholder" aria-hidden="true">?</span><span>${escapeHtml(selected)}</span>`;
 }
 
-function emojiLabel(snapshot, value) {
-  const selected = String(value || '').trim();
-  if (!selected) return 'None';
-  const emoji = serverEmojiForValue(snapshot, selected);
-  if (emoji) return emoji.name;
-  const parsed = parseCustomEmoji(selected);
-  if (parsed) return `:${parsed.name}:`;
-  return selected;
-}
-
 function emojiPickerMarkup(snapshot, selected, index, error) {
   const selectedValue = String(selected || '');
   const emojis = availableServerEmojis(snapshot);
@@ -609,7 +425,7 @@ function emojiPickerMarkup(snapshot, selected, index, error) {
   const stale = selectedValue && !hasSelected;
   return `
     <div class="utility-emoji-field" data-notification-emoji-picker>
-      <span class="utility-field-label">Emoji</span>
+      <span class="control-field-label" id="notification-emoji-label-${index}">Emoji</span>
       <details class="utility-emoji-combobox">
         <summary aria-label="Choose emoji for button ${index + 1}">
           <span class="utility-emoji-current">${emojiSummaryMarkup(snapshot, selectedValue)}</span>
@@ -639,7 +455,7 @@ function emojiPickerMarkup(snapshot, selected, index, error) {
         </div>
       </details>
       <input type="hidden" value="${escapeHtml(selectedValue)}" data-notification-field="emoji">
-      ${error ? `<small class="utility-field-error" role="alert">${escapeHtml(error)}</small>` : ''}
+      ${error ? problemLine(error) : ''}
     </div>`;
 }
 
@@ -692,160 +508,6 @@ function notificationPreviewBodyMarkup(panel, snapshot) {
     </div>`;
 }
 
-function notificationPreviewMarkup(panel, snapshot) {
-  return `
-    <aside class="utility-notification-preview" aria-labelledby="notification-preview-heading">
-      <div class="utility-notification-preview-heading">
-        <h3 id="notification-preview-heading">Preview</h3>
-        <p>Approximate Discord appearance. Preview buttons are disabled.</p>
-      </div>
-      <div class="utility-discord-preview" data-notification-preview-body>
-        ${notificationPreviewBodyMarkup(panel, snapshot)}
-      </div>
-    </aside>`;
-}
-
-function notificationRead(state, snapshot) {
-  const panel = state.persisted;
-  if (!panel.title && !panel.description && !panel.buttons.length) {
-    return '<p class="utility-empty">No notification role panel is configured.</p>';
-  }
-  const roles = new Map((snapshot?.roles || []).map(role => [String(role.id), role]));
-  const buttons = panel.buttons.map(item => {
-    const role = roles.get(String(item.role_id));
-    return `<article class="utility-notification-button-summary"><strong>${escapeHtml(item.label)}</strong><dl><div><dt>Role</dt><dd>${escapeHtml(role?.name || `Role ${item.role_id}`)}</dd></div><div><dt>Emoji</dt><dd>${escapeHtml(emojiLabel(snapshot, item.emoji))}</dd></div><div><dt>Style</dt><dd>${escapeHtml(styleLabel(item.style))}</dd></div></dl></article>`;
-  }).join('');
-  return `
-    ${notificationPreviewMarkup(panel, snapshot)}
-    <dl class="control-definition-list">
-      <div><dt>Title</dt><dd>${escapeHtml(panel.title || 'Not configured')}</dd></div>
-      <div><dt>Description</dt><dd>${escapeHtml(panel.description || 'Not configured')}</dd></div>
-    </dl>
-    ${panel.buttons.length ? `<div class="utility-subheading"><h3>Buttons</h3><p>${panel.buttons.length} configured self-role button${panel.buttons.length === 1 ? '' : 's'}.</p></div><div class="utility-notification-button-list">${buttons}</div>` : ''}`;
-}
-
-function notificationButtonRows(state, snapshot) {
-  const rows = state?.draft?.buttons || [];
-  if (!rows.length) return '<p class="utility-empty">Add at least one button.</p>';
-
-  return rows.map((item, index) => {
-    const roleError = state?.errors?.[`buttons.${index}.role_id`] || '';
-    const labelError = state?.errors?.[`buttons.${index}.label`] || '';
-    const emojiError = state?.errors?.[`buttons.${index}.emoji`] || '';
-    const styleError = state?.errors?.[`buttons.${index}.style`] || '';
-    return `
-      <fieldset class="utility-editor-row" data-notification-row="${index}">
-        <legend>Button ${index + 1}</legend>
-        <div class="control-field-grid">
-          <label>
-            <span>Role</span>
-            <select data-notification-field="role_id" aria-invalid="${Boolean(roleError)}">
-              ${roleOptions(snapshot, item.role_id)}
-            </select>
-            ${roleError ? `<small class="utility-field-error" role="alert">${escapeHtml(roleError)}</small>` : ''}
-          </label>
-          <label>
-            <span>Label</span>
-            <input type="text" maxlength="80" value="${escapeHtml(item.label)}" data-notification-field="label" aria-invalid="${Boolean(labelError)}">
-            ${labelError ? `<small class="utility-field-error" role="alert">${escapeHtml(labelError)}</small>` : ''}
-          </label>
-          ${emojiPickerMarkup(snapshot, item.emoji, index, emojiError)}
-          <label>
-            <span>Style</span>
-            <select data-notification-field="style" aria-invalid="${Boolean(styleError)}">
-              ${['primary', 'secondary', 'success', 'danger'].map(style => `<option value="${style}"${item.style === style ? ' selected' : ''}>${style[0].toUpperCase()}${style.slice(1)}</option>`).join('')}
-            </select>
-            ${styleError ? `<small class="utility-field-error" role="alert">${escapeHtml(styleError)}</small>` : ''}
-          </label>
-        </div>
-        <div class="utility-row-footer">
-          <button class="control-button control-button-secondary" type="button" data-notification-remove>Remove button</button>
-        </div>
-      </fieldset>`;
-  }).join('');
-}
-
-function notificationPageMarkup({ state, snapshot } = {}) {
-  if (!state?.persisted) {
-    return '<section class="control-page utility-page"><h1>Notification roles</h1><p>Load current server state to manage notification roles.</p></section>';
-  }
-  const editing = state.mode === 'edit';
-  const buttonError = state?.errors?.buttons || '';
-  return `
-    <section class="control-page utility-page utility-notification-page" data-page-key="${NOTIFICATION_PAGE}">
-      ${pageHeader('Notification roles', 'Manage the self-assignable role panel.', state, null, { showFeatureToggle: false })}
-      <section class="utility-section" aria-labelledby="notification-panel-heading">
-        <div class="utility-section-heading">
-          <div><h2 id="notification-panel-heading">Panel</h2><p>The panel posts in the canonical role panel channel. Buttons assign the roles shown here.</p></div>
-        </div>
-        ${editing ? `
-          <div class="utility-notification-layout">
-            <div class="utility-notification-editor">
-              <div class="utility-form-stack">
-                <label>
-                  <span>Title</span>
-                  <input type="text" maxlength="256" value="${escapeHtml(state.draft.title)}" data-notification-panel-field="title" aria-invalid="${Boolean(state.errors?.title)}">
-                  ${state.errors?.title ? `<small class="utility-field-error" role="alert">${escapeHtml(state.errors.title)}</small>` : ''}
-                </label>
-                <label>
-                  <span>Description</span>
-                  <textarea maxlength="2000" rows="4" data-notification-panel-field="description" aria-invalid="${Boolean(state.errors?.description)}">${escapeHtml(state.draft.description)}</textarea>
-                  ${state.errors?.description ? `<small class="utility-field-error" role="alert">${escapeHtml(state.errors.description)}</small>` : ''}
-                </label>
-              </div>
-              <div class="utility-section-heading utility-subheading">
-                <div><h3>Buttons</h3><p>Choose the role, label, emoji, and visual style for each button.</p></div>
-              </div>
-              ${buttonError ? `<p class="utility-field-error" role="alert">${escapeHtml(buttonError)}</p>` : ''}
-              ${notificationButtonRows(state, snapshot)}
-              <div class="control-list-add"><button class="control-button control-button-secondary" type="button" data-notification-add${state.draft.buttons.length >= 25 ? ' disabled' : ''}>Add button</button></div>
-            </div>
-            ${notificationPreviewMarkup(state.draft, snapshot)}
-          </div>
-        ` : notificationRead(state, snapshot)}
-      </section>
-      ${editing ? saveActions(state) : ''}
-    </section>`;
-}
-
-function anonymousPageMarkup({ state, snapshot } = {}) {
-  if (!state?.persisted) return '<section class="control-page utility-page"><h1>Anonymous Questions</h1><p>Load current server state to manage anonymous questions.</p></section>';
-  const editing = state.mode === 'edit';
-  const enabled = editing ? state.draft.enabled : state.persisted.enabled;
-  return `
-    <section class="control-page utility-page" data-page-key="${ANONYMOUS_PAGE}">
-      ${pageHeader('Anonymous Questions', 'Manage anonymous question intake without exposing submitter identity.', state, { label: 'Anonymous Questions', enabled, toggleAttribute: 'data-utility-feature="anonymous_questions"' })}
-      ${controlSectionMarkup({
-    id: 'anonymous-intake-heading',
-    title: 'Intake behavior',
-    description: enabled
-      ? 'Anonymous Questions is active. Members can submit a question without signing their name.'
-      : 'Anonymous Questions is paused. The intake flow is closed until the feature is enabled.',
-    body: `<dl class="control-definition-list">
-      <div><dt>Identity</dt><dd>Submitter identity stays outside Control. Staff see only the question and the posting channel.</dd></div>
-      <div><dt>Review</dt><dd>Staff review each submission before it is posted. Rejected questions are not published.</dd></div>
-      <div><dt>Destination</dt><dd>Accepted questions post in the Anonymous Questions channel.</dd></div>
-    </dl>`,
-  })}
-      ${editing ? saveActions(state) : ''}
-    </section>`;
-}
-
-function updateActionBar(root, store, pageKey) {
-  const state = store.get(pageKey);
-  const save = root.querySelector?.('[data-utility-save]');
-  if (save) {
-    save.disabled = !store.canSave(pageKey);
-  }
-  const status = root.querySelector?.('[data-save-bar-status-text]');
-  const container = status?.closest?.('[data-save-bar-status]');
-  if (status && container?.dataset.tone !== 'bad') {
-    const label = saveBarStatusLabel(state);
-    status.dataset.defaultLabel = label;
-    status.textContent = label;
-  }
-}
-
 function updateTicketDraftFromField(store, pageKey, field) {
   const row = field.closest?.('[data-ticket-row]');
   const index = Number(row?.dataset?.ticketRow);
@@ -880,18 +542,6 @@ function updateNotificationDraftFromField(store, pageKey, field) {
   return true;
 }
 
-function updateNotificationEmojiFromOption(store, pageKey, option) {
-  const row = option.closest?.('[data-notification-row]');
-  const index = Number(row?.dataset?.notificationRow);
-  if (!Number.isInteger(index)) return false;
-  store.updateDraft(pageKey, draft => {
-    if (draft.buttons[index]) {
-      draft.buttons[index].emoji = String(option.dataset?.notificationEmojiOption || '');
-    }
-  });
-  return true;
-}
-
 function filterNotificationEmojiOptions(field) {
   const picker = field.closest?.('[data-notification-emoji-picker]');
   const query = String(field.value || '').trim().toLowerCase();
@@ -904,138 +554,231 @@ function filterNotificationEmojiOptions(field) {
   }
 }
 
-function refreshNotificationPreview(root, draft, snapshot) {
-  const preview = root.querySelector?.('[data-notification-preview-body]');
-  if (preview) preview.innerHTML = notificationPreviewBodyMarkup(draft, snapshot);
+
+function utilityFrame(pageKey, state, { lede = '', enabled = null, body, className = '' }) {
+  return supportPageFrame({
+    pageKey,
+    className: `utility-page${className ? ` ${className}` : ''}`,
+    title: UTILITY_PAGE_CONFIGS[pageKey].title,
+    lede,
+    enabled,
+    body,
+    state,
+    save: 'data-utility-save',
+    discard: 'data-utility-discard',
+  });
+}
+
+function masterRows({ title, label, offHint, enabled }) {
+  return settingsRows(masterSwitchRow({
+    label,
+    offHint,
+    checked: enabled,
+    field: 'enabled',
+    attribute: 'data-utility-feature',
+  }), { label: `${title} settings` });
+}
+
+function ticketTypeRow(item, index, state) {
+  const error = field => state?.errors?.[`ticket_types.${index}.${field}`] || '';
+  const errors = { key: error('key'), label: error('label'), description: error('description'), enabled: error('enabled') };
+  const disabledCopy = !item.enabled && !item.isNew;
+  const attrs = field => `data-ticket-field="${field}"`;
+  const id = `ticket-type-${index}`;
+  const body = `${fieldMarkup({ id: `${id}-key`, label: 'Key', problem: errors.key, control: textInput({ id: `${id}-key`, value: item.key, maxlength: 32, attributes: attrs('key'), readonly: !item.isNew, invalid: Boolean(errors.key) }) })}
+    ${fieldMarkup({ id: `${id}-label`, label: 'Label', problem: errors.label, control: textInput({ id: `${id}-label`, value: item.label, maxlength: 80, attributes: attrs('label'), disabled: disabledCopy, invalid: Boolean(errors.label) }) })}
+    ${fieldMarkup({ id: `${id}-description`, label: 'Description', problem: errors.description, control: textInput({ id: `${id}-description`, value: item.description, maxlength: 200, attributes: attrs('description'), disabled: disabledCopy, invalid: Boolean(errors.description) }) })}
+    ${errors.enabled ? problemLine(errors.enabled) : ''}
+    ${item.isNew ? '<div class="control-item-actions"><button class="control-button control-button-secondary" type="button" data-ticket-remove>Remove ticket type</button></div>' : ''}`;
+  return itemRow({
+    id,
+    rowKey: item.isNew ? `ticket:new-${index}` : `ticket:${item.key}`,
+    head: itemHead(item.label || 'New ticket type', item.key, { mono: true }),
+    aside: switchMarkup({ id: `${id}-enabled`, checked: item.enabled, label: `${item.label || 'New ticket type'} enabled`, attributes: attrs('enabled') }),
+    body,
+    error: Object.values(errors).some(Boolean),
+    dataAttributes: `data-ticket-row="${index}"`,
+  });
+}
+
+function ticketPageMarkup(state, snapshot) {
+  const value = state.draft ?? state.persisted;
+  const list = value.ticket_types.length
+    ? `<div class="control-question-list">${value.ticket_types.map((item, index) => ticketTypeRow(item, index, state)).join('')}</div>`
+    : '<p class="control-empty-line">No ticket types yet. Add one to start taking tickets.</p>';
+  return utilityFrame(TICKET_PAGE, state, {
+    enabled: value.enabled,
+    body: `${masterRows({ title: 'Tickets', label: 'Open tickets from the panel', offHint: "Members can't open tickets from the panel.", enabled: value.enabled })}
+      ${settingsSection({ id: 'ticket-types-heading', title: 'Ticket types', body: `${list}<div class="control-list-add"><button class="control-button control-button-secondary" type="button" data-ticket-add>Add ticket type</button></div>` })}
+      ${supportResourceSection(TICKET_PAGE, state, snapshot, 'Channels and category')}`,
+  });
+}
+
+function notificationPreviewMarkup(panel, snapshot) {
+  return `<aside class="control-preview" aria-labelledby="notification-preview-heading">
+    <h2 id="notification-preview-heading">Preview</h2>
+    <div class="utility-discord-preview" data-notification-preview-body>${notificationPreviewBodyMarkup(panel, snapshot)}</div>
+  </aside>`;
+}
+
+function notificationButtonRow(item, index, state, snapshot) {
+  const error = field => state?.errors?.[`buttons.${index}.${field}`] || '';
+  const errors = { role_id: error('role_id'), label: error('label'), emoji: error('emoji'), style: error('style') };
+  const id = `notification-button-${index}`;
+  const roleName = (snapshot?.roles || []).find(role => String(role.id) === String(item.role_id))?.name || '';
+  const roleControl = `<select id="${id}-role" data-notification-field="role_id"${errors.role_id ? ' aria-invalid="true"' : ''}>${roleOptions(snapshot, item.role_id)}</select>`;
+  const styleControl = `<select id="${id}-style" data-notification-field="style"${errors.style ? ' aria-invalid="true"' : ''}>${['primary', 'secondary', 'success', 'danger'].map(style => `<option value="${style}"${item.style === style ? ' selected' : ''}>${style[0].toUpperCase()}${style.slice(1)}</option>`).join('')}</select>`;
+  const body = `${fieldMarkup({ id: `${id}-role`, label: 'Role', problem: errors.role_id, control: roleControl })}
+    ${fieldMarkup({ id: `${id}-label`, label: 'Label', problem: errors.label, control: textInput({ id: `${id}-label`, value: item.label, maxlength: 80, attributes: 'data-notification-field="label"', invalid: Boolean(errors.label) }) })}
+    ${emojiPickerMarkup(snapshot, item.emoji, index, errors.emoji)}
+    ${fieldMarkup({ id: `${id}-style`, label: 'Style', problem: errors.style, control: styleControl })}
+    <div class="control-item-actions"><button class="control-button control-button-secondary" type="button" data-notification-remove>Remove button</button></div>`;
+  return itemRow({
+    id,
+    rowKey: `button:${index}`,
+    head: itemHead(item.label || 'New button', roleName),
+    body,
+    error: Object.values(errors).some(Boolean),
+    dataAttributes: `data-notification-row="${index}"`,
+  });
+}
+
+function notificationPageMarkup(state, snapshot) {
+  const value = state.draft ?? state.persisted;
+  const buttonError = state.errors?.buttons || '';
+  const list = value.buttons.length
+    ? `<div class="control-question-list">${value.buttons.map((item, index) => notificationButtonRow(item, index, state, snapshot)).join('')}</div>`
+    : '<p class="control-empty-line">No buttons yet. Add one to build the panel.</p>';
+  const panel = `<div class="control-fields">
+      ${fieldMarkup({ id: 'notification-title', label: 'Panel title', problem: state.errors?.title, control: textInput({ id: 'notification-title', value: value.title, maxlength: 256, attributes: 'data-notification-panel-field="title"', invalid: Boolean(state.errors?.title) }) })}
+      ${fieldMarkup({ id: 'notification-description', label: 'Panel description', problem: state.errors?.description, control: textArea({ id: 'notification-description', value: value.description, maxlength: 2000, rows: 4, attributes: 'data-notification-panel-field="description"', invalid: Boolean(state.errors?.description) }) })}
+    </div>`;
+  const buttons = settingsSection({
+    id: 'notification-buttons-heading',
+    title: 'Buttons',
+    body: `${list}${buttonError ? `<div class="control-rows-note">${problemLine(buttonError)}</div>` : ''}<div class="control-list-add"><button class="control-button control-button-secondary" type="button" data-notification-add${value.buttons.length >= 25 ? ' disabled' : ''}>Add button</button></div>`,
+  });
+  return utilityFrame(NOTIFICATION_PAGE, state, {
+    className: 'utility-notification-page',
+    body: `<div class="control-composer-layout">
+      <div class="control-composer-main">${panel}${buttons}${supportResourceSection(NOTIFICATION_PAGE, state, snapshot, 'Channels')}</div>
+      ${notificationPreviewMarkup(value, snapshot)}
+    </div>`,
+  });
+}
+
+function anonymousPageMarkup(state, snapshot) {
+  const value = state.draft ?? state.persisted;
+  return utilityFrame(ANONYMOUS_PAGE, state, {
+    lede: 'Members submit questions without their name, and staff review each one before it is posted.',
+    enabled: value.enabled,
+    body: `${masterRows({ title: 'Anonymous Questions', label: 'Accept anonymous questions', offHint: "Members can't submit anonymous questions.", enabled: value.enabled })}
+      ${supportResourceSection(ANONYMOUS_PAGE, state, snapshot, 'Channels')}`,
+  });
+}
+
+function updateNotificationEmojiFromOption(store, pageKey, option) {
+  const row = option.closest?.('[data-notification-row]');
+  const index = Number(row?.dataset?.notificationRow);
+  if (!Number.isInteger(index)) return false;
+  store.updateDraft(pageKey, draft => {
+    if (draft.buttons[index]) draft.buttons[index].emoji = String(option.dataset?.notificationEmojiOption || '');
+  });
+  return true;
 }
 
 export function installUtilitiesPageInteractions({
   root,
   pageKey,
   store = controlState,
-  snapshot = {},
   onSave,
   rerender = () => {},
 } = {}) {
   if (!root?.addEventListener) return () => {};
 
   const onClick = event => {
-    if (event.target?.closest?.('[data-utility-edit]')) {
-      store.beginEdit(pageKey);
-      rerender();
-      return;
-    }
-
     if (event.target?.closest?.('[data-utility-save]')) {
       if (store.canSave(pageKey)) onSave?.(pageKey, store.buildSaveRequest(pageKey));
       return;
     }
-
     if (event.target?.closest?.('[data-utility-discard]')) {
       store.discard(pageKey);
-      store.get(pageKey).mode = 'read';
       rerender();
       return;
     }
 
     if (pageKey === TICKET_PAGE && event.target?.closest?.('[data-ticket-add]')) {
+      let added = 0;
       store.updateDraft(pageKey, draft => {
-        draft.ticket_types.push({
-          key: '',
-          label: '',
-          description: '',
-          enabled: true,
-          isNew: true,
-        });
+        added = draft.ticket_types.push({ key: '', label: '', description: '', enabled: true, isNew: true }) - 1;
       });
+      setDisclosureOpen(`ticket-type-${added}`, true);
       rerender();
       return;
     }
-
     const ticketRemove = event.target?.closest?.('[data-ticket-remove]');
     if (pageKey === TICKET_PAGE && ticketRemove) {
-      const row = ticketRemove.closest?.('[data-ticket-row]');
-      const index = Number(row?.dataset?.ticketRow);
+      const index = Number(ticketRemove.closest?.('[data-ticket-row]')?.dataset?.ticketRow);
       store.updateDraft(pageKey, draft => {
-        if (Number.isInteger(index) && draft.ticket_types[index]?.isNew) {
-          draft.ticket_types.splice(index, 1);
-        }
+        if (Number.isInteger(index) && draft.ticket_types[index]?.isNew) draft.ticket_types.splice(index, 1);
       });
       rerender();
       return;
     }
 
     if (pageKey === NOTIFICATION_PAGE && event.target?.closest?.('[data-notification-add]')) {
+      let added = 0;
       store.updateDraft(pageKey, draft => {
-        if (draft.buttons.length < 25) {
-          draft.buttons.push({ role_id: '', label: '', emoji: '', style: 'primary' });
-        }
+        if (draft.buttons.length < 25) added = draft.buttons.push({ role_id: '', label: '', emoji: '', style: 'primary' }) - 1;
       });
+      setDisclosureOpen(`notification-button-${added}`, true);
       rerender();
       return;
     }
-
     const notificationRemove = event.target?.closest?.('[data-notification-remove]');
     if (pageKey === NOTIFICATION_PAGE && notificationRemove) {
-      const row = notificationRemove.closest?.('[data-notification-row]');
-      const index = Number(row?.dataset?.notificationRow);
+      const index = Number(notificationRemove.closest?.('[data-notification-row]')?.dataset?.notificationRow);
       store.updateDraft(pageKey, draft => {
         if (Number.isInteger(index) && draft.buttons[index]) draft.buttons.splice(index, 1);
       });
       rerender();
       return;
     }
-
     const emojiOption = event.target?.closest?.('[data-notification-emoji-option]');
     if (pageKey === NOTIFICATION_PAGE && emojiOption && !emojiOption.disabled) {
       if (updateNotificationEmojiFromOption(store, pageKey, emojiOption)) rerender();
     }
   };
 
+  // Typed text reaches the draft on every keystroke; the app re-render keeps focus by element id.
   const onInput = event => {
     const field = event.target;
-    if (
-      pageKey === NOTIFICATION_PAGE
-      && field?.dataset?.notificationEmojiSearch !== undefined
-    ) {
+    if (pageKey === NOTIFICATION_PAGE && field?.dataset?.notificationEmojiSearch !== undefined) {
       filterNotificationEmojiOptions(field);
       return;
     }
-
-    let changed = false;
     if (pageKey === TICKET_PAGE && field?.dataset?.ticketField && field.type !== 'checkbox') {
-      changed = updateTicketDraftFromField(store, pageKey, field);
+      if (updateTicketDraftFromField(store, pageKey, field)) rerender();
     } else if (
       pageKey === NOTIFICATION_PAGE
       && (field?.dataset?.notificationPanelField || field?.dataset?.notificationField)
       && field.tagName !== 'SELECT'
       && field.type !== 'hidden'
     ) {
-      changed = updateNotificationDraftFromField(store, pageKey, field);
-    }
-    if (changed) {
-      updateActionBar(root, store, pageKey);
-      if (pageKey === NOTIFICATION_PAGE) {
-        refreshNotificationPreview(root, store.get(pageKey).draft, snapshot);
-      }
+      if (updateNotificationDraftFromField(store, pageKey, field)) rerender();
     }
   };
 
   const onChange = event => {
-    const feature = event.target?.dataset?.utilityFeature;
-    if (feature) {
-      store.updateDraft(pageKey, draft => {
-        draft.enabled = Boolean(event.target.checked);
-      });
+    if (event.target?.dataset?.utilityFeature !== undefined) {
+      store.updateDraft(pageKey, draft => { draft.enabled = Boolean(event.target.checked); });
       rerender();
       return;
     }
-
     if (pageKey === TICKET_PAGE && event.target?.dataset?.ticketField) {
       if (updateTicketDraftFromField(store, pageKey, event.target)) rerender();
       return;
     }
-
     if (
       pageKey === NOTIFICATION_PAGE
       && (event.target?.dataset?.notificationPanelField || event.target?.dataset?.notificationField)

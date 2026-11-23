@@ -26,10 +26,10 @@ test('Control module graph cache-busts the save bar change', () => {
   const community = readFileSync(new URL('../docs-site/control-community.js', import.meta.url), 'utf8');
   assert.match(controlHtml, /src=["']\/control-app\.js\?v=32["']/);
   assert.match(app, /control-components\.js\?v=24/);
-  assert.match(app, /control-analytics\.js\?v=23/);
-  assert.match(app, /control-mappings\.js\?v=22/);
-  assert.match(app, /control-utilities\.js\?v=23/);
-  assert.match(app, /control-workflows\.js\?v=22/);
+  assert.match(app, /control-analytics\.js\?v=25/);
+  assert.match(app, /control-mappings\.js\?v=23/);
+  assert.match(app, /control-utilities\.js\?v=24/);
+  assert.match(app, /control-workflows\.js\?v=23/);
   assert.match(community, /control-components\.js\?v=24/);
 });
 

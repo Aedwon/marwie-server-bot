@@ -49,6 +49,7 @@ test('Quizzes category and option fields inherit the shared 3px keyboard outline
     '.control-nav-row[aria-current="page"]',
     '.control-palette input:focus-visible',
     '.analytics-point-group:focus-visible',
+    '.analytics-hit:focus-visible',
     // Number-with-unit draws the shared outline on its bordered box, not on the inner input.
     '.control-page .control-number .control-number-input:focus-visible',
     '.control-number:has(.control-number-input:focus-visible)',

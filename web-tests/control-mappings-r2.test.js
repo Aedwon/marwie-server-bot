@@ -51,7 +51,7 @@ function fakeTarget(dataset = {}, { checked = false, tagName = 'BUTTON' } = {}) 
       if (selector === '[data-mapping-edit]' && 'mappingEdit' in dataset) return this;
       if (selector === '[data-mapping-save]' && 'mappingSave' in dataset) return this;
       if (selector === '[data-mapping-discard]' && 'mappingDiscard' in dataset) return this;
-      if (selector === '[data-mapping-key]' && 'mappingKey' in dataset) return this;
+      if (selector === '[data-resource-select]' && 'resourceSelect' in dataset) return this;
       return null;
     },
   };

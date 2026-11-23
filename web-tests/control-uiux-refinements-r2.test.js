@@ -90,15 +90,15 @@ test('Analytics dashboard defaults to 7d and renders only real supplied range se
   for (const key of ['1d', '3d', '7d', '2w', '1m', 'all']) {
     assert.match(markup, new RegExp(`data-analytics-range=\"${key}\"`));
   }
-  assert.match(markup, /data-selected="true"[^>]*>7d</i);
-  assert.match(markup, /Activity over time/);
+  assert.match(markup, /aria-pressed="true" data-analytics-range="7d">7d</);
+  assert.match(markup, /data-index="2" data-seg-target="2"/);
   assert.match(markup, /analytics-line-chart/);
   assert.equal((markup.match(/analytics-line-point/g) || []).length, range.series.length);
   assert.doesNotMatch(markup, /analytics-series-table|View chart data/);
   assert.doesNotMatch(markup, /Previous 7 days · exact 168-hour UTC window/);
 });
 
-test('Analytics discard exits edit mode and restores the persisted draft', () => {
+test('Analytics discard restores the persisted draft and stays in edit state', () => {
   const definition = createAnalyticsPageDefinition();
   const store = createControlStateStore();
   const snapshot = {
@@ -126,6 +126,7 @@ test('Analytics discard exits edit mode and restores the persisted draft', () =>
   });
 
   const state = store.get(definition.pageKey);
-  assert.equal(state.mode, 'read');
+  assert.equal(state.mode, 'edit');
   assert.equal(state.draft.enabled, true);
+  assert.equal(state.dirty, false);
 });

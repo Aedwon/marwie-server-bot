@@ -1,4 +1,4 @@
-import { activityPageMarkup, commandsPageMarkup } from './control-secondary.js';
+import { activityPageMarkup, commandsPageMarkup } from './control-secondary.js?v=23';
 import { controlIcon } from './control-icons.js?v=2';
 
 export { navigationMarkup } from './control-shell.js?v=2';

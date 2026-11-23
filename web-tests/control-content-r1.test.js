@@ -140,7 +140,8 @@ test('Feeds has no Poll now action and does not edit the ai_updates mapping', as
   assert.doesNotMatch(markup, /Poll now/i);
   assert.doesNotMatch(markup, /name=["']ai_updates["']/i);
   assert.doesNotMatch(markup, /Mappings/i);
-  assert.match(markup, /ai-updates/);
+  assert.match(markup, /Post new items with \/ai-source poll in Discord\./);
+  assert.match(markup, /Channels/);
   assert.match(markup, /Last checked/i);
 });
 

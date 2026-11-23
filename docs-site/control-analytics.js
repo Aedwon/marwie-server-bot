@@ -3,9 +3,18 @@ import {
   registerControlPage,
   registeredControlPage,
 } from './control-page-registry.js';
-import { contextDefinitionListMarkup, contextSectionMarkup, controlPageHeaderMarkup, saveBarStatusMarkup } from './control-components.js?v=24';
+import {
+  controlPageHeaderMarkup,
+  masterSwitchRow,
+  settingRow,
+  settingsRows,
+  settingsSection,
+  disclosure,
+} from './control-components.js?v=24';
 import { featureResourceKeys } from './control-resource-contract.js';
-import { resourceBindingState, withResourceBindings } from './control-resource-bindings.js?v=2';
+import { resourceSelectMarkup, withResourceBindings } from './control-resource-bindings.js?v=2';
+import { problemsFromSnapshot } from './control-problems.js?v=1';
+import { animateSegmentedThumbs, segmentedControlMarkup, stagedSaveBarMarkup } from './control-page-parts.js';
 
 export const ANALYTICS_PAGE_KEY = '/control/analytics';
 
@@ -27,11 +36,6 @@ const COVERAGE_FAMILIES = [
   ['messages', 'Messages'],
   ['voice', 'Voice'],
 ];
-const COVERAGE_STATES = {
-  complete: { label: 'Complete', tone: 'good' },
-  partial: { label: 'Partial', tone: 'warning' },
-  unavailable: { label: 'Unavailable' },
-};
 const PASSIVE_METRICS = [
   { field: 'human_messages', family: 'messages', label: 'Human messages', unit: '' },
   { field: 'voice_member_minutes', family: 'voice', label: 'Voice member minutes', unit: ' min' },
@@ -104,16 +108,22 @@ export function formatLocalTimestamp(value, { locale, timeZone } = {}) {
   }).format(parsed);
 }
 
+const RANGE_PHRASES = Object.freeze({
+  '1d': 'in the last 24 hours',
+  '3d': 'in the last 3 days',
+  '7d': 'in the last 7 days',
+  '2w': 'in the last 2 weeks',
+  '1m': 'in the last month',
+  all: 'across all time',
+});
+const GRANULARITY_NOUNS = Object.freeze({ hour: 'hour', '6hour': '6 hours', day: 'day', week: 'week' });
+
 function formatAccuracy(value) {
   return value == null ? 'No answers' : `${Math.round(Number(value) * 100)}%`;
 }
 
-function metricDefinition(label, value) {
-  return `
-    <div class="control-stat-row">
-      <dt>${escapeHtml(label)}</dt>
-      <dd>${escapeHtml(value)}</dd>
-    </div>`;
+function factRow(label, value) {
+  return `<div class="control-stat-row"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`;
 }
 
 function coverageDetail(entry) {
@@ -125,42 +135,24 @@ function coverageDetail(entry) {
   return parts.join(' · ');
 }
 
-function coverageListMarkup(coverage) {
+// One sentence, only when some family is not complete. Healthy coverage says nothing.
+export function coverageSentence(coverage) {
   if (!coverage) return '';
-  return `
-    <ul class="analytics-coverage-list" aria-label="Data coverage">
-      ${COVERAGE_FAMILIES.map(([family, label]) => {
+  const parts = [];
+  for (const [family, label] of COVERAGE_FAMILIES) {
     const entry = coverage[family];
-    if (!entry) return '';
-    const { label: status, tone } = COVERAGE_STATES[entry.status] ?? COVERAGE_STATES.unavailable;
+    if (!entry || entry.status === 'complete') continue;
+    // Passive telemetry that is switched off is expected, not missing data; its rows are already omitted.
+    if (family !== 'business_events' && entry.status === 'unavailable') continue;
+    const word = entry.status === 'partial' ? 'partial' : 'unavailable';
     const detail = coverageDetail(entry);
-    return `<li class="analytics-coverage-item">
-      <span>${label}</span>
-      <span class="analytics-coverage-status"${tone ? ` data-tone="${tone}"` : ''}>${status}</span>
-      ${detail ? `<span class="analytics-coverage-note">${escapeHtml(detail)}</span>` : ''}
-    </li>`;
-  }).join('')}
-    </ul>`;
+    parts.push(`${label} ${word}${detail ? ` (${detail})` : ''}`);
+  }
+  return parts.length ? `Some data is incomplete: ${parts.join('; ')}.` : '';
 }
 
 function hasPassiveCount(value, status) {
   return value != null && (status === 'complete' || status === 'partial');
-}
-
-function passiveSectionMarkup(projection, coverage) {
-  return `
-    <section class="analytics-passive-section" aria-labelledby="analytics-passive-title">
-      <div class="analytics-section-heading"><h2 id="analytics-passive-title">Passive telemetry</h2></div>
-      <dl class="control-stat-list">
-        ${PASSIVE_METRICS.map(({ field, family, label, unit }) => {
-    const value = projection[field];
-    const status = coverage?.[family]?.status;
-    if (!hasPassiveCount(value, status)) return metricDefinition(label, 'Unavailable');
-    return metricDefinition(label, `${value}${unit}${status === 'partial' ? ' (partial)' : ''}`);
-  }).join('')}
-      </dl>
-      ${coverageListMarkup(coverage)}
-    </section>`;
 }
 
 function rangeProjection(snapshot, requestedRange) {
@@ -177,19 +169,22 @@ function rangeProjection(snapshot, requestedRange) {
   return { selectedRange, projection: ranges[selectedRange] || null };
 }
 
-function rangeControlsMarkup(snapshot, selectedRange) {
+function rangeControlMarkup(snapshot, selectedRange) {
   const ranges = snapshot?.analytics?.ranges || {};
-  return `
-    <div class="analytics-range-controls" role="group" aria-label="Analytics period">
-      ${RANGE_OPTIONS.map(option => {
-    const available = Boolean(ranges[option.key]);
-    const selected = option.key === selectedRange;
-    return `<button type="button" class="analytics-range-button" data-analytics-range="${option.key}" data-selected="${String(selected)}" aria-pressed="${String(selected)}"${available ? '' : ' disabled'}>${escapeHtml(option.label)}</button>`;
-  }).join('')}
-    </div>`;
+  return segmentedControlMarkup({
+    id: 'analytics-range',
+    label: 'Analytics period',
+    selected: selectedRange,
+    options: RANGE_OPTIONS.map(option => ({
+      key: option.key,
+      label: option.label,
+      disabled: !ranges[option.key],
+      attributes: `data-analytics-range="${option.key}"`,
+    })),
+  });
 }
 
-function activityTotal(bucket) {
+export function activityTotal(bucket) {
   return OPERATIONAL_EVENTS.reduce((total, [field]) => total + Number(bucket?.[field] || 0), 0);
 }
 
@@ -206,23 +201,38 @@ function bucketSummary(bucket, total, clock) {
   return parts.join(' · ');
 }
 
-function niceActivityMaximum(maximum) {
-  const value = Math.max(1, Number(maximum) || 0);
-  const magnitude = 10 ** Math.floor(Math.log10(value));
-  const normalized = value / magnitude;
-  const nice = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
-  return nice * magnitude;
+// Integer ticks on 1, 2, 5 steps. Always at least two steps, at most five, and the top is at or above the maximum.
+export function niceTicks(maximum) {
+  const max = Math.max(0, Math.ceil(Number(maximum) || 0));
+  let step = 1;
+  for (let power = 1; Math.ceil(max / step) > 5; ) {
+    for (const factor of [1, 2, 5]) {
+      step = factor * power;
+      if (Math.ceil(max / step) <= 5) break;
+    }
+    power *= 10;
+  }
+  const intervals = Math.max(2, Math.ceil(max / step));
+  return Array.from({ length: intervals + 1 }, (_, index) => index * step);
 }
 
-function xTickIndexes(length, maximumTicks = 6) {
-  if (length <= 0) return [];
-  if (length <= maximumTicks) return Array.from({ length }, (_, index) => index);
-  const last = length - 1;
-  const indexes = new Set([0, last]);
-  for (let tick = 1; tick < maximumTicks - 1; tick += 1) {
-    indexes.add(Math.round((last * tick) / (maximumTicks - 1)));
+const LABEL_GAP = 10;
+const labelWidth = text => (String(text).length * 6.6) + 4;
+
+// Which x labels show. Every label when they fit; otherwise an even step, always keeping the first and last.
+export function planAxisLabels(labels, slotWidth) {
+  const count = labels.length;
+  if (!count) return { indexes: [], step: 1 };
+  const widest = Math.max(...labels.map(labelWidth));
+  const step = Math.max(1, Math.ceil((widest + LABEL_GAP) / slotWidth));
+  const indexes = [];
+  for (let index = 0; index < count; index += step) indexes.push(index);
+  const last = count - 1;
+  if (indexes.at(-1) !== last) {
+    if (indexes.length > 1 && (last - indexes.at(-1)) * slotWidth < widest + LABEL_GAP) indexes.pop();
+    indexes.push(last);
   }
-  return [...indexes].sort((left, right) => left - right);
+  return { indexes, step };
 }
 
 function isSubDayGranularity(granularity, selectedRange) {
@@ -230,15 +240,15 @@ function isSubDayGranularity(granularity, selectedRange) {
     || (!granularity && (selectedRange === '1d' || selectedRange === '3d'));
 }
 
-function formatAxisTicks(series, indexes, { granularity, selectedRange, locale, timeZone }) {
-  const isSubDay = isSubDayGranularity(granularity, selectedRange);
-  const dates = indexes.map(index => new Date(series[index]?.period_start));
-  const validDates = dates.filter(date => Number.isFinite(date.getTime()));
+function bucketLabels(series, { granularity, selectedRange, locale, timeZone }) {
+  const dates = series.map(bucket => new Date(bucket?.period_start));
+  const valid = dates.filter(date => Number.isFinite(date.getTime()));
   const year = new Intl.DateTimeFormat(locale, { year: 'numeric', timeZone });
-  const spansYears = validDates.length > 1 && year.format(validDates[0]) !== year.format(validDates.at(-1));
-  const options = { month: 'short', day: 'numeric', timeZone };
-  if (isSubDay) Object.assign(options, { hour: 'numeric', minute: '2-digit' });
-  else if (spansYears) options.year = '2-digit';
+  const spansYears = valid.length > 1 && year.format(valid[0]) !== year.format(valid.at(-1));
+  const options = { timeZone };
+  if (granularity === 'hour' || (!granularity && selectedRange === '1d')) Object.assign(options, { hour: 'numeric' });
+  else if (isSubDayGranularity(granularity, selectedRange)) Object.assign(options, { month: 'short', day: 'numeric', hour: 'numeric' });
+  else Object.assign(options, { month: 'short', day: 'numeric' }, spansYears ? { year: '2-digit' } : {});
   const formatter = new Intl.DateTimeFormat(locale, options);
   const zoned = new Intl.DateTimeFormat(locale, { ...options, timeZoneName: 'short' });
   const labels = dates.map(date => Number.isFinite(date.getTime()) ? formatter.format(date) : '');
@@ -246,136 +256,192 @@ function formatAxisTicks(series, indexes, { granularity, selectedRange, locale, 
     label && labels.indexOf(label) !== labels.lastIndexOf(label) ? zoned.format(dates[index]) : label);
 }
 
+function tooltipTitle(bucket, { granularity, selectedRange, locale, timeZone }) {
+  const date = new Date(bucket?.period_start);
+  if (!Number.isFinite(date.getTime())) return '';
+  const subDay = isSubDayGranularity(granularity, selectedRange);
+  const options = subDay
+    ? { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short', timeZone }
+    : { weekday: 'short', month: 'short', day: 'numeric', timeZone };
+  const text = new Intl.DateTimeFormat(locale, options).format(date);
+  return granularity === 'week' ? `Week of ${text}` : text;
+}
+
+function bucketDetail(bucket) {
+  const parts = [];
+  for (const [field, label] of OPERATIONAL_EVENTS) {
+    const count = Number(bucket?.[field] || 0);
+    if (count !== 0) parts.push(`${label} ${count}`);
+  }
+  return parts.join(' · ');
+}
+
+const eventsWord = count => `${count} event${count === 1 ? '' : 's'}`;
+
+// Sized to the 960px page so SVG text renders at its stated 12px instead of scaling up.
+const CHART = Object.freeze({ width: 920, height: 240, top: 12, right: 16, bottom: 30, left: 34 });
+
 function analyticsChartMarkup(projection, selectedRange, clock) {
   const series = Array.isArray(projection?.series) ? projection.series : [];
   if (!series.length) return '';
-
+  const { width, height, top, right, bottom, left } = CHART;
+  const plotWidth = width - left - right;
+  const plotHeight = height - top - bottom;
+  const baseline = top + plotHeight;
   const totals = series.map(activityTotal);
-  const maximum = niceActivityMaximum(Math.max(0, ...totals));
-  const width = 640;
-  const height = 264;
-  const margin = { top: 18, right: 20, bottom: 48, left: 54 };
-  const plotWidth = width - margin.left - margin.right;
-  const plotHeight = height - margin.top - margin.bottom;
-  const xFor = index => series.length === 1
-    ? margin.left + (plotWidth / 2)
-    : margin.left + ((index / (series.length - 1)) * plotWidth);
-  const pointStep = series.length > 1 ? plotWidth / (series.length - 1) : plotWidth;
-  const hitRadius = Math.max(5, Math.min(10, Math.floor(((pointStep - 2) / 2) * 10) / 10));
-  const yFor = total => margin.top + plotHeight - ((total / maximum) * plotHeight);
+  const ticks = niceTicks(Math.max(0, ...totals));
+  const axisMax = ticks.at(-1);
+  const slot = plotWidth / series.length;
+  const xFor = index => left + ((index + 0.5) * slot);
+  const yFor = total => baseline - ((total / axisMax) * plotHeight);
+  const granularity = projection.bucket_granularity;
+  const context = { granularity, selectedRange, ...clock };
+  const labels = bucketLabels(series, context);
+  const plan = planAxisLabels(labels, slot);
+  const noun = GRANULARITY_NOUNS[granularity] || 'bucket';
   const points = totals.map((total, index) => `${xFor(index).toFixed(2)},${yFor(total).toFixed(2)}`);
-  const yTicks = Array.from({ length: 5 }, (_, index) => {
-    const value = (maximum * index) / 4;
-    return {
-      value,
-      y: yFor(value),
-      label: Number.isInteger(value) ? String(value) : value.toFixed(1),
-    };
-  });
-  const tickIndexes = xTickIndexes(
-    series.length,
-    isSubDayGranularity(projection.bucket_granularity, selectedRange) ? 4 : 6,
-  );
-  const tickLabels = formatAxisTicks(series, tickIndexes, {
-    granularity: projection.bucket_granularity, selectedRange, ...clock,
-  });
-  const summary = `${series.length} real bucket${series.length === 1 ? '' : 's'} plotted for ${selectedRange === 'all' ? 'All time' : selectedRange}. Activity ranges from ${Math.min(...totals)} to ${Math.max(...totals)} operational events per supplied bucket.`;
+  const area = series.length > 1
+    ? `<path class="analytics-area" d="M ${xFor(0).toFixed(2)},${baseline} L ${points.join(' L ')} L ${xFor(series.length - 1).toFixed(2)},${baseline} Z"></path>`
+    : '';
+  const peakIndex = totals.indexOf(Math.max(...totals));
+  const summary = `${series.length} ${series.length === 1 ? noun : `${noun}s`} plotted. Activity ranges from ${Math.min(...totals)} to ${Math.max(...totals)} events per ${noun}${Math.max(...totals) > 0 ? `, highest on ${labels[peakIndex]}` : ''}.`;
+  const valuesList = series.map((_, index) => `${labels[index]}: ${totals[index]}`).join(', ');
+  const zone = new Intl.DateTimeFormat(clock.locale, { timeZone: clock.timeZone }).resolvedOptions().timeZone;
+  const targets = series.map((bucket, index) => {
+    const title = tooltipTitle(bucket, context);
+    const detail = bucketDetail(bucket);
+    return `<rect class="analytics-hit" x="${(left + (index * slot)).toFixed(2)}" y="${top}" width="${slot.toFixed(2)}" height="${plotHeight}" tabindex="${index === 0 ? 0 : -1}" role="img" data-analytics-point="${index}" data-x="${(xFor(index) / width * 100).toFixed(2)}" data-y="${(yFor(totals[index]) / height * 100).toFixed(2)}" data-cx="${xFor(index).toFixed(2)}" data-cy="${yFor(totals[index]).toFixed(2)}" data-title="${escapeHtml(title)}" data-total="${totals[index]}" data-detail="${escapeHtml(detail)}" data-bucket-summary="${escapeHtml(bucketSummary(bucket, totals[index], clock))}" aria-label="${escapeHtml(bucketSummary(bucket, totals[index], clock))}"></rect>`;
+  }).join('');
 
   return `
-    <section class="analytics-chart-section" aria-labelledby="analytics-chart-title">
-      <div class="analytics-section-heading"><h2 id="analytics-chart-title">Activity over time</h2></div>
-      <figure class="analytics-chart">
-        <div class="analytics-chart-scroll">
-        <svg class="analytics-line-chart" viewBox="0 0 ${width} ${height}" role="group" aria-labelledby="analytics-chart-title" aria-describedby="analytics-line-chart-summary" preserveAspectRatio="xMidYMid meet">
-          <desc id="analytics-line-chart-summary">${escapeHtml(summary)}</desc>
-          <g class="analytics-axis analytics-axis-y" aria-hidden="true">
-            <line x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${margin.top + plotHeight}"></line>
-            ${yTicks.map(tick => `<g class="analytics-axis-tick"><line x1="${margin.left - 5}" y1="${tick.y.toFixed(2)}" x2="${margin.left}" y2="${tick.y.toFixed(2)}"></line><text x="${margin.left - 9}" y="${(tick.y + 4).toFixed(2)}" text-anchor="end">${escapeHtml(tick.label)}</text></g>`).join('')}
-            <text class="analytics-axis-label" x="14" y="${margin.top + (plotHeight / 2)}" text-anchor="middle" transform="rotate(-90 14 ${margin.top + (plotHeight / 2)})">Activity count</text>
-          </g>
-          <g class="analytics-axis analytics-axis-x" aria-hidden="true">
-            <line x1="${margin.left}" y1="${margin.top + plotHeight}" x2="${margin.left + plotWidth}" y2="${margin.top + plotHeight}"></line>
-            ${tickIndexes.map((index, tick) => {
-    const x = xFor(index).toFixed(2);
-    const first = series.length > 1 && index === 0 && tickLabels[tick].length > 12;
-    const last = series.length > 1 && index === series.length - 1;
-    const labelX = first ? 4 : last ? width - 4 : x;
-    const anchor = first ? 'start' : last ? 'end' : 'middle';
-    return `<g class="analytics-axis-tick"><line x1="${x}" y1="${margin.top + plotHeight}" x2="${x}" y2="${margin.top + plotHeight + 5}"></line><text x="${labelX}" y="${margin.top + plotHeight + 20}" text-anchor="${anchor}">${escapeHtml(tickLabels[tick])}</text></g>`;
-  }).join('')}
-            <text class="analytics-axis-label" x="${margin.left + (plotWidth / 2)}" y="${height - 6}" text-anchor="middle">Local time / date</text>
-          </g>
-          ${series.length > 1 ? `<polyline class="analytics-line-path" points="${points.join(' ')}" fill="none"></polyline>` : ''}
-          ${series.map((bucket, index) => {
-    const label = escapeHtml(bucketSummary(bucket, totals[index], clock));
-    const position = `cx="${xFor(index).toFixed(2)}" cy="${yFor(totals[index]).toFixed(2)}"`;
-    return `<g class="analytics-point-group" tabindex="0" role="button" data-analytics-point="${index}" data-bucket-summary="${label}" aria-label="${label}">
-      <circle class="analytics-line-hit" ${position} r="${hitRadius}"></circle>
-      <circle class="analytics-line-point" ${position} r="4"></circle>
-    </g>`;
-  }).join('')}
-        </svg>
+    <figure class="analytics-chart">
+      <div class="analytics-chart-scroll">
+        <div class="analytics-plot" data-analytics-plot>
+          <svg class="analytics-line-chart" viewBox="0 0 ${width} ${height}" role="group" aria-label="${escapeHtml(`Activity events per ${noun}: ${valuesList}`)}" aria-describedby="analytics-line-chart-summary" preserveAspectRatio="xMidYMid meet">
+            <desc id="analytics-line-chart-summary">${escapeHtml(summary)}</desc>
+            <g class="analytics-axis analytics-axis-y" aria-hidden="true">
+              ${ticks.map(value => `<g class="analytics-axis-tick" data-tick="${value}"><line class="${value === 0 ? 'analytics-baseline' : 'analytics-gridline'}" x1="${left}" y1="${yFor(value).toFixed(2)}" x2="${left + plotWidth}" y2="${yFor(value).toFixed(2)}"></line><text x="${left - 8}" y="${(yFor(value) + 4).toFixed(2)}" text-anchor="end">${value}</text></g>`).join('')}
+            </g>
+            <g class="analytics-axis analytics-axis-x" aria-hidden="true">
+              ${plan.indexes.map(index => `<text class="analytics-axis-tick" x="${xFor(index).toFixed(2)}" y="${baseline + 20}" text-anchor="middle">${escapeHtml(labels[index])}</text>`).join('')}
+            </g>
+            ${area}
+            ${series.length > 1 ? `<polyline class="analytics-line-path" points="${points.join(' ')}" fill="none"></polyline>` : ''}
+            ${totals.map((total, index) => `<circle class="analytics-line-point" cx="${xFor(index).toFixed(2)}" cy="${yFor(total).toFixed(2)}" r="3"></circle>`).join('')}
+            <line class="analytics-guide" data-analytics-guide x1="0" y1="${top}" x2="0" y2="${baseline}" hidden></line>
+            <circle class="analytics-guide-dot" data-analytics-guide-dot cx="0" cy="0" r="5" hidden></circle>
+            ${targets}
+          </svg>
+          <div class="analytics-tooltip" data-analytics-tooltip aria-hidden="true" hidden></div>
         </div>
-        <div class="analytics-chart-inspector" data-analytics-inspector aria-live="polite">Select, focus, or hover a point to inspect bucket counts.</div>
-        <figcaption>Activity count per supplied bucket from persisted server data.</figcaption>
-      </figure>
-    </section>`;
+      </div>
+      ${plan.step > 1 ? `<figcaption>Labels show every ${plan.step === 2 ? `other ${noun}` : `${plan.step} ${noun}s`}; hover or focus any ${noun} for its count.</figcaption>` : ''}
+    </figure>`;
 }
 
+function breakdownTableMarkup(projection, selectedRange, clock) {
+  const series = Array.isArray(projection?.series) ? projection.series : [];
+  if (!series.length) return '';
+  const granularity = projection.bucket_granularity;
+  const context = { granularity, selectedRange, ...clock };
+  const labels = bucketLabels(series, context);
+  const columns = OPERATIONAL_EVENTS.filter(([field]) => series.some(bucket => Number(bucket?.[field] || 0) !== 0));
+  const noun = GRANULARITY_NOUNS[granularity] || 'day';
+  const table = `<div class="analytics-table-wrap"><table class="analytics-breakdown-table">
+    <thead><tr><th scope="col">${escapeHtml(noun[0].toUpperCase() + noun.slice(1))}</th><th scope="col">Events</th>${columns.map(([, label]) => `<th scope="col">${escapeHtml(label)}</th>`).join('')}</tr></thead>
+    <tbody>${series.map((bucket, index) => `<tr><th scope="row">${escapeHtml(labels[index])}</th><td>${activityTotal(bucket)}</td>${columns.map(([field]) => `<td>${Number(bucket?.[field] || 0)}</td>`).join('')}</tr>`).join('')}</tbody>
+  </table></div>`;
+  return disclosure({ id: 'analytics-breakdown', label: `Breakdown by ${noun}`, body: table });
+}
 
-function analyticsReportMarkup(snapshot, requestedRange, clock) {
-  const { selectedRange, projection } = rangeProjection(snapshot, requestedRange);
-  if (!projection) {
-    return `
-      <p class="analytics-unavailable" role="status">
-        Analytics data unavailable. Refresh server state to try again.
-      </p>`;
-  }
-
-  const v2 = isAnalyticsV2(snapshot, projection);
-  const coverage = v2 ? selectAnalyticsCoverage(snapshot, projection) : null;
+function factsMarkup(snapshot, projection, v2, coverage) {
   const { tickets_closed: ticketsClosed, tickets_closed_distinct: distinct } = projection;
   const closed = v2 && ticketsClosed != null && distinct != null && distinct !== ticketsClosed
     ? `${ticketsClosed} (${distinct} distinct)`
     : ticketsClosed ?? (v2 ? 'Unavailable' : 0);
   const backlog = snapshot.analytics.open_ticket_backlog ?? projection.open_ticket_backlog;
-
-  return `
-    <section class="control-feature-body" data-active-analytics-range="${escapeHtml(selectedRange)}">
-      <div class="analytics-range-row">
-        <section class="analytics-period" aria-label="Selected analytics range">
-          <span><strong>From</strong> ${escapeHtml(formatLocalTimestamp(projection.period_start, clock))}</span>
-          <span><strong>To</strong> ${escapeHtml(formatLocalTimestamp(projection.period_end, clock))}</span>
-        </section>
-        ${rangeControlsMarkup(snapshot, selectedRange)}
-      </div>
-      <dl class="control-stat-list" aria-label="Selected period operational metrics">
-        ${metricDefinition('Moderation cases', projection.moderation_cases ?? 0)}
-        ${metricDefinition('Tickets opened', projection.tickets_opened ?? 0)}
-        ${metricDefinition('Tickets closed', closed)}
-        ${v2 ? metricDefinition('Tickets reopened', projection.tickets_reopened ?? 0) : ''}
-        ${v2 ? metricDefinition('Open tickets (current)', backlog ?? 'Unavailable') : ''}
-        ${v2 ? metricDefinition('Median ticket close time', ticketsClosed == null ? 'Unavailable' : ticketsClosed === 0 ? 'No closures' : formatDurationSeconds(projection.ticket_median_close_seconds, { ticketsClosed })) : ''}
-        ${metricDefinition('Quiz answers', projection.quiz_answers ?? 0)}
-        ${metricDefinition('Quiz accuracy', formatAccuracy(projection.quiz_accuracy))}
-        ${metricDefinition('Anonymous questions', projection.anonymous_questions ?? 0)}
-        ${v2 ? metricDefinition('Anonymous messages', projection.anonymous_messages ?? 0) : ''}
-        ${metricDefinition('Reputation events', projection.reputation_events ?? 0)}
-      </dl>
-      ${v2 ? passiveSectionMarkup(projection, coverage) : ''}
-      ${analyticsChartMarkup(projection, selectedRange, clock)}
-    </section>`;
+  const rows = [
+    factRow('Moderation cases', projection.moderation_cases ?? 0),
+    factRow('Tickets opened', projection.tickets_opened ?? 0),
+    factRow('Tickets closed', closed),
+    v2 ? factRow('Tickets reopened', projection.tickets_reopened ?? 0) : '',
+    v2 ? factRow('Open tickets now', backlog ?? 'Unavailable') : '',
+    v2 ? factRow('Median time to close', ticketsClosed == null ? 'Unavailable' : ticketsClosed === 0 ? 'No closures' : formatDurationSeconds(projection.ticket_median_close_seconds, { ticketsClosed })) : '',
+    factRow('Quiz answers', projection.quiz_answers ?? 0),
+    factRow('Quiz accuracy', formatAccuracy(projection.quiz_accuracy)),
+    factRow('Anonymous questions', projection.anonymous_questions ?? 0),
+    v2 ? factRow('Anonymous messages', projection.anonymous_messages ?? 0) : '',
+    factRow('Reputation events', projection.reputation_events ?? 0),
+  ];
+  if (v2) {
+    for (const { field, family, label, unit } of PASSIVE_METRICS) {
+      const status = coverage?.[family]?.status;
+      if (!hasPassiveCount(projection[field], status)) continue;
+      rows.push(factRow(label, `${projection[field]}${unit}${status === 'partial' ? ' (partial)' : ''}`));
+    }
+  }
+  return `<dl class="control-stat-list analytics-facts" aria-label="Totals for the selected period">${rows.join('')}</dl>`;
 }
 
-function reportingActionsMarkup(state) {
-  if (state.mode !== 'edit') return '';
-  return `<div class="analytics-page-actions control-save-bar">${saveBarStatusMarkup(state)}<button class="control-button control-button-primary" type="button" data-analytics-save${state.dirty && state.status !== 'saving' ? '' : ' disabled'}>${state.status === 'saving' ? 'Saving…' : 'Save changes'}</button><button class="control-button control-button-secondary" type="button" data-analytics-discard${state.status === 'saving' ? ' disabled' : ''}>Discard</button></div>`;
+function updatedLabel(projection, snapshot, clock) {
+  const value = projection?.generated_at ?? snapshot?.analytics?.generated_at;
+  const date = new Date(value);
+  if (!value || !Number.isFinite(date.getTime())) return '';
+  return `Updated ${new Intl.DateTimeFormat(clock.locale, { hour: 'numeric', minute: '2-digit', timeZone: clock.timeZone }).format(date)}`;
+}
+
+function reportSection(state, snapshot) {
+  const value = state.draft ?? state.persisted;
+  const persistedBinding = state.persisted?.resourceBindings?.analytics ?? null;
+  const selected = value?.resourceBindings?.analytics ?? null;
+  const found = problemsFromSnapshot(snapshot).find(item => item.resourceKey === 'analytics');
+  const sentence = found && String(persistedBinding ?? '') === String(selected ?? '') ? `${found.cause} ${found.effect}` : '';
+  const text = sentence || state.errors?.resource_analytics || '';
+  const rows = masterSwitchRow({
+    label: 'Post the weekly report',
+    offHint: 'Rob-bot stops posting the weekly report.',
+    checked: Boolean(value?.enabled),
+    field: 'enabled',
+    attribute: 'data-analytics-enabled',
+  }) + settingRow({
+    label: 'Posts to',
+    problem: text,
+    rowKey: 'analytics',
+    controlId: 'resource-analytics',
+    control: resourceSelectMarkup({ snapshot, key: 'analytics', value: selected, problem: Boolean(text), id: 'resource-analytics' }),
+  });
+  return `<div data-master="${value?.enabled ? 'on' : 'off'}">${settingsSection({
+    id: 'analytics-report-heading',
+    title: 'Weekly report',
+    body: settingsRows(rows, { label: 'Weekly report settings' }),
+  })}</div>`;
+}
+
+function analyticsReportMarkup(snapshot, requestedRange, clock) {
+  const { selectedRange, projection } = rangeProjection(snapshot, requestedRange);
+  if (!projection) {
+    return '<p class="analytics-unavailable" role="status">Analytics data unavailable. Refresh server state to try again.</p>';
+  }
+  const v2 = isAnalyticsV2(snapshot, projection);
+  const coverage = v2 ? selectAnalyticsCoverage(snapshot, projection) : null;
+  const total = activityTotal(projection);
+  const updated = updatedLabel(projection, snapshot, clock);
+  const sentence = coverageSentence(coverage);
+  return `
+    <section class="analytics-report" data-active-analytics-range="${escapeHtml(selectedRange)}">
+      <p class="analytics-lead"><span class="analytics-lead-total" data-analytics-total>${total}</span><span class="analytics-lead-label">events ${RANGE_PHRASES[selectedRange] || ''}</span>${updated ? `<span class="analytics-lead-updated">${escapeHtml(updated)}</span>` : ''}</p>
+      ${analyticsChartMarkup(projection, selectedRange, clock)}
+      ${sentence ? `<p class="analytics-coverage" data-analytics-coverage>${escapeHtml(sentence)}</p>` : ''}
+      ${breakdownTableMarkup(projection, selectedRange, clock)}
+      ${factsMarkup(snapshot, projection, v2, coverage)}
+    </section>`;
 }
 
 export function createAnalyticsPageDefinition() {
   let selectedRange = '7d';
   return {
     pageKey: ANALYTICS_PAGE_KEY,
+    editOnMount: true,
 
     selectPersisted(snapshot) {
       const feature = analyticsFeature(snapshot);
@@ -407,36 +473,9 @@ export function createAnalyticsPageDefinition() {
       return analyticsPageMarkup({ state, snapshot, selectedRange });
     },
 
-    renderContext({ state, snapshot, locale, timeZone } = {}) {
-      const report = resourceBindingState(snapshot || {}, 'analytics');
-      const channel = (snapshot?.channels || []).find(item => String(item.id) === String(report.id || ''));
-      const { projection } = rangeProjection(snapshot, selectedRange);
-      let dataSource = 'Persisted moderation, ticket, quiz, anonymous, and reputation events';
-      if (isAnalyticsV2(snapshot, projection)) {
-        const coverage = selectAnalyticsCoverage(snapshot, projection);
-        const available = PASSIVE_METRICS.filter(({ field, family }) =>
-          hasPassiveCount(projection?.[field], coverage?.[family]?.status));
-        dataSource = available.length
-          ? `Persisted business events and passive telemetry (${available.map(({ label }) => label.toLowerCase()).join(', ')})`
-          : 'Persisted business events. Passive telemetry unavailable.';
-      }
-      const rows = [
-        { label: 'Send permission', value: channel?.send_messages === true ? 'Allowed' : 'Missing Send Messages or not a text channel' },
-        { label: 'Data source', value: dataSource },
-      ];
-      const generatedAt = projection?.generated_at ?? snapshot?.analytics?.generated_at;
-      if (generatedAt) {
-        rows.push({ label: 'Last generated', value: formatLocalTimestamp(generatedAt, { locale, timeZone }) });
-      }
-      if (state?.mode !== 'edit') {
-        rows.unshift({ label: 'Channel', value: `${report.name || report.current} (${report.label})` });
-      }
-      return contextSectionMarkup({
-        id: 'report-destination',
-        title: 'Report destination',
-        description: 'Rob-bot posts the aggregate report to this channel on its configured schedule.',
-        body: contextDefinitionListMarkup(rows),
-      });
+    // The weekly report destination lives in the page; nothing moves to a context panel.
+    renderContext() {
+      return '';
     },
 
     install({ root, store = controlState, onSave, rerender } = {}) {
@@ -453,34 +492,32 @@ export function createAnalyticsPageDefinition() {
 
 export function registerAnalyticsPage() {
   if (!registeredControlPage(ANALYTICS_PAGE_KEY)) {
-    registerControlPage(withResourceBindings(createAnalyticsPageDefinition(), featureResourceKeys(ANALYTICS_PAGE_KEY)));
+    registerControlPage(withResourceBindings(createAnalyticsPageDefinition(), featureResourceKeys(ANALYTICS_PAGE_KEY), { genericContext: 'never' }));
   }
 }
 
 export function analyticsPageMarkup({ state, snapshot, selectedRange, locale, timeZone } = {}) {
   if (!state?.persisted) {
-    return `<section class="control-page analytics-page"><h1>Analytics</h1><p>Load current server state to view the operational snapshot.</p></section>`;
+    return '<section class="control-page analytics-page"><h1>Analytics</h1><p>Load current server state to view the operational snapshot.</p></section>';
   }
-  const enabled = state.mode === 'edit' ? Boolean(state.draft?.enabled) : Boolean(state.persisted?.enabled);
   const statusMarkup = state.saveError
     ? `<p class="analytics-page-message" role="alert">${escapeHtml(state.saveError)}</p>`
     : state.status === 'conflict'
       ? '<p class="analytics-page-message" role="alert">Server state changed while you were editing. Review your draft before retrying.</p>'
       : '';
   const preferredRange = selectedRange || String(snapshot?.analytics?.default_range || '7d');
+  const { selectedRange: shownRange } = rangeProjection(snapshot, preferredRange);
   return `
     <section class="control-page analytics-page" data-page-key="${ANALYTICS_PAGE_KEY}">
       ${controlPageHeaderMarkup({
     title: 'Analytics',
-    description: 'Operational activity from persisted server data.',
-    enabled,
-    editing: state.mode === 'edit',
-    editAttribute: 'data-analytics-edit',
-    toggleAttribute: 'data-analytics-enabled',
+    editable: false,
+    actions: snapshot?.analytics ? rangeControlMarkup(snapshot, shownRange) : '',
   })}
       ${statusMarkup}
       ${analyticsReportMarkup(snapshot, preferredRange, { locale, timeZone })}
-      ${reportingActionsMarkup(state)}
+      ${reportSection(state, snapshot || {})}
+      ${stagedSaveBarMarkup(state, { saveAttribute: 'data-analytics-save', discardAttribute: 'data-analytics-discard' })}
     </section>`;
 }
 
@@ -492,28 +529,49 @@ export function installAnalyticsPageInteractions({
   onRangeChange = () => {},
 } = {}) {
   if (!root?.addEventListener) return () => {};
+  animateSegmentedThumbs(root);
 
   const pointForEvent = event => event.target?.closest?.('[data-analytics-point]');
   let activePoint = null;
+  const hideTooltip = () => {
+    root.querySelector('[data-analytics-tooltip]')?.setAttribute('hidden', '');
+    root.querySelector('[data-analytics-guide]')?.setAttribute('hidden', '');
+    root.querySelector('[data-analytics-guide-dot]')?.setAttribute('hidden', '');
+    activePoint?.removeAttribute('data-active');
+    activePoint = null;
+  };
   const activatePoint = point => {
     if (!point || point === activePoint) return;
-    const inspector = root.querySelector('[data-analytics-inspector]');
-    if (!inspector) return;
-    inspector.textContent = point.getAttribute('data-bucket-summary');
+    const tooltip = root.querySelector('[data-analytics-tooltip]');
+    if (!tooltip) return;
     activePoint?.removeAttribute('data-active');
     point.setAttribute('data-active', 'true');
     activePoint = point;
+    const total = Number(point.getAttribute('data-total'));
+    const detail = point.getAttribute('data-detail');
+    tooltip.innerHTML = `<strong>${escapeHtml(point.getAttribute('data-title'))}</strong><span>${eventsWord(total)}</span>${detail ? `<small>${escapeHtml(detail)}</small>` : ''}`;
+    tooltip.style?.setProperty?.('--tip-x', `${point.getAttribute('data-x')}%`);
+    tooltip.style?.setProperty?.('--tip-y', `${point.getAttribute('data-y')}%`);
+    tooltip.removeAttribute('hidden');
+    const cx = point.getAttribute('data-cx');
+    const guide = root.querySelector('[data-analytics-guide]');
+    guide?.setAttribute('x1', cx);
+    guide?.setAttribute('x2', cx);
+    guide?.removeAttribute('hidden');
+    const dot = root.querySelector('[data-analytics-guide-dot]');
+    dot?.setAttribute('cx', cx);
+    dot?.setAttribute('cy', point.getAttribute('data-cy'));
+    dot?.removeAttribute('hidden');
   };
   const onPointEvent = event => activatePoint(pointForEvent(event));
+  const onLeave = event => {
+    if (event.target?.closest?.('[data-analytics-plot]') && !root.querySelector?.('[data-analytics-point]:focus')) hideTooltip();
+  };
 
   const onKeyDown = event => {
     const point = pointForEvent(event);
     if (!point) return;
-    if (event.key === 'Enter' || event.key === ' ' || event.key === 'Space') {
-      event.preventDefault();
-      activatePoint(point);
-      return;
-    }
+    if (event.key === 'Escape') { hideTooltip(); return; }
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
     const points = [...root.querySelectorAll('[data-analytics-point]')];
@@ -524,6 +582,7 @@ export function installAnalyticsPageInteractions({
       Home: 0,
       End: points.length - 1,
     }[event.key];
+    points.forEach((item, position) => item.setAttribute('tabindex', position === next ? '0' : '-1'));
     points[next]?.focus();
     activatePoint(points[next]);
   };
@@ -539,32 +598,17 @@ export function installAnalyticsPageInteractions({
       }
       return;
     }
-
     const point = pointForEvent(event);
     if (point) {
       activatePoint(point);
       return;
     }
-
-    if (event.target?.closest?.('[data-analytics-edit]')) {
-      store.beginEdit(ANALYTICS_PAGE_KEY);
-      rerender();
-      return;
-    }
-
     if (event.target?.closest?.('[data-analytics-save]')) {
-      if (store.canSave(ANALYTICS_PAGE_KEY)) {
-        onSave?.(
-          ANALYTICS_PAGE_KEY,
-          store.buildSaveRequest(ANALYTICS_PAGE_KEY),
-        );
-      }
+      if (store.canSave(ANALYTICS_PAGE_KEY)) onSave?.(ANALYTICS_PAGE_KEY, store.buildSaveRequest(ANALYTICS_PAGE_KEY));
       return;
     }
-
     if (event.target?.closest?.('[data-analytics-discard]')) {
       store.discard(ANALYTICS_PAGE_KEY);
-      store.get(ANALYTICS_PAGE_KEY).mode = 'read';
       rerender();
     }
   };
@@ -583,6 +627,7 @@ export function installAnalyticsPageInteractions({
   root.addEventListener('focusin', onPointEvent);
   root.addEventListener('pointerenter', onPointEvent, true);
   root.addEventListener('mouseover', onPointEvent);
+  root.addEventListener('mouseout', onLeave);
   root.addEventListener('keydown', onKeyDown);
   return () => {
     root.removeEventListener('click', onClick);
@@ -590,6 +635,7 @@ export function installAnalyticsPageInteractions({
     root.removeEventListener('focusin', onPointEvent);
     root.removeEventListener('pointerenter', onPointEvent, true);
     root.removeEventListener('mouseover', onPointEvent);
+    root.removeEventListener('mouseout', onLeave);
     root.removeEventListener('keydown', onKeyDown);
   };
 }

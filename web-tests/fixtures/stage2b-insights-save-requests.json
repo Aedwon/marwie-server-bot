@@ -1,0 +1,80 @@
+{
+  "analytics": {
+    "page_key": "/control/analytics",
+    "base_revision": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "changes": [
+      {
+        "action_type": "set_resource",
+        "payload": {
+          "key": "analytics",
+          "discord_id": "260"
+        }
+      },
+      {
+        "action_type": "set_feature",
+        "payload": {
+          "feature": "analytics",
+          "enabled": false
+        }
+      }
+    ]
+  },
+  "channels": {
+    "page_key": "/control/mappings/channels",
+    "base_revision": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "changes": [
+      {
+        "action_type": "clear_resource",
+        "payload": {
+          "key": "moderation_log"
+        }
+      },
+      {
+        "action_type": "set_resource",
+        "payload": {
+          "key": "quiz_channel",
+          "discord_id": "260"
+        }
+      },
+      {
+        "action_type": "set_resource",
+        "payload": {
+          "key": "analytics",
+          "discord_id": "221"
+        }
+      }
+    ]
+  },
+  "roles": {
+    "page_key": "/control/mappings/roles",
+    "base_revision": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "changes": [
+      {
+        "action_type": "set_resource",
+        "payload": {
+          "key": "live_ping_role",
+          "discord_id": "201"
+        }
+      },
+      {
+        "action_type": "clear_resource",
+        "payload": {
+          "key": "mentor_role"
+        }
+      }
+    ]
+  },
+  "categories": {
+    "page_key": "/control/mappings/categories",
+    "base_revision": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "changes": [
+      {
+        "action_type": "set_resource",
+        "payload": {
+          "key": "ticket_category",
+          "discord_id": "262"
+        }
+      }
+    ]
+  }
+}

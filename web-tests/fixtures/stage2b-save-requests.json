@@ -1,0 +1,271 @@
+{
+  "feeds": {
+    "page_key": "/control/content/feeds",
+    "base_revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "changes": [
+      {
+        "action_type": "set_resource",
+        "payload": {
+          "key": "ai_updates",
+          "discord_id": "260"
+        }
+      },
+      {
+        "action_type": "set_feature",
+        "payload": {
+          "feature": "ai_updates",
+          "enabled": false
+        }
+      },
+      {
+        "action_type": "upsert_ai_source",
+        "payload": {
+          "source_id": 1,
+          "name": "OpenAI blog",
+          "url": "https://example.com/openai.xml",
+          "category": "AI"
+        }
+      },
+      {
+        "action_type": "upsert_ai_source",
+        "payload": {
+          "source_id": 2,
+          "name": "Research",
+          "url": "https://example.com/research.xml",
+          "category": "Research"
+        }
+      },
+      {
+        "action_type": "upsert_ai_source",
+        "payload": {
+          "name": "Lab",
+          "url": "https://example.com/lab.xml",
+          "category": "Labs"
+        }
+      }
+    ]
+  },
+  "feedsDisableExisting": {
+    "page_key": "/control/content/feeds",
+    "base_revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "changes": [
+      {
+        "action_type": "upsert_ai_source",
+        "payload": {
+          "source_id": 1,
+          "name": "OpenAI",
+          "url": "https://example.com/changed.xml",
+          "category": "AI"
+        }
+      },
+      {
+        "action_type": "disable_ai_source",
+        "payload": {
+          "source_id": 1
+        }
+      }
+    ]
+  },
+  "announcements": {
+    "page_key": "/control/content/announcements",
+    "base_revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "changes": [
+      {
+        "action_type": "set_resource",
+        "payload": {
+          "key": "announcements",
+          "discord_id": "260"
+        }
+      },
+      {
+        "action_type": "set_feature",
+        "payload": {
+          "feature": "announcements",
+          "enabled": false
+        }
+      }
+    ]
+  },
+  "live": {
+    "page_key": "/control/content/live",
+    "base_revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "changes": [
+      {
+        "action_type": "set_resource",
+        "payload": {
+          "key": "live_announcements",
+          "discord_id": "260"
+        }
+      },
+      {
+        "action_type": "clear_resource",
+        "payload": {
+          "key": "live_ping_role"
+        }
+      },
+      {
+        "action_type": "set_feature",
+        "payload": {
+          "feature": "live_announcements",
+          "enabled": false
+        }
+      }
+    ]
+  },
+  "tickets": {
+    "page_key": "/control/utilities/ticket-configuration",
+    "base_revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "changes": [
+      {
+        "action_type": "set_resource",
+        "payload": {
+          "key": "ticket_panel",
+          "discord_id": "260"
+        }
+      },
+      {
+        "action_type": "clear_resource",
+        "payload": {
+          "key": "ticket_logs"
+        }
+      },
+      {
+        "action_type": "set_resource",
+        "payload": {
+          "key": "ticket_category",
+          "discord_id": "262"
+        }
+      },
+      {
+        "action_type": "set_feature",
+        "payload": {
+          "feature": "tickets",
+          "enabled": false
+        }
+      },
+      {
+        "action_type": "upsert_ticket_type",
+        "payload": {
+          "key": "support",
+          "label": "Help",
+          "description": "Get help from staff"
+        }
+      },
+      {
+        "action_type": "upsert_ticket_type",
+        "payload": {
+          "key": "report",
+          "label": "Report",
+          "description": "Send a private report"
+        }
+      },
+      {
+        "action_type": "upsert_ticket_type",
+        "payload": {
+          "key": "general",
+          "label": "General",
+          "description": "General support"
+        }
+      }
+    ]
+  },
+  "ticketsDisable": {
+    "page_key": "/control/utilities/ticket-configuration",
+    "base_revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "changes": [
+      {
+        "action_type": "disable_ticket_type",
+        "payload": {
+          "key": "support"
+        }
+      }
+    ]
+  },
+  "notifications": {
+    "page_key": "/control/utilities/notification-roles",
+    "base_revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "changes": [
+      {
+        "action_type": "set_resource",
+        "payload": {
+          "key": "role_panel",
+          "discord_id": "260"
+        }
+      },
+      {
+        "action_type": "save_notification_panel",
+        "payload": {
+          "title": "Pick your updates",
+          "description": "Choose what you want.",
+          "buttons": [
+            {
+              "role_id": "202",
+              "label": "Builder updates",
+              "emoji": "",
+              "style": "primary"
+            },
+            {
+              "role_id": "203",
+              "label": "Mentor digest",
+              "emoji": "",
+              "style": "success"
+            },
+            {
+              "role_id": "201",
+              "label": "Builders",
+              "emoji": "",
+              "style": "primary"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "anonymous": {
+    "page_key": "/control/utilities/anonymous-questions",
+    "base_revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "changes": [
+      {
+        "action_type": "set_resource",
+        "payload": {
+          "key": "anon_questions",
+          "discord_id": "260"
+        }
+      },
+      {
+        "action_type": "set_feature",
+        "payload": {
+          "feature": "anonymous_questions",
+          "enabled": false
+        }
+      }
+    ]
+  },
+  "moderation": {
+    "page_key": "/control/workflows/moderation",
+    "base_revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "changes": [
+      {
+        "action_type": "set_resource",
+        "payload": {
+          "key": "moderation_log",
+          "discord_id": "261"
+        }
+      },
+      {
+        "action_type": "set_resource",
+        "payload": {
+          "key": "compromised_account_trap",
+          "discord_id": "260"
+        }
+      },
+      {
+        "action_type": "set_feature",
+        "payload": {
+          "feature": "moderation",
+          "enabled": false
+        }
+      }
+    ]
+  }
+}

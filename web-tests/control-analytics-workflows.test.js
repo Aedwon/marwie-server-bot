@@ -88,7 +88,7 @@ test('Analytics page preserves operational metrics and exposes the R2 range cont
   assert.doesNotMatch(markup, /control-eyebrow/);
   assert.doesNotMatch(markup, />\s*(?:Operations|Handbook|Workflow|Control|Configuration)\s*</i);
   assert.doesNotMatch(markup, /Bot status|System status|Global health|Connectivity status/i);
-  assert.match(markup, /Operational activity from persisted server data/i);
+  assert.doesNotMatch(markup, /Operational activity from persisted server data/i);
   assert.match(markup, /data-analytics-range="7d"/);
   assert.doesNotMatch(markup, /Previous 7 days · exact 168-hour UTC window/i);
   assert.match(markup, /Moderation cases/);
@@ -108,7 +108,7 @@ test('Analytics metric values use semantic definition-list associations without 
   const definition = createAnalyticsPageDefinition();
   const markup = analyticsPageMarkup({ state: readState(definition), snapshot: analyticsSnapshot });
 
-  assert.match(markup, /<dl[^>]*class="control-stat-list"/);
+  assert.match(markup, /<dl[^>]*class="control-stat-list analytics-facts"/);
   assert.equal((markup.match(/<dt\b/g) || []).length, 7);
   assert.equal((markup.match(/<dd\b/g) || []).length, 7);
   assert.doesNotMatch(markup, /class="analytics-metric"/);
@@ -117,7 +117,7 @@ test('Analytics metric values use semantic definition-list associations without 
   assert.doesNotMatch(styles, /\.analytics-metric\b/);
 });
 
-test('Analytics owns only its feature flag and leaves report readiness to Context', () => {
+test('Analytics owns its feature flag and the weekly report channel as page rows', () => {
   const definition = createAnalyticsPageDefinition();
   const persisted = definition.selectPersisted(analyticsSnapshot);
   const draft = definition.cloneDraft(persisted);
@@ -128,30 +128,18 @@ test('Analytics owns only its feature flag and leaves report readiness to Contex
     payload: { feature: 'analytics', enabled: false },
   }]);
 
-  const readMarkup = analyticsPageMarkup({
-    state: readState(definition),
+  const markup = analyticsPageMarkup({
+    state: { ...readState(definition), mode: 'edit', draft: { enabled: false, resourceBindings: { analytics: '123' } }, dirty: true },
     snapshot: analyticsSnapshot,
   });
-  assert.match(readMarkup, /Edit settings/);
-  assert.doesNotMatch(readMarkup, /weekly-analytics/);
-  assert.doesNotMatch(readMarkup, /href="\/control\/mappings\/channels"/);
-  assert.doesNotMatch(readMarkup, /analytics-reporting-table/);
-  assert.doesNotMatch(readMarkup, /<select/);
-  assert.doesNotMatch(readMarkup, /data-submenu|control-subnav/);
-
-  const editMarkup = analyticsPageMarkup({
-    state: {
-      ...readState(definition),
-      mode: 'edit',
-      draft: { enabled: false },
-      dirty: true,
-    },
-    snapshot: analyticsSnapshot,
-  });
-  assert.match(editMarkup, /Save changes/);
-  assert.match(editMarkup, /Discard/);
-  assert.match(editMarkup, /type="checkbox"/);
-  assert.doesNotMatch(editMarkup, /analytics.*<select/is);
+  assert.doesNotMatch(markup, /Edit settings|control-feature-header-actions/);
+  assert.match(markup, /Post the weekly report/);
+  assert.match(markup, /data-master="off"/);
+  assert.match(markup, /type="checkbox" role="switch"[^>]*data-analytics-enabled/);
+  assert.match(markup, /<select class="control-select" id="resource-analytics" data-resource-select="analytics"/);
+  assert.match(markup, /data-analytics-save/);
+  assert.match(markup, /data-analytics-discard/);
+  assert.doesNotMatch(markup, /data-submenu|control-subnav|analytics-reporting-table/);
 });
 
 test('Analytics complete report with true zero values renders measured zeroes', () => {
@@ -183,7 +171,7 @@ test('Analytics missing projection shows one unavailable state instead of seven 
   const markup = analyticsPageMarkup({ state: readState(definition), snapshot });
   assert.match(markup, /role="status"/);
   assert.match(markup, /Analytics data unavailable/i);
-  assert.doesNotMatch(markup, /<dl[^>]*class="control-stat-list"/);
+  assert.doesNotMatch(markup, /<dl[^>]*class="control-stat-list/);
   assert.doesNotMatch(markup, /Moderation cases|Tickets opened|Tickets closed|Quiz answers|Quiz accuracy|Anonymous questions|Reputation events/);
   assert.doesNotMatch(markup, /Reporting/);
   assert.doesNotMatch(markup, /weekly-analytics/);
@@ -218,17 +206,22 @@ test('all three Workflow pages are handbook-only semantic pages without redundan
   }
 });
 
-test('Workflow pages use one consistent numbered operational timeline', () => {
+test('Playbooks render four numbered steps that disclose their checks, first step open', () => {
   const styles = readFileSync(new URL('../docs-site/control-features.css', import.meta.url), 'utf8');
-  assert.match(styles, /\.workflow-timeline/);
-  assert.match(styles, /\.workflow-stage-number/);
+  assert.match(styles, /\.workflow-step-number\s*\{[^}]*width:\s*22px[^}]*height:\s*22px[^}]*border-radius:\s*50%/);
 
-  for (const pageKey of Object.keys(WORKFLOW_PAGE_CONFIGS)) {
+  for (const pageKey of ['/control/workflows/ticket-handling', '/control/workflows/events']) {
     const markup = workflowPageMarkup(pageKey);
-    assert.match(markup, /<ol class="workflow-timeline">/);
-    assert.equal((markup.match(/class="workflow-stage"/g) || []).length, 4);
-    assert.match(markup, /class="workflow-stage-number"/);
+    assert.match(markup, /<ol class="workflow-steps">/);
+    assert.equal((markup.match(/<li class="workflow-step">/g) || []).length, 4);
+    assert.deepEqual([...markup.matchAll(/class="workflow-step-number" aria-hidden="true">(\d)</g)].map(m => m[1]), ['1', '2', '3', '4']);
+    assert.equal((markup.match(/aria-expanded="true"/g) || []).length, 1);
+    assert.equal((markup.match(/aria-expanded="false"/g) || []).length, 3);
+    assert.match(markup, /aria-expanded="true" aria-controls="control-disclosure-playbook-[a-z-]+-1"/);
+    assert.match(markup, /class="workflow-step-summary"/);
     assert.match(markup, /Exceptions/);
+    assert.equal((markup.match(/<div inert data-disclosure-body>/g) || []).length, 3);
+    assert.doesNotMatch(markup, /workflow-timeline|workflow-stage\b/);
   }
 });
 

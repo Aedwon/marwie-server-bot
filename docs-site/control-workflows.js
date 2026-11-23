@@ -1,14 +1,20 @@
 import { registerControlPage, registeredControlPage } from './control-page-registry.js';
 import {
-  contextDefinitionListMarkup,
-  contextSectionMarkup,
-  controlPageHeaderMarkup,
   controlSectionMarkup,
   controlSimplePageHeaderMarkup,
-  saveBarStatusMarkup,
+  disclosure,
+  masterSwitchRow,
+  setDisclosureOpen,
+  settingRow,
+  settingsRows,
+  settingsSection,
+  switchMarkup,
 } from './control-components.js?v=24';
 import { featureResourceKeys } from './control-resource-contract.js';
-import { resourceBindingState, withResourceBindings } from './control-resource-bindings.js?v=2';
+import { withResourceBindings } from './control-resource-bindings.js?v=2';
+import { MAPPING_RESOURCE_DEFINITIONS } from './control-mappings.js';
+import { problemsFromSnapshot } from './control-problems.js?v=1';
+import { supportPageFrame, supportResourceRows } from './control-support-shared.js?v=1';
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -64,7 +70,7 @@ export const WORKFLOW_PAGE_CONFIGS = Object.freeze({
   }),
   '/control/workflows/ticket-handling': Object.freeze({
     title: 'Ticket handling',
-    intro: 'A staff operating guide for ticket readiness, intake, handling, closure, and recovery.',
+    intro: 'Get tickets ready, handle them, and recover when something fails.',
     stages: Object.freeze([
       Object.freeze({
         title: 'Prepare',
@@ -110,13 +116,13 @@ export const WORKFLOW_PAGE_CONFIGS = Object.freeze({
   }),
   '/control/workflows/events': Object.freeze({
     title: 'Events',
-    intro: 'A publishing guide for event announcements and live alerts using the existing Announcements, Live, and Mappings owners.',
+    intro: 'Publish event announcements and live alerts, then check them in Discord.',
     stages: Object.freeze([
       Object.freeze({
         title: 'Prepare',
         body: 'Verify the feature state and destination before drafting the event communication.',
         points: Object.freeze([
-          'Announcements and Live keep their own feature state and show destination readiness in Context.',
+          'Announcements and Live keep their own feature state and show a problem on the channel row when a destination is not ready.',
           'Live needs the Live announcements channel or the fallback Announcements mapping and permission to send messages and embeds.',
         ]),
         links: Object.freeze([
@@ -156,27 +162,31 @@ export const WORKFLOW_PAGE_CONFIGS = Object.freeze({
   }),
 });
 
-function stageMarkup(stage, index) {
-  const links = (stage.links || []).length
-    ? `<div class="workflow-links">${stage.links.map(link => `<a class="control-inline-action" href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>`).join('')}</div>`
-    : '';
+// Steps that have already had their default state applied. The first step of each playbook starts open once.
+const seededSteps = new Set();
+
+function slug(value) {
+  return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+function stageMarkup(stage, index, config = {}) {
+  const id = `playbook-${slug(config.title)}-${index + 1}`;
+  if (index === 0 && !seededSteps.has(id)) {
+    seededSteps.add(id);
+    setDisclosureOpen(id, true);
+  }
   const points = (stage.points || []).length
-    ? `<ul>${stage.points.map(point => `<li>${escapeHtml(point)}</li>`).join('')}</ul>`
+    ? `<ul class="workflow-step-checks">${stage.points.map(point => `<li>${escapeHtml(point)}</li>`).join('')}</ul>`
     : '';
-  return `
-    <li class="workflow-stage">
-      <span class="workflow-stage-number" aria-hidden="true">${String(index + 1).padStart(2, '0')}</span>
-      <div class="workflow-stage-content">
-        <h3>${escapeHtml(stage.title)}</h3>
-        <p>${escapeHtml(stage.body)}</p>
-        ${points}
-        ${links}
-      </div>
-    </li>`;
+  const links = (stage.links || []).length
+    ? `<div class="workflow-links">${stage.links.map(link => `<a class="control-inline-action" href="${escapeHtml(link.href)}" data-nav-path="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>`).join('')}</div>`
+    : '';
+  const trigger = `<span class="workflow-step-number" aria-hidden="true">${index + 1}</span><span class="workflow-step-copy"><span class="workflow-step-title">${escapeHtml(stage.title)}</span><span class="workflow-step-summary">${escapeHtml(stage.body)}</span></span>`;
+  return `<li class="workflow-step">${disclosure({ id, trigger, body: `${points}${links}`, className: 'workflow-step-disclosure' })}</li>`;
 }
 
 function stagesMarkup(config) {
-  return `<ol class="workflow-timeline">${config.stages.map(stageMarkup).join('')}</ol>`;
+  return `<ol class="workflow-steps">${config.stages.map((stage, index) => stageMarkup(stage, index, config)).join('')}</ol>`;
 }
 
 export function workflowPageMarkup(pageKey) {
@@ -185,12 +195,7 @@ export function workflowPageMarkup(pageKey) {
   return `
     <article class="control-page workflow-page" data-page-key="${escapeHtml(pageKey)}">
       ${controlSimplePageHeaderMarkup({ title: config.title, description: config.intro })}
-      ${controlSectionMarkup({
-    id: 'operating-guide',
-    title: 'Operating guide',
-    description: 'Follow these steps in order. Each step names the checks and the failure conditions staff should expect.',
-    body: stagesMarkup(config),
-  })}
+      ${stagesMarkup(config)}
     </article>`;
 }
 
@@ -202,27 +207,64 @@ function moderationEnabled(snapshot) {
   return Boolean((snapshot?.features || []).find(item => item?.name === 'moderation')?.enabled);
 }
 
-function moderationContextMarkup(snapshot, editing) {
-  const log = resourceBindingState(snapshot, 'moderation_log');
-  const trap = resourceBindingState(snapshot, 'compromised_account_trap');
-  const rows = editing
-    ? [{ label: 'Case history', value: '/history reads stored cases even when logging is unavailable' }]
-    : [
-      { label: 'Moderation log', value: `${log.name || log.current} (${log.label})` },
-      { label: 'Compromised account trap', value: `${trap.name || trap.current} (${trap.label})` },
-      { label: 'Case history', value: '/history reads stored cases even when logging is unavailable' },
-    ];
-  return contextSectionMarkup({
-    id: 'moderation-readiness',
-    title: 'Moderation readiness',
-    description: 'Moderation records are independent of the log channel. The log link is optional for case history.',
-    body: contextDefinitionListMarkup(rows),
+const TRAP_KEY = 'compromised_account_trap';
+
+function trapChanged(state) {
+  const before = state?.persisted?.resourceBindings?.[TRAP_KEY] ?? null;
+  const after = state?.draft?.resourceBindings?.[TRAP_KEY] ?? null;
+  return after !== null && after !== '' && after !== before;
+}
+
+function trapConfirmRow(state) {
+  if (!trapChanged(state)) return '';
+  return (settingRow({
+    label: 'I understand that new human messages in this channel trigger compromised-account enforcement.',
+    controlId: 'resource-confirm-trap',
+    rowKey: `${TRAP_KEY}:confirm`,
+    control: switchMarkup({ id: 'resource-confirm-trap', checked: Boolean(state.draft?.resourceAcknowledgements?.[TRAP_KEY]), attributes: `data-resource-confirm="${TRAP_KEY}"` }),
+  }));
+}
+
+function moderationMarkup(state, snapshot) {
+  const config = WORKFLOW_PAGE_CONFIGS[MODERATION_PAGE];
+  const value = state.draft ?? state.persisted;
+  const master = settingsRows(masterSwitchRow({
+    label: 'Log moderation actions',
+    offHint: 'Warn, timeout, kick and ban stop working.',
+    checked: value.enabled,
+    field: 'enabled',
+    attribute: 'data-workflow-enabled',
+  }), { label: 'Moderation settings' });
+  const problems = problemsFromSnapshot(snapshot).filter(problem => problem.pageKey === MODERATION_PAGE);
+  const channels = settingsSection({
+    id: 'moderation-resources-heading',
+    title: 'Channels',
+    body: supportResourceRows({
+      snapshot,
+      state,
+      keys: featureResourceKeys(MODERATION_PAGE),
+      problems,
+      hints: { [TRAP_KEY]: MAPPING_RESOURCE_DEFINITIONS[TRAP_KEY].warning },
+      after: { [TRAP_KEY]: trapConfirmRow(state) },
+    }),
+  });
+  const guide = disclosure({ id: 'moderation-guide', label: 'How moderation works', body: stagesMarkup(config) });
+  return supportPageFrame({
+    pageKey: MODERATION_PAGE,
+    className: 'workflow-page',
+    title: config.title,
+    enabled: value.enabled,
+    body: `${master}${channels}${guide}`,
+    state,
+    save: 'data-workflow-save',
+    discard: 'data-workflow-discard',
   });
 }
 
 function createModerationPageDefinition() {
   return {
     pageKey: MODERATION_PAGE,
+    editOnMount: true,
     selectPersisted(snapshot) {
       return { enabled: moderationEnabled(snapshot) };
     },
@@ -236,50 +278,19 @@ function createModerationPageDefinition() {
       if (Boolean(persisted?.enabled) === Boolean(draft?.enabled)) return [];
       return [{ action_type: 'set_feature', payload: { feature: 'moderation', enabled: Boolean(draft?.enabled) } }];
     },
-    render({ state } = {}) {
+    render({ state, snapshot } = {}) {
       const config = WORKFLOW_PAGE_CONFIGS[MODERATION_PAGE];
       if (!state?.persisted) {
-        return `<article class="control-page workflow-page">${controlSimplePageHeaderMarkup({ title: config.title, description: config.intro })}</article>`;
+        return `<article class="control-page workflow-page">${controlSimplePageHeaderMarkup({ title: config.title })}</article>`;
       }
-      const editing = state.mode === 'edit';
-      const enabled = editing ? state.draft.enabled : state.persisted.enabled;
-      const header = controlPageHeaderMarkup({
-        title: config.title,
-        description: config.intro,
-        enabled,
-        editing,
-        editAttribute: 'data-workflow-edit',
-        toggleAttribute: 'data-workflow-enabled',
-      });
-      const saveActions = editing
-        ? `<div class="workflow-save-actions control-save-bar">${saveBarStatusMarkup(state)}<button class="control-button control-button-primary" type="button" data-workflow-save${state.dirty && !Object.keys(state.errors || {}).length && state.status !== 'saving' ? '' : ' disabled'}>${state.status === 'saving' ? 'Saving…' : 'Save changes'}</button><button class="control-button control-button-secondary" type="button" data-workflow-discard${state.status === 'saving' ? ' disabled' : ''}>Discard</button></div>`
-        : '';
-      const configuration = controlSectionMarkup({
-        id: 'moderation-configuration',
-        title: 'Configuration',
-        description: 'Moderation controls warn, timeout, kick, and ban actions. Role hierarchy checks still apply for each command.',
-        body: editing
-          ? '<p class="workflow-note">Use the feature toggle in the page header to change moderation state.</p>'
-          : `<dl class="control-definition-list"><div><dt>Moderation actions</dt><dd>${enabled ? 'Enabled' : 'Disabled'}</dd></div><div><dt>Case history</dt><dd>/history stays read-only and records every completed case.</dd></div><div><dt>Log channel</dt><dd>Case history is independent of the optional moderation log destination.</dd></div></dl>`,
-      });
-      const guide = controlSectionMarkup({
-        id: 'operating-guide',
-        title: 'Operating guide',
-        description: 'Run these steps in order and verify the result before closing the case.',
-        body: stagesMarkup(config),
-      });
-      return `<article class="control-page workflow-page" data-page-key="${MODERATION_PAGE}">${header}${configuration}${guide}${saveActions}</article>`;
+      return moderationMarkup(state, snapshot || {});
     },
-    renderContext({ state, snapshot } = {}) {
-      return moderationContextMarkup(snapshot || {}, state?.mode === 'edit');
+    // Context content now lives in the page as rows, problems and the Channels section.
+    renderContext() {
+      return '';
     },
     install({ root, store, pageKey, onSave, rerender } = {}) {
       const onClick = event => {
-        if (event.target.closest?.('[data-workflow-edit]')) {
-          store.beginEdit(pageKey);
-          rerender?.();
-          return;
-        }
         if (event.target.closest?.('[data-workflow-discard]')) {
           store.discard(pageKey);
           rerender?.();
@@ -310,6 +321,7 @@ export function registerWorkflowPages() {
     registerControlPage(withResourceBindings(
       createModerationPageDefinition(),
       featureResourceKeys(MODERATION_PAGE),
+      { genericContext: 'never' },
     ));
   }
 }

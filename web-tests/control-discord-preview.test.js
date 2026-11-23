@@ -104,7 +104,6 @@ test('notification panel preview reads as a Discord message with action rows', a
 
   for (const token of [
     'Preview',
-    'Approximate Discord appearance. Preview buttons are disabled.',
     'discord-preview-channel',
     'discord-preview-channel-icon',
     '>roles<',
