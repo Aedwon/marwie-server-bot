@@ -370,7 +370,8 @@ body.control-page {
 /* In the rail the toggle leaves the head's flow so the server icon keeps its full width. */
 .control-shell[data-nav-mode="rail"]:not([data-peek="true"]) .control-side-head { position: relative; }
 .control-shell[data-nav-mode="rail"]:not([data-peek="true"]) .control-nav-toggle { position: absolute; right: 10px; }
-.control-shell[data-nav-mode="rail"]:not([data-peek="true"]) :is(.control-server-name, .control-server-chev, .control-nav-toggle, .control-search-label, .control-search kbd, .control-account-text, .control-offline > span, .control-login span, .control-signed-out-mark span) { opacity: 0; pointer-events: none; }
+/* Scoped to the sidebar: the same classes (sign-in button, labels) also appear on pages. */
+.control-shell[data-nav-mode="rail"]:not([data-peek="true"]) .control-rail :is(.control-server-name, .control-server-chev, .control-nav-toggle, .control-search-label, .control-search kbd, .control-account-text, .control-offline > span, .control-login span, .control-signed-out-mark span) { opacity: 0; pointer-events: none; }
 
 /* Sidebar: one surface. Rail, peek and drawer are states of the same DOM. */
 .control-rail { position: relative; z-index: 20; min-width: 0; min-height: 0; }
@@ -464,7 +465,7 @@ body.control-page {
 .control-nav-group[data-open="true"] .control-nav-leaf { opacity: 1; }
 
 /* Rail: the same rows with labels faded out. Icons keep the same x position. */
-.control-shell[data-nav-mode="rail"]:not([data-peek="true"]) :is(.control-nav-lbl, .control-nav-chev, .control-nav-label, .control-nav-flag) { opacity: 0; pointer-events: none; }
+.control-shell[data-nav-mode="rail"]:not([data-peek="true"]) .control-rail :is(.control-nav-lbl, .control-nav-chev, .control-nav-label, .control-nav-flag) { opacity: 0; pointer-events: none; }
 .control-shell[data-nav-mode="rail"]:not([data-peek="true"]) .control-nav-group[data-open="true"] > .control-nav-kids { grid-template-rows: 0fr; }
 .control-shell[data-nav-mode="rail"]:not([data-peek="true"]) .control-nav-group[data-open="true"] > .control-nav-kids > div { visibility: hidden; }
 

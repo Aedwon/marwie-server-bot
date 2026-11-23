@@ -272,3 +272,10 @@ test('cross-document view transitions are enabled with stable names for the shel
   assert.match(css, /view-transition-name:\s*control-topbar/);
   assert.match(css, /view-transition-name:\s*control-sidebar/);
 });
+
+test('rail fade rules only reach inside the sidebar, never the page', () => {
+  const css = readFileSync(new URL('../docs-site/control.css', import.meta.url), 'utf8');
+  const fades = [...css.matchAll(/([^{}]*data-nav-mode="rail"\]:not\(\[data-peek="true"\]\)[^{}]*)\{[^}]*opacity: 0/g)].map(match => match[1].trim());
+  assert.ok(fades.length >= 2);
+  for (const selector of fades) assert.match(selector, /\.control-rail /, selector);
+});

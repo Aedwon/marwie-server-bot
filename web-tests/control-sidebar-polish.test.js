@@ -118,7 +118,7 @@ test('the rail is the same DOM as the expanded sidebar: labels fade out and icon
   assert.doesNotMatch(markup, /control-primary-nav-rail|sr-only/);
   assert.match(markup, /data-domain-select/);
   assert.match(markup, /aria-current="page"/);
-  assert.match(controlCss, /data-nav-mode="rail"\]:not\(\[data-peek="true"\]\) :is\(\.control-nav-lbl, \.control-nav-chev, \.control-nav-label, \.control-nav-flag\) \{ opacity: 0; pointer-events: none; \}/);
+  assert.match(controlCss, /data-nav-mode="rail"\]:not\(\[data-peek="true"\]\) \.control-rail :is\(\.control-nav-lbl, \.control-nav-chev, \.control-nav-label, \.control-nav-flag\) \{ opacity: 0; pointer-events: none; \}/);
   assert.match(controlCss, /\.control-shell\[data-nav-mode="rail"\] \{ --nav-col: var\(--rail-w\); \}/);
   assert.match(controlCss, /\.control-nav-row \{[^}]*padding: 0 12px;/s);
 });

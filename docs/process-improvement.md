@@ -4,7 +4,7 @@ Rules and required steps that came from failures. At most 12 entries in total. M
 
 ## Required steps
 
-1. Before a website change is deployed, capture every route at 1440x900, 1024x800 and 390x844 in light and dark, and open every capture. A script check that passes does not replace looking. Run the element overlap probe (any two visible content boxes in `main` that intersect without one containing the other) on every capture and fix every hit before deploy.
+1. Before a website change is deployed, capture every route at 1440x900, 1024x800 and 390x844 in light and dark, and open every capture. A script check that passes does not replace looking. Run the element overlap probe (any two visible content boxes in `main` that intersect without one containing the other, and any button or link whose text is not visible) on every capture and fix every hit before deploy. Cover each shell state: signed in and signed out, sidebar expanded and collapsed.
 
 ## Log
 
@@ -14,3 +14,10 @@ Rules and required steps that came from failures. At most 12 entries in total. M
 - What was wrong: on Notification roles at desktop width, the Discord preview covered the right edge of the Panel title and Panel description fields. Button rows repeated their label ("Live Notifications  Live Notifications"). The top bar split server, search and account away from the sidebar and left a wide empty strip.
 - Why it got through: the lead reviewed a sample of pages by eye and trusted a script that only detected content past the right edge of the viewport. It did not detect two elements overlapping. Notification roles was never opened at desktop width before deploy.
 - Fix: required step 1 above, and the overlap probe added to the acceptance script.
+
+### 2026-11-23 Sign-in button blank with the sidebar collapsed
+
+- Owner's words: none recorded; the owner sent a screenshot of the signed-out page with a blank Discord button.
+- What was wrong: the rule that fades sidebar labels in the collapsed rail matched `.control-login span` anywhere on the page, so the page's own sign-in button lost its label.
+- Why it got through: the sweep covered signed in with the sidebar expanded only, and the probe did not look for controls whose text was faded out.
+- Fix: rail fade rules are scoped to `.control-rail`, with a test that fails if any rail fade selector reaches outside the sidebar. Required step 1 now covers signed-out and collapsed states and blank controls.
