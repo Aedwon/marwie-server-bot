@@ -260,6 +260,21 @@ body.control-page {
 }
 .control-server-icon img { width: 100%; height: 100%; object-fit: cover; }
 
+/* Signed out: Rob-bot's mark holds the server switcher's place. */
+.control-signed-out-mark { flex: 1 1 auto; min-width: 0; height: 40px; display: flex; align-items: center; gap: 10px; padding: 0 8px 0 4px; color: var(--text-primary); font-size: 14px; font-weight: 600; text-decoration: none; white-space: nowrap; overflow: hidden; }
+.control-signed-out-mark img { width: 28px; height: 28px; flex: 0 0 28px; border-radius: 8px; object-fit: cover; }
+.control-signed-out-mark span { transition: opacity var(--motion-micro) var(--ease-out); }
+.control-side-head:has(#controlServerButton:not([hidden])) .control-signed-out-mark { display: none; }
+
+/* Signed-out page: one centered action. The sidebar's sign-in hides so it is not offered twice. */
+.control-signin { min-height: calc(100dvh - 200px); display: grid; place-content: center; justify-items: center; gap: 0; text-align: center; }
+.control-signin-mark { width: 56px; height: 56px; margin-bottom: 20px; border-radius: 16px; object-fit: cover; }
+.control-signin h1 { margin: 0; font-size: 24px; line-height: 1.25; font-weight: 600; letter-spacing: -.015em; }
+.control-signin p { margin: 8px 0 24px; color: var(--text-secondary); font-size: 15px; line-height: 1.5; }
+.control-main a.control-signin-button { width: auto; min-height: 44px; padding: 0 18px; color: #fff; text-decoration: none; }
+.control-main a.control-signin-button:hover { background: #4752c4; text-decoration: none; }
+.control-shell:has(.control-signin) .control-side-foot { display: none; }
+
 /* Search sits under the server row, the same width as the navigation rows. */
 .control-side-search { flex: 0 0 auto; padding: 0 8px 6px; }
 .control-search {
@@ -355,7 +370,7 @@ body.control-page {
 /* In the rail the toggle leaves the head's flow so the server icon keeps its full width. */
 .control-shell[data-nav-mode="rail"]:not([data-peek="true"]) .control-side-head { position: relative; }
 .control-shell[data-nav-mode="rail"]:not([data-peek="true"]) .control-nav-toggle { position: absolute; right: 10px; }
-.control-shell[data-nav-mode="rail"]:not([data-peek="true"]) :is(.control-server-name, .control-server-chev, .control-nav-toggle, .control-search-label, .control-search kbd, .control-account-text, .control-offline > span, .control-login span) { opacity: 0; pointer-events: none; }
+.control-shell[data-nav-mode="rail"]:not([data-peek="true"]) :is(.control-server-name, .control-server-chev, .control-nav-toggle, .control-search-label, .control-search kbd, .control-account-text, .control-offline > span, .control-login span, .control-signed-out-mark span) { opacity: 0; pointer-events: none; }
 
 /* Sidebar: one surface. Rail, peek and drawer are states of the same DOM. */
 .control-rail { position: relative; z-index: 20; min-width: 0; min-height: 0; }

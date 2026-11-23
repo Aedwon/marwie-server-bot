@@ -9,12 +9,12 @@ import {
   settingsRows,
   settingsSection,
   switchMarkup,
-} from './control-components.js?v=28';
+} from './control-components.js?v=29';
 import { featureResourceKeys } from './control-resource-contract.js';
-import { withResourceBindings } from './control-resource-bindings.js?v=6';
+import { withResourceBindings } from './control-resource-bindings.js?v=7';
 import { MAPPING_RESOURCE_DEFINITIONS } from './control-mappings.js';
 import { problemsFromSnapshot } from './control-problems.js?v=2';
-import { supportPageFrame, supportResourceRows } from './control-support-shared.js?v=6';
+import { supportPageFrame, supportResourceRows } from './control-support-shared.js?v=7';
 
 function escapeHtml(value) {
   return String(value ?? '')

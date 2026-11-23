@@ -4,21 +4,21 @@ import {
   saveBarView,
   savedRowKeys,
   toggleDisclosure,
-} from './control-components.js?v=28';
+} from './control-components.js?v=29';
 import { problemPaths, problemsFromSnapshot } from './control-problems.js?v=2';
-import { registerContentPages } from './control-content.js?v=28';
-import { registerAnalyticsPage } from './control-analytics.js?v=30';
-import { registerCommunityPages } from './control-community.js?v=27';
-import { registerMappingPages } from './control-mappings.js?v=28';
-import { registerUtilitiesPages } from './control-utilities.js?v=28';
+import { registerContentPages } from './control-content.js?v=29';
+import { registerAnalyticsPage } from './control-analytics.js?v=31';
+import { registerCommunityPages } from './control-community.js?v=28';
+import { registerMappingPages } from './control-mappings.js?v=29';
+import { registerUtilitiesPages } from './control-utilities.js?v=29';
 import { controlIcon } from './control-icons.js?v=3';
 import { GUILD_STORAGE_KEY, pickGuild } from './control-account.js?v=5';
 import { createNavigationState, isNavigationBlocked } from './control-navigation.js?v=3';
 import { installShell } from './control-shell.js?v=6';
 import { controlRedirectFor, resolveControlRoute } from './control-router.js?v=3';
-import { OVERVIEW_PATH, overviewPageMarkup } from './control-overview.js?v=5';
-import { createActivityController, installActivityPage } from './control-secondary.js?v=27';
-import { registerWorkflowPages, workflowPageMarkup } from './control-workflows.js?v=28';
+import { OVERVIEW_PATH, overviewPageMarkup } from './control-overview.js?v=6';
+import { createActivityController, installActivityPage } from './control-secondary.js?v=28';
+import { registerWorkflowPages, workflowPageMarkup } from './control-workflows.js?v=29';
 import {
   controlState,
   hydrateControlPages,

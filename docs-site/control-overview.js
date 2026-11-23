@@ -1,10 +1,10 @@
-import { controlPageHeaderMarkup, disclosure, escapeHtml, settingsSection } from './control-components.js?v=28';
+import { controlPageHeaderMarkup, disclosure, escapeHtml, settingsSection } from './control-components.js?v=29';
 import { controlIcon } from './control-icons.js?v=3';
-import { activityTotal, rangeProjection } from './control-analytics.js?v=30';
+import { activityTotal, rangeProjection } from './control-analytics.js?v=31';
 import { problemsFromSnapshot } from './control-problems.js?v=2';
 import { FEATURE_RESOURCE_KEYS_BY_PAGE } from './control-resource-contract.js';
 import { MAPPING_RESOURCE_DEFINITIONS } from './control-mappings.js';
-import { resourceOptionLabel } from './control-resource-bindings.js?v=6';
+import { resourceOptionLabel } from './control-resource-bindings.js?v=7';
 import { destinationForPath } from './control-router.js?v=3';
 
 export const OVERVIEW_PATH = '/control/overview';

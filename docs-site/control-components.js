@@ -1,4 +1,4 @@
-import { activityPageMarkup } from './control-secondary.js?v=27';
+import { activityPageMarkup } from './control-secondary.js?v=28';
 import { controlIcon } from './control-icons.js?v=3';
 
 export { navigationMarkup } from './control-shell.js?v=6';
@@ -218,9 +218,12 @@ export function featureHeaderActionsMarkup({
   return `<div class="control-feature-header-actions">${toggles}</div>`;
 }
 
+const DISCORD_MARK = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515c.074.134.144.273.21.416a18.27 18.27 0 0 0-5.356 0c.067-.143.137-.282.21-.416A19.74 19.74 0 0 0 3.678 4.37C.533 9.046-.321 13.58.106 18.058a19.9 19.9 0 0 0 5.994 3.03c.49-.669.927-1.383 1.302-2.134a12.93 12.93 0 0 1-2.058-.988c.172-.126.341-.255.505-.391 3.862 1.763 8.052 1.763 11.868 0 .165.136.333.265.505.391-.653.39-1.343.721-2.059.988.376.751.813 1.465 1.303 2.134a19.89 19.89 0 0 0 5.992-3.03c.501-5.177-.854-9.673-3.548-13.688ZM7.822 14.709c-1.171 0-2.139-1.076-2.139-2.397s.948-2.397 2.139-2.397c1.201 0 2.159 1.086 2.139 2.397 0 1.321-.948 2.397-2.139 2.397Zm7.457 0c-1.171 0-2.139-1.076-2.139-2.397s.948-2.397 2.139-2.397c1.201 0 2.159 1.086 2.139 2.397 0 1.321-.938 2.397-2.139 2.397Z"/></svg>';
+
 export function pageMarkup(destination, { authenticated = false, activityState = null } = {}) {
   if (!authenticated) {
-    return `<section class="control-empty"><h1>${escapeHtml(destination.label)}</h1><p>Sign in with Discord from the sidebar to load Control.</p></section>`;
+    // Signed out: the sign-in action sits on the page itself, not only in the sidebar foot.
+    return `<section class="control-signin" aria-labelledby="controlSigninTitle"><img class="control-signin-mark" src="/rob-robin.jpg?v=1" alt="" width="56" height="56"><h1 id="controlSigninTitle">Sign in to Rob-bot Control</h1><p>Use the Discord account that manages your server.</p><a class="control-login control-signin-button" href="/api/auth/start">${DISCORD_MARK}<span>Sign in with Discord</span></a></section>`;
   }
 
   if (destination.path === '/control/activity') return activityPageMarkup(activityState || {});

@@ -1,5 +1,5 @@
 import { MAPPING_RESOURCE_DEFINITIONS, mappingOptionsForKey } from './control-mappings.js';
-import { settingRow, settingsRows } from './control-components.js?v=28';
+import { settingRow, settingsRows } from './control-components.js?v=29';
 
 const TRAP_KEY = 'compromised_account_trap';
 

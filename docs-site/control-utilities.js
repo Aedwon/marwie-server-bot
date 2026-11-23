@@ -11,9 +11,9 @@ import {
   settingsRows,
   settingsSection,
   switchMarkup,
-} from './control-components.js?v=28';
+} from './control-components.js?v=29';
 import { featureResourceKeys } from './control-resource-contract.js';
-import { withResourceBindings } from './control-resource-bindings.js?v=6';
+import { withResourceBindings } from './control-resource-bindings.js?v=7';
 import {
   fieldMarkup,
   itemHead,
@@ -22,7 +22,7 @@ import {
   supportResourceSection,
   textArea,
   textInput,
-} from './control-support-shared.js?v=6';
+} from './control-support-shared.js?v=7';
 
 const TICKET_PAGE = '/control/utilities/ticket-configuration';
 const NOTIFICATION_PAGE = '/control/utilities/notification-roles';

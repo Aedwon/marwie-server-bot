@@ -1,4 +1,4 @@
-import { controlSimplePageHeaderMarkup, disclosure, taskIndicatorMarkup } from './control-components.js?v=28';
+import { controlSimplePageHeaderMarkup, disclosure, taskIndicatorMarkup } from './control-components.js?v=29';
 import { controlIcon } from './control-icons.js?v=3';
 
 function escapeHtml(value) {

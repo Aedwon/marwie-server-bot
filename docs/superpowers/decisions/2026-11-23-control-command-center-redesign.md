@@ -62,3 +62,19 @@ The prototype fixes the shell, navigation, motion, page model and disclosure rul
 ## Decision 5: Motion system
 
 One token set: 120ms micro feedback, 160ms exits, 220ms entrances, 280ms layout. Two curves: `cubic-bezier(.22, 1, .36, 1)` for entering and moving, `cubic-bezier(.55, 0, 1, .45)` for leaving. No looping decoration. Reduced motion keeps fades only. Basis: agent-standards WEB-M1 to WEB-M13.
+
+## Decision 6: Shell controls move into the sidebar (supersedes the top bar in Decision 4)
+
+Owner, after reviewing the deployed site: "why didn't you just put the search bar on the left sidebar and also the dropdown and sidebar toggle? and even my profile pic and its functions underneath?"
+
+- The sidebar head holds the server switcher and the collapse toggle. Search sits under them. The profile row (avatar, name, role) sits in the sidebar foot and opens the account menu upward.
+- The top bar exists only on phones, with the menu button and a search button.
+- In the rail, the toggle leaves the head and returns when the rail is peeked.
+
+## Decision 7: Signed-out pages carry their own sign-in
+
+Owner asked: "show me the page when not logged in, where is the button to sign in". The button lived only in the sidebar foot, and on phones it was hidden inside the closed drawer.
+
+- Control pages signed out show one centered action: Rob-bot's mark, "Sign in to Rob-bot Control", one sentence, and Sign in with Discord. The sidebar foot hides while that card shows, so the action is not offered twice.
+- Public pages (Commands, Handbook) keep Sign in with Discord in the sidebar foot.
+- Signed out, Rob-bot's mark holds the server switcher's place in the sidebar head.

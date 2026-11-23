@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-import { toggleDisclosure } from '../docs-site/control-components.js?v=28';
+import { toggleDisclosure } from '../docs-site/control-components.js?v=29';
 import { workflowPageMarkup } from '../docs-site/control-workflows.js';
 import { activityPageMarkup } from '../docs-site/control-secondary.js';
 import { analyticsPageMarkup } from '../docs-site/control-analytics.js';

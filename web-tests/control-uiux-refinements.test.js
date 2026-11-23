@@ -80,12 +80,13 @@ test('Control chevrons share one shape and size', async () => {
   assert.doesNotMatch(utilities, />⌄</);
 });
 
-test('unauthenticated pages leave sign-in to the sidebar foot', async () => {
+test('unauthenticated pages put sign-in on the page; the sidebar foot keeps it for public pages', async () => {
   const { pageMarkup } = await import('../docs-site/control-components.js');
   const page = pageMarkup({ label: 'Community', path: '/control/community', domain: 'community' }, { authenticated: false });
-  assert.match(page, /Sign in with Discord from the sidebar to load Control\./);
-  assert.doesNotMatch(page, /\/api\/auth\/start/);
-  assert.doesNotMatch(page, /Sign in with Discord<\/a>/);
+  // The page carries the sign-in action itself; phones would otherwise hide it inside the closed drawer.
+  assert.match(page, /<h1 id="controlSigninTitle">Sign in to Rob-bot Control<\/h1>/);
+  assert.match(page, /<a class="control-login control-signin-button" href="\/api\/auth\/start">[\s\S]*Sign in with Discord<\/span><\/a>/);
+  assert.doesNotMatch(page, /from the sidebar/);
 
   const html = readFileSync(new URL('../docs-site/control.html', import.meta.url), 'utf8');
   const foot = html.slice(html.indexOf('<div class="control-side-foot"'), html.indexOf('</aside>'));
