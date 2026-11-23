@@ -37,6 +37,11 @@ const MIME_TYPES = new Map([
   ['.webp', 'image/webp'],
 ]);
 
+// Control paths that moved to another page. The client router redirects the same paths.
+const PERMANENT_REDIRECTS = new Map([
+  ['/control/commands', '/commands'],
+]);
+
 function jsonResponse(res, status, body) {
   res.statusCode = status;
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -142,6 +147,14 @@ export function createLocalServer({ siteRoot = DEFAULT_SITE_ROOT, apiLoaders = A
         }
         const module = await loadHandler();
         await module.default(req, res);
+        return;
+      }
+
+      const redirect = PERMANENT_REDIRECTS.get(pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname);
+      if (redirect) {
+        res.statusCode = 301;
+        res.setHeader('Location', `${redirect}${requestUrl.search}`);
+        res.end();
         return;
       }
 

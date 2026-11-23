@@ -10,7 +10,7 @@ import {
   requiresContentConfirmation,
 } from '../docs-site/control-content.js';
 import { installUtilitiesPageInteractions } from '../docs-site/control-utilities.js';
-import { isDisclosureOpen } from '../docs-site/control-components.js?v=24';
+import { isDisclosureOpen } from '../docs-site/control-components.js?v=25';
 import {
   ANNOUNCEMENTS, ANONYMOUS, FEEDS, LIVE, MODERATION, NOTIFICATIONS, STAGE_2B_PAGES, TICKETS,
   hydrateStage2b, stage2bSaveRequests, stage2bSnapshot,
@@ -222,9 +222,9 @@ test('Typed text reaches the draft on input and Add opens the new row', () => {
 
 test('Stage 2b modules carry new versions and the CSS section sits at the end', () => {
   const app = read('control-app.js');
-  assert.match(app, /control-content\.js\?v=24/);
-  assert.match(app, /control-utilities\.js\?v=24/);
-  assert.match(app, /control-workflows\.js\?v=23/);
+  assert.match(app, /control-content\.js\?v=25/);
+  assert.match(app, /control-utilities\.js\?v=25/);
+  assert.match(app, /control-workflows\.js\?v=24/);
   const css = read('control-features.css');
   assert.match(css, /\/\* Stage 2b: publishing, support and safety pages \*\//);
   assert.ok(css.lastIndexOf('Stage 2b: publishing') > css.lastIndexOf('/* Page model:'));

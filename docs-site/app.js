@@ -1,27 +1,23 @@
-import { installShell, loadShellSession } from './control-shell.js?v=2';
+import { installShell, loadShellSession } from './control-shell.js?v=3';
 import { GUILD_STORAGE_KEY, pickGuild } from './control-account.js?v=2';
 
 const startRoutes = [
   {
-    audience: 'Admin',
     title: 'Setup',
     description: 'Discover existing resources, verify bindings, then configure only what you use.',
     href: '#setup',
   },
   {
-    audience: 'Moderator',
     title: 'Moderate',
     description: 'Review context, act, then check hierarchy or permissions if blocked.',
     href: '#playbook-moderation',
   },
   {
-    audience: 'Operations',
     title: 'Operate',
     description: 'Tickets, announcements, reputation, quizzes, feeds, analytics, and showcase.',
     href: '#playbooks',
   },
   {
-    audience: 'Troubleshooting',
     title: 'Fix issues',
     description: 'Check health first; change configuration only when the symptom points there.',
     href: '#troubleshooting',
@@ -242,7 +238,7 @@ const faq = [
 ];
 
 function startRouteHtml(route) {
-  return `<a class="task-card" href="${route.href}"><span class="task-audience">${route.audience}</span><h3>${route.title}</h3><p>${route.description}</p></a>`;
+  return `<li><a class="start-link" href="${route.href}"><span class="start-title">${route.title}</span><span class="start-description">${route.description}</span></a></li>`;
 }
 
 function healthHtml(item, index) {
@@ -252,7 +248,7 @@ function healthHtml(item, index) {
 function playbookHtml(playbook) {
   const steps = playbook.steps.map(step => `<li>${step}</li>`).join('');
   const links = playbook.commands.map(([label, href]) => `<a href="${href}"><code>${label}</code></a>`).join('');
-  return `<section class="playbook" id="${playbook.id}"><div class="playbook-head"><span>${playbook.audience}</span><h3>${playbook.title}</h3><p>${playbook.summary}</p></div><ol class="playbook-steps">${steps}</ol><div class="playbook-links"><strong>Commands</strong>${links}</div></section>`;
+  return `<section class="playbook" id="${playbook.id}"><div class="playbook-head"><p class="playbook-audience">${playbook.audience}</p><h3>${playbook.title}</h3><p>${playbook.summary}</p></div><ol class="playbook-steps">${steps}</ol><div class="playbook-links"><span class="playbook-links-label">Commands</span>${links}</div></section>`;
 }
 
 document.querySelector('#startRoutes').innerHTML = startRoutes.map(startRouteHtml).join('');

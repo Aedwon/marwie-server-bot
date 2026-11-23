@@ -1,15 +1,16 @@
-import { installShell, loadShellSession } from './control-shell.js?v=2';
+import { installShell, loadShellSession } from './control-shell.js?v=3';
 import { GUILD_STORAGE_KEY, pickGuild } from './control-account.js?v=2';
 import { plainHeading, slug } from './control-palette.js?v=1';
+import { controlIcon } from './control-icons.js?v=3';
 
 const WORKFLOWS = [
-  { id: 'workflow-setup', title: 'Setup & health', intro: 'Connect Discord resources, review configuration health, and adjust server settings.', commands: ['/ping', '/setup auto', '/setup status', '/setup role-panel', '/setup text-channel', '/setup voice-channel', '/setup forum', '/setup category', '/setup role', '/setup feature', '/setup log-ignore'] },
-  { id: 'workflow-moderation', title: 'Moderation', intro: 'Review member history and take or reverse moderation actions.', commands: ['/history', '/warn', '/timeout', '/kick', '/ban', '/unban', '/anonwho'] },
-  { id: 'workflow-tickets', title: 'Tickets', intro: 'Configure support ticket types and publish the member entry panel.', commands: ['/ticket-type list', '/ticket-type add', '/ticket-type disable', '/ticket-panel post'] },
-  { id: 'workflow-publishing', title: 'Publishing', intro: 'Send server announcements and the authorized TikTok Live notice.', commands: ['/announce', '/live'] },
-  { id: 'workflow-reputation', title: 'Reputation', intro: 'Review reputation, manage tiers, and make staff point adjustments.', commands: ['/rank', '/profile', '/leaderboard', '/reputation award', '/reputation thresholds'] },
-  { id: 'workflow-learning', title: 'Quizzes & anonymous Q&A', intro: 'Manage quizzes and anonymous questions for the community.', commands: ['/quiz add', '/quiz start', '/quiz schedule', '/anonask'] },
-  { id: 'workflow-collaboration', title: 'Coworking & collaboration', intro: 'Use focus-session tools and help members find collaborators.', commands: ['/pomodoro start', '/pomodoro status', '/pomodoro stop', '/lfg'] },
+  { id: 'workflow-setup', title: 'Setup & health', commands: ['/ping', '/setup auto', '/setup status', '/setup role-panel', '/setup text-channel', '/setup voice-channel', '/setup forum', '/setup category', '/setup role', '/setup feature', '/setup log-ignore'] },
+  { id: 'workflow-moderation', title: 'Moderation', commands: ['/history', '/warn', '/timeout', '/kick', '/ban', '/unban', '/anonwho'] },
+  { id: 'workflow-tickets', title: 'Tickets', commands: ['/ticket-type list', '/ticket-type add', '/ticket-type disable', '/ticket-panel post'] },
+  { id: 'workflow-publishing', title: 'Publishing', commands: ['/announce', '/live'] },
+  { id: 'workflow-reputation', title: 'Reputation', commands: ['/rank', '/profile', '/leaderboard', '/reputation award', '/reputation thresholds'] },
+  { id: 'workflow-learning', title: 'Quizzes & anonymous Q&A', commands: ['/quiz add', '/quiz start', '/quiz schedule', '/anonask'] },
+  { id: 'workflow-collaboration', title: 'Coworking & collaboration', commands: ['/pomodoro start', '/pomodoro status', '/pomodoro stop', '/lfg'] },
   { id: 'workflow-operations', title: 'Feeds & operations', intro: 'Manage AI feed sources, review activity reporting, and spotlight showcase work.', commands: ['/ai-source list', '/ai-source add', '/ai-source poll', '/ai-source disable', '/analytics', '/app-of-week'] },
 ];
 
@@ -248,10 +249,48 @@ function renderMarkdown(markdown) {
   return output.join('\n');
 }
 
-function headingText(element) {
-  const copy = element.cloneNode(true);
-  copy.querySelector?.('.heading-link')?.remove();
-  return copy.textContent.trim();
+
+const LABELS = Object.freeze({
+  syntax: /^Syntax:/i,
+  options: /^Parameters:/i,
+  example: /^Example usage/i,
+});
+
+// Splits one command's manual nodes into what shows first and what waits behind "More details".
+function splitCommandDetails(nodes) {
+  const groups = { syntax: [], options: [], example: [], more: [] };
+  let mode = 'more';
+  for (const node of nodes) {
+    const label = node.matches?.('p') && node.firstElementChild?.matches?.('strong') ? node.textContent.trim() : '';
+    if (label) {
+      mode = Object.keys(LABELS).find(key => LABELS[key].test(label)) || 'more';
+    }
+    if (node.matches?.('.command-detail-table-wrap')) groups.options.push(node);
+    else groups[mode].push(node);
+  }
+  return groups;
+}
+
+function detailsMarkup(nodes) {
+  const groups = splitCommandDetails(nodes);
+  const html = list => list.map(node => node.outerHTML).join('');
+  const more = groups.more.length
+    ? `<div class="control-disclosure command-more" data-disclosure="more" data-open="false"><button type="button" class="control-disclose" data-command-toggle aria-expanded="false">More details${controlIcon('chevron', { size: 12, className: 'control-disclose-chev' })}</button><div class="control-reveal"><div inert data-disclosure-body>${html(groups.more)}</div></div></div>`
+    : '';
+  return `<div class="command-detail">${html(groups.syntax)}${html(groups.options)}${html(groups.example)}${more}</div>`;
+}
+
+function rowMarkup(command, preview, id, nodes) {
+  const bodyId = `${id}-details`;
+  return `<li class="command-row control-disclosure" id="${id}" data-command-row data-command="${escapeHtml(command)}" data-search="${escapeHtml(`${command} ${preview.permission} ${preview.description}`.toLowerCase())}" data-disclosure="${id}" data-open="false">
+    <button type="button" class="control-disclose command-trigger" data-command-toggle aria-expanded="false" aria-controls="${bodyId}">
+      <span class="command-name"><code>${escapeHtml(command)}</code></span>
+      <span class="command-what">${escapeHtml(preview.description)}</span>
+      <span class="command-who"><span class="sr-only">Who can use it: </span>${escapeHtml(preview.permission)}</span>
+      ${controlIcon('chevron', { size: 12, className: 'control-disclose-chev' })}
+    </button>
+    <div class="control-reveal" id="${bodyId}"><div inert data-disclosure-body>${detailsMarkup(nodes)}</div></div>
+  </li>`;
 }
 
 function regroupByWorkflow(container) {
@@ -275,22 +314,10 @@ function regroupByWorkflow(container) {
     if (currentCommand) commands.get(currentCommand).push(node);
   }
 
-  container.replaceChildren();
-  const cards = [];
-  const details = new Map();
   const assigned = new Set();
-
+  const sections = [];
   for (const workflow of WORKFLOWS) {
-    const section = document.createElement('section');
-    section.className = 'workflow-section';
-    section.id = workflow.id;
-    section.innerHTML = `<div class="workflow-header"><h2>${escapeHtml(workflow.title)}</h2><p>${escapeHtml(workflow.intro)}</p></div>`;
-
-    const tableWrap = document.createElement('div');
-    tableWrap.className = 'workflow-command-table-wrap';
-    tableWrap.innerHTML = '<table class="workflow-command-table"><colgroup><col class="command-column"><col class="description-column"><col class="access-column"></colgroup><thead><tr><th scope="col">Command</th><th scope="col">Description</th><th scope="col">Access</th></tr></thead><tbody></tbody></table>';
-    const table = tableWrap.querySelector('table');
-    const body = table.querySelector('tbody');
+    const rows = [];
     for (const command of workflow.commands) {
       if (assigned.has(command)) continue;
       const nodes = commands.get(command);
@@ -299,169 +326,82 @@ function regroupByWorkflow(container) {
         console.warn(`Command preview is incomplete for ${command}.`);
         continue;
       }
-      const heading = nodes[0];
-      const row = document.createElement('tr');
-      row.dataset.commandRow = command;
-      row.tabIndex = 0;
-      row.setAttribute('aria-label', `Open ${command} details`);
-      const card = document.createElement('button');
-      card.type = 'button';
-      card.className = 'command-card';
-      card.id = heading.id;
-      card.dataset.command = command;
-      card.dataset.search = `${command} ${preview.permission} ${preview.description}`.toLowerCase();
-      card.innerHTML = `
-        <span class="command-name"><code>${escapeHtml(command)}</code></span>`;
-      row.innerHTML = `<th scope="row"></th><td class="command-description">${escapeHtml(preview.description)}</td><td class="permission-badge">${escapeHtml(preview.permission)}</td>`;
-      row.firstElementChild.append(card);
-      body.append(row);
-      cards.push(card);
-      const detailNodes = nodes.slice(1).map(node => node.cloneNode(true));
+      const detailNodes = nodes.slice(1);
       while (detailNodes.at(-1)?.matches?.('hr')) detailNodes.pop();
-      details.set(command, detailNodes);
+      rows.push(rowMarkup(command, preview, nodes[0].id, detailNodes));
       assigned.add(command);
     }
-    section.append(tableWrap);
-    container.append(section);
+    sections.push(`<section class="workflow-section" id="${workflow.id}" aria-labelledby="${workflow.id}-title">
+      <h2 id="${workflow.id}-title">${escapeHtml(workflow.title)}</h2>
+      ${workflow.intro ? `<p class="workflow-intro">${escapeHtml(workflow.intro)}</p>` : ''}
+      <ul class="command-list">${rows.join('')}</ul>
+    </section>`);
   }
+  container.innerHTML = `${sections.join('')}<p class="command-empty-note" hidden>No commands match this search.</p>`;
 
   const unassigned = [...commands.keys()].filter(command => !assigned.has(command));
   if (unassigned.length) console.warn(`Unassigned command documentation: ${unassigned.join(', ')}`);
-  return { sourceCount: commands.size, assignedCount: assigned.size, unassigned, cards, details };
+  return {
+    sourceCount: commands.size,
+    assignedCount: assigned.size,
+    unassigned,
+    rows: [...container.querySelectorAll('[data-command-row]')],
+  };
 }
 
-function setupManualNavigation() {
-  const links = [...document.querySelectorAll('.manual-nav a[href^="#"]')];
-  const targets = links.map(link => document.querySelector(link.getAttribute('href'))).filter(Boolean);
-  if (!('IntersectionObserver' in window)) return;
-  const observer = new IntersectionObserver(entries => {
-    const visible = entries
-      .filter(entry => entry.isIntersecting && !entry.target.hidden)
-      .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
-    if (!visible) return;
-    links.forEach(link => {
-      if (link.getAttribute('href') === `#${visible.target.id}`) link.setAttribute('aria-current', 'page');
-      else link.removeAttribute('aria-current');
-    });
-  }, { rootMargin: '-12% 0px -76% 0px' });
-  targets.forEach(target => observer.observe(target));
+// Opens or closes one disclosure (a command row or its "More details").
+function setDisclosure(container, open) {
+  container.dataset.open = String(open);
+  container.querySelector(':scope > [data-command-toggle]')?.setAttribute('aria-expanded', String(open));
+  const body = container.querySelector(':scope > .control-reveal > [data-disclosure-body]');
+  if (body) body.inert = !open;
 }
 
-function setupCommandDialog(cards, details) {
-  const dialog = document.querySelector('#commandDialog');
-  const title = document.querySelector('#commandDialogTitle');
-  const body = document.querySelector('#commandDialogBody');
-  const closeButton = document.querySelector('[data-command-dialog-close]');
-  if (!dialog || !title || !body || !closeButton) return { openHashTarget() {} };
-
-  let lastTrigger = null;
-  let clearHashOnClose = true;
-  let restoreFocusOnClose = true;
-
-  function setHash(id) {
-    if (location.hash === `#${id}`) return;
-    history.pushState(null, '', `#${id}`);
-  }
-
-  function clearCommandHash() {
-    if (!location.hash.startsWith('#command-')) return;
-    history.replaceState(null, '', `${location.pathname}${location.search}`);
-  }
-
-  function openCommand(card, { direct = false, updateHash = true } = {}) {
-    const command = card?.dataset?.command;
-    const nodes = details.get(command);
-    if (!command || !nodes) return;
-    if (dialog.open) {
-      clearHashOnClose = false;
-      restoreFocusOnClose = false;
-      dialog.close();
-    }
-    lastTrigger = direct ? null : card;
-    title.textContent = command;
-    body.replaceChildren(...nodes.map(node => node.cloneNode(true)));
-    if (updateHash) setHash(card.id);
-    dialog.showModal();
-    closeButton.focus();
-  }
-
-  function requestClose({ clearHash = true, restoreFocus = true } = {}) {
-    clearHashOnClose = clearHash;
-    restoreFocusOnClose = restoreFocus;
-    if (dialog.open) dialog.close();
-  }
-
-  closeButton.addEventListener('click', () => requestClose());
-  dialog.addEventListener('cancel', event => {
-    event.preventDefault();
-    requestClose();
+function setupCommandRows(container, rows) {
+  const syncHash = (row, open) => {
+    if (open && location.hash !== `#${row.id}`) history.replaceState(null, '', `#${row.id}`);
+    else if (!open && location.hash === `#${row.id}`) history.replaceState(null, '', `${location.pathname}${location.search}`);
+  };
+  container.addEventListener('click', event => {
+    const toggle = event.target.closest?.('[data-command-toggle]');
+    if (!toggle) return;
+    const disclosure = toggle.closest('.control-disclosure');
+    const open = disclosure.dataset.open !== 'true';
+    setDisclosure(disclosure, open);
+    if (disclosure.matches('[data-command-row]')) syncHash(disclosure, open);
   });
-  dialog.addEventListener('close', () => {
-    if (clearHashOnClose) clearCommandHash();
-    body.replaceChildren();
-    title.textContent = '';
-    const restore = restoreFocusOnClose ? lastTrigger : null;
-    lastTrigger = null;
-    clearHashOnClose = true;
-    restoreFocusOnClose = true;
-    restore?.focus();
-  });
-
-  cards.forEach(card => {
-    card.addEventListener('click', () => openCommand(card));
-    const row = card.closest('[data-command-row]');
-    row?.addEventListener('click', event => {
-      if (event.target.closest('button, a, input, select, textarea')) return;
-      openCommand(card);
-    });
-    row?.addEventListener('keydown', event => {
-      if (event.target !== row || !['Enter', ' '].includes(event.key)) return;
-      event.preventDefault();
-      openCommand(card);
-    });
-  });
-
-  function openHashTarget() {
-    const id = location.hash.slice(1);
-    if (!id) {
-      if (dialog.open) requestClose({ clearHash: false, restoreFocus: false });
-      return;
-    }
-    const card = cards.find(candidate => candidate.id === id);
-    if (!card) return;
-    card.hidden = false;
-    card.closest('.workflow-section')?.removeAttribute('hidden');
-    openCommand(card, { direct: true, updateHash: false });
-  }
-
-  return { openHashTarget };
+  return {
+    // /commands#command-<slug> opens that row and brings it into view.
+    openHashTarget() {
+      const row = rows.find(candidate => candidate.id === location.hash.slice(1));
+      if (!row) return null;
+      row.hidden = false;
+      row.closest('.workflow-section')?.removeAttribute('hidden');
+      setDisclosure(row, true);
+      row.scrollIntoView({ block: 'start' });
+      return row;
+    },
+  };
 }
 
-function setupCommandSearch(container, cards, dialog) {
+function setupCommandSearch(container, rows) {
   const input = document.querySelector('#commandSearch');
-  const clear = document.querySelector('#commandSearchClear');
   const count = document.querySelector('#commandResultCount');
-  const workflows = [...container.querySelectorAll('.workflow-section')];
-  const empty = document.createElement('div');
-  empty.className = 'command-empty-note';
-  empty.hidden = true;
-  empty.textContent = 'No commands match this search.';
-  container.append(empty);
+  const sections = [...container.querySelectorAll('.workflow-section')];
+  const empty = container.querySelector('.command-empty-note');
+  if (input) input.placeholder = `Search ${rows.length} commands`;
 
   function applyFilter() {
-    const query = (input?.value || '').trim().toLowerCase();
-    const terms = query.split(/\s+/).filter(Boolean);
+    const terms = (input?.value || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
     let visible = 0;
-    for (const card of cards) {
-      const haystack = `${card.dataset.command || ''} ${card.dataset.search || ''}`;
-      const match = terms.every(term => haystack.includes(term));
-      card.closest('[data-command-row]')?.toggleAttribute('hidden', !match);
+    for (const row of rows) {
+      const match = terms.every(term => row.dataset.search.includes(term));
+      row.hidden = !match;
       if (match) visible += 1;
     }
-    for (const workflow of workflows) workflow.hidden = !workflow.querySelector('[data-command-row]:not([hidden])');
-    if (clear) clear.hidden = !query;
-    if (count) count.textContent = `${visible} command${visible === 1 ? '' : 's'}`;
-    empty.hidden = visible !== 0;
+    for (const section of sections) section.hidden = !section.querySelector('[data-command-row]:not([hidden])');
+    if (count) count.textContent = terms.length ? `${visible} command${visible === 1 ? '' : 's'}` : '';
+    if (empty) empty.hidden = visible !== 0;
   }
 
   function clearSearch() {
@@ -472,9 +412,8 @@ function setupCommandSearch(container, cards, dialog) {
   }
 
   input?.addEventListener('input', applyFilter);
-  clear?.addEventListener('click', clearSearch);
   addEventListener('keydown', event => {
-    if (event.defaultPrevented || dialog?.open || overlayOpen()) return;
+    if (event.defaultPrevented || overlayOpen()) return;
     const target = event.target;
     const typing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target?.isContentEditable;
     if (event.key === '/' && !typing) {
@@ -488,6 +427,7 @@ function setupCommandSearch(container, cards, dialog) {
     }
   });
   applyFilter();
+  return { clear: () => { if (input) { input.value = ''; applyFilter(); } } };
 }
 
 async function loadManual() {
@@ -502,12 +442,15 @@ async function loadManual() {
     if (result.sourceCount !== expectedCount || result.assignedCount !== expectedCount || result.unassigned.length) {
       console.warn(`Expected ${expectedCount} unique command previews. Source=${result.sourceCount}, assigned=${result.assignedCount}, unassigned=${result.unassigned.length}.`);
     }
-    setupManualNavigation();
-    const dialog = document.querySelector('#commandDialog');
-    setupCommandSearch(container, result.cards, dialog);
-    const dialogController = setupCommandDialog(result.cards, result.details);
-    dialogController.openHashTarget();
-    addEventListener('hashchange', dialogController.openHashTarget);
+    const search = setupCommandSearch(container, result.rows);
+    const rows = setupCommandRows(container, result.rows);
+    const openHash = () => {
+      if (!location.hash.slice(1)) return;
+      search.clear();
+      rows.openHashTarget();
+    };
+    openHash();
+    addEventListener('hashchange', openHash);
   } catch (error) {
     console.error('Could not load command manual', error);
     container.innerHTML = '<div class="manual-error"><strong>Could not load commands.</strong><p>Read the <a href="/commands.md">plain Markdown manual</a>.</p></div>';

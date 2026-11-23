@@ -37,10 +37,10 @@ test('indicator sits on a top-level link and is absent when nothing is current',
   assert.equal(resolveIndicatorTarget([]), null);
 });
 
-test('navigation order: four groups, Resources, Playbooks, Reference; no System and no Overview', () => {
+test('navigation order: Overview, four groups, Resources, Playbooks, Reference; no System', () => {
   const model = navigationModel(destinationForPath('/control/analytics'), 'insights');
   assert.deepEqual(model.items.map(item => item.key || `label:${item.label}`), [
-    'engagement', 'publishing', 'support-safety', 'insights', 'resources',
+    'overview', 'engagement', 'publishing', 'support-safety', 'insights', 'resources',
     'label:Playbooks', 'ticket-handling', 'events',
     'label:Reference', 'commands', 'handbook',
   ]);
@@ -50,7 +50,10 @@ test('navigation order: four groups, Resources, Playbooks, Reference; no System 
   const insights = model.items.find(item => item.key === 'insights');
   assert.deepEqual(insights.children.map(child => child.path), ['/control/analytics', '/control/activity']);
   assert.equal(model.items.filter(item => item.expanded).length, 1);
-  assert.equal(model.items.some(item => item.key === 'system' || item.key === 'overview'), false);
+  assert.equal(model.items.some(item => item.key === 'system'), false);
+  const overview = model.items[0];
+  assert.deepEqual([overview.type, overview.key, overview.path, overview.icon], ['link', 'overview', '/control/overview', 'house']);
+  assert.equal(navigationModel(destinationForPath('/control/overview'), 'engagement').items[0].current, true);
 });
 
 test('Resources keeps the remembered mapping child and is current for all three mapping routes', () => {
@@ -70,8 +73,8 @@ test('Reference links point at the public documents and mark the matching docume
   const handbook = navigationModel({ path: '/handbook' }, 'engagement');
   assert.equal(handbook.items.find(item => item.key === 'handbook').path, '/handbook');
   assert.equal(handbook.items.find(item => item.key === 'handbook').current, true);
-  const inControl = navigationModel(destinationForPath('/control/commands'), 'engagement');
-  assert.equal(inControl.items.find(item => item.key === 'commands').current, true);
+  const inControl = navigationModel(destinationForPath('/control/overview'), 'engagement');
+  assert.equal(inControl.items.find(item => item.key === 'commands').current, false);
 });
 
 test('rail and expanded produce identical nav markup', () => {

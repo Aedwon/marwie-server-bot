@@ -71,9 +71,9 @@ test('Quizzes category and option fields inherit the shared 3px keyboard outline
   assert.deepEqual(outlines(featureStyles), [], 'Control features must preserve the shared outline on focused Quizzes fields');
 });
 
-test('Control Commands can reflow its stacked rows to the available width', () => {
-  assert.match(featureStyles, /\.control-command-item[^{}]*\{\s*grid-template-columns:\s*1fr;\s*\}/);
-  assert.doesNotMatch(featureStyles, /\.control-command-table(?=\s*[,\{])[^{}]*\{[^}]*min-width:\s*560px;/);
+test('Commands rows reflow to one column below 760px', () => {
+  const commandsStyles = readFileSync(new URL('../docs-site/commands.css', import.meta.url), 'utf8');
+  assert.match(commandsStyles, /@media \(max-width: 760px\) \{\s*\.command-trigger \{ grid-template-columns: minmax\(0, 1fr\) 12px; \}/);
 });
 
 test('Control text fields expose their boundaries and retain the focus stroke on hover', () => {
@@ -85,9 +85,10 @@ test('Control text fields expose their boundaries and retain the focus stroke on
   assert.match(featureStyles, /:hover:not\(:disabled, :focus\)\s*\{[^}]*border-color:\s*var\(--text-tertiary\);/);
 });
 
-test('Notification subsections and Control Command titles use compact heading typography', () => {
+test('Notification subsections and Commands group titles use compact heading typography', () => {
   assert.match(featureStyles, /\.utility-subheading\s+h3\s*\{[^}]*font-size:\s*16px;[^}]*font-weight:\s*600;/);
-  assert.match(featureStyles, /\.control-command-goal\s+h2\s*\{[^}]*font-size:\s*16px;[^}]*font-weight:\s*600;/);
+  const commandsStyles = readFileSync(new URL('../docs-site/commands.css', import.meta.url), 'utf8');
+  assert.match(commandsStyles, /\.workflow-section h2\s*\{[^}]*font-size:\s*15px;[^}]*font-weight:\s*600;/);
 });
 
 test('hidden skip link casts no shadow into the top-left corner', () => {

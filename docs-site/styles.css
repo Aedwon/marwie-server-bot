@@ -1,146 +1,55 @@
-:root {
-      color-scheme: light;
-      --font-sans: "Figtree", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      --surface-page: #fcfcfb;
-      --surface-primary: #ffffff;
-      --surface-secondary: #f4f4f2;
-      --surface-hover: #f5f5f3;
-      --surface-selected: #efefec;
-      --text-primary: #111113;
-      --text-secondary: #4a4a4f;
-      --text-tertiary: #6e6e73;
-      --text-faint: #8a8a8f;
-      --stroke-subtle: #ebebea;
-      --stroke-control: #dcdcda;
-      --stroke-selected: #e4e4e0;
-      --accent-brand: #7db9e8;
-      --accent-info: #2f6fa3;
-      --focus-ring: #2f6fa3;
-      --status-info-fg: #2f6fa3;
-      --status-info-bg: #eef6fd;
-      --status-info-stroke: #dcebf8;
-      --bg: var(--surface-page);
-      --surface: var(--surface-primary);
-      --surface-soft: var(--surface-hover);
-      --text: var(--text-primary);
-      --muted: var(--text-secondary);
-      --quiet: var(--text-tertiary);
-      --border: var(--stroke-subtle);
-      --border-strong: var(--stroke-control);
-      --accent: var(--accent-info);
-      --accent-soft: var(--status-info-bg);
-      --accent-text: var(--accent-info);
-      --focus: var(--focus-ring);
-      --code-bg: var(--surface-secondary);
-      --content-width: 760px;
-    }
-    html[data-theme="dark"] {
-      color-scheme: dark;
-      --surface-page: #0f0f11;
-      --surface-primary: #19191c;
-      --surface-secondary: #1b1b1e;
-      --surface-hover: #212125;
-      --surface-selected: #242428;
-      --text-primary: #ececee;
-      --text-secondary: #adadb3;
-      --text-tertiary: #8b8b91;
-      --text-faint: #737379;
-      --stroke-subtle: #232327;
-      --stroke-control: #34343a;
-      --stroke-selected: #3d3d43;
-      --accent-brand: #7db9e8;
-      --accent-info: #7db9e8;
-      --focus-ring: #7db9e8;
-      --status-info-fg: #7db9e8;
-      --status-info-bg: #14273a;
-      --status-info-stroke: #244a69;
-    }
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; background: var(--bg); }
-    body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 var(--font-sans); -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
-    a { color: var(--accent); text-underline-offset: 3px; }
-    a:hover { text-decoration-thickness: 2px; }
-    button, select, input { font: inherit; }
-    strong, b { font-weight: 600; }
-    :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 6px; }
-    main { min-width: 0; }
-    .doc { width: 100%; max-width: var(--content-width); margin: 0; padding: 0 0 90px; }
-    .doc-header { padding-bottom: 32px; border-bottom: 1px solid var(--border); }
-    .breadcrumbs { margin-bottom: 8px; color: var(--quiet); font-size: 12px; }
-    h1, h2, h3 { color: var(--text); font-weight: 600; letter-spacing: -0.025em; }
-    h1 { margin: 0 0 12px; font-size: clamp(36px, 6vw, 50px); line-height: 1.08; letter-spacing: -0.045em; }
-    h2 { margin: 0 0 9px; font-size: 28px; line-height: 1.18; }
-    h3 { margin: 27px 0 8px; font-size: 18px; }
-    .lede { max-width: 700px; margin: 0; color: var(--muted); font-size: 19px; line-height: 1.52; }
-    .release { margin-top: 14px; color: var(--quiet); font-size: 12px; }
-    .section { padding: 40px 0; border-bottom: 1px solid var(--border); scroll-margin-top: 24px; }
-    .section:last-of-type { border-bottom: 0; }
-    .intro { max-width: 700px; margin: 0 0 24px; color: var(--muted); font-size: 17px; }
-    p { margin: 0 0 14px; color: var(--muted); }
-    .plain-list { margin-top: 6px; border-top: 1px solid var(--border); }
-    .plain-item { display: grid; grid-template-columns: 190px 1fr; gap: 24px; padding: 17px 0; border-bottom: 1px solid var(--border); }
-    .plain-item h3 { margin: 0; font-size: 16px; letter-spacing: -0.012em; }
-    .plain-item p { margin: 0; font-size: 15px; }
-    .meta { margin-top: 5px; color: var(--quiet); font-size: 12px; }
-    .note { margin: 20px 0; padding: 12px 0 12px 14px; border-left: 3px solid var(--accent); }
-    .note strong { display: block; margin-bottom: 3px; color: var(--text); font-size: 14px; }
-    .note p { margin: 0; font-size: 14px; }
-    .command-list { border-top: 1px solid var(--border); }
-    .command { display: grid; grid-template-columns: 180px 1fr; gap: 24px; padding: 15px 0; border-bottom: 1px solid var(--border); }
-    .command p { margin: 0; font-size: 15px; }
-    code { font: 12.5px SFMono-Regular, Consolas, monospace; background: var(--code-bg); color: var(--text); padding: 3px 5px; border-radius: 5px; }
-    .role-order { margin: 18px 0 28px; padding: 0; list-style: none; border-top: 1px solid var(--border); }
-    .role-order li { display: grid; grid-template-columns: 34px 170px 1fr; gap: 13px; align-items: start; padding: 13px 0; border-bottom: 1px solid var(--border); }
-    .role-order .n { color: var(--quiet); font-size: 12px; padding-top: 2px; }
-    .role-order b { font-size: 14px; }
-    .role-order span:last-child { color: var(--muted); font-size: 14px; }
-    .role-order .bot-row b { color: var(--accent-text); }
-    .bullets { margin: 8px 0 18px; padding-left: 21px; color: var(--muted); }
-    .bullets li { margin: 4px 0; }
-    .progress-line { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; margin: 0 0 18px; }
-    .track { height: 4px; background: var(--border); border-radius: 999px; overflow: hidden; }
-    .bar { height: 100%; width: 0; background: var(--accent); }
-    .progress-text { color: var(--quiet); font-size: 12px; white-space: nowrap; }
-    .reset { min-height: 38px; padding: 0 10px; border: 1px solid var(--border-strong); border-radius: 7px; background: var(--surface); color: var(--text); cursor: pointer; font-size: 12px; }
-    .steps { counter-reset: step; border-top: 1px solid var(--border); }
-    .step { counter-increment: step; display: grid; grid-template-columns: 30px 1fr 40px; gap: 13px; padding: 16px 0; border-bottom: 1px solid var(--border); }
-    .step::before { content: counter(step); color: var(--quiet); font-size: 12px; padding-top: 2px; }
-    .step h3 { margin: 0 0 3px; font-size: 16px; }
-    .step p { margin: 0; font-size: 14px; }
-    .check { min-width: 40px; min-height: 40px; display: grid; place-items: center; cursor: pointer; }
-    .check input { width: 19px; height: 19px; accent-color: var(--accent); }
-    .resource-list { border-top: 1px solid var(--border); }
-    .resource { display: grid; grid-template-columns: 180px 1fr; gap: 24px; padding: 13px 0; border-bottom: 1px solid var(--border); }
-    .resource b { font-size: 14px; }
-    .resource span { color: var(--muted); font-size: 14px; }
-    .settings { border-top: 1px solid var(--border); }
-    .setting { display: grid; grid-template-columns: 205px 1fr; gap: 24px; padding: 13px 0; border-bottom: 1px solid var(--border); }
-    .setting b { font-size: 14px; }
-    .setting p { margin: 0; font-size: 14px; }
-    .faq { border-top: 1px solid var(--border); }
-    details { border-bottom: 1px solid var(--border); }
-    summary { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: 18px; list-style: none; cursor: pointer; color: var(--text); font-weight: 600; }
-    summary::-webkit-details-marker { display: none; }
-    summary::after { content: "+"; color: var(--quiet); font-size: 20px; font-weight: 400; }
-    details[open] summary::after { content: "−"; }
-    details p { margin: -2px 0 17px; font-size: 14px; }
-    footer { padding-top: 30px; color: var(--quiet); font-size: 12px; }
-    @media (max-width: 900px) {
-      .doc { padding-top: 0; }
-    }
-    @media (max-width: 600px) {
-      .doc { width: min(var(--content-width), calc(100% - 28px)); padding-bottom: 64px; }
-      h1 { font-size: 37px; }
-      h2 { font-size: 25px; }
-      .lede { font-size: 17px; }
-      .section { padding: 34px 0; }
-      .plain-item, .command, .resource, .setting { grid-template-columns: 1fr; gap: 5px; }
-      .role-order li { grid-template-columns: 26px 1fr; gap: 8px; }
-      .role-order li span:last-child { grid-column: 2; }
-      .step { grid-template-columns: 26px 1fr; }
-      .check { grid-column: 2; justify-self: start; }
-      .progress-line { grid-template-columns: 1fr auto; }
-      .reset { grid-column: 2; }
-    }
-    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
-    @media (forced-colors: active) { .handbook-toc a[aria-current="true"], .note { border: 2px solid CanvasText; } }
+/* Handbook reading styles. Colors, fonts and motion come from control.css tokens. */
+.operator-doc { width: 100%; min-width: 0; color: var(--text-secondary); font: 15px/1.6 var(--font-sans); padding: 0 0 80px; }
+.operator-doc :is(h1, h2, h3) { margin: 0; color: var(--text-primary); font-weight: 600; }
+.operator-doc h1 { font-size: 24px; line-height: 1.25; letter-spacing: -.015em; }
+.operator-doc h2 { font-size: 18px; line-height: 1.35; }
+.operator-doc h3 { font-size: 15px; line-height: 1.4; }
+.operator-doc :is(p, li) { max-width: 64ch; }
+.operator-doc p { margin: 0 0 12px; }
+.operator-doc strong, .operator-doc b { font-weight: 600; }
+.operator-doc :focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: 6px; }
+.operator-doc code { padding: 2px 5px; border-radius: 6px; background: var(--surface-secondary); color: var(--text-primary); font: 13px ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+.doc-header { padding-bottom: 8px; }
+.lede { margin: 8px 0 0; color: var(--text-secondary); }
+
+.section { padding: 36px 0 0; scroll-margin-top: 20px; }
+.section-heading { margin-bottom: 12px; }
+.section-heading .intro, .intro { margin: 4px 0 0; color: var(--text-tertiary); font-size: 14px; line-height: 1.5; }
+
+/* Ruled lists: one row per item, separated by hairlines. */
+.plain-list, .resource-list, .settings, .faq, .steps, .role-order { border-top: 1px solid var(--stroke-subtle); max-width: 720px; }
+.plain-item, .resource, .setting { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 4px 24px; padding: 14px 0; border-bottom: 1px solid var(--stroke-subtle); }
+.plain-item h3, .resource b, .setting b { color: var(--text-primary); font-size: 14px; line-height: 1.5; font-weight: 600; }
+.plain-item p, .resource span, .setting p { margin: 0; font-size: 14px; line-height: 1.55; }
+
+.bullets { margin: 8px 0 12px; padding-left: 20px; }
+.bullets li { margin: 4px 0; }
+
+.role-order { margin: 12px 0 24px; padding: 0; list-style: none; }
+.role-order li { display: grid; grid-template-columns: 28px 170px minmax(0, 1fr); gap: 12px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--stroke-subtle); max-width: none; }
+.role-order .n { color: var(--text-tertiary); font-size: 13px; font-variant-numeric: tabular-nums; }
+.role-order b { color: var(--text-primary); font-size: 14px; }
+.role-order span:last-child { font-size: 14px; }
+.role-order .bot-row b { color: var(--accent-info); }
+
+/* A note is a bold lead and one paragraph. No bar, no card. */
+.note, .operator-note { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 4px 16px; max-width: 720px; margin: 16px 0 0; padding: 0; }
+.note strong, .operator-note strong { color: var(--text-primary); font-size: 14px; }
+.note p, .operator-note p { margin: 0; font-size: 14px; }
+
+.faq details { border-bottom: 1px solid var(--stroke-subtle); }
+.faq summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 48px; list-style: none; color: var(--text-primary); font-weight: 500; cursor: pointer; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; color: var(--text-tertiary); font-size: 18px; font-weight: 400; }
+.faq details[open] summary::after { content: "−"; }
+.faq details p { margin: -2px 0 16px; font-size: 14px; }
+
+footer { padding-top: 32px; color: var(--text-tertiary); font-size: 13px; }
+
+@media (max-width: 600px) {
+  .note, .operator-note { grid-template-columns: 1fr; }
+  .plain-item, .resource, .setting { grid-template-columns: 1fr; }
+  .role-order li { grid-template-columns: 24px minmax(0, 1fr); gap: 4px 8px; }
+  .role-order li span:last-child { grid-column: 2; }
+}

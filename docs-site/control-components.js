@@ -1,7 +1,7 @@
-import { activityPageMarkup, commandsPageMarkup } from './control-secondary.js?v=23';
-import { controlIcon } from './control-icons.js?v=2';
+import { activityPageMarkup } from './control-secondary.js?v=24';
+import { controlIcon } from './control-icons.js?v=3';
 
-export { navigationMarkup } from './control-shell.js?v=2';
+export { navigationMarkup } from './control-shell.js?v=3';
 
 export function escapeHtml(value) {
   return String(value ?? '')
@@ -223,7 +223,6 @@ export function pageMarkup(destination, { authenticated = false, activityState =
     return `<section class="control-empty"><h1>${escapeHtml(destination.label)}</h1><p>Sign in with Discord from the top bar to load Control.</p></section>`;
   }
 
-  if (destination.path === '/control/commands') return commandsPageMarkup();
   if (destination.path === '/control/activity') return activityPageMarkup(activityState || {});
 
   const intro = destination.domain === 'workflows'

@@ -6,9 +6,9 @@ import {
   settingRow,
   settingsRows,
   settingsSection,
-} from './control-components.js?v=24';
+} from './control-components.js?v=25';
 import { featureResourceKeys } from './control-resource-contract.js';
-import { resourceSelectMarkup } from './control-resource-bindings.js?v=2';
+import { resourceSelectMarkup } from './control-resource-bindings.js?v=3';
 import { MAPPING_RESOURCE_DEFINITIONS } from './control-mappings.js';
 import { problemsFromSnapshot } from './control-problems.js?v=1';
 

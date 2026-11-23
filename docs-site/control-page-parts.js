@@ -1,5 +1,5 @@
 // Stage 2b shared parts: a segmented control with a sliding thumb, and the staged save bar.
-import { saveBarStatusMarkup } from './control-components.js?v=24';
+import { saveBarStatusMarkup } from './control-components.js?v=25';
 
 function escapeHtml(value) {
   return String(value ?? '')

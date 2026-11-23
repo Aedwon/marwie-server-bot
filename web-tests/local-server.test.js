@@ -53,6 +53,22 @@ test('local server exposes health, clean site routes, assets, and signed-out Con
   });
 });
 
+test('local server permanently redirects the removed Control Commands page to /commands', async () => {
+  await withServer(async origin => {
+    for (const [route, target] of [
+      ['/control/commands', '/commands'],
+      ['/control/commands/', '/commands'],
+      ['/control/commands?from=palette', '/commands?from=palette'],
+    ]) {
+      const response = await fetch(`${origin}${route}`, { redirect: 'manual' });
+      assert.equal(response.status, 301, route);
+      assert.equal(response.headers.get('location'), target, route);
+    }
+    const overview = await fetch(`${origin}/control/overview`, { redirect: 'manual' });
+    assert.equal(overview.status, 200, 'Overview is served by the Control document');
+  });
+});
+
 test('local server fails closed for unknown APIs and files outside docs-site', async () => {
   await withServer(async origin => {
     const unknownApi = await fetch(`${origin}/api/not-real`);

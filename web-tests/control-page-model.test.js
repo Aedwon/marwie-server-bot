@@ -12,13 +12,13 @@ import {
   settingRow,
   settingsRows,
   toggleDisclosure,
-} from '../docs-site/control-components.js?v=24';
+} from '../docs-site/control-components.js?v=25';
 import { problemPaths, problemSentence, problemsFromSnapshot } from '../docs-site/control-problems.js?v=1';
 import { navigationModel } from '../docs-site/control-navigation.js';
 import { createControlStateStore } from '../docs-site/control-state.js';
-import { createCommunityPageDefinition } from '../docs-site/control-community.js?v=22';
+import { createCommunityPageDefinition } from '../docs-site/control-community.js?v=23';
 import { featureResourceKeys } from '../docs-site/control-resource-contract.js';
-import { withResourceBindings } from '../docs-site/control-resource-bindings.js?v=2';
+import { withResourceBindings } from '../docs-site/control-resource-bindings.js?v=3';
 import { controlRouteSnapshot } from './fixtures/control-route-snapshot.js';
 
 const REPUTATION = '/control/community/reputation';
@@ -384,8 +384,8 @@ test('saved rows are derived from the save request and tinted once for 500ms', (
 
 test('changed imports carry bumped versions', () => {
   const app = read('control-app.js');
-  assert.match(app, /control-components\.js\?v=24/);
-  assert.match(app, /control-community\.js\?v=22/);
-  assert.match(read('control-community.js'), /control-resource-bindings\.js\?v=2/);
-  assert.match(read('control.html'), /control-features\.css\?v=24/);
+  assert.match(app, /control-components\.js\?v=25/);
+  assert.match(app, /control-community\.js\?v=23/);
+  assert.match(read('control-community.js'), /control-resource-bindings\.js\?v=3/);
+  assert.match(read('control.html'), /control-features\.css\?v=25/);
 });

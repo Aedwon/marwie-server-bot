@@ -5,6 +5,8 @@ import test from 'node:test';
 import { pageMarkup } from '../docs-site/control-components.js';
 import {
   CONTROL_DESTINATIONS,
+  controlRedirectFor,
+  destinationForPath,
   resolveControlRoute,
 } from '../docs-site/control-router.js';
 
@@ -90,16 +92,16 @@ test('routing tests execute the real canonical router', () => {
     resolveControlRoute('/control/content/feeds').path,
     '/control/content/feeds',
   );
-  assert.equal(
-    resolveControlRoute('/control/commands').path,
-    '/control/commands',
-  );
+  assert.equal(controlRedirectFor('/control/commands'), '/commands');
+  assert.equal(controlRedirectFor('/control/commands/'), '/commands');
+  assert.equal(destinationForPath('/control/commands'), null);
   assert.equal(
     resolveControlRoute('/control/activity').path,
     '/control/activity',
   );
 
-  assert.equal(paths.some(path => /overview|build-help/.test(path)), false);
+  assert.equal(paths.includes('/control/overview'), true);
+  assert.equal(paths.some(path => /build-help/.test(path)), false);
 });
 
 test('invalid child URLs use the domain first child, never remembered child', () => {
@@ -127,7 +129,7 @@ test('invalid child URLs use the domain first child, never remembered child', ()
       '/control/content/live',
       { community: '/control/community/quizzes' },
     ).path,
-    '/control/community/reputation',
+    '/control/overview',
   );
 
   const resolved = resolveControlRoute(

@@ -32,7 +32,7 @@ test('feature-first groups own primary navigation; Resources, Playbooks and Refe
   assert.deepEqual(model.items.filter(item => item.type === 'group').map(item => item.key), ['engagement', 'publishing', 'support-safety', 'insights']);
   assert.deepEqual(
     model.items.filter(item => item.type === 'link' && item.key !== 'resources' && !item.external).map(item => item.path),
-    ['/control/workflows/ticket-handling', '/control/workflows/events'],
+    ['/control/overview', '/control/workflows/ticket-handling', '/control/workflows/events'],
   );
 });
 

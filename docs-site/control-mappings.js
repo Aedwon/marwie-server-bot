@@ -3,8 +3,8 @@ import {
   registerControlPage,
   registeredControlPage,
 } from './control-page-registry.js';
-import { controlPageHeaderMarkup, problemLine } from './control-components.js?v=24';
-import { resourceSelectMarkup } from './control-resource-bindings.js?v=2';
+import { controlPageHeaderMarkup, problemLine } from './control-components.js?v=25';
+import { resourceSelectMarkup } from './control-resource-bindings.js?v=3';
 import { problemsFromSnapshot } from './control-problems.js?v=1';
 import { animateSegmentedThumbs, segmentedControlMarkup, stagedSaveBarMarkup } from './control-page-parts.js';
 

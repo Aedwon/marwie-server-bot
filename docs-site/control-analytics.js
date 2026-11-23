@@ -10,9 +10,9 @@ import {
   settingsRows,
   settingsSection,
   disclosure,
-} from './control-components.js?v=24';
+} from './control-components.js?v=25';
 import { featureResourceKeys } from './control-resource-contract.js';
-import { resourceSelectMarkup, withResourceBindings } from './control-resource-bindings.js?v=2';
+import { resourceSelectMarkup, withResourceBindings } from './control-resource-bindings.js?v=3';
 import { problemsFromSnapshot } from './control-problems.js?v=1';
 import { animateSegmentedThumbs, segmentedControlMarkup, stagedSaveBarMarkup } from './control-page-parts.js';
 
@@ -155,7 +155,7 @@ function hasPassiveCount(value, status) {
   return value != null && (status === 'complete' || status === 'partial');
 }
 
-function rangeProjection(snapshot, requestedRange) {
+export function rangeProjection(snapshot, requestedRange) {
   const analytics = snapshot?.analytics;
   if (!analytics) return { selectedRange: '7d', projection: null };
   const ranges = analytics.ranges && typeof analytics.ranges === 'object' ? analytics.ranges : null;

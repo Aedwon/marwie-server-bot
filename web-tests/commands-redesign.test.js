@@ -8,7 +8,8 @@ const commandsCss = read('docs-site/commands.css');
 const commandsJs = read('docs-site/commands.js');
 const publicManual = read('docs-site/commands.md');
 const canonicalManual = read('docs/commands.md');
-const controlSecondary = read('docs-site/control-secondary.js');
+const handbookJs = read('docs-site/app.js');
+const localServer = read('server/local-server.js');
 const vercel = JSON.parse(read('vercel.json'));
 
 function slug(value) {
@@ -55,8 +56,8 @@ test('All Commands uses the shared Control shell instead of legacy handbook chro
   assert.match(commandsHtml, /<aside id="controlNavDrawer" class="control-rail"/);
   assert.match(commandsHtml, /<main id="controlMain" class="control-main commands-main"/);
   assert.match(commandsHtml, /href="\/control\.css\?v=/);
-  assert.match(commandsHtml, /<h1[^>]*>All Commands<\/h1>/);
-  assert.match(commandsHtml, /<title>All Commands · Rob-bot<\/title>/);
+  assert.match(commandsHtml, /<h1[^>]*>Commands<\/h1>/);
+  assert.match(commandsHtml, /<title>Commands · Rob-bot<\/title>/);
   assert.doesNotMatch(commandsHtml, /class="(?:layout|sidebar|mobilebar|mobilebrand|menubtn|commands-shell|commands-rail)"/);
   assert.doesNotMatch(commandsHtml, /Rob-bot Handbook/);
 });
@@ -83,16 +84,17 @@ test('All Commands defaults to System and reuses the shared shell theme and draw
   assert.match(shellSource, /isDrawer\s*:/);
 });
 
-test('All Commands keeps the approved 13px typography floor and metadata treatment', () => {
+test('All Commands keeps the 13px typography floor and shows who can use a command as muted text, not a badge', () => {
   assert.deepEqual(fontSizeViolations(commandsCss), []);
-  for (const selector of ['.search-status', '.permission-badge']) {
-    const block = cssBlock(commandsCss, selector);
-    assert.match(block, /font-size\s*:\s*13px\s*;/);
-    assert.match(block, /line-height\s*:\s*18px\s*;/);
-  }
+  const block = cssBlock(commandsCss, '.command-who');
+  assert.match(block, /font-size\s*:\s*13px\s*;/);
+  assert.match(block, /line-height\s*:\s*18px\s*;/);
+  assert.match(block, /color\s*:\s*var\(--text-tertiary\)/);
+  assert.doesNotMatch(commandsCss, /permission-badge|border-radius:\s*999px/);
+  assert.doesNotMatch(commandsJs, /permission-badge|<dialog|showModal/);
 });
 
-test('the public renderer retains every current command anchor and Control deep links resolve', () => {
+test('the public renderer retains every current command anchor and in-product deep links resolve', () => {
   const commands = commandHeadings(publicManual);
   const anchors = commandAnchors(publicManual);
   assert.equal(commands.length, 43);
@@ -101,24 +103,25 @@ test('the public renderer retains every current command anchor and Control deep 
   assert.ok(anchors.has('command-ticket-panel-post'));
   assert.ok(anchors.has('command-ai-source-poll'));
 
-  const publicLinks = [...controlSecondary.matchAll(/href:\s*'\/commands#([^']+)'/g)].map(match => match[1]);
-  assert.ok(publicLinks.length > 0);
-  for (const anchor of publicLinks) assert.ok(anchors.has(anchor), `Missing public manual anchor ${anchor}`);
+  const links = [...handbookJs.matchAll(/\/commands#([a-z0-9-]+)/g)].map(match => match[1]);
+  assert.ok(links.length > 0);
+  for (const anchor of links) assert.ok(anchors.has(anchor), `Missing public manual anchor ${anchor}`);
 
   assert.match(commandsJs, /base = `command-\$\{slug\(plain\)\}`/);
-  assert.match(commandsJs, /card\.id = heading\.id/);
+  assert.match(commandsJs, /rowMarkup\(command, preview, nodes\[0\]\.id,/);
+  assert.match(commandsJs, /<li class="command-row control-disclosure" id="\$\{id\}"/);
   assert.doesNotMatch(commandsJs, /\/setup solved-tag|Build Help/i);
 });
 
-test('command search and hash reveal remain wired to the existing manual rendering path', () => {
+test('command search and hash reveal remain wired to the manual rendering path', () => {
   assert.match(commandsHtml, /id="commandSearch"[^>]*type="search"/);
-  assert.match(commandsHtml, /id="commandSearchClear"/);
   assert.match(commandsHtml, /id="commandResultCount"/);
-  assert.match(commandsJs, /function setupCommandSearch\(container, cards, dialog\)/);
+  assert.doesNotMatch(commandsHtml, /id="commandSearchClear"|<dialog|commandDialog/);
+  assert.match(commandsJs, /function setupCommandSearch\(container, rows\)/);
   assert.match(commandsJs, /input\?\.addEventListener\('input', applyFilter\)/);
-  assert.match(commandsJs, /terms\.every\(term => haystack\.includes\(term\)\)/);
-  assert.match(commandsJs, /function openHashTarget\(\)/);
-  assert.match(commandsJs, /addEventListener\('hashchange', dialogController\.openHashTarget\)/);
+  assert.match(commandsJs, /terms\.every\(term => row\.dataset\.search\.includes\(term\)\)/);
+  assert.match(commandsJs, /openHashTarget\(\)/);
+  assert.match(commandsJs, /addEventListener\('hashchange', openHash\)/);
   assert.match(commandsJs, /fetch\('\/commands\.md\?v=/);
   assert.equal(publicManual, canonicalManual);
 });
@@ -126,9 +129,10 @@ test('command search and hash reveal remain wired to the existing manual renderi
 test('All Commands content stays public and canonical website routing stays separated from Control and handbook', () => {
   // The manual loads without a session. The shared top bar only adds Sign in or the account menu.
   assert.doesNotMatch(commandsJs, /loadManual\([^)]*session|await loadShellSession/);
-  assert.match(commandsHtml, /href="\/control"[^>]*>Control<\/a>/);
-  assert.match(commandsHtml, /href="\/handbook"[^>]*>Handbook<\/a>/);
+  // The sidebar already links Control and Handbook, so the page body carries no footer repeating them.
+  assert.doesNotMatch(commandsHtml, /commands-footer/);
   assert.match(commandsHtml, /id="controlLogin"[^>]*href="\/api\/auth\/start"/);
+  assert.match(localServer, /\['\/control\/commands', '\/commands'\]/);
 
   const rewrite = source => vercel.rewrites.find(item => item.source === source)?.destination;
   assert.equal(rewrite('/'), '/docs-site/control');

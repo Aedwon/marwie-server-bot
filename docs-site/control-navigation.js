@@ -1,12 +1,13 @@
 import {
   CONTROL_NAV_GROUPS,
+  CONTROL_NAV_OVERVIEW,
   CONTROL_NAV_RESOURCES,
   CONTROL_PLAYBOOKS,
   CONTROL_REFERENCE,
   destinationForDomain,
   destinationForPath,
   navGroupForPath,
-} from './control-router.js?v=2';
+} from './control-router.js?v=3';
 
 const NAV_GROUP_KEYS = new Set(CONTROL_NAV_GROUPS.map(item => item.key));
 const DEFAULT_GROUP = 'engagement';
@@ -64,7 +65,8 @@ export function navigationModel(current, expandedDomain = DEFAULT_GROUP, lastByD
     ...extra,
   });
 
-  const items = CONTROL_NAV_GROUPS.map(group => {
+  const items = [link(CONTROL_NAV_OVERVIEW)];
+  CONTROL_NAV_GROUPS.forEach(group => {
     const children = group.items.map(item => ({
       key: item.key,
       label: item.label,
@@ -72,7 +74,7 @@ export function navigationModel(current, expandedDomain = DEFAULT_GROUP, lastByD
       current: matches(item, current?.path),
       flagged: flagged(item.path),
     }));
-    return {
+    items.push({
       type: 'group',
       key: group.key,
       label: group.label,
@@ -81,7 +83,7 @@ export function navigationModel(current, expandedDomain = DEFAULT_GROUP, lastByD
       current: children.some(child => child.current),
       flagged: children.some(child => child.flagged),
       children,
-    };
+    });
   });
 
   const resourcesPath = targetForItem(CONTROL_NAV_RESOURCES, lastByDomain);

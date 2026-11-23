@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const ROUTES = [
+  '/control/overview',
   '/control/community/reputation',
   '/control/community/quizzes',
   '/control/community/voice-coworking',
@@ -20,7 +21,6 @@ const ROUTES = [
   '/control/mappings/channels',
   '/control/mappings/roles',
   '/control/mappings/categories',
-  '/control/commands',
   '/control/activity',
 ].sort();
 
@@ -60,7 +60,7 @@ const EXPECTED_RESOURCES = {
   '/control/analytics': ['analytics'],
 };
 
-test('completion keeps all 19 canonical deep links stable', async () => {
+test('completion keeps all 19 canonical deep links stable, with Overview first and Commands moved to /commands', async () => {
   const { CONTROL_DESTINATIONS, destinationForPath } = await import('../docs-site/control-router.js');
   assert.deepEqual(CONTROL_DESTINATIONS.map(item => item.path).sort(), ROUTES);
   for (const path of ROUTES) assert.equal(destinationForPath(path)?.path, path, path);

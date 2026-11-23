@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="description" content="Rob-bot command reference. Find commands by task, permission, or name.">
+  <meta name="description" content="Rob-bot command reference. Find commands by name, task, or permission.">
   <meta name="theme-color" content="#fcfcfb">
-  <title>All Commands · Rob-bot</title>
+  <title>Commands · Rob-bot</title>
   <link rel="icon" type="image/png" sizes="64x64" href="/favicon-robin-v2.png">
   <link rel="apple-touch-icon" href="/favicon-robin-v2.png">
   <script>
@@ -17,8 +17,8 @@
     })();
   </script>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&amp;display=swap">
-  <link rel="stylesheet" href="/control.css?v=35">
-  <link rel="stylesheet" href="/commands.css?v=9">
+  <link rel="stylesheet" href="/control.css?v=36">
+  <link rel="stylesheet" href="/commands.css?v=10">
 </head>
 <body class="control-page commands-page">
   <a class="skip" href="#controlMain">Skip to commands</a>
@@ -43,6 +43,7 @@
 <button id="controlNavClose" class="control-nav-close" type="button" aria-label="Close navigation">Close</button>
 <nav id="controlNavContent" class="control-nav" aria-label="Control destinations">
 <span class="control-nav-indicator" data-nav-indicator aria-hidden="true"></span>
+<a class="control-nav-row" href="/control/overview" data-nav-path="/control/overview" data-nav-key="overview"><svg class="control-nav-icon" width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" focusable="false"><path d="M219.31,108.68l-80-80a16,16,0,0,0-22.62,0l-80,80A15.87,15.87,0,0,0,32,120v96a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V160h32v56a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V120A15.87,15.87,0,0,0,219.31,108.68ZM208,208H160V152a8,8,0,0,0-8-8H104a8,8,0,0,0-8,8v56H48V120l80-80,80,80Z"/></svg><span class="control-nav-lbl">Overview</span></a>
 <div class="control-nav-group" data-domain="engagement" data-open="true">
 <button type="button" class="control-nav-row" data-domain-select="engagement" aria-expanded="true" aria-controls="controlNavKids-engagement"><svg class="control-nav-group-icon" width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" focusable="false"><path d="M244.8,150.4a8,8,0,0,1-11.2-1.6A51.6,51.6,0,0,0,192,128a8,8,0,0,1-7.37-4.89,8,8,0,0,1,0-6.22A8,8,0,0,1,192,112a24,24,0,1,0-23.24-30,8,8,0,1,1-15.5-4A40,40,0,1,1,219,117.51a67.94,67.94,0,0,1,27.43,21.68A8,8,0,0,1,244.8,150.4ZM190.92,212a8,8,0,1,1-13.84,8,57,57,0,0,0-98.16,0,8,8,0,1,1-13.84-8,72.06,72.06,0,0,1,33.74-29.92,48,48,0,1,1,58.36,0A72.06,72.06,0,0,1,190.92,212ZM128,176a32,32,0,1,0-32-32A32,32,0,0,0,128,176ZM72,120a8,8,0,0,0-8-8A24,24,0,1,1,87.24,82a8,8,0,1,0,15.5-4A40,40,0,1,0,37,117.51,67.94,67.94,0,0,0,9.6,139.19a8,8,0,1,0,12.8,9.61A51.6,51.6,0,0,1,64,128,8,8,0,0,0,72,120Z"/></svg><span class="control-nav-lbl">Engagement</span><svg class="control-nav-chev" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2.5 4.5 6 8l3.5-3.5"/></svg></button>
 <div class="control-nav-kids" id="controlNavKids-engagement"><div><a class="control-nav-row control-nav-leaf" href="/control/community/reputation" data-nav-path="/control/community/reputation" data-nav-key="reputation" data-nav-group="engagement"><span class="control-nav-lbl">Reputation</span></a><a class="control-nav-row control-nav-leaf" href="/control/community/quizzes" data-nav-path="/control/community/quizzes" data-nav-key="quizzes" data-nav-group="engagement"><span class="control-nav-lbl">Quizzes</span></a><a class="control-nav-row control-nav-leaf" href="/control/community/voice-coworking" data-nav-path="/control/community/voice-coworking" data-nav-key="voice-coworking" data-nav-group="engagement"><span class="control-nav-lbl">Voice &amp; Coworking</span></a><a class="control-nav-row control-nav-leaf" href="/control/community/showcase" data-nav-path="/control/community/showcase" data-nav-key="showcase" data-nav-group="engagement"><span class="control-nav-lbl">Showcase</span></a><a class="control-nav-row control-nav-leaf" href="/control/utilities/notification-roles" data-nav-path="/control/utilities/notification-roles" data-nav-key="notification-roles" data-nav-group="engagement"><span class="control-nav-lbl">Notification roles</span></a></div></div>
@@ -73,36 +74,20 @@
 <div id="controlMainWrap" class="control-main-wrap">
 <main id="controlMain" class="control-main commands-main" tabindex="-1">
         <section class="control-page-section commands-hero" aria-labelledby="commandsTitle">
-          <h1 id="commandsTitle">All Commands</h1>
-          <p class="control-page-intro">Find the right command by task, permission, or name.</p>
+          <h1 id="commandsTitle">Commands</h1>
         </section>
 
-        <nav class="manual-nav" aria-label="Command workflows">
-          <a href="#workflow-setup">Setup &amp; health</a>
-          <a href="#workflow-moderation">Moderation</a>
-          <a href="#workflow-tickets">Tickets</a>
-          <a href="#workflow-publishing">Publishing</a>
-          <a href="#workflow-reputation">Reputation</a>
-          <a href="#workflow-learning">Quizzes &amp; anonymous Q&amp;A</a>
-          <a href="#workflow-collaboration">Coworking &amp; collaboration</a>
-          <a href="#workflow-operations">Feeds &amp; operations</a>
-        </nav>
+        <div class="manual-toolbar">
+          <label class="command-search-field" for="commandSearch">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg>
+            <input id="commandSearch" type="search" autocomplete="off" spellcheck="false" placeholder="Search commands" aria-label="Search commands">
+            <kbd aria-hidden="true">/</kbd>
+          </label>
+          <p id="commandResultCount" class="sr-only" role="status"></p>
+        </div>
 
-        <section class="manual-toolbar" aria-label="Command search">
-          <div class="command-search-row">
-            <label class="command-search-field" for="commandSearch">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg>
-              <input id="commandSearch" type="search" autocomplete="off" spellcheck="false" placeholder="Search commands, permissions, or tasks" aria-label="Search commands">
-              <kbd aria-hidden="true">/</kbd>
-            </label>
-            <button id="commandSearchClear" class="control-button control-button-secondary" type="button" hidden>Clear</button>
-          </div>
-          <div class="search-status"><span id="commandResultCount">Loading command index</span><span>Press / to search · Esc clears</span></div>
-        </section>
-
-        <div id="manualContent" class="manual-content" aria-live="polite"><p class="manual-loading">Loading commands…</p></div>
+        <div id="manualContent" class="manual-content"><p class="manual-loading">Loading commands…</p></div>
         <noscript><div class="commands-note"><strong>JavaScript required</strong><p>Read the <a href="/commands.md">plain Markdown manual</a>.</p></div></noscript>
-        <footer class="commands-footer">Rob-bot · <a href="/control">Control</a> · <a href="/handbook">Handbook</a> · <a href="https://github.com/Aedwon/marwie-server-bot" target="_blank" rel="noreferrer">GitHub</a></footer>
       </main>
 </div>
   </div>
@@ -123,16 +108,7 @@
 </div>
 </div>
 <div id="controlLive" class="sr-only" role="status" aria-live="polite"></div>
-  <dialog id="commandDialog" class="command-dialog" aria-labelledby="commandDialogTitle">
-    <div class="command-dialog-shell">
-      <header class="command-dialog-header">
-        <h2 id="commandDialogTitle"></h2>
-        <button class="control-button control-button-secondary" type="button" data-command-dialog-close>Close</button>
-      </header>
-      <div id="commandDialogBody" class="command-dialog-body"></div>
-    </div>
-  </dialog>
 
-  <script type="module" src="/commands.js?v=9"></script>
+  <script type="module" src="/commands.js?v=10"></script>
 </body>
 </html>

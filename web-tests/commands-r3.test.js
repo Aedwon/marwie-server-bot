@@ -17,22 +17,31 @@ function previewKeys() {
     .filter(key => key.startsWith('/'));
 }
 
-test('public Commands hero and search use the simplified R3 language', () => {
-  assert.match(html, /Find the right command by task, permission, or name\./);
-  const hero = html.slice(html.indexOf('<section class="control-page-section commands-hero"'), html.indexOf('</section>'));
-  assert.doesNotMatch(hero, /control-eyebrow|Reference|Public reference · No sign-in required/);
-  assert.doesNotMatch(html, /control-eyebrow|Public reference · No sign-in required/);
-  assert.doesNotMatch(source, /Using this manual/);
+test('Commands has a title, one search field and no lede, eyebrow or workflow jump list', () => {
+  assert.match(html, /<h1 id="commandsTitle">Commands<\/h1>/);
+  assert.doesNotMatch(html, /Find the right command by task|control-page-intro|control-eyebrow|manual-nav|search-status|Press \/ to search/);
   assert.match(html, /id="commandSearch"/);
+  assert.match(html, /<kbd aria-hidden="true">\/<\/kbd>/);
+  assert.doesNotMatch(source, /Using this manual|setupManualNavigation/);
   assert.match(source, /event\.key === ['"]\/['"]/);
+  assert.match(source, /event\.key === 'Escape'/);
 });
 
-test('public Commands workflow previews have no PATH rows or implementation context blocks', () => {
+test('the search placeholder takes its count from the parsed manual, not a hard-coded number', () => {
+  assert.match(source, /input\.placeholder = `Search \$\{rows\.length\} commands`/);
+  assert.doesNotMatch(html, /placeholder="Search \d+ commands"/);
+  assert.equal(canonicalCommands().length, 43);
+  assert.doesNotMatch(source, /commands-hero-count|result-count/);
+});
+
+test('public Commands rows are a list of command, description and access with no PATH rows or context blocks', () => {
   assert.doesNotMatch(source, /workflow-path|Typical path|<strong>Path<\/strong>/);
   assert.doesNotMatch(styles, /\.workflow-path\b/);
   assert.doesNotMatch(source, /className = 'workflow-context'|class="workflow-context"/);
-  assert.match(source, /workflow-command-table/);
-  assert.match(source, /Command<\/th><th scope="col">Description<\/th><th scope="col">Access/);
+  assert.match(source, /class="command-name"/);
+  assert.match(source, /class="command-what"/);
+  assert.match(source, /class="command-who"/);
+  assert.doesNotMatch(source, /workflow-command-table/);
 });
 
 test('every canonical command has one explicit concise preview metadata entry', () => {
@@ -45,22 +54,23 @@ test('every canonical command has one explicit concise preview metadata entry', 
   assert.doesNotMatch(source, /role_panel|Control resource|forum-backed Control resource|Discord resource mappings|gateway latency|bind clear existing matches/i);
 });
 
-test('command cards do not expand inline and a focused dialog owns complete details', () => {
-  assert.match(html, /<dialog[^>]+id="commandDialog"/);
-  assert.match(html, /data-command-dialog-close/);
-  assert.doesNotMatch(source, /document\.createElement\('details'\)|classList\.contains\('command-card'\).*open|\.open = true/);
-  assert.match(source, /showModal\(\)/);
-  assert.match(source, /data-command-dialog-close|commandDialogClose/);
-  assert.match(source, /cancel/);
-  assert.match(source, /focus\(\)/);
-  assert.match(source, /history\.(?:replaceState|pushState)/);
+test('each command row expands in place with aria-expanded and no dialog remains', () => {
+  assert.doesNotMatch(html, /<dialog|commandDialog|data-command-dialog-close/);
+  assert.doesNotMatch(source, /showModal|commandDialog|createElement\('details'\)/);
+  assert.match(source, /<button type="button" class="control-disclose command-trigger" data-command-toggle aria-expanded="false" aria-controls="\$\{bodyId\}">/);
+  assert.match(source, /\.setAttribute\('aria-expanded', String\(open\)\)/);
+  assert.match(source, /body\.inert = !open/);
+  assert.match(source, /syntax: \[\], options: \[\], example: \[\], more: \[\]/);
+  assert.match(source, /history\.replaceState/);
   assert.match(source, /location\.hash/);
+  assert.match(source, /row\.scrollIntoView/);
 });
 
 test('Commands renders the shared Control shell with Commands current and Appearance in the account menu', () => {
   assert.match(html, /<nav id="controlNavContent" class="control-nav"/);
   assert.match(html, /href="\/commands"[^>]*aria-current="page"/);
   assert.doesNotMatch(html, /href="\/handbook"[^>]*aria-current="page"/);
+  assert.match(html, /href="\/control\/overview"[^>]*data-nav-key="overview"/);
   const seg = html.slice(html.indexOf('class="control-seg"'), html.indexOf('data-account-sign-out'));
   assert.ok(seg.indexOf('data-theme-choice="light"') < seg.indexOf('data-theme-choice="dark"'));
   assert.ok(seg.indexOf('data-theme-choice="dark"') < seg.indexOf('data-theme-choice="system"'));
@@ -69,10 +79,9 @@ test('Commands renders the shared Control shell with Commands current and Appear
   assert.doesNotMatch(html, /Rob-bot Control Panel|control-appearance|aria-label="Dark theme"/);
 });
 
-test('Commands CSS has modal overlay styling and no open-card expansion contract', () => {
-  assert.match(styles, /\.command-dialog\b/);
-  assert.match(styles, /::backdrop/);
-  assert.doesNotMatch(styles, /\.command-card\[open\]/);
-  assert.match(styles, /\.workflow-command-table-wrap/);
+test('Commands CSS styles in-place rows and carries no modal overlay', () => {
+  assert.doesNotMatch(styles, /\.command-dialog|::backdrop|\.workflow-command-table/);
+  assert.match(styles, /\.command-trigger\b/);
+  assert.match(styles, /\.command-detail\b/);
   assert.match(styles, /\.command-detail-table-wrap/);
 });

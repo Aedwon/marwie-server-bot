@@ -29,6 +29,7 @@ test('Analytics and Activity belong to Insights while Resources is top level and
   assert.deepEqual(
     model.items.filter(item => item.type === 'link').map(item => item.path),
     [
+      '/control/overview',
       '/control/mappings/channels',
       '/control/workflows/ticket-handling',
       '/control/workflows/events',

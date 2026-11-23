@@ -233,7 +233,8 @@ test('Workflow guidance stays factual instead of inventing moderation policy', (
 
 test('Workflow guidance links to existing owners without becoming configuration UI', () => {
   const moderation = workflowPageMarkup('/control/workflows/moderation');
-  assert.match(moderation, /\/control\/commands/);
+  assert.match(moderation, /href="\/commands"/);
+  assert.doesNotMatch(moderation, /\/control\/commands/);
   assert.doesNotMatch(moderation, /\/control\/mappings\/channels/);
 
   const tickets = workflowPageMarkup('/control/workflows/ticket-handling');

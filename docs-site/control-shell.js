@@ -3,9 +3,9 @@
 // The sidebar DOM is rendered once (it is static in each document) and never re-rendered
 // on a mode change. Rail, peek and drawer are CSS states driven by data attributes.
 
-import { controlIcon } from './control-icons.js?v=2';
-import { destinationForPath, navGroupForPath } from './control-router.js?v=2';
-import { installDrawerController, navigationModel } from './control-navigation.js?v=2';
+import { controlIcon } from './control-icons.js?v=3';
+import { destinationForPath, navGroupForPath } from './control-router.js?v=3';
+import { installDrawerController, navigationModel } from './control-navigation.js?v=3';
 import { installShellLayout, readNavPreference, writeNavPreference } from './control-shell-layout.js?v=3';
 import { installNavHoverExpand } from './control-nav-hover.js?v=4';
 import { installThemeControls } from './control-theme.js?v=2';

@@ -1,4 +1,5 @@
 const definition = [
+  ['overview', 'Overview', null],
   ['community', 'Community', [
     ['reputation', 'Reputation'],
     ['quizzes', 'Quizzes'],
@@ -47,7 +48,6 @@ export const CONTROL_DOMAINS = Object.freeze(definition.map(([key, label, childr
 })));
 
 export const SECONDARY_DESTINATIONS = Object.freeze([
-  Object.freeze({ key: 'commands', label: 'Commands', path: '/control/commands', domain: null, kind: 'secondary' }),
   Object.freeze({ key: 'activity', label: 'Activity', path: '/control/activity', domain: null, kind: 'secondary' }),
 ]);
 
@@ -58,7 +58,10 @@ export const CONTROL_DESTINATIONS = Object.freeze([
   ...SECONDARY_DESTINATIONS,
 ]);
 
-export const CONTROL_FALLBACK_PATH = '/control/community/reputation';
+export const CONTROL_FALLBACK_PATH = '/control/overview';
+
+// Control paths that now live in another document. The server and the client router both send them there.
+export const CONTROL_REDIRECTS = Object.freeze({ '/control/commands': '/commands' });
 
 const DESTINATION_BY_PATH = new Map(CONTROL_DESTINATIONS.map(item => [item.path, item]));
 const DOMAIN_BY_KEY = new Map(CONTROL_DOMAINS.map(item => [item.key, item]));
@@ -74,6 +77,8 @@ const MAPPING_PATHS = Object.freeze([
   '/control/mappings/roles',
   '/control/mappings/categories',
 ]);
+
+export const CONTROL_NAV_OVERVIEW = navItem('/control/overview', 'Overview', { icon: 'house' });
 
 export const CONTROL_NAV_GROUPS = Object.freeze([
   Object.freeze({ key: 'engagement', label: 'Engagement', icon: 'users-three', items: Object.freeze([
@@ -113,7 +118,7 @@ export const CONTROL_PLAYBOOKS = Object.freeze([
 
 // Public documents that share the Control shell. They are real navigations, not Control routes.
 export const CONTROL_REFERENCE = Object.freeze([
-  Object.freeze({ key: 'commands', label: 'Commands', path: '/commands', icon: 'terminal-window', kind: 'reference', matchPaths: Object.freeze(['/commands', '/control/commands']) }),
+  Object.freeze({ key: 'commands', label: 'Commands', path: '/commands', icon: 'terminal-window', kind: 'reference', matchPaths: Object.freeze(['/commands']) }),
   Object.freeze({ key: 'handbook', label: 'Handbook', path: '/handbook', icon: 'book', kind: 'reference', matchPaths: Object.freeze(['/handbook']) }),
 ]);
 
@@ -128,6 +133,10 @@ function normalizePath(pathname) {
   const raw = String(pathname || '/control').split(/[?#]/, 1)[0] || '/control';
   if (raw === '/') return '/control';
   return raw.length > 1 ? raw.replace(/\/+$/, '') : raw;
+}
+
+export function controlRedirectFor(pathname) {
+  return CONTROL_REDIRECTS[normalizePath(pathname)] || null;
 }
 
 export function destinationForPath(pathname) {

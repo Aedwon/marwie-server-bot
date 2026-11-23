@@ -6,7 +6,6 @@ import { HttpError, requireGuild } from '../api/_lib/control.js';
 import { resolveControlRoute } from '../docs-site/control-router.js';
 import {
   activityPageMarkup,
-  commandsPageMarkup,
   createActivityController,
   relativeTimeLabel,
 } from '../docs-site/control-secondary.js';
@@ -17,28 +16,17 @@ const communitySource = readFileSync(new URL('../docs-site/control-community.js'
 const contentSource = readFileSync(new URL('../docs-site/control-content.js', import.meta.url), 'utf8');
 const utilitiesSource = readFileSync(new URL('../docs-site/control-utilities.js', import.meta.url), 'utf8');
 
-test('Commands renders exactly the three approved Discord-admin references and canonical deep links', () => {
-  const markup = commandsPageMarkup();
-  assert.match(markup, /<h1>Commands<\/h1>/);
-  assert.equal((markup.match(/data-command-task=/g) || []).length, 3);
-  assert.match(markup, /<code class="control-command-chip">\/reputation award<\/code>/);
-  assert.match(markup, /href="\/commands#command-reputation-award"[^>]*>Open guide<\/a>/);
-  assert.match(markup, /<code class="control-command-chip">\/ticket-panel post<\/code>/);
-  assert.match(markup, /href="\/commands#command-ticket-panel-post"[^>]*>Open guide<\/a>/);
-  assert.match(markup, /<code class="control-command-chip">\/ai-source poll<\/code>/);
-  assert.match(markup, /href="\/commands#command-ai-source-poll"[^>]*>Open guide<\/a>/);
-  assert.match(markup, /href="\/commands"[^>]*>Open the full Commands manual<\/a>/);
-  const withoutContextTrigger = markup.replace(/<button class="control-context-trigger"[\s\S]*?<\/button>/g, '');
-  assert.doesNotMatch(withoutContextTrigger, /<(?:form|button|input|select|textarea)\b/i);
-  assert.doesNotMatch(markup, /adjust_reputation|refresh_ticket_panel|poll_ai_sources|enqueueControlAction/);
+test('Control has no Commands page of its own and links to the single manual', async () => {
+  const secondary = await import('../docs-site/control-secondary.js');
+  assert.equal(secondary.commandsPageMarkup, undefined);
+  const source = readFileSync(new URL('../docs-site/control-secondary.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /COMMAND_TASKS|data-command-task|\/control\/commands/);
 });
 
 test('Commands reuses the synchronized 43-command canonical manual without duplicating its catalog', () => {
   assert.equal(commandsManual, deployedCommandsManual);
   assert.equal((commandsManual.match(/^##\s+`\/[^`]+`\s*$/gm) || []).length, 43);
-  const markup = commandsPageMarkup();
-  assert.equal((markup.match(/data-command-task=/g) || []).length, 3);
-  assert.doesNotMatch(markup, /45 commands|command count|implementation|authentication architecture/i);
+  assert.doesNotMatch(commandsManual, /45 commands/i);
 });
 
 test('Commands-only operations remain absent from their canonical feature modules', () => {
@@ -47,13 +35,12 @@ test('Commands-only operations remain absent from their canonical feature module
   assert.doesNotMatch(contentSource, /poll_ai_sources|>\s*Poll now\s*</i);
 });
 
-test('Commands and Activity remain direct secondary routes', () => {
-  for (const path of ['/control/commands', '/control/activity']) {
-    const route = resolveControlRoute(path);
-    assert.equal(route.path, path);
-    assert.equal(route.kind, 'secondary');
-    assert.equal(route.domain, null);
-  }
+test('Activity remains a direct secondary route and Commands is not a Control route', () => {
+  const route = resolveControlRoute('/control/activity');
+  assert.equal(route.path, '/control/activity');
+  assert.equal(route.kind, 'secondary');
+  assert.equal(route.domain, null);
+  assert.notEqual(resolveControlRoute('/control/commands').path, '/control/commands');
 });
 
 test('Activity markup is semantic, human-readable, and keeps raw backend data out of the DOM', () => {

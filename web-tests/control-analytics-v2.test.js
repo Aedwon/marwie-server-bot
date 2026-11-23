@@ -526,7 +526,7 @@ test('Control and public Commands load the same version of the shared Control st
   for (const markup of [html, commands]) assert.match(markup, /href="\/control\.css\?v=\d+"/);
   assert.match(html, /href="\/control-features\.css\?v=\d+"/);
   assert.match(html, /src="\/control-app\.js\?v=\d+"/);
-  assert.match(readAsset('control-app.js'), /from '\.\/control-analytics\.js\?v=25'/);
+  assert.match(readAsset('control-app.js'), /from '\.\/control-analytics\.js\?v=26'/);
 });
 
 test('absent closure count renders Unavailable and zero closures renders No closures even if median seconds is set', () => {

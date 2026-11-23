@@ -9,12 +9,12 @@ import {
   settingsRows,
   settingsSection,
   switchMarkup,
-} from './control-components.js?v=24';
+} from './control-components.js?v=25';
 import { featureResourceKeys } from './control-resource-contract.js';
-import { withResourceBindings } from './control-resource-bindings.js?v=2';
+import { withResourceBindings } from './control-resource-bindings.js?v=3';
 import { MAPPING_RESOURCE_DEFINITIONS } from './control-mappings.js';
 import { problemsFromSnapshot } from './control-problems.js?v=1';
-import { supportPageFrame, supportResourceRows } from './control-support-shared.js?v=1';
+import { supportPageFrame, supportResourceRows } from './control-support-shared.js?v=2';
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -38,7 +38,7 @@ export const WORKFLOW_PAGE_CONFIGS = Object.freeze({
           'Warn, timeout, kick, and ban require the moderation feature and apply the shared target hierarchy checks.',
         ]),
         links: Object.freeze([
-          Object.freeze({ href: '/control/commands', label: 'Review moderation commands' }),
+          Object.freeze({ href: '/commands', label: 'Review moderation commands' }),
         ]),
       }),
       Object.freeze({
@@ -83,7 +83,7 @@ export const WORKFLOW_PAGE_CONFIGS = Object.freeze({
           Object.freeze({ href: '/control/utilities/ticket-configuration', label: 'Review ticket configuration' }),
           Object.freeze({ href: '/control/mappings/channels', label: 'Check ticket channel mappings' }),
           Object.freeze({ href: '/control/mappings/categories', label: 'Check ticket category mapping' }),
-          Object.freeze({ href: '/control/commands', label: 'Review ticket commands' }),
+          Object.freeze({ href: '/commands', label: 'Review ticket commands' }),
         ]),
       }),
       Object.freeze({
@@ -139,7 +139,7 @@ export const WORKFLOW_PAGE_CONFIGS = Object.freeze({
           'The Discord /announce path provides an ephemeral preview with Send, Edit, and Cancel controls for the original author.',
         ]),
         links: Object.freeze([
-          Object.freeze({ href: '/control/commands', label: 'Review publishing commands' }),
+          Object.freeze({ href: '/commands', label: 'Review publishing commands' }),
         ]),
       }),
       Object.freeze({

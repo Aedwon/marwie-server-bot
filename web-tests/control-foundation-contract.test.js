@@ -4,11 +4,11 @@ import test from 'node:test';
 import { CONTROL_DESTINATIONS } from '../docs-site/control-router.js';
 
 const CANONICAL_DESTINATIONS = [
-  '/control/community/reputation','/control/community/quizzes','/control/community/voice-coworking','/control/community/showcase',
+  '/control/overview','/control/community/reputation','/control/community/quizzes','/control/community/voice-coworking','/control/community/showcase',
   '/control/content/feeds','/control/content/announcements','/control/content/live',
   '/control/utilities/ticket-configuration','/control/utilities/notification-roles','/control/utilities/anonymous-questions',
   '/control/analytics','/control/workflows/moderation','/control/workflows/ticket-handling','/control/workflows/events',
-  '/control/mappings/channels','/control/mappings/roles','/control/mappings/categories','/control/commands','/control/activity',
+  '/control/mappings/channels','/control/mappings/roles','/control/mappings/categories','/control/activity',
 ];
 
 const actionSource = readFileSync(new URL('../api/action.js', import.meta.url), 'utf8');
@@ -23,7 +23,8 @@ const snapshotSource = readFileSync(new URL('../src/marwie_bot/features/control_
 test('approved destination contract is backed by the real router registry', () => {
   const actual = CONTROL_DESTINATIONS.map(item => item.path);
   assert.deepEqual(actual, CANONICAL_DESTINATIONS);
-  assert.equal(actual.includes('/control/overview'), false);
+  assert.equal(actual.includes('/control/overview'), true);
+  assert.equal(actual.includes('/control/commands'), false, 'Commands moved to /commands');
   assert.equal(actual.some(path => path.includes('build-help')), false);
 });
 

@@ -474,7 +474,7 @@ body.control-page {
 .control-main:focus-visible { outline: none; }
 .control-shell[data-nav-mode="drawer"] .control-main { padding: 20px 16px 140px; }
 .control-page-frame { max-width: 720px; }
-.control-page-frame:has(:is(.analytics-page, .mapping-page, .control-activity-page, .control-commands-page)) { max-width: 960px; }
+.control-page-frame:has(:is(.analytics-page, .mapping-page, .control-activity-page)) { max-width: 960px; }
 .control-page-enter { animation: control-page-enter var(--motion-enter) var(--ease-out); }
 @keyframes control-page-enter { from { opacity: 0; transform: translateY(4px); } }
 .control-main a { color: var(--accent-info); }

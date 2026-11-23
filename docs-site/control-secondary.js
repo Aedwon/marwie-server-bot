@@ -1,29 +1,5 @@
-import { controlSimplePageHeaderMarkup, disclosure, taskIndicatorMarkup } from './control-components.js?v=24';
-import { controlIcon } from './control-icons.js?v=2';
-
-const COMMAND_TASKS = Object.freeze([
-  Object.freeze({
-    key: 'reputation-award',
-    title: 'Adjust member reputation',
-    command: '/reputation award',
-    href: '/commands#command-reputation-award',
-    description: 'Use Discord when a staff member needs to make a manual reputation adjustment.',
-  }),
-  Object.freeze({
-    key: 'ticket-panel-post',
-    title: 'Refresh the ticket panel',
-    command: '/ticket-panel post',
-    href: '/commands#command-ticket-panel-post',
-    description: 'Use Discord to post or refresh the configured ticket panel.',
-  }),
-  Object.freeze({
-    key: 'ai-source-poll',
-    title: 'Poll AI feeds manually',
-    command: '/ai-source poll',
-    href: '/commands#command-ai-source-poll',
-    description: 'Use Discord to fetch candidates, review the preview, then Post or Cancel.',
-  }),
-]);
+import { controlSimplePageHeaderMarkup, disclosure, taskIndicatorMarkup } from './control-components.js?v=25';
+import { controlIcon } from './control-icons.js?v=3';
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -88,25 +64,6 @@ export function relativeTimeLabel(value, { now = Date.now(), locale } = {}) {
   } catch {
     return timestampLabel(value);
   }
-}
-
-export function commandsPageMarkup() {
-  const items = COMMAND_TASKS.map(task => `
-    <li class="control-command-item" data-command-task="${task.key}">
-      <div class="control-command-goal">
-<h2>${escapeHtml(task.title)}</h2><p>${escapeHtml(task.description)}</p></div>
-      <code class="control-command-chip">${escapeHtml(task.command)}</code>
-      <a class="control-inline-action control-command-action" href="${task.href}">Open guide</a>
-    </li>`).join('');
-
-  return `<section class="control-page-section control-commands-page">
-    ${controlSimplePageHeaderMarkup({
-    title: 'Commands',
-    description: 'Administrative tasks that stay in Discord, organized by the outcome staff are trying to achieve.',
-  })}
-    <div class="control-command-table"><div class="control-command-table-head" aria-hidden="true"><span>Goal</span><span>Discord command</span><span>Reference</span></div><ul class="control-command-list">${items}</ul></div>
-    <p class="control-secondary-footer"><a class="control-inline-action" href="/commands">Open the full Commands manual</a></p>
-  </section>`;
 }
 
 function activityDetailsMarkup(item, absolute) {

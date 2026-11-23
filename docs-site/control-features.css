@@ -4,7 +4,7 @@
 .analytics-page,
 .workflow-page,
 .mapping-page,
-.control-commands-page,
+.overview-page,
 .control-activity-page {
   width: 100%;
   display: grid;
@@ -29,7 +29,6 @@
 .control-page-header-actions { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: flex-end; gap: 8px; }
 
 :is(.community-page-header, .content-page-header, .utility-page-header, .analytics-page-header, .workflow-page-header, .mapping-page-header, .control-page-header) h1,
-.control-commands-page h1,
 .control-activity-page h1 {
   margin: 0;
   color: var(--text-primary);
@@ -42,7 +41,6 @@
 .control-page-heading { min-width: 0; }
 
 :is(.community-page-header, .content-page-header, .utility-page-header, .analytics-page-header, .workflow-page-header, .mapping-page-header, .control-page-header) p,
-.control-commands-page > p,
 .control-activity-page > p {
   max-width: 62ch;
   margin: 7px 0 0;
@@ -103,7 +101,6 @@
 .analytics-settings,
 .mapping-suggestions,
 .workflow-timeline,
-.control-command-list,
 .control-activity-list {
   min-width: 0;
   padding-top: 2px;
@@ -166,7 +163,6 @@
 .content-feed-edit-list,
 .utility-form-stack,
 .mapping-edit-grid,
-.control-command-list,
 .control-activity-list {
   display: grid;
   gap: 0;
@@ -392,8 +388,7 @@ fieldset.utility-editor-row + fieldset.utility-editor-row { margin-top: 12px; }
 .content-feed-table,
 .utility-ticket-table,
 .analytics-reporting-table,
-.mapping-table,
-.control-command-table {
+.mapping-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
@@ -402,14 +397,13 @@ fieldset.utility-editor-row + fieldset.utility-editor-row { margin-top: 12px; }
 .content-feed-table :is(th, td),
 .utility-ticket-table :is(th, td),
 .analytics-reporting-table :is(th, td),
-.mapping-table :is(th, td),
-.control-command-table :is(th, td) {
+.mapping-table :is(th, td) {
   padding: 10px 8px;
   border-bottom: 1px solid var(--stroke-subtle);
   text-align: left;
   vertical-align: top;
 }
-:is(.content-feed-table, .utility-ticket-table, .analytics-reporting-table, .mapping-table, .control-command-table) thead th {
+:is(.content-feed-table, .utility-ticket-table, .analytics-reporting-table, .mapping-table) thead th {
   color: var(--text-tertiary);
   font-size: 12px;
   font-weight: 600;
@@ -846,15 +840,7 @@ fieldset.utility-editor-row + fieldset.utility-editor-row { margin-top: 12px; }
 .mapping-destructive-warning { padding: 10px 12px; border-left: 3px solid var(--status-warning-fg); background: var(--status-warning-bg); color: var(--status-warning-fg); font-size: 13px; line-height: 1.45; }
 .mapping-review-only { color: var(--text-tertiary); font-size: 13px; }
 
-.control-command-list { border-top: 1px solid var(--stroke-subtle); }
-.control-command-item { display: grid; grid-template-columns: minmax(180px, .9fr) minmax(0, 1.4fr) auto; gap: 20px; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--stroke-subtle); }
-.control-command-goal { margin: 0; color: var(--text-secondary); font-size: 13px; line-height: 1.45; }
-.control-command-goal h2 { margin: 0; font-size: 16px; line-height: 1.35; font-weight: 600; }
-.control-command-chip { width: fit-content; padding: 2px 7px; border-radius: 6px; background: var(--surface-secondary); color: var(--text-secondary); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
-.control-command-action { justify-self: end; }
-.control-command-table-head { display: grid; grid-template-columns: minmax(180px, .9fr) minmax(0, 1.4fr) auto; gap: 20px; padding: 0 0 8px; color: var(--text-tertiary); font-size: 12px; font-weight: 600; }
 .control-secondary-footer { padding-top: 18px; border-top: 1px solid var(--stroke-subtle); color: var(--text-tertiary); font-size: 13px; }
-.control-commands-page > .control-secondary-footer,
 .control-activity-page > .control-secondary-footer { max-width: none; }
 
 .control-activity-list { border-top: 0; }
@@ -887,14 +873,13 @@ fieldset.utility-editor-row + fieldset.utility-editor-row { margin-top: 12px; }
   .analytics-coverage-list { grid-template-columns: 1fr; }
   .analytics-section-heading { align-items: flex-start; }
   .control-definition-list > div { grid-template-columns: 1fr; gap: 4px; }
-  .control-command-item, .control-activity-item, .mapping-suggestion-item { grid-template-columns: 1fr; }
-  .control-command-table-head { display: none; }
-  .control-command-action, .control-activity-status { justify-self: start; }
+  .control-activity-item, .mapping-suggestion-item { grid-template-columns: 1fr; }
+  .control-activity-status { justify-self: start; }
   .control-summary-table, .content-feed-table, .utility-ticket-table, .analytics-reporting-table, .mapping-table { min-width: 560px; }
 }
 
 @container control-main (max-width: 600px) {
-  .community-page, .content-page, .utility-page, .analytics-page, .workflow-page, .mapping-page, .control-commands-page, .control-activity-page { gap: 24px; }
+  .community-page, .content-page, .utility-page, .analytics-page, .workflow-page, .mapping-page, .overview-page, .control-activity-page { gap: 24px; }
   .control-section-heading { flex-wrap: wrap; }
   .control-save-bar { padding: 8px 8px 8px 14px; }
   .control-save-bar .control-button { min-width: 0; }
@@ -1301,3 +1286,38 @@ fieldset.utility-editor-row + fieldset.utility-editor-row { margin-top: 12px; }
 }
 @media (pointer: coarse) { .control-segn-item { min-height: 44px; } }
 @media (prefers-reduced-motion: reduce) { .control-segn-thumb { transition: none; } }
+
+/* Overview */
+.overview-page .control-page-header { padding: 0; border-bottom: 0; }
+.overview-ok { margin: 0; color: var(--text-primary); font: italic 400 22px/1.3 "Newsreader", Georgia, serif; }
+
+.overview-problems { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--stroke-subtle); }
+.overview-problem { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 56px; padding: 10px 0; border-bottom: 1px solid var(--stroke-subtle); }
+.overview-problem-icon { color: var(--status-error-fg); }
+.overview-problem-copy { min-width: 0; display: grid; gap: 2px; }
+.overview-problem-title { margin: 0; color: var(--text-primary); font-size: 14px; line-height: 20px; font-weight: 500; }
+.overview-problem-cause { margin: 0; color: var(--text-tertiary); font-size: 13px; line-height: 18px; }
+
+.control-main a.overview-week { display: grid; gap: 14px; margin: 0 -12px; padding: 12px; border-radius: 12px; color: var(--text-primary); text-decoration: none; transition: background var(--motion-micro) var(--ease-out); }
+.control-main a.overview-week:hover { background: var(--surface-hover); text-decoration: none; }
+.overview-week-lead { display: flex; align-items: baseline; gap: 8px; }
+.overview-week-total { color: var(--text-primary); font-size: 40px; line-height: 44px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.overview-week-label { color: var(--text-secondary); font-size: 14px; line-height: 20px; }
+.overview-bars { width: 100%; max-width: 360px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+.overview-bar { display: grid; grid-template-rows: 16px 56px 16px; justify-items: center; gap: 4px; }
+.overview-bar-value, .overview-bar-day { color: var(--text-tertiary); font-size: 12px; line-height: 16px; font-variant-numeric: tabular-nums; }
+.overview-bar-track { width: 100%; display: flex; align-items: flex-end; justify-content: center; border-bottom: 1px solid var(--stroke-field); }
+.overview-bar-fill { width: 60%; max-width: 24px; height: var(--h, 0%); border-radius: 3px 3px 0 0; background: var(--accent-info); }
+.overview-bar:not([data-value="0"]) .overview-bar-fill { min-height: 2px; }
+
+.overview-features { margin: 0; padding: 4px 0 0; list-style: none; border-top: 1px solid var(--stroke-subtle); }
+.control-main a.overview-feature { display: grid; grid-template-columns: minmax(140px, 220px) minmax(0, 1fr); align-items: center; gap: 4px 16px; min-height: 44px; padding: 8px 0; border-bottom: 1px solid var(--stroke-subtle); color: var(--text-primary); text-decoration: none; }
+.control-main a.overview-feature:hover { background: var(--surface-hover); text-decoration: none; }
+.overview-feature-name { font-size: 14px; line-height: 20px; font-weight: 500; }
+.overview-feature-summary { color: var(--text-tertiary); font-size: 13px; line-height: 18px; }
+.overview-healthy [data-disclosure-body] { padding-top: 8px; }
+@media (max-width: 639px) {
+  .overview-problem { grid-template-columns: 16px minmax(0, 1fr); }
+  .overview-problem .control-button { grid-column: 1 / -1; }
+  .control-main a.overview-feature { grid-template-columns: 1fr; }
+}

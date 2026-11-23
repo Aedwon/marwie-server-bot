@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import { controlPageHeaderMarkup } from '../docs-site/control-components.js';
-import { activityPageMarkup, commandsPageMarkup } from '../docs-site/control-secondary.js';
+import * as secondary from '../docs-site/control-secondary.js';
 import { registerCommunityPages } from '../docs-site/control-community.js';
 import { registerContentPages } from '../docs-site/control-content.js';
 import { registerUtilitiesPages } from '../docs-site/control-utilities.js';
@@ -167,12 +167,9 @@ test('system routes render without a contextual column', () => {
     const markup = renderRegisteredControlPage(pageKey, { snapshot });
     assert.match(markup, /<h1[^>]*>Resources<\/h1>/, `${pageKey} must render the Resources header`);
   }
-  assert.equal(renderRegisteredControlContext('/control/commands', { snapshot }), '');
   assert.equal(renderRegisteredControlContext('/control/activity', { snapshot }), '');
-
-  const commands = commandsPageMarkup();
-  assertContains(commands, ['Commands', 'Adjust member reputation', 'Open the full Commands manual'], 'Commands');
-  const activity = activityPageMarkup({
+  assert.equal(secondary.commandsPageMarkup, undefined, 'Commands has no Control page; /commands is the single reference');
+  const activity = secondary.activityPageMarkup({
     phase: 'ready',
     actorId: '301',
     items: [{

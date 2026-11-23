@@ -10,12 +10,11 @@ const appSource = readFileSync(new URL('../docs-site/control-app.js', import.met
 const cssUrl = new URL('../docs-site/control-features.css', import.meta.url);
 const secondaryCss = existsSync(cssUrl) ? readFileSync(cssUrl, 'utf8') : '';
 
-test('canonical Commands fallback renders the useful reference surface instead of the placeholder', () => {
-  const markup = pageMarkup(resolveControlRoute('/control/commands'), { authenticated: true });
-  assert.match(markup, /data-command-task="reputation-award"/);
-  assert.match(markup, /data-command-task="ticket-panel-post"/);
-  assert.match(markup, /data-command-task="ai-source-poll"/);
-  assert.doesNotMatch(markup, /Slash-command administration remains documented/);
+test('the removed Control Commands path resolves to Overview and renders no command list', () => {
+  const route = resolveControlRoute('/control/commands');
+  assert.equal(route.path, '/control/overview');
+  const markup = pageMarkup(route, { authenticated: true });
+  assert.doesNotMatch(markup, /data-command-task|control-command-/);
 });
 
 test('canonical Activity fallback renders controller state instead of placeholder copy', () => {

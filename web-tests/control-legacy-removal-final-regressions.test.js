@@ -4,6 +4,7 @@ import test from 'node:test';
 
 const featureCss = readFileSync(new URL('../docs-site/control-features.css', import.meta.url), 'utf8');
 const shellCss = readFileSync(new URL('../docs-site/control.css', import.meta.url), 'utf8');
+const commandsCss = readFileSync(new URL('../docs-site/commands.css', import.meta.url), 'utf8');
 
 test('empty feature status regions do not render legacy bordered placeholders', () => {
   assert.match(featureCss, /\.content-message:empty,[\s\S]*?\.mapping-page-message:empty\s*\{\s*display:\s*none;/);
@@ -19,8 +20,9 @@ test('Notification role summaries wrap compactly without an auto-width overflow 
   assert.match(featureCss, /\.utility-notification-button-summary dd\s*\{[\s\S]*?overflow-wrap:\s*anywhere;/);
 });
 
-test('Commands column labels use the same grid geometry as command rows', () => {
-  assert.match(featureCss, /\.control-command-table-head\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*minmax\(180px, \.9fr\) minmax\(0, 1\.4fr\) auto;/);
+test('the Control Commands page and its table styles are gone; Commands lives in its own document', () => {
+  assert.doesNotMatch(featureCss, /control-command-(?:table|list|item|goal|chip|action)|control-commands-page/);
+  assert.match(commandsCss, /\.command-trigger\s*\{[\s\S]*?grid-template-columns:\s*minmax\(150px, 220px\) minmax\(0, 1fr\) 160px 12px;/);
 });
 
 test('the shell has no context column track and the sidebar panel never pads the main area', () => {

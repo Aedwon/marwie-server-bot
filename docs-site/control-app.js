@@ -4,20 +4,21 @@ import {
   saveBarView,
   savedRowKeys,
   toggleDisclosure,
-} from './control-components.js?v=24';
+} from './control-components.js?v=25';
 import { problemPaths, problemsFromSnapshot } from './control-problems.js?v=1';
-import { registerContentPages } from './control-content.js?v=24';
-import { registerAnalyticsPage } from './control-analytics.js?v=25';
-import { registerCommunityPages } from './control-community.js?v=22';
-import { registerMappingPages } from './control-mappings.js?v=23';
-import { registerUtilitiesPages } from './control-utilities.js?v=24';
-import { controlIcon } from './control-icons.js?v=2';
+import { registerContentPages } from './control-content.js?v=25';
+import { registerAnalyticsPage } from './control-analytics.js?v=26';
+import { registerCommunityPages } from './control-community.js?v=23';
+import { registerMappingPages } from './control-mappings.js?v=24';
+import { registerUtilitiesPages } from './control-utilities.js?v=25';
+import { controlIcon } from './control-icons.js?v=3';
 import { GUILD_STORAGE_KEY, pickGuild } from './control-account.js?v=2';
-import { createNavigationState, isNavigationBlocked } from './control-navigation.js?v=2';
-import { installShell } from './control-shell.js?v=2';
-import { resolveControlRoute } from './control-router.js?v=2';
-import { createActivityController, installActivityPage } from './control-secondary.js?v=23';
-import { registerWorkflowPages, workflowPageMarkup } from './control-workflows.js?v=23';
+import { createNavigationState, isNavigationBlocked } from './control-navigation.js?v=3';
+import { installShell } from './control-shell.js?v=3';
+import { controlRedirectFor, resolveControlRoute } from './control-router.js?v=3';
+import { OVERVIEW_PATH, overviewPageMarkup } from './control-overview.js?v=1';
+import { createActivityController, installActivityPage } from './control-secondary.js?v=24';
+import { registerWorkflowPages, workflowPageMarkup } from './control-workflows.js?v=24';
 import {
   controlState,
   hydrateControlPages,
@@ -60,6 +61,7 @@ let blockedTimer = null;
 let barExitTimer = null;
 let lastBarKind = 'hidden';
 let flagKey = '';
+let pendingFocus = '';
 const detailsOpen = new Set();
 let serverStatus = { message: 'Server state has not loaded yet.', tone: 'neutral' };
 
@@ -77,6 +79,8 @@ function readJson(key, fallback) {
 
 const rememberedRoute = localStorage.getItem(ROUTE_KEY);
 const lastByDomain = readJson(DOMAIN_ROUTE_KEY, {});
+// A Control path that moved to another document redirects there before anything renders.
+const clientRedirect = controlRedirectFor(location.pathname);
 const resolvedInitial = resolveControlRoute(location.pathname, rememberedRoute, lastByDomain);
 const navState = createNavigationState({
   currentPath: resolvedInitial.path,
@@ -226,11 +230,14 @@ function renderMain({ entrance = false, savedRows = [] } = {}) {
   const registeredMarkup = session?.authenticated
     ? renderRegisteredControlPage(pageKey, { snapshot: guildState })
     : null;
+  const overviewMarkup = pageKey === OVERVIEW_PATH && session?.authenticated
+    ? overviewPageMarkup({ snapshot: guildState })
+    : null;
   const workflowMarkup = session?.authenticated ? workflowPageMarkup(pageKey) : '';
   const contextMarkup = currentContextMarkup();
   const scrollTop = shell.main.scrollTop;
 
-  const pageHtml = registeredMarkup ?? (workflowMarkup || pageMarkup(navState.current, {
+  const pageHtml = registeredMarkup ?? overviewMarkup ?? (workflowMarkup || pageMarkup(navState.current, {
     authenticated: Boolean(session?.authenticated),
     state: guildState,
     snapshot,
@@ -270,11 +277,28 @@ function renderMain({ entrance = false, savedRows = [] } = {}) {
   } else {
     shell.main.focus({ preventScroll: true });
   }
+  // Overview fix buttons open a page with the broken control focused, once the entrance has rendered.
+  if (entrance && pendingFocus) {
+    const target = shell.main.querySelector(`#${CSS.escape(pendingFocus)}`);
+    if (target) {
+      target.focus();
+      target.scrollIntoView?.({ block: 'center' });
+    }
+  }
+  pendingFocus = '';
   syncSaveBar();
   syncNavFlags();
 }
 
 shell.main.addEventListener('click', event => {
+  const overviewLink = event.target.closest?.('[data-overview-link]');
+  if (overviewLink) {
+    const modified = event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button;
+    if (overviewLink.tagName === 'A' && modified) return;
+    event.preventDefault();
+    navigate(overviewLink.dataset.overviewLink, { focus: overviewLink.dataset.overviewFocus || '' });
+    return;
+  }
   const disclosureToggle = event.target.closest?.('[data-disclosure-toggle]');
   if (disclosureToggle) {
     toggleDisclosure(disclosureToggle);
@@ -291,7 +315,12 @@ shell.main.addEventListener('click', event => {
   else detailsOpen.delete(navState.current.path);
 });
 
-function navigate(path, { replace = false } = {}) {
+function navigate(path, { replace = false, focus = '' } = {}) {
+  const redirect = controlRedirectFor(path);
+  if (redirect) {
+    location.assign(redirect);
+    return true;
+  }
   const target = resolveControlRoute(path, navState.current.path, navState.lastByDomain).path;
   if (isNavigationBlocked(controlState, navState.current.path, target)) {
     flashBlocked();
@@ -303,6 +332,7 @@ function navigate(path, { replace = false } = {}) {
     history[replace ? 'replaceState' : 'pushState']({ control: true }, '', navState.current.path);
   }
   shellController?.setCurrent(navState.current.path);
+  pendingFocus = focus;
   renderMain({ entrance: true });
   return true;
 }
@@ -504,6 +534,11 @@ async function requestContentAction(action) {
 }
 
 window.addEventListener('popstate', () => {
+  const redirect = controlRedirectFor(location.pathname);
+  if (redirect) {
+    location.replace(redirect);
+    return;
+  }
   const destination = resolveControlRoute(location.pathname, navState.current.path, navState.lastByDomain);
   if (isNavigationBlocked(controlState, navState.current.path, destination.path)) {
     // Undo the browser's history step and keep the current page.
@@ -557,9 +592,12 @@ installControlStateGuards({
   onSave: requestRegisteredPageSave,
 });
 
-if (location.pathname !== resolvedInitial.path) history.replaceState({ control: true }, '', resolvedInitial.path);
-
-loadSession().catch(error => {
-  setStatus(error.message, 'bad');
-  renderMain();
-});
+if (clientRedirect) {
+  location.replace(clientRedirect);
+} else {
+  if (location.pathname !== resolvedInitial.path) history.replaceState({ control: true }, '', resolvedInitial.path);
+  loadSession().catch(error => {
+    setStatus(error.message, 'bad');
+    renderMain();
+  });
+}
