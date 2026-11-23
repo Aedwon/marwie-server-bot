@@ -23,7 +23,7 @@ import {
   supportResourceSection,
   textArea,
   textInput,
-} from './control-support-shared.js?v=2';
+} from './control-support-shared.js?v=3';
 
 const FEEDS = '/control/content/feeds';
 const ANNOUNCEMENTS = '/control/content/announcements';

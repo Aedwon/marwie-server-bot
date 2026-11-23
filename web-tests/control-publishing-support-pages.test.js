@@ -224,7 +224,7 @@ test('Stage 2b modules carry new versions and the CSS section sits at the end', 
   const app = read('control-app.js');
   assert.match(app, /control-content\.js\?v=25/);
   assert.match(app, /control-utilities\.js\?v=25/);
-  assert.match(app, /control-workflows\.js\?v=24/);
+  assert.match(app, /control-workflows\.js\?v=25/);
   const css = read('control-features.css');
   assert.match(css, /\/\* Stage 2b: publishing, support and safety pages \*\//);
   assert.ok(css.lastIndexOf('Stage 2b: publishing') > css.lastIndexOf('/* Page model:'));

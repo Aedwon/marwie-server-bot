@@ -5,7 +5,7 @@ import {
 } from './control-page-registry.js';
 import { controlPageHeaderMarkup, problemLine } from './control-components.js?v=25';
 import { resourceSelectMarkup } from './control-resource-bindings.js?v=3';
-import { problemsFromSnapshot } from './control-problems.js?v=1';
+import { problemsFromSnapshot } from './control-problems.js?v=2';
 import { animateSegmentedThumbs, segmentedControlMarkup, stagedSaveBarMarkup } from './control-page-parts.js';
 
 const COMPROMISED_ACCOUNT_TRAP_KEY = 'compromised_account_trap';

@@ -5,20 +5,20 @@ import {
   savedRowKeys,
   toggleDisclosure,
 } from './control-components.js?v=25';
-import { problemPaths, problemsFromSnapshot } from './control-problems.js?v=1';
+import { problemPaths, problemsFromSnapshot } from './control-problems.js?v=2';
 import { registerContentPages } from './control-content.js?v=25';
-import { registerAnalyticsPage } from './control-analytics.js?v=26';
-import { registerCommunityPages } from './control-community.js?v=23';
-import { registerMappingPages } from './control-mappings.js?v=24';
+import { registerAnalyticsPage } from './control-analytics.js?v=27';
+import { registerCommunityPages } from './control-community.js?v=24';
+import { registerMappingPages } from './control-mappings.js?v=25';
 import { registerUtilitiesPages } from './control-utilities.js?v=25';
 import { controlIcon } from './control-icons.js?v=3';
 import { GUILD_STORAGE_KEY, pickGuild } from './control-account.js?v=2';
 import { createNavigationState, isNavigationBlocked } from './control-navigation.js?v=3';
 import { installShell } from './control-shell.js?v=3';
 import { controlRedirectFor, resolveControlRoute } from './control-router.js?v=3';
-import { OVERVIEW_PATH, overviewPageMarkup } from './control-overview.js?v=1';
+import { OVERVIEW_PATH, overviewPageMarkup } from './control-overview.js?v=2';
 import { createActivityController, installActivityPage } from './control-secondary.js?v=24';
-import { registerWorkflowPages, workflowPageMarkup } from './control-workflows.js?v=24';
+import { registerWorkflowPages, workflowPageMarkup } from './control-workflows.js?v=25';
 import {
   controlState,
   hydrateControlPages,

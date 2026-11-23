@@ -13,8 +13,8 @@ import {
 import { featureResourceKeys } from './control-resource-contract.js';
 import { withResourceBindings } from './control-resource-bindings.js?v=3';
 import { MAPPING_RESOURCE_DEFINITIONS } from './control-mappings.js';
-import { problemsFromSnapshot } from './control-problems.js?v=1';
-import { supportPageFrame, supportResourceRows } from './control-support-shared.js?v=2';
+import { problemsFromSnapshot } from './control-problems.js?v=2';
+import { supportPageFrame, supportResourceRows } from './control-support-shared.js?v=3';
 
 function escapeHtml(value) {
   return String(value ?? '')

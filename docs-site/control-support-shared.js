@@ -10,7 +10,7 @@ import {
 import { featureResourceKeys } from './control-resource-contract.js';
 import { resourceSelectMarkup } from './control-resource-bindings.js?v=3';
 import { MAPPING_RESOURCE_DEFINITIONS } from './control-mappings.js';
-import { problemsFromSnapshot } from './control-problems.js?v=1';
+import { problemsFromSnapshot } from './control-problems.js?v=2';
 
 // Shared frame for the Stage 2b pages: header, rows and sections, then the save bar the app docks.
 

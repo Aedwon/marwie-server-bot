@@ -633,7 +633,8 @@ body.control-page {
 }
 .control-scrim[data-open="true"] .control-palette { transform: none; transition: transform var(--motion-enter) var(--ease-out); }
 .control-palette input { width: 100%; height: 52px; padding: 0 18px; border: 0; border-bottom: 1px solid var(--stroke-subtle); border-radius: 0; background: none; color: var(--text-primary); font-size: 15px; }
-.control-palette input:focus-visible { outline-offset: -4px; }
+/* The dialog is the focused surface; a focus-colored divider marks the field without boxing it in. */
+.control-palette input:focus-visible { outline: none; border-bottom-color: var(--focus-ring); }
 .control-palette ul { max-height: 360px; margin: 0; padding: 6px; overflow: auto; list-style: none; }
 .control-palette li { min-height: 38px; display: flex; align-items: center; gap: 10px; padding: 0 12px; border-radius: 9px; color: var(--text-secondary); cursor: pointer; }
 .control-palette li[aria-selected="true"] { background: var(--surface-hover); color: var(--text-primary); }

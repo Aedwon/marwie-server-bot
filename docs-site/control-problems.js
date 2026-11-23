@@ -63,7 +63,21 @@ export function problemsFromSnapshot(snapshot) {
         continue;
       }
       if (row.exists === false) {
-        add(key, 'Deleted in Discord.');
+        // The bot posts Live notices to the announcements channel when the live channel is gone,
+        // so this is a redirect to fix, not a failure.
+        const fallback = key === 'live_announcements' ? resources.get('announcements') : null;
+        const fallbackChannel = fallback?.exists ? channels.get(String(fallback.id)) : null;
+        if (fallback?.exists && fallback.kind === 'text' && fallbackChannel?.send_messages !== false) {
+          const name = `#${fallback.name || 'announcements'}`;
+          problems.push({
+            pageKey: path, path, resourceKey: key,
+            title: `Live notices post to ${name}`,
+            cause: 'Deleted in Discord.',
+            effect: `Live notices post to ${name} instead.`,
+          });
+        } else {
+          add(key, 'Deleted in Discord.');
+        }
         continue;
       }
       if (row.kind !== 'text' || READ_ONLY_KEYS.has(key)) continue;

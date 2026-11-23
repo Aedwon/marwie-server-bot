@@ -13,10 +13,10 @@ import {
   settingsRows,
   toggleDisclosure,
 } from '../docs-site/control-components.js?v=25';
-import { problemPaths, problemSentence, problemsFromSnapshot } from '../docs-site/control-problems.js?v=1';
+import { problemPaths, problemSentence, problemsFromSnapshot } from '../docs-site/control-problems.js?v=2';
 import { navigationModel } from '../docs-site/control-navigation.js';
 import { createControlStateStore } from '../docs-site/control-state.js';
-import { createCommunityPageDefinition } from '../docs-site/control-community.js?v=23';
+import { createCommunityPageDefinition } from '../docs-site/control-community.js?v=24';
 import { featureResourceKeys } from '../docs-site/control-resource-contract.js';
 import { withResourceBindings } from '../docs-site/control-resource-bindings.js?v=3';
 import { controlRouteSnapshot } from './fixtures/control-route-snapshot.js';
@@ -91,7 +91,7 @@ test('problem paths flag the owning navigation destination and its group', () =>
 
 test('the app feeds problem paths to the navigation flags', () => {
   const app = read('control-app.js');
-  assert.match(app, /from '\.\/control-problems\.js\?v=1'/);
+  assert.match(app, /from '\.\/control-problems\.js\?v=2'/);
   assert.match(app, /problemPaths\(problemsFromSnapshot\(guildState\)\)/);
   assert.match(app, /shellController\.setFlags\(paths\)/);
   assert.match(read('control-shell.js'), /const setFlags = paths =>/);
@@ -385,7 +385,7 @@ test('saved rows are derived from the save request and tinted once for 500ms', (
 test('changed imports carry bumped versions', () => {
   const app = read('control-app.js');
   assert.match(app, /control-components\.js\?v=25/);
-  assert.match(app, /control-community\.js\?v=23/);
+  assert.match(app, /control-community\.js\?v=24/);
   assert.match(read('control-community.js'), /control-resource-bindings\.js\?v=3/);
   assert.match(read('control.html'), /control-features\.css\?v=25/);
 });

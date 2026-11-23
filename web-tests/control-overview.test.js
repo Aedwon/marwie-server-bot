@@ -58,7 +58,7 @@ test('each problem is one row with the warning icon, title, cause and one fix bu
   assert.match(markup, /<svg[^>]*class="overview-problem-icon"/);
   assert.match(markup, /overview-problem-title" id="overview-problem-0">Quizzes can&#39;t post<\/p>/);
   // Every cause names its resource in one sentence.
-  assert.match(markup, /overview-problem-cause">[A-Z][^<]* was deleted in Discord\.<\/p>/);
+  assert.match(markup, /overview-problem-cause">The [^<]* was deleted in Discord\.<\/p>/);
   assert.match(markup, new RegExp(`data-overview-link="${QUIZZES}" data-overview-focus="resource-quiz_channel" aria-describedby="overview-problem-0">Choose channel</button>`));
   assert.doesNotMatch(markup, /Everything is running/);
 });
@@ -69,7 +69,7 @@ test('the fix verb follows the kind of resource and a shared page names which re
   const items = attentionItems(problemsFromSnapshot(snapshot));
   const byKey = Object.fromEntries(items.map(item => [item.focus, item]));
   assert.equal(byKey['resource-builder_role'].action, 'Choose role');
-  assert.equal(byKey['resource-builder_role'].cause, 'Builder role is not connected.');
+  assert.equal(byKey['resource-builder_role'].cause, 'The builder role is not connected.');
   assert.equal(byKey['resource-temp_voice_category'].action, 'Choose category');
   assert.equal(byKey['resource-temp_voice_category'].path, '/control/community/voice-coworking');
 });
@@ -235,4 +235,23 @@ test('the app renders Overview, routes its buttons and focuses the broken contro
   assert.match(app, /if \(entrance && pendingFocus\) \{[\s\S]*?target\.focus\(\);/);
   assert.match(app, /const clientRedirect = controlRedirectFor\(location\.pathname\);/);
   assert.match(app, /location\.replace\(clientRedirect\)/);
+});
+
+test('a deleted live channel is a redirect to announcements, not a failure', async () => {
+  const { problemsFromSnapshot } = await import('../docs-site/control-problems.js');
+  const snapshot = {
+    features: [{ name: 'live_announcements', enabled: true }],
+    resources: [
+      { key: 'live_announcements', id: '9', exists: false, kind: 'channel', name: null },
+      { key: 'announcements', id: '8', exists: true, kind: 'text', name: 'news' },
+      { key: 'live_ping_role', id: '7', exists: true, kind: 'role', name: 'Live' },
+    ],
+    channels: [{ id: '8', send_messages: true }],
+  };
+  const live = problemsFromSnapshot(snapshot).filter(p => p.path === '/control/content/live');
+  assert.equal(live.length, 1);
+  assert.equal(live[0].title, 'Live notices post to #news');
+  assert.equal(live[0].effect, 'Live notices post to #news instead.');
+  snapshot.resources[1].exists = false;
+  assert.equal(problemsFromSnapshot(snapshot).find(p => p.resourceKey === 'live_announcements').effect, "Live notices can't post.");
 });

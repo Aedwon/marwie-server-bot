@@ -1,7 +1,7 @@
 import { controlPageHeaderMarkup, disclosure, escapeHtml, settingsSection } from './control-components.js?v=25';
 import { controlIcon } from './control-icons.js?v=3';
-import { activityTotal, rangeProjection } from './control-analytics.js?v=26';
-import { problemsFromSnapshot } from './control-problems.js?v=1';
+import { activityTotal, rangeProjection } from './control-analytics.js?v=27';
+import { problemsFromSnapshot } from './control-problems.js?v=2';
 import { FEATURE_RESOURCE_KEYS_BY_PAGE } from './control-resource-contract.js';
 import { MAPPING_RESOURCE_DEFINITIONS } from './control-mappings.js';
 import { resourceOptionLabel } from './control-resource-bindings.js?v=3';
@@ -119,12 +119,14 @@ const CHOOSE_VERB = Object.freeze({ role: 'Choose role', category: 'Choose categ
 const FOCUS_ID = Object.freeze({ announcements: 'announcement-destination' });
 
 // One sentence that names the resource, so every row reads the same way.
-export function causeSentence(label, cause) {
+const KIND_NOUN = Object.freeze({ text: 'channel', voice: 'channel', channel: 'channel', forum: 'forum', category: 'category', role: 'role' });
+export function causeSentence(label, cause, kind = '') {
   if (!label) return cause;
-  const name = label.charAt(0).toUpperCase() + label.slice(1);
-  if (cause === 'Deleted in Discord.') return `${name} was deleted in Discord.`;
-  if (cause === 'Not connected.') return `${name} is not connected.`;
   const lower = label.charAt(0).toLowerCase() + label.slice(1);
+  // "Live announcements" reads as a plural; naming the object keeps the verb right.
+  const noun = /(channel|role|category|forum|log|panel|lounge|trap|voice)$/i.test(label) || !KIND_NOUN[kind] ? lower : `${lower} ${KIND_NOUN[kind]}`;
+  if (cause === 'Deleted in Discord.') return `The ${noun} was deleted in Discord.`;
+  if (cause === 'Not connected.') return `The ${noun} is not connected.`;
   if (cause === "Rob-bot can't send messages there.") return `Rob-bot can't send messages in ${lower}.`;
   if (cause === "Rob-bot can't embed links there.") return `Rob-bot can't embed links in ${lower}.`;
   return `${name}: ${cause}`;
@@ -139,7 +141,7 @@ export function attentionItems(problems = []) {
     return {
       path: problem.path,
       title: problem.title,
-      cause: causeSentence(definition?.label, problem.cause),
+      cause: causeSentence(definition?.label, problem.cause, definition?.kind),
       action: CHOOSE_VERB[definition?.kind] || 'Choose channel',
       focus: FOCUS_ID[problem.resourceKey] || `resource-${problem.resourceKey}`,
     };

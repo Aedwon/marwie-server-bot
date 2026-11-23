@@ -22,7 +22,7 @@ import {
   supportResourceSection,
   textArea,
   textInput,
-} from './control-support-shared.js?v=2';
+} from './control-support-shared.js?v=3';
 
 const TICKET_PAGE = '/control/utilities/ticket-configuration';
 const NOTIFICATION_PAGE = '/control/utilities/notification-roles';

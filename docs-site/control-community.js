@@ -18,7 +18,7 @@ import {
 } from './control-components.js?v=25';
 import { featureResourceKeys } from './control-resource-contract.js';
 import { resourceBindingState, resourceRowsMarkup, withResourceBindings } from './control-resource-bindings.js?v=3';
-import { problemsFromSnapshot } from './control-problems.js?v=1';
+import { problemsFromSnapshot } from './control-problems.js?v=2';
 
 const REPUTATION = '/control/community/reputation';
 const QUIZZES = '/control/community/quizzes';

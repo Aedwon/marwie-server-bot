@@ -18,18 +18,18 @@ test('Control owns its theme surfaces without the handbook stylesheet', () => {
 });
 
 test('Control shell stylesheet URL is cache-busted for the current Control surface contract', () => {
-  assert.match(controlHtml, /href=["']\/control\.css\?v=36["']/);
+  assert.match(controlHtml, /href=["']\/control\.css\?v=37["']/);
 });
 
 test('Control module graph cache-busts the save bar change', () => {
   const app = readFileSync(new URL('../docs-site/control-app.js', import.meta.url), 'utf8');
   const community = readFileSync(new URL('../docs-site/control-community.js', import.meta.url), 'utf8');
-  assert.match(controlHtml, /src=["']\/control-app\.js\?v=33["']/);
+  assert.match(controlHtml, /src=["']\/control-app\.js\?v=34["']/);
   assert.match(app, /control-components\.js\?v=25/);
-  assert.match(app, /control-analytics\.js\?v=26/);
-  assert.match(app, /control-mappings\.js\?v=24/);
+  assert.match(app, /control-analytics\.js\?v=27/);
+  assert.match(app, /control-mappings\.js\?v=25/);
   assert.match(app, /control-utilities\.js\?v=25/);
-  assert.match(app, /control-workflows\.js\?v=24/);
+  assert.match(app, /control-workflows\.js\?v=25/);
   assert.match(community, /control-components\.js\?v=25/);
 });
 
