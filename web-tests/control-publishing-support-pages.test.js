@@ -10,7 +10,7 @@ import {
   requiresContentConfirmation,
 } from '../docs-site/control-content.js';
 import { installUtilitiesPageInteractions } from '../docs-site/control-utilities.js';
-import { isDisclosureOpen } from '../docs-site/control-components.js?v=25';
+import { isDisclosureOpen } from '../docs-site/control-components.js?v=28';
 import {
   ANNOUNCEMENTS, ANONYMOUS, FEEDS, LIVE, MODERATION, NOTIFICATIONS, STAGE_2B_PAGES, TICKETS,
   hydrateStage2b, stage2bSaveRequests, stage2bSnapshot,
@@ -100,7 +100,7 @@ test('Feeds, Tickets, Notification roles and Moderation keep one disclosure per 
   assert.doesNotMatch(moderation, /Operating guide|control-section-heading/);
 });
 
-test('Announcement composer keeps its payload and offers the preview beside it at 1100px and up', () => {
+test('Announcement composer keeps its payload and offers the preview beside it when the widened frame has room', () => {
   const snapshot = hydrateStage2b();
   const markup = renderRegisteredControlPage(ANNOUNCEMENTS, { snapshot });
   for (const token of ['id="announcement-destination"', 'id="announcement-title"', 'id="announcement-body"', 'More options', 'data-announcement-preview', 'Send announcement']) {
@@ -108,7 +108,9 @@ test('Announcement composer keeps its payload and offers the preview beside it a
   }
   assert.ok(markup.indexOf('data-announcement-send') > markup.indexOf('More options'), 'Send sits at the bottom of the composer');
   const css = read('control-features.css');
-  assert.match(css, /@container control-main \(min-width: 1100px\) \{\s*\.control-composer-layout/);
+  assert.match(css, /@container control-main \(min-width: 1000px\) \{\s*\.control-composer-layout/);
+  // Composer pages widen past the 720px settings frame so the preview never overlaps the form.
+  assert.match(css, /\.control-page-frame:has\(\.control-composer-layout\) \{ max-width: 1120px; \}/);
   assert.match(css, /\.control-composer \{[^}]*border-radius: 14px/);
 
   const action = buildAnnouncementAction(snapshot, {
@@ -222,9 +224,9 @@ test('Typed text reaches the draft on input and Add opens the new row', () => {
 
 test('Stage 2b modules carry new versions and the CSS section sits at the end', () => {
   const app = read('control-app.js');
-  assert.match(app, /control-content\.js\?v=25/);
-  assert.match(app, /control-utilities\.js\?v=25/);
-  assert.match(app, /control-workflows\.js\?v=25/);
+  assert.match(app, /control-content\.js\?v=28/);
+  assert.match(app, /control-utilities\.js\?v=28/);
+  assert.match(app, /control-workflows\.js\?v=28/);
   const css = read('control-features.css');
   assert.match(css, /\/\* Stage 2b: publishing, support and safety pages \*\//);
   assert.ok(css.lastIndexOf('Stage 2b: publishing') > css.lastIndexOf('/* Page model:'));

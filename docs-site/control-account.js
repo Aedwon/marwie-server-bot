@@ -1,4 +1,4 @@
-// Popovers for the top bar (account and server menus) and the identity helpers they share.
+// Popovers for the sidebar (account and server menus) and the identity helpers they share.
 
 const FOCUSABLE = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
 const GUILD_KEY = 'rob-control-guild-id';
@@ -43,6 +43,15 @@ export function installPopover({
   const place = () => {
     const rect = trigger.getBoundingClientRect?.();
     if (!rect) return;
+    if (align === 'up') {
+      // Anchored above a trigger at the bottom of the sidebar; opens upward, left edges aligned.
+      menu.style.top = 'auto';
+      menu.style.bottom = `${Math.round((globalThis.innerHeight || 0) - rect.top + 6)}px`;
+      menu.style.right = 'auto';
+      menu.style.left = `${Math.round(rect.left)}px`;
+      return;
+    }
+    menu.style.bottom = 'auto';
     menu.style.top = `${Math.round(rect.bottom + 6)}px`;
     if (align === 'right') {
       menu.style.left = 'auto';
@@ -124,7 +133,7 @@ export function installPopover({
 
 // Account menu: a popover plus the Sign out action.
 export function installAccountMenu({ trigger, menu, signOut, onSignOut, doc, onOpen } = {}) {
-  const popover = installPopover({ trigger, menu, align: 'right', doc, onOpen });
+  const popover = installPopover({ trigger, menu, align: 'up', doc, onOpen });
   const onClick = async event => {
     event.preventDefault?.();
     if (typeof onSignOut !== 'function') return;

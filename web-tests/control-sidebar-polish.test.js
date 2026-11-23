@@ -69,13 +69,12 @@ test('accordion and indicator motion are CSS and layout sampling, not FLIP reflo
   assert.match(controlCss, /\.control-nav-indicator \{[^}]*transition: transform var\(--motion-enter\) var\(--ease-out\)/s);
 });
 
-test('the top bar holds the toggle and identity; the sidebar has no brand, footer or two-line title', () => {
+test('the sidebar head holds the server switcher and toggle; the profile row sits in its foot', () => {
   assert.doesNotMatch(controlHtml, /Rob-bot Control Panel|control-brand|control-rail-head|control-rail-foot|control-appearance/);
-  const barStart = controlHtml.indexOf('<header class="control-topbar"');
-  const bar = controlHtml.slice(barStart, controlHtml.indexOf('</header>', barStart));
-  assert.match(bar, /id="controlNavToggle"/);
-  assert.match(bar, /id="controlIdentity"/);
-  assert.ok(bar.indexOf('id="controlNavToggle"') < bar.indexOf('id="controlServerButton"'));
+  const head = controlHtml.slice(controlHtml.indexOf('<div class="control-side-head">'), controlHtml.indexOf('<div class="control-side-search">'));
+  assert.ok(head.indexOf('id="controlServerButton"') >= 0 && head.indexOf('id="controlServerButton"') < head.indexOf('id="controlNavToggle"'));
+  const foot = controlHtml.slice(controlHtml.indexOf('<div class="control-side-foot"'), controlHtml.indexOf('</aside>'));
+  assert.match(foot, /id="controlAccountButton"[^>]*>[\s\S]*class="control-avatar"[\s\S]*class="control-account-name"[\s\S]*class="control-account-sub"/);
   const account = controlHtml.slice(controlHtml.indexOf('id="controlAccountMenu"'), controlHtml.indexOf('id="controlServerMenu"'));
   assert.match(account, /class="control-seg"/);
   assert.match(account, />Light<\/button>/);
@@ -84,17 +83,20 @@ test('the top bar holds the toggle and identity; the sidebar has no brand, foote
   assert.match(account, /data-account-sign-out/);
 });
 
-test('menus are popovers that open below their trigger and fade and rise with the motion tokens', () => {
+test('menus are popovers that fade and rise with the motion tokens; the account menu opens upward from the foot', () => {
   assert.match(controlCss, /\.control-pop \{[^}]*position: fixed;/s);
   assert.match(controlCss, /\.control-pop\[data-open="true"\] \{[^}]*transition: opacity var\(--motion-enter\) var\(--ease-out\), transform var\(--motion-enter\) var\(--ease-out\)/s);
   const account = readFileSync(new URL('../docs-site/control-account.js', import.meta.url), 'utf8');
   assert.match(account, /menu\.style\.top = `\$\{Math\.round\(rect\.bottom \+ 6\)\}px`/);
+  assert.match(account, /menu\.style\.bottom = `\$\{Math\.round\(\(globalThis\.innerHeight \|\| 0\) - rect\.top \+ 6\)\}px`/);
+  assert.match(account, /installPopover\(\{ trigger, menu, align: 'up'/);
 });
 
 test('canonical shell keeps the sidebar panel floating and the main area flat', () => {
   assert.match(controlCss, /\.control-panel \{[\s\S]*?border-radius: var\(--radius-shell\)/);
   assert.match(controlCss, /\.control-panel \{[\s\S]*?box-shadow: var\(--shadow-shell\)/);
-  assert.match(controlCss, /\.control-main \{[\s\S]*?padding: 28px 40px 140px;/);
+  // No top bar on wide screens: the page title lines up with the sidebar's server row.
+  assert.match(controlCss, /\.control-main \{[\s\S]*?padding: 16px 40px 140px;/);
   assert.doesNotMatch(controlCss, /--control-card-shadow/);
   assert.doesNotMatch(controlCss, /\.control-rail \{[^}]*box-shadow/);
 });

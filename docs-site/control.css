@@ -173,38 +173,30 @@ body.control-page {
   height: 100dvh;
   display: grid;
   grid-template-columns: var(--nav-col) minmax(0, 1fr);
-  grid-template-rows: var(--top-h) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   column-gap: var(--control-shell-gap);
-  padding: 0 var(--control-edge-gap) var(--control-edge-gap);
+  padding: var(--control-edge-gap);
   background: var(--surface-page);
   transition: grid-template-columns var(--motion-layout) var(--ease-out);
 }
 .control-shell[data-nav-mode="rail"] { --nav-col: var(--rail-w); }
-.control-shell[data-nav-mode="drawer"] { --nav-col: auto; grid-template-columns: minmax(0, 1fr); padding: 0; }
+.control-shell[data-nav-mode="drawer"] { --nav-col: auto; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); padding: 0; }
 .control-shell[data-motion="off"],
 .control-shell[data-motion="off"] *,
 .control-shell[data-motion="off"] *::before,
 .control-shell[data-motion="off"] *::after { transition: none !important; }
 
-/* Top bar: no surface of its own; it sits on the page color. */
-.control-topbar {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: var(--nav-col) minmax(0, 1fr);
-  column-gap: var(--control-shell-gap);
-  align-items: center;
-  min-width: 0;
-  view-transition-name: control-topbar;
-  transition: grid-template-columns var(--motion-layout) var(--ease-out);
-}
+/* Phone only: a slim bar that opens the drawer. On wider screens everything lives in the sidebar. */
+.control-topbar { display: none; }
 .control-shell[data-nav-mode="drawer"] .control-topbar {
-  grid-template-columns: auto minmax(0, 1fr);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 52px;
   padding: 0 12px;
   border-bottom: 1px solid var(--stroke-subtle);
+  view-transition-name: control-topbar;
 }
-.control-topbar-lead { display: flex; align-items: center; gap: 4px; min-width: 0; }
-.control-topbar-main { display: flex; align-items: center; gap: 8px; min-width: 0; padding-left: 40px; }
-.control-shell[data-nav-mode="drawer"] .control-topbar-main { padding-left: 8px; }
 .control-icon-button {
   width: 32px;
   height: 32px;
@@ -218,20 +210,24 @@ body.control-page {
   background: transparent;
   color: var(--text-tertiary);
   cursor: pointer;
-  transition: background var(--motion-micro) var(--ease-out), color var(--motion-micro) var(--ease-out), transform var(--motion-micro) var(--ease-out);
+  transition: background var(--motion-micro) var(--ease-out), color var(--motion-micro) var(--ease-out), opacity var(--motion-micro) var(--ease-out), transform var(--motion-micro) var(--ease-out);
 }
 .control-icon-button:hover { background: var(--surface-hover); color: var(--text-primary); }
 .control-icon-button:active { transform: scale(.98); }
-.control-menu-button { display: none; }
-.control-shell[data-nav-mode="drawer"] .control-menu-button { display: inline-flex; }
+.control-nav-close { display: none; }
 .control-shell[data-nav-mode="drawer"] .control-nav-toggle { display: none; }
+.control-shell[data-nav-mode="drawer"] .control-nav-close { display: inline-flex; }
+.control-topbar-search { margin-left: auto; }
 
+/* Sidebar head: server switcher and the collapse toggle on one row. */
+.control-side-head { flex: 0 0 auto; display: flex; align-items: center; gap: 4px; height: 56px; padding: 0 10px 0 12px; }
 .control-server {
+  flex: 1 1 auto;
   min-width: 0;
-  height: 36px;
-  display: inline-flex;
+  height: 40px;
+  display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   padding: 0 8px 0 4px;
   border: 0;
   border-radius: 10px;
@@ -239,15 +235,16 @@ body.control-page {
   color: var(--text-primary);
   font-size: 14px;
   font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
   cursor: pointer;
   transition: background var(--motion-micro) var(--ease-out);
 }
 .control-server[hidden], .control-login[hidden], .control-account-button[hidden], .control-offline[hidden] { display: none; }
-.control-server:hover { background: var(--surface-hover); }
-.control-server-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: opacity var(--motion-micro) var(--ease-out); }
-.control-shell[data-nav-mode="rail"] .control-server-name,
-.control-shell[data-nav-mode="rail"] .control-server-chev { display: none; }
-.control-server-chev { flex: 0 0 auto; color: var(--text-faint); }
+.control-server:is(:hover, [aria-expanded="true"]) { background: var(--surface-hover); }
+.control-server-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; transition: opacity var(--motion-micro) var(--ease-out); }
+.control-server-chev { flex: 0 0 auto; color: var(--text-faint); transition: opacity var(--motion-micro) var(--ease-out); }
 .control-server-icon {
   width: 28px;
   height: 28px;
@@ -263,25 +260,27 @@ body.control-page {
 }
 .control-server-icon img { width: 100%; height: 100%; object-fit: cover; }
 
+/* Search sits under the server row, the same width as the navigation rows. */
+.control-side-search { flex: 0 0 auto; padding: 0 8px 6px; }
 .control-search {
-  width: 280px;
-  max-width: 100%;
+  width: 100%;
   height: 34px;
-  flex: 0 1 280px;
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 0 6px 0 11px;
   border: 1px solid var(--stroke-control);
   border-radius: 10px;
-  background: var(--surface-primary);
+  background: var(--surface-page);
   color: var(--text-faint);
+  white-space: nowrap;
+  overflow: hidden;
   cursor: pointer;
-  transition: border-color var(--motion-micro) var(--ease-out);
+  transition: border-color var(--motion-micro) var(--ease-out), background var(--motion-micro) var(--ease-out);
 }
-.control-search:hover { border-color: var(--stroke-field); }
+.control-search:hover { border-color: var(--stroke-field); background: var(--surface-primary); }
 .control-search-icon { flex: 0 0 auto; }
-.control-search-label { flex: 1; text-align: left; font-size: 14px; }
+.control-search-label { flex: 1; min-width: 0; text-align: left; font-size: 14px; transition: opacity var(--motion-micro) var(--ease-out); }
 .control-search kbd, .control-palette kbd {
   padding: 2px 6px;
   border: 1px solid var(--stroke-subtle);
@@ -290,39 +289,73 @@ body.control-page {
   color: var(--text-tertiary);
   font: 500 12px var(--font-sans);
 }
-.control-offline { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--status-warning-fg); font-size: 13px; line-height: 18px; }
-.control-identity { display: flex; align-items: center; margin-left: auto; }
+.control-search kbd { transition: opacity var(--motion-micro) var(--ease-out); }
+
+/* Foot: offline notice, sign in, and the profile row that opens the account menu upward. */
+.control-side-foot { flex: 0 0 auto; display: grid; gap: 4px; padding: 8px; border-top: 1px solid var(--stroke-subtle); }
+.control-offline { display: flex; align-items: flex-start; gap: 8px; min-width: 0; padding: 6px 8px; color: var(--status-warning-fg); font-size: 13px; line-height: 18px; }
+.control-offline svg { flex: 0 0 auto; margin-top: 1px; }
+.control-offline > span { transition: opacity var(--motion-micro) var(--ease-out); }
 .control-account-button {
-  width: 34px;
-  height: 34px;
-  padding: 0;
+  width: 100%;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px 0 6px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+  transition: background var(--motion-micro) var(--ease-out);
+}
+.control-account-button:is(:hover, [aria-expanded="true"]) { background: var(--surface-hover); }
+.control-avatar {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
   display: grid;
   place-items: center;
-  border: 1px solid var(--stroke-control);
+  overflow: hidden;
+  border: 1px solid var(--stroke-subtle);
   border-radius: 50%;
   background: var(--surface-secondary);
-  cursor: pointer;
-  overflow: hidden;
-  transition: border-color var(--motion-micro) var(--ease-out);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
 }
-.control-account-button:hover { border-color: var(--stroke-field); }
-.control-avatar { width: 100%; height: 100%; display: grid; place-items: center; font-size: 13px; font-weight: 600; color: var(--text-primary); }
 .control-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.control-account-text { display: grid; min-width: 0; line-height: 1.25; transition: opacity var(--motion-micro) var(--ease-out); }
+.control-account-name { overflow: hidden; text-overflow: ellipsis; font-size: 13px; font-weight: 500; }
+.control-account-sub { overflow: hidden; text-overflow: ellipsis; color: var(--text-tertiary); font-size: 12px; }
 .control-login {
-  min-height: 34px;
-  display: inline-flex;
+  width: 100%;
+  min-height: 36px;
+  display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
-  padding: 0 14px;
+  padding: 0 10px;
   border-radius: 10px;
   background: #5865f2;
   color: #fff;
   font-size: 14px;
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
   text-decoration: none;
 }
-.control-login svg { width: 18px; height: 18px; fill: currentColor; }
+.control-login svg { width: 18px; height: 18px; flex: 0 0 18px; fill: currentColor; }
+.control-login span { transition: opacity var(--motion-micro) var(--ease-out); }
+
+/* Rail: the same DOM. Text fades; every icon keeps its x position. The toggle returns on peek. */
+/* In the rail the toggle leaves the head's flow so the server icon keeps its full width. */
+.control-shell[data-nav-mode="rail"]:not([data-peek="true"]) .control-side-head { position: relative; }
+.control-shell[data-nav-mode="rail"]:not([data-peek="true"]) .control-nav-toggle { position: absolute; right: 10px; }
+.control-shell[data-nav-mode="rail"]:not([data-peek="true"]) :is(.control-server-name, .control-server-chev, .control-nav-toggle, .control-search-label, .control-search kbd, .control-account-text, .control-offline > span, .control-login span) { opacity: 0; pointer-events: none; }
 
 /* Sidebar: one surface. Rail, peek and drawer are states of the same DOM. */
 .control-rail { position: relative; z-index: 20; min-width: 0; min-height: 0; }
@@ -443,21 +476,6 @@ body.control-page {
 }
 .control-shell[data-nav-mode="drawer"] .control-rail[data-open="true"] { transform: none; transition: transform var(--motion-layout) var(--ease-out); }
 .control-shell[data-nav-mode="drawer"] .control-panel { border-radius: 0 var(--radius-shell) var(--radius-shell) 0; }
-.control-shell[data-nav-mode="drawer"] .control-nav-close {
-  display: inline-flex;
-  align-items: center;
-  align-self: flex-end;
-  min-height: 44px;
-  margin: 8px 8px 0;
-  padding: 0 11px;
-  border: 1px solid var(--stroke-control);
-  border-radius: var(--radius-control);
-  background: var(--surface-primary);
-  color: var(--text-primary);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-}
 
 /* Main */
 .control-main-wrap { position: relative; min-width: 0; min-height: 0; }
@@ -466,7 +484,7 @@ body.control-page {
   inset: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  padding: 28px 40px 140px;
+  padding: 16px 40px 140px;
   outline: none;
   container-type: inline-size;
   container-name: control-main;
@@ -765,9 +783,7 @@ body.control-page {
 @media (max-width: 639px) {
   body.control-page { --control-field-height: 44px; --control-field-font-size: 16px; }
   .control-main :is(button, select, input:not([type="checkbox"]):not([type="radio"])) { min-height: 44px; }
-  .control-search { flex: 0 0 34px; width: 34px; padding: 0; justify-content: center; }
-  .control-search :is(.control-search-label, kbd) { display: none; }
-  .control-offline span { display: none; }
+  .control-search kbd { display: none; }
 }
 
 @media (pointer: coarse) {

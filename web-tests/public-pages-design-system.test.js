@@ -49,9 +49,9 @@ test('Commands keeps the desktop search field distinct and mobile input readable
 
 test('Commands loads the pinned asset versions and the shared sidebar scrolls its own body', () => {
   const html = read('commands.html');
-  assert.match(html, /href="\/control\.css\?v=37"/);
+  assert.match(html, /href="\/control\.css\?v=40"/);
   assert.match(html, /href="\/commands\.css\?v=10"/);
-  assert.match(html, /src="\/commands\.js\?v=10"/);
+  assert.match(html, /src="\/commands\.js\?v=13"/);
   assert.doesNotMatch(html, /manual-nav/);
   assert.match(read('control.css'), /\.control-nav \{[^}]*flex:\s*1 1 auto;[^}]*min-height:\s*0;[^}]*overflow-x:\s*hidden;[^}]*overflow-y:\s*auto;/s);
 });
@@ -70,8 +70,8 @@ test('Handbook uses System appearance, current assets, and confirmation copy', (
   assert.match(html, /localStorage\.getItem\('rob-doc-theme'\) \|\| 'system'/);
   assert.match(html, /<meta name="theme-color" content="#fcfcfb">/);
   assert.match(html, /fonts\.googleapis\.com\/css2\?family=Figtree:wght@400;500;600/);
-  assert.match(html, /href="\/control\.css\?v=37"/);
-  assert.match(html, /href="\/styles\.css\?v=17"/);
+  assert.match(html, /href="\/control\.css\?v=40"/);
+  assert.match(html, /href="\/styles\.css\?v=20"/);
   assert.match(html, /href="\/home\.css\?v=5"/);
   assert.match(html, /<script type="module" src="\/app\.js\?v=21">/);
   assert.doesNotMatch(html, /class="release"|class="breadcrumbs"|AI App Builders/, 'the header does not repeat facts the page already states');

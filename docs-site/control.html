@@ -17,31 +17,27 @@
     })();
   </script>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&amp;family=Newsreader:ital,wght@1,400&amp;display=swap">
-  <link rel="stylesheet" href="/control.css?v=37">
-  <link rel="stylesheet" href="/control-features.css?v=25">
+  <link rel="stylesheet" href="/control.css?v=40">
+  <link rel="stylesheet" href="/control-features.css?v=28">
   <style>#controlMain:focus-visible { outline: none; }</style>
 </head>
 <body class="control-page">
   <a class="skip" href="#controlMain">Skip to active Control page</a>
   <div class="control-shell" data-nav-mode="expanded" data-peek="false" data-motion="off">
 <header class="control-topbar" id="controlTopbar">
-<div class="control-topbar-lead">
-<button id="controlNavToggle" class="control-icon-button control-nav-toggle" type="button" aria-label="Collapse navigation" title="Collapse navigation" aria-pressed="false"><svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" focusable="false"><path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM40,56H80V200H40ZM216,200H96V56H216V200Z"/></svg></button>
 <button id="controlMenuButton" class="control-icon-button control-menu-button" type="button" aria-controls="controlNavDrawer" aria-expanded="false" aria-label="Open navigation" title="Open navigation"><svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" focusable="false"><path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM40,56H80V200H40ZM216,200H96V56H216V200Z"/></svg></button>
-<button id="controlServerButton" class="control-server" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="controlServerMenu" hidden><span class="control-server-icon" aria-hidden="true"></span><span class="control-server-name"></span><svg class="control-server-chev" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2.5 4.5 6 8l3.5-3.5"/></svg></button>
-</div>
-<div class="control-topbar-main">
-<button id="controlSearch" class="control-search" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="controlPalette" aria-label="Search"><svg class="control-search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 11.5a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Z m3.5 -1 3 3"/></svg><span class="control-search-label">Search</span><kbd id="controlShortcut" aria-hidden="true">Ctrl K</kbd></button>
-<span id="controlOffline" class="control-offline" hidden><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 1.8 15 14H1L8 1.8Z M8 6.5v3.2 M8 11.6v.01"/></svg><span>Rob-bot is offline. Saved changes apply when it reconnects.</span></span>
-<div id="controlIdentity" class="control-identity">
-<a id="controlLogin" class="control-login" href="/api/auth/start" hidden><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515c.074.134.144.273.21.416a18.27 18.27 0 0 0-5.356 0c.067-.143.137-.282.21-.416A19.74 19.74 0 0 0 3.678 4.37C.533 9.046-.321 13.58.106 18.058a19.9 19.9 0 0 0 5.994 3.03c.49-.669.927-1.383 1.302-2.134a12.93 12.93 0 0 1-2.058-.988c.172-.126.341-.255.505-.391 3.862 1.763 8.052 1.763 11.868 0 .165.136.333.265.505.391-.653.39-1.343.721-2.059.988.376.751.813 1.465 1.303 2.134a19.89 19.89 0 0 0 5.992-3.03c.501-5.177-.854-9.673-3.548-13.688ZM7.822 14.709c-1.171 0-2.139-1.076-2.139-2.397s.948-2.397 2.139-2.397c1.201 0 2.159 1.086 2.139 2.397 0 1.321-.948 2.397-2.139 2.397Zm7.457 0c-1.171 0-2.139-1.076-2.139-2.397s.948-2.397 2.139-2.397c1.201 0 2.159 1.086 2.139 2.397 0 1.321-.938 2.397-2.139 2.397Z"/></svg><span>Sign in with Discord</span></a>
-<button id="controlAccountButton" class="control-account-button" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="controlAccountMenu" aria-label="Account" hidden><span class="control-avatar" aria-hidden="true"></span></button>
-</div>
-</div>
+<button id="controlSearchMobile" class="control-icon-button control-topbar-search" type="button" aria-haspopup="dialog" aria-controls="controlPalette" aria-label="Search" title="Search"><svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 11.5a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Z m3.5 -1 3 3"/></svg></button>
 </header>
 <aside id="controlNavDrawer" class="control-rail" aria-label="Control navigation">
 <div class="control-panel">
-<button id="controlNavClose" class="control-nav-close" type="button" aria-label="Close navigation">Close</button>
+<div class="control-side-head">
+<button id="controlServerButton" class="control-server" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="controlServerMenu" hidden><span class="control-server-icon" aria-hidden="true"></span><span class="control-server-name"></span><svg class="control-server-chev" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2.5 4.5 6 8l3.5-3.5"/></svg></button>
+<button id="controlNavToggle" class="control-icon-button control-nav-toggle" type="button" aria-label="Collapse navigation" title="Collapse navigation" aria-pressed="false"><svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" focusable="false"><path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM40,56H80V200H40ZM216,200H96V56H216V200Z"/></svg></button>
+<button id="controlNavClose" class="control-icon-button control-nav-close" type="button" aria-label="Close navigation" title="Close navigation"><svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" focusable="false"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></svg></button>
+</div>
+<div class="control-side-search">
+<button id="controlSearch" class="control-search" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="controlPalette" aria-label="Search"><svg class="control-search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 11.5a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Z m3.5 -1 3 3"/></svg><span class="control-search-label">Search</span><kbd id="controlShortcut" aria-hidden="true">Ctrl K</kbd></button>
+</div>
 <nav id="controlNavContent" class="control-nav" aria-label="Control destinations">
 <span class="control-nav-indicator" data-nav-indicator aria-hidden="true"></span>
 <a class="control-nav-row" href="/control/overview" data-nav-path="/control/overview" data-nav-key="overview"><svg class="control-nav-icon" width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" focusable="false"><path d="M219.31,108.68l-80-80a16,16,0,0,0-22.62,0l-80,80A15.87,15.87,0,0,0,32,120v96a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V160h32v56a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V120A15.87,15.87,0,0,0,219.31,108.68ZM208,208H160V152a8,8,0,0,0-8-8H104a8,8,0,0,0-8,8v56H48V120l80-80,80,80Z"/></svg><span class="control-nav-lbl">Overview</span></a>
@@ -69,6 +65,11 @@
 <a class="control-nav-row" href="/commands" data-nav-path="/commands" data-nav-key="commands" data-nav-external="true"><svg class="control-nav-icon" width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" focusable="false"><path d="M128,128a8,8,0,0,1-3,6.25l-40,32a8,8,0,1,1-10-12.5L107.19,128,75,102.25a8,8,0,1,1,10-12.5l40,32A8,8,0,0,1,128,128Zm48,24H136a8,8,0,0,0,0,16h40a8,8,0,0,0,0-16Zm56-96V200a16,16,0,0,1-16,16H40a16,16,0,0,1-16-16V56A16,16,0,0,1,40,40H216A16,16,0,0,1,232,56ZM216,200V56H40V200H216Z"/></svg><span class="control-nav-lbl">Commands</span></a>
 <a class="control-nav-row" href="/handbook" data-nav-path="/handbook" data-nav-key="handbook" data-nav-external="true"><svg class="control-nav-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 3.2c2-.8 4-.8 6 .6 2-1.4 4-1.4 6-.6v9.6c-2-.8-4-.8-6 .6-2-1.4-4-1.4-6-.6Z M8 3.8v9.6"/></svg><span class="control-nav-lbl">Handbook</span></a>
 </nav>
+<div class="control-side-foot" id="controlIdentity">
+<span id="controlOffline" class="control-offline" hidden><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 1.8 15 14H1L8 1.8Z M8 6.5v3.2 M8 11.6v.01"/></svg><span>Rob-bot is offline. Saved changes apply when it reconnects.</span></span>
+<a id="controlLogin" class="control-login" href="/api/auth/start" hidden><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515c.074.134.144.273.21.416a18.27 18.27 0 0 0-5.356 0c.067-.143.137-.282.21-.416A19.74 19.74 0 0 0 3.678 4.37C.533 9.046-.321 13.58.106 18.058a19.9 19.9 0 0 0 5.994 3.03c.49-.669.927-1.383 1.302-2.134a12.93 12.93 0 0 1-2.058-.988c.172-.126.341-.255.505-.391 3.862 1.763 8.052 1.763 11.868 0 .165.136.333.265.505.391-.653.39-1.343.721-2.059.988.376.751.813 1.465 1.303 2.134a19.89 19.89 0 0 0 5.992-3.03c.501-5.177-.854-9.673-3.548-13.688ZM7.822 14.709c-1.171 0-2.139-1.076-2.139-2.397s.948-2.397 2.139-2.397c1.201 0 2.159 1.086 2.139 2.397 0 1.321-.948 2.397-2.139 2.397Zm7.457 0c-1.171 0-2.139-1.076-2.139-2.397s.948-2.397 2.139-2.397c1.201 0 2.159 1.086 2.139 2.397 0 1.321-.938 2.397-2.139 2.397Z"/></svg><span>Sign in with Discord</span></a>
+<button id="controlAccountButton" class="control-account-button" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="controlAccountMenu" aria-label="Account" hidden><span class="control-avatar" aria-hidden="true"></span><span class="control-account-text"><span class="control-account-name"></span><span class="control-account-sub"></span></span></button>
+</div>
 </div>
 </aside>
 <div id="controlScrim" class="control-drawer-scrim" data-open="false" aria-hidden="true"></div>
@@ -94,6 +95,6 @@
 </div>
 </div>
 <div id="controlLive" class="sr-only" role="status" aria-live="polite"></div>
-  <script type="module" src="/control-app.js?v=34"></script>
+  <script type="module" src="/control-app.js?v=40"></script>
 </body>
 </html>

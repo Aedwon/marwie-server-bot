@@ -15,9 +15,9 @@ import {
   settingsRows,
   settingsSection,
   switchMarkup,
-} from './control-components.js?v=25';
+} from './control-components.js?v=28';
 import { featureResourceKeys } from './control-resource-contract.js';
-import { resourceBindingState, resourceRowsMarkup, withResourceBindings } from './control-resource-bindings.js?v=3';
+import { resourceBindingState, resourceRowsMarkup, withResourceBindings } from './control-resource-bindings.js?v=6';
 import { problemsFromSnapshot } from './control-problems.js?v=2';
 
 const REPUTATION = '/control/community/reputation';

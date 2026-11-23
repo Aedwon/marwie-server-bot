@@ -11,9 +11,9 @@ import {
   settingsRows,
   settingsSection,
   switchMarkup,
-} from './control-components.js?v=25';
+} from './control-components.js?v=28';
 import { featureResourceKeys } from './control-resource-contract.js';
-import { withResourceBindings } from './control-resource-bindings.js?v=3';
+import { withResourceBindings } from './control-resource-bindings.js?v=6';
 import {
   fieldMarkup,
   itemHead,
@@ -22,7 +22,7 @@ import {
   supportResourceSection,
   textArea,
   textInput,
-} from './control-support-shared.js?v=3';
+} from './control-support-shared.js?v=6';
 
 const TICKET_PAGE = '/control/utilities/ticket-configuration';
 const NOTIFICATION_PAGE = '/control/utilities/notification-roles';
@@ -636,7 +636,8 @@ function notificationButtonRow(item, index, state, snapshot) {
   return itemRow({
     id,
     rowKey: `button:${index}`,
-    head: itemHead(item.label || 'New button', roleName),
+    // The role name shows only when it differs from the label; most buttons share one name.
+    head: itemHead(item.label || 'New button', roleName && roleName !== item.label ? `@${roleName}` : ''),
     body,
     error: Object.values(errors).some(Boolean),
     dataAttributes: `data-notification-row="${index}"`,

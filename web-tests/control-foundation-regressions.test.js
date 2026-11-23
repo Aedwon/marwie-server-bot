@@ -140,23 +140,21 @@ test('invalid child URLs use the domain first child, never remembered child', ()
   assert.equal(resolveControlRoute(resolved.path).path, resolved.path);
 });
 
-test('the top bar carries toggle, server, search and account; the sidebar carries navigation only', () => {
+test('the sidebar carries the server switcher, toggle, search, navigation and profile; the top bar only opens the drawer', () => {
   const barStart = controlHtml.indexOf('<header class="control-topbar"');
-  const barEnd = controlHtml.indexOf('</header>', barStart);
+  const bar = controlHtml.slice(barStart, controlHtml.indexOf('</header>', barStart));
   const asideStart = controlHtml.indexOf('<aside id="controlNavDrawer"');
-  const asideEnd = controlHtml.indexOf('</aside>', asideStart);
-  const bar = controlHtml.slice(barStart, barEnd);
-  const aside = controlHtml.slice(asideStart, asideEnd);
+  const aside = controlHtml.slice(asideStart, controlHtml.indexOf('</aside>', asideStart));
 
-  assert.ok(barStart >= 0 && barEnd < asideStart);
-  const order = ['id="controlNavToggle"', 'id="controlServerButton"', 'id="controlSearch"', 'id="controlLogin"', 'id="controlAccountButton"']
-    .map(marker => bar.indexOf(marker));
+  assert.match(bar, /id="controlMenuButton"/);
+  assert.doesNotMatch(bar, /id="controlNavToggle"|id="controlServerButton"|id="controlSearch"|id="controlAccountButton"|id="controlLogin"/);
+
+  // Owner direction 2026-11-23: server and toggle on top, then search, navigation, and the profile row at the bottom.
+  const order = ['id="controlServerButton"', 'id="controlNavToggle"', 'id="controlSearch"', 'id="controlNavContent"', 'id="controlIdentity"', 'id="controlLogin"', 'id="controlAccountButton"']
+    .map(marker => aside.indexOf(marker));
   assert.ok(order.every(index => index >= 0));
   assert.deepEqual([...order].sort((left, right) => left - right), order);
-  assert.ok(bar.indexOf('id="controlIdentity"') < bar.indexOf('id="controlLogin"'));
-
-  assert.ok(aside.indexOf('id="controlNavContent"') >= 0);
-  assert.doesNotMatch(aside, /control-brand|control-appearance|id="controlIdentity"|data-theme-choice|server-picker|liveServerPicker/);
+  assert.doesNotMatch(aside, /control-brand|control-appearance|data-theme-choice|server-picker|liveServerPicker/);
 });
 
 test('appearance defaults to System and resolves Dark, Light and System correctly', async () => {
@@ -331,10 +329,8 @@ test('shell uses derived layout states instead of fixed desktop bands', () => {
     controlCss,
     /\.control-shell\[data-nav-mode="rail"\] \{ --nav-col: var\(--rail-w\); \}/,
   );
-  assert.match(
-    controlCss,
-    /\.control-shell\[data-nav-mode="drawer"\] \.control-topbar \{[\s\S]*?grid-template-columns: auto minmax\(0, 1fr\);/,
-  );
+  assert.match(controlCss, /\.control-topbar \{ display: none; \}/);
+  assert.match(controlCss, /\.control-shell\[data-nav-mode="drawer"\] \.control-topbar \{[\s\S]*?display: flex;/);
   assert.match(
     controlCss,
     /\.control-shell\[data-nav-mode="drawer"\] \.control-rail \{[\s\S]*?position: fixed;/,

@@ -1062,6 +1062,9 @@ fieldset.utility-editor-row + fieldset.utility-editor-row { margin-top: 12px; }
 
 @media (max-width: 639px) {
   .control-setting-row { grid-template-columns: 1fr; min-height: 44px; }
+  /* A switch stays on its label's line; only selects and fields drop below. */
+  .control-setting-row:has(.control-switch) { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+  .control-setting-row:has(.control-switch) .control-setting-control { justify-content: flex-end; }
   .control-setting-control { justify-content: flex-start; }
   .control-setting-control > select { min-height: 44px; font-size: 16px; }
   .control-number { min-height: 44px; }
@@ -1082,7 +1085,8 @@ fieldset.utility-editor-row + fieldset.utility-editor-row { margin-top: 12px; }
 
 /* Disclosing list row with a switch beside the chevron. */
 .control-item { position: relative; }
-.control-item .control-disclose { padding-right: 76px; }
+/* Room for the switch only on rows that have one, so every other chevron sits on the right edge. */
+.control-item:has(.control-item-aside) .control-disclose { padding-right: 76px; }
 .control-item-aside { position: absolute; top: 10px; right: 28px; }
 .control-item .control-question-copy { justify-content: flex-start; align-items: baseline; gap: 12px; }
 .control-item .control-question-status { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1112,11 +1116,13 @@ fieldset.utility-editor-row + fieldset.utility-editor-row { margin-top: 12px; }
 .control-composer-status[data-tone="bad"] { color: var(--status-error-fg); }
 .control-composer-status[data-tone="good"] { color: var(--status-success-fg); }
 
-/* Discord preview: below the composer, beside it when main is 1100px or wider. */
+/* Discord preview: below the composer, beside it when there is room for both.
+   The frame widens for composer pages so the two columns never squeeze into the 720px settings width. */
+.control-page-frame:has(.control-composer-layout) { max-width: 1120px; }
 .control-preview { min-width: 0; display: grid; gap: 8px; }
 .control-preview h2 { margin: 0; color: var(--text-primary); font-size: 15px; line-height: 22px; font-weight: 600; }
-@container control-main (min-width: 1100px) {
-  .control-composer-layout { grid-template-columns: minmax(0, 1fr) minmax(320px, 400px); }
+@container control-main (min-width: 1000px) {
+  .control-composer-layout { grid-template-columns: minmax(0, 1fr) minmax(340px, 400px); gap: 40px; }
   .control-preview { position: sticky; top: 0; }
 }
 .control-composer .control-disclose { min-height: 32px; }

@@ -12,9 +12,9 @@ import {
   settingsRows,
   settingsSection,
   switchMarkup,
-} from './control-components.js?v=25';
+} from './control-components.js?v=28';
 import { featureResourceKeys } from './control-resource-contract.js';
-import { withResourceBindings } from './control-resource-bindings.js?v=3';
+import { withResourceBindings } from './control-resource-bindings.js?v=6';
 import {
   fieldMarkup,
   itemHead,
@@ -23,7 +23,7 @@ import {
   supportResourceSection,
   textArea,
   textInput,
-} from './control-support-shared.js?v=3';
+} from './control-support-shared.js?v=6';
 
 const FEEDS = '/control/content/feeds';
 const ANNOUNCEMENTS = '/control/content/announcements';

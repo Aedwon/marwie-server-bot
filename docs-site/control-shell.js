@@ -16,7 +16,7 @@ import {
   installPopover,
   pickGuild,
   syncedLabel,
-} from './control-account.js?v=2';
+} from './control-account.js?v=5';
 import { buildPaletteIndex, commandsFromMarkdown, installPalette } from './control-palette.js?v=1';
 
 export const EXPANDED_KEY = 'rob-control-expanded-domain';
@@ -65,54 +65,7 @@ export function navigationMarkup(model) {
   return `<span class="control-nav-indicator" data-nav-indicator aria-hidden="true"></span>\n${rows}`;
 }
 
-export function sidebarMarkup(model) {
-  return `<aside id="controlNavDrawer" class="control-rail" aria-label="Control navigation">
-<div class="control-panel">
-<button id="controlNavClose" class="control-nav-close" type="button" aria-label="Close navigation">Close</button>
-<nav id="controlNavContent" class="control-nav" aria-label="Control destinations">
-${navigationMarkup(model)}
-</nav>
-</div>
-</aside>`;
-}
-
-export function topbarMarkup() {
-  return `<header class="control-topbar" id="controlTopbar">
-<div class="control-topbar-lead">
-<button id="controlNavToggle" class="control-icon-button control-nav-toggle" type="button" aria-label="Collapse navigation" title="Collapse navigation" aria-pressed="false">${controlIcon('sidebar-simple', { size: 18 })}</button>
-<button id="controlMenuButton" class="control-icon-button control-menu-button" type="button" aria-controls="controlNavDrawer" aria-expanded="false" aria-label="Open navigation" title="Open navigation">${controlIcon('sidebar-simple', { size: 18 })}</button>
-<button id="controlServerButton" class="control-server" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="controlServerMenu" hidden><span class="control-server-icon" aria-hidden="true"></span><span class="control-server-name"></span>${controlIcon('chevron', { size: 12, className: 'control-server-chev' })}</button>
-</div>
-<div class="control-topbar-main">
-<button id="controlSearch" class="control-search" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="controlPalette" aria-label="Search">${controlIcon('search', { size: 16, className: 'control-search-icon' })}<span class="control-search-label">Search</span><kbd id="controlShortcut" aria-hidden="true">Ctrl K</kbd></button>
-<span id="controlOffline" class="control-offline" hidden>${controlIcon('warning', { size: 16 })}<span>Rob-bot is offline. Saved changes apply when it reconnects.</span></span>
-<div id="controlIdentity" class="control-identity">
-<a id="controlLogin" class="control-login" href="/api/auth/start" hidden><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515c.074.134.144.273.21.416a18.27 18.27 0 0 0-5.356 0c.067-.143.137-.282.21-.416A19.74 19.74 0 0 0 3.678 4.37C.533 9.046-.321 13.58.106 18.058a19.9 19.9 0 0 0 5.994 3.03c.49-.669.927-1.383 1.302-2.134a12.93 12.93 0 0 1-2.058-.988c.172-.126.341-.255.505-.391 3.862 1.763 8.052 1.763 11.868 0 .165.136.333.265.505.391-.653.39-1.343.721-2.059.988.376.751.813 1.465 1.303 2.134a19.89 19.89 0 0 0 5.992-3.03c.501-5.177-.854-9.673-3.548-13.688ZM7.822 14.709c-1.171 0-2.139-1.076-2.139-2.397s.948-2.397 2.139-2.397c1.201 0 2.159 1.086 2.139 2.397 0 1.321-.948 2.397-2.139 2.397Zm7.457 0c-1.171 0-2.139-1.076-2.139-2.397s.948-2.397 2.139-2.397c1.201 0 2.159 1.086 2.139 2.397 0 1.321-.938 2.397-2.139 2.397Z"/></svg><span>Sign in with Discord</span></a>
-<button id="controlAccountButton" class="control-account-button" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="controlAccountMenu" aria-label="Account" hidden><span class="control-avatar" aria-hidden="true"></span></button>
-</div>
-</div>
-</header>`;
-}
-
-export function overlaysMarkup() {
-  return `<div id="controlAccountMenu" class="control-pop" role="dialog" aria-label="Account" data-open="false" inert>
-<div class="control-pop-who"><b id="controlAccountName"></b><span id="controlAccountRole"></span></div>
-<div class="control-pop-row"><span id="controlAppearanceLabel">Appearance</span>
-<div class="control-seg" role="group" aria-labelledby="controlAppearanceLabel"><span class="control-seg-thumb" aria-hidden="true"></span><button type="button" data-theme-choice="light" aria-pressed="false">Light</button><button type="button" data-theme-choice="dark" aria-pressed="false">Dark</button><button type="button" data-theme-choice="system" aria-pressed="true">Auto</button></div></div>
-<button type="button" class="control-pop-item" data-account-sign-out>Sign out</button>
-</div>
-<div id="controlServerMenu" class="control-pop" role="menu" aria-label="Servers" data-open="false" inert>
-<div id="controlServerList"></div>
-<p id="controlServerSynced" class="control-pop-note"></p>
-</div>
-<div id="controlPalette" class="control-scrim" data-open="false" inert>
-<div class="control-palette" role="dialog" aria-modal="true" aria-label="Search">
-<input id="controlPaletteInput" type="text" role="combobox" aria-expanded="true" aria-controls="controlPaletteList" aria-autocomplete="list" autocomplete="off" spellcheck="false" placeholder="Go to a page or find a command" aria-label="Search">
-<ul id="controlPaletteList" role="listbox" aria-label="Results"></ul>
-</div>
-</div>
-<div id="controlLive" class="sr-only" role="status" aria-live="polite"></div>`;
-}
+// The shell markup is static in control.html, commands.html and index.html; navigation rows render here.
 
 /* ---------- Pure: indicator target ---------- */
 
@@ -520,6 +473,8 @@ export function installShell({
       else win.location.assign(item.href);
     },
   });
+  // Phone bar: the sidebar search is inside the closed drawer, so the bar has its own trigger.
+  $('controlSearchMobile')?.addEventListener('click', () => palette.open());
   const shortcut = $('controlShortcut');
   if (shortcut && /Mac|iPhone|iPad/.test(win.navigator?.platform || win.navigator?.userAgent || '')) shortcut.textContent = '⌘K';
   if (loadCommands && typeof win.fetch === 'function') {
@@ -552,6 +507,10 @@ export function installShell({
     const avatar = account.querySelector('.control-avatar');
     fillIcon(avatar, name, session.user?.avatar_url);
     account.setAttribute('aria-label', `Account, ${name}`);
+    const accountName = account.querySelector('.control-account-name');
+    const accountSub = account.querySelector('.control-account-sub');
+    if (accountName) accountName.textContent = name;
+    if (accountSub) accountSub.textContent = guild ? (guild.administrator ? 'Administrator' : 'Manager') : '';
     $('controlAccountName').textContent = name;
     $('controlAccountRole').textContent = accountRoleLine(guild);
     if (guild) {

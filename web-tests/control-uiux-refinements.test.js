@@ -80,18 +80,17 @@ test('Control chevrons share one shape and size', async () => {
   assert.doesNotMatch(utilities, />⌄</);
 });
 
-test('unauthenticated pages leave sign-in to the top bar', async () => {
+test('unauthenticated pages leave sign-in to the sidebar foot', async () => {
   const { pageMarkup } = await import('../docs-site/control-components.js');
   const page = pageMarkup({ label: 'Community', path: '/control/community', domain: 'community' }, { authenticated: false });
-  assert.match(page, /Sign in with Discord from the top bar to load Control\./);
+  assert.match(page, /Sign in with Discord from the sidebar to load Control\./);
   assert.doesNotMatch(page, /\/api\/auth\/start/);
   assert.doesNotMatch(page, /Sign in with Discord<\/a>/);
 
   const html = readFileSync(new URL('../docs-site/control.html', import.meta.url), 'utf8');
-  const bar = html.slice(html.indexOf('<header class="control-topbar"'), html.indexOf('</header>'));
-  assert.match(bar, /<a id="controlLogin" class="control-login" href="\/api\/auth\/start"[^>]*hidden>/);
-  assert.match(bar, /Sign in with Discord<\/span>/);
-  assert.ok(bar.indexOf('id="controlLogin"') > bar.indexOf('id="controlSearch"'));
+  const foot = html.slice(html.indexOf('<div class="control-side-foot"'), html.indexOf('</aside>'));
+  assert.match(foot, /<a id="controlLogin" class="control-login" href="\/api\/auth\/start"[^>]*hidden>/);
+  assert.match(foot, /Sign in with Discord<\/span>/);
 });
 
 test('Control shell has no global changes tray', () => {

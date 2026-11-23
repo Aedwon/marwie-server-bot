@@ -53,3 +53,6 @@ footer { padding-top: 32px; color: var(--text-tertiary); font-size: 13px; }
   .role-order li { grid-template-columns: 24px minmax(0, 1fr); gap: 4px 8px; }
   .role-order li span:last-child { grid-column: 2; }
 }
+
+/* Inline commands never split mid-word across lines. */
+.handbook-main :not(pre) > code { white-space: nowrap; }

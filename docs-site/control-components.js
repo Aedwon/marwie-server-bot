@@ -1,7 +1,7 @@
-import { activityPageMarkup } from './control-secondary.js?v=24';
+import { activityPageMarkup } from './control-secondary.js?v=27';
 import { controlIcon } from './control-icons.js?v=3';
 
-export { navigationMarkup } from './control-shell.js?v=3';
+export { navigationMarkup } from './control-shell.js?v=6';
 
 export function escapeHtml(value) {
   return String(value ?? '')
@@ -220,7 +220,7 @@ export function featureHeaderActionsMarkup({
 
 export function pageMarkup(destination, { authenticated = false, activityState = null } = {}) {
   if (!authenticated) {
-    return `<section class="control-empty"><h1>${escapeHtml(destination.label)}</h1><p>Sign in with Discord from the top bar to load Control.</p></section>`;
+    return `<section class="control-empty"><h1>${escapeHtml(destination.label)}</h1><p>Sign in with Discord from the sidebar to load Control.</p></section>`;
   }
 
   if (destination.path === '/control/activity') return activityPageMarkup(activityState || {});
